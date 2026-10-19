@@ -343,6 +343,24 @@ def update_session(session_id: str, **fields: Any) -> None:
         )
 
 
+def add_session_usage(
+    session_id: str, input_tokens: int, output_tokens: int, cost_usd: float
+) -> None:
+    with connect() as con:
+        con.execute(
+            "UPDATE sessions SET cost_usd=cost_usd+?, tokens_in=tokens_in+?, "
+            "tokens_out=tokens_out+?, updated_at=? WHERE id=? AND owner=?",
+            (
+                float(cost_usd),
+                int(input_tokens),
+                int(output_tokens),
+                now(),
+                session_id,
+                tenancy.user_id(),
+            ),
+        )
+
+
 def get_session(session_id: str) -> sqlite3.Row | None:
     with connect() as con:
         return con.execute(

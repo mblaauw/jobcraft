@@ -17,7 +17,7 @@ os.environ["APP_RUNTIME_DIR"] = str(ROOT / "runtime")
 os.environ["APP_SEED_DIR"] = str(ROOT / "seed")
 os.environ["APP_SKIP_LLM"] = "1"
 os.environ["RUNWARE_API_KEY"] = ""
-os.environ["OPENCODE_GO_KEY"] = ""
+os.environ["LLM_API_KEY"] = ""
 
 from app import feedback, profile, ranking, store  # noqa: E402
 

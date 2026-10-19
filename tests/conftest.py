@@ -20,8 +20,8 @@ os.environ["APP_DATA_DIR"] = str(DATA_ROOT)
 os.environ["APP_RUNTIME_DIR"] = str(RUNTIME_ROOT)
 os.environ["APP_SEED_DIR"] = str(SEED_ROOT)
 os.environ["APP_SKIP_LLM"] = "1"
-os.environ["OPENCODE_GO_KEY"] = ""
-os.environ["OPENCODE_GO_KEY_FILE"] = ""
+os.environ["LLM_API_KEY"] = ""
+os.environ["LLM_BASE_URL"] = ""
 os.environ["RUNWARE_API_KEY"] = ""
 
 _REAL_DB = REPO_ROOT / "data" / "app.db"

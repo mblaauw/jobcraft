@@ -3,7 +3,7 @@
 A local-first career workspace for discovering vacancies, keeping a living
 profile, ranking opportunities and generating tailored application documents.
 
-Built with FastAPI, Jinja, SQLite and an isolated OpenCode runtime. The interface
+Built with FastAPI, Jinja, SQLite and a direct OpenAI-compatible LLM client. The interface
 is Dutch; the code and documentation are English.
 
 ## Features
@@ -23,7 +23,7 @@ is Dutch; the code and documentation are English.
 
 ## Quick start
 
-Requirements: Python 3.12+, `uv`, and OpenCode v2 on `PATH`.
+Requirements: Python 3.12+, `uv`, and an OpenAI-compatible LLM endpoint.
 
 ```sh
 uv sync
@@ -55,7 +55,7 @@ data/
   templates/             CV template + identity derived from the account's CV
   sources.yaml           shared source configuration
 seed/                    optional local bootstrap material (never committed)
-.runtime/                isolated OpenCode home, logs, local account bootstrap
+.runtime/                local runtime logs and one-time account bootstrap
 ```
 
 Never commit `data/`, `seed/`, `.runtime/` or environment files. The repository
@@ -114,7 +114,7 @@ docker compose up --build
 ```
 
 The app listens on `127.0.0.1:18080` and keeps data in `./data`, seed material in
-`./seed`. The container includes LibreOffice and a pinned OpenCode runtime.
+`./seed`. The container includes LibreOffice; LLM calls use the configured API endpoint.
 
 ## Deploying
 
@@ -141,7 +141,6 @@ the working database are not part of the repository or its history.
 
 ```
 app/            FastAPI routes, auth/tenancy, matching, documents, storage
-agents/         OpenCode agent definitions
 prompts/        consolidation prompt
 .opencode/      project skills (document, vacancy, source and UI standards)
 seeds/          source catalogue template

@@ -16,7 +16,7 @@ services:
       - ./data:/data
       - ./seed:/seed:ro
     restart: unless-stopped
-    # Keep the co-hosted radio station safe from runaway LibreOffice/opencode work.
+    # Keep the co-hosted radio station safe from runaway LibreOffice/LLM work.
     mem_limit: 2g
     cpus: 2.0
     logging:

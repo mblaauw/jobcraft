@@ -14,7 +14,7 @@ def test_normalizes_user_and_assistant_shapes():
             "id": "msg_2",
             "type": "assistant",
             "agent": "interviewer",
-            "model": {"id": "deepseek-v4.1-flash", "providerID": "opencode-go"},
+            "model": {"id": "deepseek-v4.1-flash", "providerID": "fixture-provider"},
             "content": [
                 {"type": "text", "text": "Welke "},
                 {"type": "text", "text": "werkdag past?"},
@@ -28,7 +28,7 @@ def test_normalizes_user_and_assistant_shapes():
     assert [item["role"] for item in normalized] == ["user", "assistant"]
     assert normalized[0]["text"] == "Hallo"
     assert normalized[1]["text"] == "Welke werkdag past?"
-    assert normalized[1]["model"]["providerID"] == "opencode-go"
+    assert normalized[1]["model"]["providerID"] == "fixture-provider"
 
 
 def test_assistant_error_is_surfaced():

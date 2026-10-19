@@ -42,7 +42,7 @@ def client(tmp_path, monkeypatch):
             "label": "Reistijd onbekend",
         },
     )
-    # No lifespan: don't start OpenCode or initialise personal files.
+    # No lifespan: don't start the LLM client or initialise personal files.
     client = TestClient(main.app)
     token = BeautifulSoup(client.get("/login").text, "html.parser").select_one(
         'input[name="_csrf"]'
