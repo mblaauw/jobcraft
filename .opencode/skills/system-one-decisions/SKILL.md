@@ -70,7 +70,7 @@ Content-Type: application/json
 - Eén call kost ~2,1k input- en ~270 output-tokens (state = vacaturetekst +
   compact profiel). Houd de state kort: ~3.000 tekens vacature is genoeg.
 - Runware rekent via je eigen key; exacte Jev-prijs staat op de Runware-pagina.
-  Meet na ~20 calls de dashboardkosten en noteer ze in `PLAN.md`.
+  Meet na ~20 calls de dashboardkosten en noteer ze in de projectnotities.
 - `typesafe:jev@1` is de werkende model-id; `runware:laya@1` bestaat ook maar gaf
   op 2026-10-18 een 429 (upstream rate limit).
 

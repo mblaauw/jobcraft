@@ -49,4 +49,4 @@ Past niets? Benoem welke nieuwe adapter nodig is en waarom; bouw geen eenmalige 
 
 Lever een tabel: bron · endpoint · bewijs (status, content-type, signaal) · gevonden
 vacatures in de regio Amsterdam · beslissing (aan, uit, of nieuwe adapter nodig).
-Leg de uitkomst vast in `seeds/sources.yaml` (notities) en in `PLAN.md`.
+Leg de uitkomst vast in `seeds/sources.yaml` (notities) en in de projectnotities.
