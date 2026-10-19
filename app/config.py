@@ -23,24 +23,16 @@ PROFILE_DIR = DATA_DIR / "profile"
 JOBS_DIR = DATA_DIR / "jobs"
 DB_PATH = DATA_DIR / "app.db"
 
-RUNTIME_HOME = RUNTIME_DIR / "opencode"
-RUNTIME_CONFIG = RUNTIME_HOME / ".config/opencode"
-RUNTIME_AGENTS = RUNTIME_CONFIG / "agents"
-RUNTIME_WORKSPACE = RUNTIME_DIR / "workspace"
-RUNTIME_LOG = RUNTIME_DIR / "opencode-server.log"
-
-AGENTS_SOURCE = BASE_DIR / "agents"
 PROMPTS_DIR = BASE_DIR / "prompts"
 TEMPLATES_DIR = BASE_DIR / "app" / "templates"
 STATIC_DIR = BASE_DIR / "app" / "static"
 
-OPENCODE_BIN = os.environ.get("OPENCODE_BIN", "opencode")
-OPENCODE_HOST = os.environ.get("OPENCODE_HOST", "127.0.0.1")
-OPENCODE_PORT = int(os.environ.get("OPENCODE_PORT", "4190"))
-PROVIDER_ID = os.environ.get("OPENCODE_PROVIDER", "opencode-go")
-MODEL_ID = os.environ.get("OPENCODE_MODEL", "deepseek-v4.1-flash")
-OPENCODE_GO_KEY = os.environ.get("OPENCODE_GO_KEY", "")
-OPENCODE_GO_KEY_FILE = os.environ.get("OPENCODE_GO_KEY_FILE", "")
+LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "")
+LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
+LLM_MODEL = os.environ.get("LLM_MODEL", "deepseek-v4.1-flash")
+LLM_TIMEOUT = float(os.environ.get("LLM_TIMEOUT", "120"))
+LLM_MAX_RETRIES = int(os.environ.get("LLM_MAX_RETRIES", "2"))
+LLM_STRUCTURED = os.environ.get("LLM_STRUCTURED", "json_schema")
 
 APP_USER = os.environ.get("APP_USER", "owner")
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "")
@@ -59,7 +51,7 @@ SEED_FILES = {
     "photo": "photo.jpg",
 }
 
-MODEL_LABEL = f"{PROVIDER_ID}/{MODEL_ID}"
+MODEL_LABEL = LLM_MODEL
 
 
 def workspace_dir() -> Path:

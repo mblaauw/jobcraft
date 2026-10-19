@@ -1,13 +1,13 @@
 # Jobcraft — project instructions
 
 Local-first, multi-account FastAPI app (Jinja + SQLite + `data/`) that runs an
-isolated `opencode` child for the LLM parts. Everything personal stays on disk
+direct OpenAI-compatible LLM client for the LLM parts. Everything personal stays on disk
 under `data/` and is git-ignored; never commit `data/`, `seed/`, `.runtime/`,
 `.env.local` or generated documents.
 
 ## Commands
 
-- Run: `OPENCODE_GO_KEY_FILE="$HOME/.local/share/opencode/auth.json" APP_USER=owner APP_PASSWORD=dev-local uv run uvicorn app.main:app --port 8080`
+- Run: `LLM_BASE_URL=... LLM_API_KEY=... APP_USER=owner APP_PASSWORD=dev-local uv run uvicorn app.main:app --port 8080`
 - Tests: `uv run pytest -q` · Lint: `uv run ruff check .` · Container: `docker build -t jobcraft:local .`
 - Quality check after matching changes: `uv run python scripts/matching_quality.py`
   (legacy account) or `--user <name>` for another account.

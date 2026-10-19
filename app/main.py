@@ -71,14 +71,11 @@ async def lifespan(_app: FastAPI):
     store.recover_interrupted_work()
     if not config.APP_SKIP_LLM:
         manager = llm.ServerManager()
-        try:
-            manager.start()
-            manager.ensure_credential()
-        except Exception:
-            manager.stop()
-            manager = None
-            raise
-        log.info("opencode runtime ready on %s", manager.base_url)
+        manager.start()
+        if manager.client is None:
+            log.warning("LLM features disabled: set LLM_BASE_URL and LLM_API_KEY")
+        else:
+            log.info("LLM client ready for %s", manager.base_url)
     yield
     if manager:
         manager.stop()
@@ -98,8 +95,10 @@ app.middleware("http")(auth.middleware)
 
 
 def get_manager() -> llm.ServerManager:
-    if manager is None:
-        raise HTTPException(status_code=503, detail="LLM runtime is disabled.")
+    if manager is None or manager.client is None:
+        raise HTTPException(
+            status_code=503, detail="LLM is niet geconfigureerd (LLM_BASE_URL/LLM_API_KEY)."
+        )
     return manager
 
 
@@ -143,12 +142,20 @@ def _persist_turn(session_id: str, result: dict, kind: str, *, hide_kickoff: boo
             float(usage.get("cost_usd") or 0.0),
         )
     session = result.get("session") or {}
-    store.update_session(
-        session_id,
-        cost_usd=float(session.get("cost") or 0.0),
-        tokens_in=int((session.get("tokens") or {}).get("input") or 0),
-        tokens_out=int((session.get("tokens") or {}).get("output") or 0),
-    )
+    if session:
+        store.update_session(
+            session_id,
+            cost_usd=float(session.get("cost") or 0.0),
+            tokens_in=int((session.get("tokens") or {}).get("input") or 0),
+            tokens_out=int((session.get("tokens") or {}).get("output") or 0),
+        )
+    else:
+        store.add_session_usage(
+            session_id,
+            int(usage.get("input_tokens") or 0),
+            int(usage.get("output_tokens") or 0),
+            float(usage.get("cost_usd") or 0.0),
+        )
 
 
 def _last_assistant_text(session_id: str) -> str:
@@ -605,7 +612,7 @@ def _run_document(job_id: int, kind: str) -> None:
         log.exception("document generation failed")
         message = str(exc)
         if "provider.auth" in message or "api_key_expired" in message:
-            message = "API-key verlopen of ongeldig. Werk OPENCODE_GO_KEY bij en herstart de app."
+            message = "API-key verlopen of ongeldig. Werk LLM_API_KEY bij en herstart de app."
         store.meta_set(key, json.dumps({"state": "error", "kind": kind, "error": message[:300]}))
 
 
@@ -901,10 +908,7 @@ def _run_bootstrap() -> None:
         log.exception("consolidation failed")
         message = str(exc)
         if "provider.auth" in message or "api_key_expired" in message:
-            message = (
-                "API-key verlopen of ongeldig. Maak een nieuwe key in de OpenCode "
-                "Console, werk OPENCODE_GO_KEY (of de auth store) bij en herstart de app."
-            )
+            message = "API-key verlopen of ongeldig. Werk LLM_API_KEY bij en herstart de app."
         store.meta_set("bootstrap_status", f"error: {message}"[:500])
 
 
