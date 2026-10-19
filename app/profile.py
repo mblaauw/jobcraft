@@ -112,12 +112,6 @@ def ensure_dirs() -> None:
     config.profile_dir().mkdir(parents=True, exist_ok=True)
     config.user_path(HISTORY_DIR).mkdir(parents=True, exist_ok=True)
     config.user_path(DRAFTS_DIR).mkdir(parents=True, exist_ok=True)
-    if not config.user_path(INTERVIEW_PLAN_FILE).exists():
-        config.user_path(INTERVIEW_PLAN_FILE).write_text(
-            INTERVIEW_PLAN_DEFAULT
-            if tenancy.user_id() == tenancy.LEGACY_ID
-            else "# Gespreksonderwerpen\n\nWerkervaring, interesses, uren, reisbereik en wensen.\n"
-        )
 
 
 def profile_exists() -> bool:

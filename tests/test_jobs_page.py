@@ -106,6 +106,15 @@ def test_cards_scores_and_collapsed_history(client):
     assert html.select_one('script[src="/static/jobs.js"]')
 
 
+def test_document_status_is_not_cleared_by_get(client):
+    job_id = add_job()
+    raw = '{"state":"done","kind":"resume","version":1,"finished_at":"2026-10-19T10:00:00+00:00"}'
+    store.meta_set(f"doc_status:{job_id}", raw)
+    assert client.get(f"/jobs/{job_id}").status_code == 200
+    assert client.get(f"/jobs/{job_id}").status_code == 200
+    assert store.meta_get(f"doc_status:{job_id}") == raw
+
+
 def test_score_is_color_coded_and_shows_signal_confidence(client):
     job_id = add_job(rank=82)
     store.update_job_signals(job_id, 82, '{"fit": 80, "confidence": 0.9}', "signals-key", 0.9)

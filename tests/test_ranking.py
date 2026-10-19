@@ -84,8 +84,8 @@ def test_digest_does_not_depend_on_feedback(monkeypatch):
     monkeypatch.setattr(matching.profile, "read_public_excerpt", lambda *_: "profile")
     first = matching.current_digest(prefs)
 
-    def explode():
+    def explode(*args, **kwargs):
         raise AssertionError("feedback must not affect the verdict digest")
 
-    monkeypatch.setattr(matching.feedback, "signature", explode)
+    monkeypatch.setattr(matching.feedback, "load", explode)
     assert matching.current_digest(prefs) == first

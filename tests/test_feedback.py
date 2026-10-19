@@ -50,20 +50,9 @@ def test_rebuild_and_rule_adjust(tmp_path, monkeypatch):
     assert negative < 0 and negative_notes
 
 
-def test_prompt_block_contains_feedback(tmp_path, monkeypatch):
-    monkeypatch.setattr(feedback, "FEEDBACK_FILE", tmp_path / "feedback.json")
-    monkeypatch.setattr(feedback.store, "list_votes", _votes)
-    data = feedback.rebuild()
-    block = feedback.prompt_block(data)
-    assert "Feedback van de gebruiker" in block
-    assert "Plantenverzorger buitendienst" in block
-    assert "Callcenter medewerker sales" in block
-
-
 def test_empty_feedback_is_neutral(tmp_path, monkeypatch):
     monkeypatch.setattr(feedback, "FEEDBACK_FILE", tmp_path / "feedback.json")
     monkeypatch.setattr(feedback.store, "list_votes", lambda: {"up": [], "down": []})
     data = feedback.rebuild()
     delta, notes = feedback.rule_adjust("wat tekst", None, None, data)
     assert delta == 0 and notes == []
-    assert feedback.prompt_block(data) == ""

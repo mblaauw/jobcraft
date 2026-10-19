@@ -55,6 +55,8 @@ _session_locks_guard = threading.Lock()
 async def lifespan(_app: FastAPI):
     global manager
     store.init_db()
+    if store.load_token_df() is None:
+        feedback.refresh_document_frequency()
     auth.init_auth()
     profile.ensure_dirs()
     interview_state.ensure_state()
@@ -322,7 +324,10 @@ def interview_page(request: Request):
 def interview_toggle(
     topic_id: str = Form(...), status: str = Form(...), session_id: str = Form("")
 ):
-    interview_state.toggle(topic_id, status)
+    try:
+        interview_state.toggle(topic_id, status)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     target = f"/interview?session={session_id}" if session_id else "/interview"
     return RedirectResponse(url=target, status_code=303)
 
@@ -380,6 +385,7 @@ def source_toggle(request: Request, source_id: str):
 def _run_scan() -> None:
     try:
         summary = sources.scan()
+        feedback.refresh_document_frequency()
         store.meta_set("scan_summary", json.dumps(summary, ensure_ascii=False))
         store.meta_set("scan_status", "done")
     except Exception as exc:  # noqa: BLE001 - surface failures in the UI
@@ -405,11 +411,13 @@ def jobs_page(
     q: str = "",
     source: str = "",
     within: str = "",
+    stale: str = "",
     page: int = 1,
     per_page: int = 50,
     sort: str = "rank",
 ):
     sort = sort if sort in ("rank", "newest") else "rank"
+    stale_active = stale == "1"
     raw = store.meta_get("match_summary")
     summary = None
     if raw:
@@ -417,7 +425,9 @@ def jobs_page(
             summary = json.loads(raw)
         except ValueError:
             summary = None
-    rows = store.list_jobs(None, status or None, q or None, source or None, sort=sort)
+    rows = store.list_jobs(
+        None, status or None, q or None, source or None, sort=sort, include_stale=stale_active
+    )
     source_rows = store.list_sources()
     source_names = {row["id"]: row["name"] for row in source_rows}
     jobs_view = []
@@ -429,13 +439,7 @@ def jobs_page(
         item["source_name"] = source_names.get(
             item["source_id"], item["source_id"] or "Onbekende bron"
         )
-        item["travel"] = geo.assess(
-            item.get("location"),
-            item.get("lat"),
-            item.get("lon"),
-            description=item.get("description"),
-            title=item.get("title"),
-        )
+        item["travel"] = ranking.travel_of(item)
         item["signals"] = ranking.signals_of(row)
         jobs_view.append(item)
     within_active = within != "0"  # reisbereik-filter staat standaard aan
@@ -455,6 +459,7 @@ def jobs_page(
         "q": q,
         "source": source,
         "within": "1" if within_active else "0",
+        "stale": "1" if stale_active else "",
         "sort": sort,
         "per_page": per_page,
     }
@@ -483,6 +488,13 @@ def jobs_page(
                 "url": "/jobs?" + urlencode({**params, "within": "1"}),
             }
         )
+    if stale_active:
+        filter_chips.append(
+            {
+                "label": "Verlopen vacatures",
+                "url": "/jobs?" + urlencode({**params, "stale": ""}),
+            }
+        )
 
     return_to = str(request.url.path)
     if request.url.query:
@@ -497,6 +509,9 @@ def jobs_page(
             "query": q,
             "source_filter": source,
             "within": "1" if within_active else "0",
+            "stale": "1" if stale_active else "0",
+            "stale_active": stale_active,
+            "stale_url": "/jobs?" + urlencode({**params, "stale": "1"}),
             "status_links": status_links,
             "filter_chips": filter_chips,
             "reset_url": "/jobs?"
@@ -533,6 +548,17 @@ def jobs_match_route(url: str = Form("/jobs", alias="next")):
         store.meta_set("match_status", "running")
     threading.Thread(target=tenancy.capture(_run_match), daemon=True).start()
     return RedirectResponse(url=_jobs_return_target(url), status_code=303)
+
+
+def _rerank_after_vote() -> None:
+    if not _rerank_lock.acquire(blocking=False):
+        return
+    try:
+        ranking.rerank_all()
+    except Exception:  # noqa: BLE001 - a vote must not fail after it was stored
+        log.exception("background rerank failed")
+    finally:
+        _rerank_lock.release()
 
 
 def _run_match() -> None:
@@ -595,8 +621,13 @@ def job_detail(request: Request, job_id: int, return_to: str = ""):
         except ValueError:
             reason = {"why": job["match_reason"]}
     doc_status = _doc_status(job_id)
-    if doc_status.get("state") == "done":
-        store.meta_set(f"doc_status:{job_id}", "")
+    doc_status_recent = False
+    if doc_status.get("state") == "done" and doc_status.get("finished_at"):
+        try:
+            finished = datetime.fromisoformat(doc_status["finished_at"])
+            doc_status_recent = (datetime.now(UTC) - finished).total_seconds() < 600
+        except (TypeError, ValueError):
+            doc_status_recent = False
     item = dict(job)
     travel = geo.assess(
         item.get("location"),
@@ -621,6 +652,7 @@ def job_detail(request: Request, job_id: int, return_to: str = ""):
             "documents": store.list_documents(job_id),
             "doc_error": request.query_params.get("doc_error", ""),
             "doc_status": doc_status,
+            "doc_status_recent": doc_status_recent,
             "travel": travel,
             "list_return": list_return,
             "detail_return": detail_return,
@@ -716,7 +748,8 @@ def job_vote(job_id: int, vote: str = Form(...), url: str = Form("/jobs", alias=
         raise HTTPException(status_code=400, detail="unknown vote")
     store.set_job_vote(job_id, value)
     feedback.rebuild()
-    ranking.rerank_all()
+    ranking.rerank_one(job_id)
+    threading.Thread(target=tenancy.capture(_rerank_after_vote), daemon=True).start()
     target = _jobs_return_target(url)
     return RedirectResponse(url=f"{target}", status_code=303)
 
@@ -830,6 +863,7 @@ _bootstrap_lock = threading.Lock()
 _scan_lock = threading.Lock()
 _match_lock = threading.Lock()
 _document_lock = threading.Lock()
+_rerank_lock = threading.Lock()
 
 
 def _run_bootstrap() -> None:

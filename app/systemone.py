@@ -248,7 +248,3 @@ def signals_key(job, profile_excerpt: str) -> str:
         }
         raw += json.dumps(stable, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(raw.encode()).hexdigest()[:20]
-
-
-def public_profile_excerpt() -> str:
-    return profile.read_public_excerpt(4000)
