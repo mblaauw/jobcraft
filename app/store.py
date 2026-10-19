@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from typing import Any
 
@@ -13,6 +14,14 @@ from . import config, tenancy
 
 def now() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def stale_cutoff() -> str:
+    try:
+        days = int(os.environ.get("JOB_STALE_DAYS", "21"))
+    except ValueError:
+        days = 21
+    return (datetime.now(UTC) - timedelta(days=days)).isoformat()
 
 
 SCHEMA = """
@@ -75,6 +84,11 @@ CREATE TABLE IF NOT EXISTS sources (
     last_status TEXT
 );
 
+CREATE TABLE IF NOT EXISTS token_df (
+    token TEXT PRIMARY KEY,
+    n INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     source_id TEXT,
@@ -88,6 +102,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     first_seen TEXT,
     last_seen TEXT,
     content_hash TEXT,
+    search_text TEXT,
     status TEXT NOT NULL DEFAULT 'new',
     match_score REAL,
     match_reason TEXT,
@@ -119,6 +134,9 @@ def connect() -> sqlite3.Connection:
 def init_db() -> None:
     with connect() as con:
         con.executescript(SCHEMA)
+        session_columns = {row["name"] for row in con.execute("PRAGMA table_info(sessions)")}
+        if "context_digest" not in session_columns:
+            con.execute("ALTER TABLE sessions ADD COLUMN context_digest TEXT")
         columns = {row["name"] for row in con.execute("PRAGMA table_info(messages)")}
         if "hidden" not in columns:
             con.execute("ALTER TABLE messages ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0")
@@ -131,6 +149,7 @@ def init_db() -> None:
             ("typed_signals", "TEXT"),
             ("signals_key", "TEXT"),
             ("signal_confidence", "REAL"),
+            ("search_text", "TEXT"),
         ):
             if column not in job_columns:
                 con.execute(f"ALTER TABLE jobs ADD COLUMN {column} {ddl}")
@@ -146,6 +165,25 @@ def init_db() -> None:
         )
         con.execute("CREATE INDEX IF NOT EXISTS idx_feedback_job ON feedback(job_id)")
         _migrate_ownership(con)
+        state_columns = {row["name"] for row in con.execute("PRAGMA table_info(job_states)")}
+        for column in ("travel_key", "travel_json"):
+            if column not in state_columns:
+                con.execute(f"ALTER TABLE job_states ADD COLUMN {column} TEXT")
+        _normalize_job_dates(con)
+        _recover_raw_verdicts(con)
+        _fill_search_text(con)
+
+
+def _normalize_job_dates(con) -> None:
+    """One-off idempotent rewrite to ISO-8601 UTC; empty and invalid become NULL."""
+    if con.execute("SELECT 1 FROM meta WHERE key='posted_at_normalized_v2'").fetchone():
+        return
+    rows = con.execute("SELECT id, posted_at FROM jobs").fetchall()
+    for row in rows:
+        normalized = normalize_posted_at(row["posted_at"])
+        if normalized != row["posted_at"]:
+            con.execute("UPDATE jobs SET posted_at=? WHERE id=?", (normalized, row["id"]))
+    con.execute("INSERT INTO meta(key,value) VALUES ('posted_at_normalized_v2','1')")
 
 
 def _migrate_ownership(con):
@@ -165,7 +203,7 @@ def _migrate_ownership(con):
             "INSERT INTO job_states SELECT 'legacy',id,status,COALESCE(vote,0),match_score,match_reason,profile_hash,rank_score,typed_signals,signals_key,signal_confidence FROM jobs"
         )
         con.execute(
-            "INSERT INTO user_meta SELECT 'legacy',key,value FROM meta WHERE key NOT IN ('scan_status','scan_summary')"
+            "INSERT INTO user_meta SELECT 'legacy',key,value FROM meta WHERE key NOT IN ('scan_status','scan_summary','token_df_total')"
         )
         con.execute("INSERT INTO meta VALUES ('ownership_v1','1')")
     if "owner" not in {row["name"] for row in con.execute("PRAGMA table_info(documents)")}:
@@ -175,6 +213,45 @@ def _migrate_ownership(con):
         con.execute("INSERT INTO documents_owned SELECT *, 'legacy' FROM documents")
         con.execute("DROP TABLE documents")
         con.execute("ALTER TABLE documents_owned RENAME TO documents")
+
+
+def _search_text(title, company, description) -> str:
+    return " ".join(
+        " ".join(str(value or "").lower().split()) for value in (title, company, description)
+    ).strip()
+
+
+def _fill_search_text(con) -> None:
+    if con.execute("SELECT 1 FROM meta WHERE key='search_text_v1'").fetchone():
+        return
+    rows = con.execute("SELECT id, title, company, description, search_text FROM jobs").fetchall()
+    for row in rows:
+        text = _search_text(row["title"], row["company"], row["description"])
+        if text != row["search_text"]:
+            con.execute("UPDATE jobs SET search_text=? WHERE id=?", (text, row["id"]))
+    con.execute("INSERT INTO meta(key,value) VALUES ('search_text_v1','1')")
+
+
+def _recover_raw_verdicts(con) -> None:
+    """Older rows stored a rule+LLM blend; recover the raw LLM verdict once."""
+    if con.execute("SELECT 1 FROM meta WHERE key='raw_verdicts_v1'").fetchone():
+        return
+    rows = con.execute(
+        "SELECT owner, job_id, match_score, match_reason FROM job_states "
+        "WHERE match_score IS NOT NULL AND match_reason IS NOT NULL"
+    ).fetchall()
+    for row in rows:
+        try:
+            reason = json.loads(row["match_reason"])
+            rule = float(reason["rule_score"])
+        except (ValueError, TypeError, KeyError):
+            continue
+        raw = max(0.0, min(100.0, (float(row["match_score"]) - 0.4 * rule) / 0.6))
+        con.execute(
+            "UPDATE job_states SET match_score=? WHERE owner=? AND job_id=?",
+            (round(raw, 1), row["owner"], row["job_id"]),
+        )
+    con.execute("INSERT INTO meta(key,value) VALUES ('raw_verdicts_v1','1')")
 
 
 def recover_interrupted_work() -> None:
@@ -206,7 +283,7 @@ def recover_interrupted_work() -> None:
 
 def _job_select(owner: str | None = None) -> str:
     owner = owner or tenancy.user_id()
-    public = "id,source_id,url,title,company,location,hours,description,posted_at,first_seen,last_seen,content_hash,lat,lon".split(
+    public = "id,source_id,url,title,company,location,hours,description,posted_at,first_seen,last_seen,content_hash,lat,lon,search_text".split(
         ","
     )
     defaults = {
@@ -351,6 +428,20 @@ def update_job_signals(
         )
 
 
+def get_job_travel(job_id: int, key: str) -> str | None:
+    with connect() as con:
+        row = con.execute(
+            "SELECT travel_json FROM job_states WHERE owner=? AND job_id=? AND travel_key=?",
+            (tenancy.user_id(), job_id, key),
+        ).fetchone()
+    return row["travel_json"] if row else None
+
+
+def set_job_travel(job_id: int, key: str, payload: str) -> None:
+    with connect() as con:
+        _set_job_state(con, job_id, travel_key=key, travel_json=payload)
+
+
 def set_rank_scores(scores: dict[int, float]) -> None:
     """Persist deterministic rank scores for many jobs in one transaction."""
     if not scores:
@@ -387,9 +478,32 @@ def list_profile_versions(limit: int = 30) -> list[sqlite3.Row]:
         ).fetchall()
 
 
+def load_token_df() -> tuple[dict[str, int], int] | None:
+    with connect() as con:
+        rows = con.execute("SELECT token, n FROM token_df").fetchall()
+        total = con.execute("SELECT value FROM meta WHERE key='token_df_total'").fetchone()
+    if not rows or total is None:
+        return None
+    return {row["token"]: int(row["n"]) for row in rows}, int(total["value"])
+
+
+def save_token_df(counter: dict[str, int], total: int) -> None:
+    with connect() as con:
+        con.execute("DELETE FROM token_df")
+        con.executemany(
+            "INSERT INTO token_df(token, n) VALUES (?, ?)",
+            [(token, int(count)) for token, count in counter.items()],
+        )
+        con.execute(
+            "INSERT INTO meta(key,value) VALUES ('token_df_total',?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (str(total),),
+        )
+
+
 def meta_get(key: str, default: str | None = None) -> str | None:
     with connect() as con:
-        if key in ("scan_status", "scan_summary", "ownership_v1"):
+        if key in ("scan_status", "scan_summary", "ownership_v1", "token_df_total"):
             row = con.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
         else:
             row = con.execute(
@@ -400,7 +514,7 @@ def meta_get(key: str, default: str | None = None) -> str | None:
 
 def meta_set(key: str, value: str) -> None:
     with connect() as con:
-        if key in ("scan_status", "scan_summary", "ownership_v1"):
+        if key in ("scan_status", "scan_summary", "ownership_v1", "token_df_total"):
             con.execute(
                 "INSERT INTO meta(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                 (key, value),
@@ -451,12 +565,15 @@ def update_source_status(source_id: str, status: str) -> None:
 
 def upsert_job(job: dict) -> tuple[int, bool]:
     stamp = now()
+    job = {**job, "posted_at": normalize_posted_at(job.get("posted_at"))}
+    search_text = _search_text(job.get("title"), job.get("company"), job.get("description"))
     with connect() as con:
         existing = con.execute("SELECT id FROM jobs WHERE url=?", (job["url"],)).fetchone()
         if existing:
             con.execute(
                 "UPDATE jobs SET source_id=?, title=?, company=?, location=?, hours=?, "
-                "description=?, posted_at=?, last_seen=?, content_hash=?, lat=?, lon=? WHERE id=?",
+                "description=?, posted_at=?, last_seen=?, content_hash=?, lat=?, lon=?, "
+                "search_text=? WHERE id=?",
                 (
                     job.get("source_id"),
                     job.get("title"),
@@ -469,14 +586,15 @@ def upsert_job(job: dict) -> tuple[int, bool]:
                     job.get("content_hash"),
                     job.get("lat"),
                     job.get("lon"),
+                    search_text,
                     existing["id"],
                 ),
             )
             return existing["id"], False
         cursor = con.execute(
             "INSERT INTO jobs(source_id, url, title, company, location, hours, description, "
-            "posted_at, first_seen, last_seen, content_hash, lat, lon) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "posted_at, first_seen, last_seen, content_hash, lat, lon, search_text) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 job.get("source_id"),
                 job["url"],
@@ -491,6 +609,7 @@ def upsert_job(job: dict) -> tuple[int, bool]:
                 job.get("content_hash"),
                 job.get("lat"),
                 job.get("lon"),
+                search_text,
             ),
         )
         return cursor.lastrowid, True
@@ -521,19 +640,31 @@ def list_votes() -> dict:
     }
 
 
+def parse_job_date(raw) -> datetime | None:
+    if not raw or not str(raw).strip():
+        return None
+    try:
+        try:
+            parsed = datetime.fromisoformat(str(raw).strip())
+        except ValueError:
+            parsed = parsedate_to_datetime(str(raw).strip())
+        return parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed.astimezone(UTC)
+    except (ValueError, TypeError, OverflowError):
+        return None
+
+
+def normalize_posted_at(raw) -> str | None:
+    """Store one comparable ISO-8601 UTC form; absent or invalid becomes NULL."""
+    parsed = parse_job_date(raw)
+    return parsed.isoformat().replace("+00:00", "Z") if parsed else None
+
+
 def job_date(job) -> datetime:
     """Publication date, otherwise discovery date; feeds may use ISO or RFC dates."""
     for raw in (job["posted_at"], job["first_seen"]):
-        if not raw or not raw.strip():
-            continue
-        try:
-            try:
-                parsed = datetime.fromisoformat(raw.strip())
-            except ValueError:
-                parsed = parsedate_to_datetime(raw.strip())
-            return parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed.astimezone(UTC)
-        except (ValueError, TypeError, OverflowError):
-            continue
+        parsed = parse_job_date(raw)
+        if parsed:
+            return parsed
     return datetime.min.replace(tzinfo=UTC)
 
 
@@ -543,6 +674,7 @@ def list_jobs(
     query_text: str | None = None,
     source: str | None = None,
     sort: str = "rank",
+    include_stale: bool = False,
 ) -> list:
     clauses: list[str] = []
     params: list = [tenancy.user_id()]
@@ -556,23 +688,26 @@ def list_jobs(
         like = f"%{query_text}%"
         clauses.append("(title LIKE ? OR company LIKE ? OR description LIKE ?)")
         params.extend([like, like, like])
+    if not include_stale:
+        clauses.append(
+            "NOT (last_seen < ? AND status NOT IN ('saved','applied') "
+            "AND EXISTS (SELECT 1 FROM sources src WHERE src.id=source_id "
+            "AND src.last_status='ok' AND src.last_scan_at > last_seen))"
+        )
+        params.append(stale_cutoff())
     sql = "SELECT * FROM (" + _job_select() + ")"
     if clauses:
         sql += " WHERE " + " AND ".join(clauses)
     # Only internal SQL fragments, never user-supplied column names.
-    sql += " ORDER BY COALESCE(rank_score, match_score, -1) DESC, COALESCE(NULLIF(posted_at, ''), first_seen) DESC, id DESC"
-    if limit is not None and sort != "newest":
+    if sort == "newest":
+        sql += " ORDER BY COALESCE(posted_at, first_seen) DESC, id DESC"
+    else:
+        sql += " ORDER BY COALESCE(rank_score, match_score, -1) DESC, COALESCE(posted_at, first_seen) DESC, id DESC"
+    if limit is not None:
         sql += " LIMIT ?"
         params.append(limit)
     with connect() as con:
-        rows = con.execute(sql, tuple(params)).fetchall()
-    if sort == "newest":
-        # Sort before limiting: RFC dates and empty publication dates cannot be
-        # ordered chronologically using SQLite's lexical TEXT ordering.
-        rows.sort(key=lambda row: (job_date(row), row["id"]), reverse=True)
-        if limit is not None:
-            rows = rows[:limit]
-    return rows
+        return con.execute(sql, tuple(params)).fetchall()
 
 
 def get_job(job_id: int):
@@ -604,8 +739,11 @@ def list_jobs_for_matching(limit: int = 2000) -> list:
         return con.execute(
             "SELECT * FROM ("
             + _job_select()
-            + ") ORDER BY COALESCE(posted_at, first_seen) DESC LIMIT ?",
-            (tenancy.user_id(), limit),
+            + ") WHERE NOT (last_seen < ? AND status NOT IN ('saved','applied') "
+            "AND EXISTS (SELECT 1 FROM sources src WHERE src.id=source_id "
+            "AND src.last_status='ok' AND src.last_scan_at > last_seen)) "
+            "ORDER BY COALESCE(posted_at, first_seen) DESC, id DESC LIMIT ?",
+            (tenancy.user_id(), stale_cutoff(), limit),
         ).fetchall()
 
 

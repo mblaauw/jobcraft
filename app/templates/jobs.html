@@ -52,6 +52,7 @@
   <input type="hidden" name="status" value="{{ status_filter }}">
   <input type="hidden" name="per_page" value="{{ per_page }}">
   <input type="hidden" name="sort" value="{{ sort }}">
+  <input type="hidden" name="stale" value="{{ stale }}">
   <button class="button primary" type="submit">Zoeken <span aria-hidden="true">→</span></button>
 </form>
 
@@ -67,9 +68,9 @@
 </nav>
 
 <div class="jobs-results-head">
-  <div><h2>{{ total_filtered }} {{ 'resultaat' if total_filtered == 1 else 'resultaten' }}</h2><span class="muted small">{% if within == '1' %}Binnen je reisbereik of reistijd nog onbekend{% else %}Inclusief vacatures buiten je reisbereik{% endif %}</span></div>
+  <div><h2>{{ total_filtered }} {{ 'resultaat' if total_filtered == 1 else 'resultaten' }}</h2><span class="muted small">{% if within == '1' %}Binnen je reisbereik of reistijd nog onbekend{% else %}Inclusief vacatures buiten je reisbereik{% endif %}{% if not stale_active %} · <a href="{{ stale_url }}">Ook verlopen vacatures</a>{% endif %}</span></div>
   <form method="get" action="/jobs" class="jobs-sort">
-    <input type="hidden" name="q" value="{{ query or '' }}"><input type="hidden" name="source" value="{{ source_filter or '' }}"><input type="hidden" name="status" value="{{ status_filter }}"><input type="hidden" name="within" value="{{ within }}"><input type="hidden" name="per_page" value="{{ per_page }}">
+    <input type="hidden" name="q" value="{{ query or '' }}"><input type="hidden" name="source" value="{{ source_filter or '' }}"><input type="hidden" name="status" value="{{ status_filter }}"><input type="hidden" name="within" value="{{ within }}"><input type="hidden" name="stale" value="{{ stale }}"><input type="hidden" name="per_page" value="{{ per_page }}">
     <label for="job-sort">Sorteer op</label><select name="sort" id="job-sort" onchange="this.form.requestSubmit()"><option value="rank" {% if sort == 'rank' %}selected{% endif %}>Best passend</option><option value="newest" {% if sort == 'newest' %}selected{% endif %}>Nieuwste eerst</option></select><noscript><button class="button small" type="submit">Sorteren</button></noscript>
   </form>
 </div>
