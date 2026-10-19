@@ -54,6 +54,10 @@ SEED_FILES = {
 MODEL_LABEL = LLM_MODEL
 
 
+def role_model(role: str) -> str:
+    return os.environ.get(f"LLM_MODEL_{role.upper()}", LLM_MODEL)
+
+
 def workspace_dir() -> Path:
     return (
         DATA_DIR

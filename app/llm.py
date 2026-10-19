@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
 import uuid
 
 from . import config, interview_state, profile, prompts, store, tenancy
@@ -132,10 +133,15 @@ class ServerManager:
             for row in store.list_messages(session_id)
             if row["role"] in ("user", "assistant") and not row["hidden"]
         ]
+        budget = int(os.environ.get("INTERVIEW_HISTORY_CHARS", "60000"))
+        while len(history) > 2 and sum(len(item["content"]) for item in history) > budget:
+            history.pop(0)
         messages = [{"role": "system", "content": system + "\n\n" + context}]
         messages.extend(history)
         messages.append({"role": "user", "content": text})
-        completion = self.client.complete(messages, session_key=session_id)
+        completion = self.client.complete(
+            messages, model=config.role_model("interviewer"), session_key=session_id
+        )
         assistant = {
             "id": uuid.uuid4().hex,
             "role": "assistant",
@@ -155,7 +161,11 @@ class ServerManager:
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
-        completion = self.client.complete(messages, session_key=f"{agent}-{uuid.uuid4().hex}")
+        completion = self.client.complete(
+            messages,
+            model=config.role_model(agent),
+            session_key=f"{agent}-{uuid.uuid4().hex}",
+        )
         return completion.text, completion.usage
 
     # -- test-only compatibility with the old fake client -----------------
