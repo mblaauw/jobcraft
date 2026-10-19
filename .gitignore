@@ -15,6 +15,9 @@ seed/
 .env.*
 !.env.example
 bootstrap-accounts.json
+PLAN.md
+spikes/
+docs/private/
 
 # Databases, generated documents and personal media
 *.db
