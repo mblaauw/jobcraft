@@ -1,0 +1,32 @@
+[project]
+name = "jobcraft"
+version = "0.1.0"
+description = "Living job-search profile, matching and tailored application documents."
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn[standard]>=0.30,<1",
+  "jinja2>=3.1,<4",
+  "httpx>=0.28,<1",
+  "pydantic>=2.10,<3",
+  "python-multipart>=0.0.9",
+  "python-docx>=1.1,<2",
+  "pyyaml>=6,<7",
+  "beautifulsoup4>=4.12,<5",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.12"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["spikes", "seed", "data", ".runtime"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

@@ -1,0 +1,14 @@
+# Optional overlay for hosts where an external reverse proxy reaches the app
+# through a shared Docker network. Set PROXY_NETWORK to that network's name.
+services:
+  app:
+    networks:
+      default: {}
+      proxy:
+        aliases:
+          - jobcraft
+
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:-azuracast_default}

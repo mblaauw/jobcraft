@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Bronnen · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Bronnen</h1>
+  <p class="sub">Meer mogelijkheden, op één plek. Kies je bronnen en haal de nieuwste vacatures op.</p>
+</div>
+
+{% if scan_status == "running" %}
+  <div class="banner">Scan loopt… deze pagina ververst automatisch.<meta http-equiv="refresh" content="4"></div>
+{% elif scan_status.startswith("error") %}
+  <div class="banner warn">Scan mislukt: {{ scan_status[7:] }}</div>
+{% elif scan_status == "done" and summary %}
+  <div class="banner ok">
+    Laatste scan: {{ summary.finished_at[:19] | replace("T", " ") }} ·
+    {{ summary.new }} nieuw, {{ summary.updated }} bijgewerkt
+  </div>
+{% endif %}
+
+<section class="card">
+  <div class="sidebar-head">
+    <h2>Bronnen ({{ sources | length }})</h2>
+    {% if request.state.user.role == 'admin' %}<form method="post" action="/sources/scan">
+      {% include '_csrf.html' %}
+      <button class="button primary" type="submit" {% if scan_status == "running" %}disabled{% endif %}>Scan nu</button>
+    </form>{% else %}<span class="muted small">De beheerder onderhoudt de gedeelde bronnen.</span>{% endif %}
+  </div>
+  {% set kind_labels = {"wp-posts": "WordPress", "wp-job-listings": "WordPress", "html-fondsen": "HTML (fondsen)", "html-listing": "HTML-lijst", "sitemap-jsonld": "Sitemap + JSON-LD", "rss": "RSS-feed", "exenzo-json": "Exenzo-API", "defensie-cms": "Defensie feed+API", "hn-resource": "Overheid component-API", "local-json": "JSON-import", "manual": "handmatig", "browser-import": "browser-import", "getro-html": "Getro (gepland)"} %}
+  <div class="table-scroll" role="region" aria-label="Vacaturebronnen" tabindex="0">
+  <table class="table">
+    <thead><tr><th>Bron</th><th>Type</th><th>Vacatures</th><th>Laatste scan</th><th>Status</th><th>Aan</th></tr></thead>
+    <tbody>
+      {% for s in sources %}
+        <tr>
+          <td><strong>{{ s["name"] }}</strong><div class="muted small">{{ s["notes"] or "" }}</div></td>
+          <td class="small">{{ kind_labels.get(s["kind"], s["kind"]) }}</td>
+          <td>{{ jobs_by_source.get(s["id"], 0) }}</td>
+          <td class="muted small">{{ (s["last_scan_at"] or "—")[:19] | replace("T", " ") }}</td>
+          <td class="small">{{ s["last_status"] or "—" }}</td>
+          <td>
+            {% if request.state.user.role == 'admin' %}<form method="post" action="/sources/{{ s['id'] }}/toggle" class="inline-form">
+              {% include '_csrf.html' %}
+              <button class="button small" type="submit" aria-label="{{ s['name'] }} {{ 'uitzetten' if s['enabled'] else 'aanzetten' }}" aria-pressed="{{ 'true' if s['enabled'] else 'false' }}">{{ "✓ Actief" if s["enabled"] else "Inactief" }}</button>
+            </form>{% else %}<span class="chip">{{ 'Actief' if s['enabled'] else 'Inactief' }}</span>{% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="muted">Nog geen bronnen.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+{% if summary %}
+<section class="card">
+  <h2>Scanresultaat</h2>
+  <div class="table-scroll" role="region" aria-label="Scanresultaten" tabindex="0">
+  <table class="table">
+    <thead><tr><th>Bron</th><th>Status</th><th>Items</th><th>Nieuw</th><th>Bijgewerkt</th><th>Reden</th></tr></thead>
+    <tbody>
+      {% for name, entry in summary.sources.items() %}
+        <tr>
+          <td>{{ name }}</td>
+          <td>{{ entry.status }}</td>
+          <td>{{ entry["items"] or 0 }}</td>
+          <td>{{ entry.new or 0 }}</td>
+          <td>{{ entry.updated or 0 }}</td>
+          <td class="muted small">{{ entry.reason or "" }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if summary.errors %}
+    <p class="warn-text">Fouten: {{ summary.errors | length }}</p>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Vacaturestand</h2>
+  <dl class="stats">
+    <div><dt>Totaal</dt><dd>{{ counts.total }}</dd></div>
+    <div><dt>Nieuw</dt><dd>{{ counts.new }}</dd></div>
+    <div><dt>Gematched</dt><dd>{{ counts.matched }}</dd></div>
+  </dl>
+  <p class="muted small">Bronbestand: <code>data/sources.yaml</code></p>
+</section>
+{% endblock %}

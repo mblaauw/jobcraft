@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Vacatures · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head jobs-heading">
+  <div><p class="eyebrow">Jouw volgende stap</p><h1>Vacatures</h1><p class="sub">Ontdek werk dat bij je past.</p></div>
+  <div class="jobs-matching">
+    <form method="post" action="/jobs/match" data-pending-form>
+      {% include '_csrf.html' %}
+      <input type="hidden" name="next" value="{{ return_to }}">
+      <button class="button" type="submit" {% if match_status == "running" %}disabled{% endif %}>{{ "Beoordeling loopt…" if match_status == "running" else "Beoordelingen bijwerken" }}</button>
+    </form>
+    <span class="muted small">{{ queue }} in wachtrij voor uitgebreide beoordeling</span>
+  </div>
+</div>
+
+<div id="jobs-progress" data-match-running="{{ 'true' if match_status == 'running' else 'false' }}" role="status" aria-live="polite">
+{% if match_status == "running" %}
+  <div class="banner">Je vacatures worden beoordeeld. Je kunt ondertussen verder kijken. <a href="{{ return_to }}">Resultaten vernieuwen</a></div>
+{% elif match_status.startswith("error") %}
+  <div class="banner warn">Beoordelen is niet gelukt. Probeer het opnieuw met “Beoordelingen bijwerken”. <details><summary>Technische toelichting</summary>{{ match_status[7:] }}</details></div>
+{% elif match_status == "interrupted" %}
+  <div class="banner warn">De beoordelingsronde is onderbroken. Gebruik “Beoordelingen bijwerken” om opnieuw te starten.</div>
+{% endif %}
+</div>
+{% if scan_status and scan_status.startswith("error") %}
+<div class="banner warn">Niet alle bronnen konden worden opgehaald. <a href="/sources">Bekijk de bronstatus en probeer opnieuw.</a></div>
+{% endif %}
+
+{% if feedback.counts.up or feedback.counts.down %}
+<section class="jobs-signals card" aria-labelledby="jobs-signals-title">
+  <div class="jobs-signals-head">
+    <h2 id="jobs-signals-title">Signalen uit je stemmen</h2>
+    <span class="muted small">{{ feedback.counts.up }} interessant · {{ feedback.counts.down }} minder passend</span>
+  </div>
+  <div class="jobs-signals-rows">
+    <p><span class="jobs-signals-label">Positief</span>{% for item in feedback.get('liked_keywords', [])[:8] %}<span class="chip chip-ok">{{ item.keyword }}</span>{% else %}<span class="muted small">Nog geen signalen</span>{% endfor %}</p>
+    <p><span class="jobs-signals-label">Negatief</span>{% for item in feedback.get('disliked_keywords', [])[:8] %}<span class="chip chip-warn">{{ item.keyword }}</span>{% else %}<span class="muted small">Nog geen signalen</span>{% endfor %}</p>
+  </div>
+  <p class="muted small jobs-signals-note">Automatisch gevonden woorden, niet noodzakelijk jouw voorkeuren. Je stemmen wegen direct mee.</p>
+</section>
+{% endif %}
+
+<form method="get" action="/jobs" class="jobs-filters" aria-label="Vacatures zoeken en filteren">
+  <div class="jobs-search"><label for="job-search">Wat voor werk zoek je?</label><input id="job-search" type="search" name="q" value="{{ query or '' }}" placeholder="Functie, organisatie of trefwoord…"></div>
+  <div class="jobs-source"><label for="job-source">Vacaturebron</label><select id="job-source" name="source"><option value="">Alle bronnen</option>{% for s in sources %}<option value="{{ s['id'] }}" {% if source_filter == s['id'] %}selected{% endif %}>{{ s['name'] }}</option>{% endfor %}</select></div>
+  <div class="jobs-travel">
+    {# A hidden zero followed by the checked value makes both states explicit. #}
+    <input type="hidden" name="within" value="0">
+    <label class="check"><input type="checkbox" name="within" value="1" {% if within == '1' %}checked{% endif %}> Binnen mijn reisbereik</label>
+    <span class="muted small">Vanaf {{ geo_home.label }} · {{ geo_home.bike_minutes }} min e-bike / {{ geo_home.transit_minutes }} min OV</span>
+  </div>
+  <input type="hidden" name="status" value="{{ status_filter }}">
+  <input type="hidden" name="per_page" value="{{ per_page }}">
+  <input type="hidden" name="sort" value="{{ sort }}">
+  <button class="button primary" type="submit">Zoeken <span aria-hidden="true">→</span></button>
+</form>
+
+{% if filter_chips %}
+<div class="jobs-active-filters" aria-label="Actieve zoekfilters">
+  {% for chip in filter_chips %}<a class="chip" href="{{ chip.url }}" aria-label="Verwijder filter: {{ chip.label }}">{{ chip.label }} <span aria-hidden="true">×</span></a>{% endfor %}
+  <a class="small" href="{{ reset_url }}">Wis zoekfilters</a>
+</div>
+{% endif %}
+
+<nav class="status-tabs jobs-tabs" aria-label="Vacaturestatus">
+  {% for tab in status_links %}<a href="{{ tab.url }}" {% if status_filter == tab.value %}aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}
+</nav>
+
+<div class="jobs-results-head">
+  <div><h2>{{ total_filtered }} {{ 'resultaat' if total_filtered == 1 else 'resultaten' }}</h2><span class="muted small">{% if within == '1' %}Binnen je reisbereik of reistijd nog onbekend{% else %}Inclusief vacatures buiten je reisbereik{% endif %}</span></div>
+  <form method="get" action="/jobs" class="jobs-sort">
+    <input type="hidden" name="q" value="{{ query or '' }}"><input type="hidden" name="source" value="{{ source_filter or '' }}"><input type="hidden" name="status" value="{{ status_filter }}"><input type="hidden" name="within" value="{{ within }}"><input type="hidden" name="per_page" value="{{ per_page }}">
+    <label for="job-sort">Sorteer op</label><select name="sort" id="job-sort" onchange="this.form.requestSubmit()"><option value="rank" {% if sort == 'rank' %}selected{% endif %}>Best passend</option><option value="newest" {% if sort == 'newest' %}selected{% endif %}>Nieuwste eerst</option></select><noscript><button class="button small" type="submit">Sorteren</button></noscript>
+  </form>
+</div>
+
+<p id="jobs-action-status" class="visually-hidden" role="status" aria-live="polite"></p>
+<section class="vacancy-list" aria-label="Vacatureresultaten">
+  {% for job in jobs %}
+  {% set detail_url = '/jobs/' ~ job['id'] ~ '?return_to=' ~ ((return_to ~ '#job-' ~ job['id']) | urlencode) %}
+  <article class="vacancy-row" id="job-{{ job['id'] }}" aria-labelledby="job-title-{{ job['id'] }}">
+    <div class="vacancy-main">
+      <h3 id="job-title-{{ job['id'] }}"><a href="{{ detail_url }}" data-job-link>{{ job['title'] or 'Zonder titel' }}</a></h3>
+      <p class="vacancy-company">{{ job['company'] or 'Onbekende organisatie' }}{% if job['hours'] %}<span aria-hidden="true"> · </span>{{ job['hours'] }}{% endif %}</p>
+      <div class="vacancy-meta"><span>{{ job['location'] or 'Locatie onbekend' }}</span><span class="travel {{ 'ok' if job['travel']['in_range'] is true else ('warn' if job['travel']['in_range'] is false else 'unknown') }}">{{ job['travel']['label'] }}</span></div>
+      <p class="vacancy-origin muted small">{{ job['source_name'] }}{% if job['display_date'] %} · <time datetime="{{ job['date_iso'] }}" title="Publicatiedatum, anders eerste keer gevonden">{{ job['display_date'] }}</time>{% endif %}</p>
+    </div>
+    {% set score = job['rank_score'] if job['rank_score'] is not none else job['match_score'] %}
+    {% set confidence = (job['signals']['confidence'] * 100) if job['signals'] and job['signals'].get('confidence') is not none else none %}
+    <div class="vacancy-score{% if score is not none %} {{ 'high' if score >= 70 else ('mid' if score >= 50 else 'low') }}{% endif %}">
+      <span class="vacancy-score-label">{{ 'Matchscore' if job['rank_score'] is not none else 'Beoordeling' }}</span>
+      {% if score is not none %}<strong>{{ '%.0f' | format(score) }}<span>/100</span></strong>{% if confidence is not none %}<span class="vacancy-confidence" title="Zekerheid van de snelle beoordeling">{{ '%.0f' | format(confidence) }}% zeker</span>{% endif %}{% else %}<span class="muted small">Nog niet beoordeeld</span>{% endif %}
+    </div>
+    <div class="vacancy-actions">
+      <form method="post" action="/jobs/{{ job['id'] }}/vote" class="vacancy-votes" data-pending-form>
+        {% include '_csrf.html' %}
+        <input type="hidden" name="next" value="{{ return_to }}#job-{{ job['id'] }}">
+        <button class="button small vote-choice {% if job['vote'] and job['vote'] > 0 %}selected{% endif %}" type="submit" name="vote" value="{{ 'clear' if job['vote'] and job['vote'] > 0 else 'up' }}" aria-pressed="{{ 'true' if job['vote'] and job['vote'] > 0 else 'false' }}" aria-label="{{ 'Wis je positieve stem voor' if job['vote'] and job['vote'] > 0 else 'Interessant:' }} {{ job['title'] }}"><span aria-hidden="true">↑</span> Interessant</button>
+        <button class="button small vote-choice {% if job['vote'] and job['vote'] < 0 %}selected{% endif %}" type="submit" name="vote" value="{{ 'clear' if job['vote'] and job['vote'] < 0 else 'down' }}" aria-pressed="{{ 'true' if job['vote'] and job['vote'] < 0 else 'false' }}" aria-label="{{ 'Wis je negatieve stem voor' if job['vote'] and job['vote'] < 0 else 'Minder passend:' }} {{ job['title'] }}"><span aria-hidden="true">↓</span> Minder passend</button>
+      </form>
+      <div class="vacancy-bottom-actions">
+        <a class="vacancy-open" href="{{ detail_url }}" data-job-link>Bekijk vacature <span aria-hidden="true">→</span></a>
+        <form method="post" action="/jobs/{{ job['id'] }}/status" class="inline-form" data-pending-form>
+          {% include '_csrf.html' %}
+          <input type="hidden" name="next" value="{{ return_to }}#job-{{ job['id'] }}">
+          <label class="visually-hidden" for="job-status-{{ job['id'] }}">Status van {{ job['title'] }}</label>
+          <select id="job-status-{{ job['id'] }}" name="status" onchange="this.form.requestSubmit()">{% for value, label in [('new', 'Nieuw'), ('saved', 'Bewaard'), ('applied', 'Gereageerd'), ('ignored', 'Genegeerd')] %}<option value="{{ value }}" {% if job['status'] == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+          <noscript><button class="button small" type="submit">Opslaan</button></noscript>
+        </form>
+      </div>
+    </div>
+  </article>
+  {% else %}
+  <div class="card empty-state"><h2>Geen vacatures in dit overzicht</h2><p class="muted">{% if counts.total %}Probeer een bredere zoekterm, verwijder een filter of bekijk alle vacatures.{% else %}Scan je bronnen om de eerste vacatures te ontdekken.{% endif %}</p><a class="button" href="{{ '/jobs?within=0' if counts.total else '/sources' }}">{{ 'Bekijk alle vacatures' if counts.total else 'Naar bronnen' }}</a></div>
+  {% endfor %}
+</section>
+
+{% if pages > 1 %}<nav class="pager jobs-pager" aria-label="Paginering">{% if page > 1 %}<a class="button" href="{{ pager_base }}&amp;page={{ page - 1 }}">← Vorige</a>{% endif %}<span class="muted small">Pagina {{ page }} van {{ pages }} · {{ total_filtered }} vacatures</span>{% if page < pages %}<a class="button" href="{{ pager_base }}&amp;page={{ page + 1 }}">Volgende →</a>{% endif %}</nav>{% endif %}
+
+<div class="jobs-insights">
+  <details class="card"><summary>Hoe werkt de beoordeling?</summary><p class="muted">De matchscore is een rangschikking op basis van je voorkeuren, beschikbare AI-beoordelingen en stemmen. Het is geen kans op succes of garantie dat een functie past. Als alleen een eerdere beoordeling beschikbaar is, staat er “Beoordeling”. Controleer altijd de vacaturetekst en je reistijd.</p><p class="muted small">Reistijden zijn schattingen. Vacatures met een onbekende reistijd blijven zichtbaar. Je stemmen wegen direct mee, zonder extra AI-aanroep. Klik nogmaals op een geselecteerde stem om deze te wissen.</p></details>
+  {% if match_summary %}<details class="card"><summary>Laatste beoordelingsronde <span class="muted small">Historisch resultaat</span></summary><p class="muted small">{% if match_summary.finished_at %}Afgerond: {{ match_summary.finished_at[:19] | replace('T', ' ') }}.{% else %}Bij deze eerdere ronde is geen tijdstip opgeslagen.{% endif %} Dit is geen actuele wachtrijstatus.</p><p class="small">{{ match_summary.matched }} uitgebreide beoordelingen · {{ match_summary.signals or 0 }} snelle beoordelingen · geregistreerde LLM-kosten ${{ '%.4f' | format(match_summary.cost_usd) }} (exclusief Runware).</p></details>{% endif %}
+</div>
+<dialog class="job-drawer" id="job-drawer" aria-labelledby="job-drawer-title">
+  <header class="job-drawer-header">
+    <div class="job-drawer-heading"><p class="eyebrow">Vacaturedetails</p><h2 id="job-drawer-title">Vacature laden…</h2></div>
+    <div class="job-drawer-toolbar"><a id="job-drawer-full" class="small" target="_blank" rel="noopener" aria-label="Open volledige pagina in een nieuw tabblad">Volledige pagina <span aria-hidden="true">↗</span></a><button class="button small" type="button" data-drawer-close autofocus>Sluiten <span aria-hidden="true">×</span></button></div>
+    <nav class="job-drawer-sections" aria-label="Onderdelen van de vacature"><button type="button" data-drawer-section="text" disabled>Vacaturetekst</button><button type="button" data-drawer-section="assessment" disabled>Beoordeling</button><button type="button" data-drawer-section="documents" disabled>Documenten</button></nav>
+  </header>
+  <div class="job-drawer-notice" id="job-drawer-notice" role="status" aria-live="polite"></div>
+  <div class="job-drawer-body" id="job-drawer-body" aria-busy="false"></div>
+</dialog>
+<script src="/static/jobs.js"></script>
+<script src="/static/job-drawer.js"></script>
+{% endblock %}

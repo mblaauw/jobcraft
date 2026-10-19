@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Mijn account · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Mijn account</h1>
+  <p class="sub">Je persoonlijke toegang tot deze werkruimte. Je wachtwoord wijzig je hieronder.</p>
+</div>
+
+{% if account.id != 'legacy' %}
+<section class="card"><h2>Je eigen basis-CV</h2><p class="muted">Er worden nooit gegevens of een CV van een andere gebruiker overgenomen. Voeg je eigen DOCX toe voordat je documenten maakt. Het huidige sjabloon verwacht de secties PROFIEL en STERKE PUNTEN met vijf opsommingstekens.</p>{% if request.query_params.get('uploaded') %}<p class="banner ok">Je basis-CV is toegevoegd.</p>{% endif %}<form method="post" action="/account/cv" enctype="multipart/form-data">{{ csrf_input(request) }}<label for="own-cv">Basis-CV (DOCX, maximaal 5 MB)</label><input id="own-cv" type="file" name="cv" accept=".docx" required><button class="button" type="submit">Eigen CV toevoegen</button></form></section>
+{% endif %}
+
+{% if request.query_params.get('changed') %}<p class="banner ok" role="status">Je wachtwoord is gewijzigd. Je andere sessies zijn afgemeld.</p>{% endif %}
+{% if error %}<p class="banner warn" role="alert">{{ error }}</p>{% endif %}
+
+<div class="grid two">
+  <section class="card">
+    <h2>Accountgegevens</h2>
+    <dl class="stats">
+      <div><dt>Gebruikersnaam</dt><dd>{{ account.username }}</dd></div>
+      <div><dt>Naam</dt><dd>{{ account.display_name }}</dd></div>
+      <div><dt>Rol</dt><dd>{{ 'Beheerder' if account.role == 'admin' else 'Gebruiker' }}</dd></div>
+      <div><dt>Aangemaakt</dt><dd>{{ account.created_label }}</dd></div>
+      <div><dt>Laatste login</dt><dd>{{ account.last_login_label }}</dd></div>
+    </dl>
+
+    {% if account.role == 'admin' %}<p class="small"><a href="/users">Gebruikers beheren →</a></p>{% endif %}
+
+    <form method="post" action="/logout" class="inline-form auth-inline-form">
+      {{ csrf_input(request) }}
+      <button class="button small" type="submit">Uitloggen</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Wachtwoord wijzigen</h2>
+    <form method="post" action="/account/password" class="account-form">
+      {{ csrf_input(request) }}
+      <label for="current_password">Huidig wachtwoord</label>
+      <input id="current_password" name="current_password" type="password" autocomplete="current-password" required>
+      <label for="new_password">Nieuw wachtwoord</label>
+      <input id="new_password" name="new_password" type="password" autocomplete="new-password" required>
+      <label for="confirm_password">Nieuw wachtwoord (herhalen)</label>
+      <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" required>
+      <button class="button primary" type="submit">Wachtwoord opslaan</button>
+    </form>
+    <p class="small muted">Minstens 10 tekens. Na het opslaan worden al je andere sessies afgemeld.</p>
+  </section>
+</div>
+
+<style>
+  .account-form { display: grid; gap: 6px; max-width: 380px; }
+  .account-form label { display: block; font-size: 12px; font-weight: 600; }
+  .account-form input[type="password"] {
+    width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 8px; background: #f8faf8;
+    color: var(--ink); font: inherit; font-size: 14px;
+  }
+  .account-form input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; background: #fff; }
+  .account-form .button { margin-top: 14px; justify-self: start; }
+  .auth-inline-form { display: block; margin-top: 18px; }
+</style>
+{% endblock %}

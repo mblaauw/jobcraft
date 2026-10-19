@@ -1,0 +1,37 @@
+# Example reverse-proxy block for serving Jobcraft under /jobcraft/.
+# Copy it into your nginx configuration and replace the placeholders.
+#
+# Safety properties:
+# - resolver + variable upstream: a down app yields 502 on this path only and
+#   never prevents nginx from starting or reloading.
+# - the app's root-absolute URLs are rewritten into the /jobcraft prefix.
+
+location = /jobcraft {
+    return 301 /jobcraft/;
+}
+
+location /jobcraft/ {
+    resolver 127.0.0.11 ipv6=off valid=10s;
+    set $jobcraft_upstream http://jobcraft:8080;
+    rewrite ^/jobcraft/(.*)$ /$1 break;
+
+    proxy_pass $jobcraft_upstream;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Prefix /jobcraft;
+    proxy_set_header Accept-Encoding "";
+
+    sub_filter_once off;
+    sub_filter_types text/javascript application/javascript;
+    sub_filter 'href="/' 'href="/jobcraft/';
+    sub_filter 'src="/' 'src="/jobcraft/';
+    sub_filter 'action="/' 'action="/jobcraft/';
+    sub_filter 'fetch(`/api' 'fetch(`/jobcraft/api';
+
+    proxy_redirect / /jobcraft/;
+    proxy_redirect http://jobcraft:8080/ /jobcraft/;
+    proxy_redirect http://$host/ /jobcraft/;
+}

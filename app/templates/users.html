@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Gebruikers · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Gebruikers</h1>
+  <p class="sub">Accounts voor deze werkruimte. Je ziet hier alleen accountgegevens — nooit de persoonlijke inhoud van een gebruiker.</p>
+</div>
+
+{% if notice %}<p class="banner ok" role="status">{{ notice }}</p>{% endif %}
+{% if error %}<p class="banner warn" role="alert">{{ error }}</p>{% endif %}
+
+{% if new_password %}
+<section class="card" aria-labelledby="one-time-password">
+  <h2 id="one-time-password">Eenmalig wachtwoord{% if created_username %} voor <code>{{ created_username }}</code>{% endif %}</h2>
+  <p class="small">Kopieer dit nu en deel het persoonlijk. Zodra je deze pagina verlaat, is het niet meer op te vragen.</p>
+  <pre class="doc" tabindex="0">{{ new_password }}</pre>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Accounts ({{ users | length }}) · {{ active_admins }} actieve beheerder(s)</h2>
+  <div class="table-scroll" role="region" aria-label="Accounts" tabindex="0">
+    <table class="table">
+      <thead>
+        <tr><th>Gebruiker</th><th>Rol</th><th>Status</th><th>Aangemaakt</th><th>Laatste login</th><th>Acties</th></tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>
+            <strong>{{ user.display_name }}</strong><br>
+            <code>{{ user.username }}</code>
+            {% if user.id == current_user_id %}<span class="chip">jij</span>{% endif %}
+          </td>
+          <td>{{ 'Beheerder' if user.role == 'admin' else 'Gebruiker' }}</td>
+          <td>
+            {% if user.active %}<span class="chip chip-ok">actief</span>{% else %}<span class="chip chip-warn">gedeactiveerd</span>{% endif %}
+            {% if user.sessions %}<span class="small muted">· {{ user.sessions }} sessie(s)</span>{% endif %}
+          </td>
+          <td class="small">{{ user.created_label }}</td>
+          <td class="small">{{ user.last_login_label }}</td>
+          <td>
+            <form method="post" action="/users/{{ user.id }}/reset-password" class="inline-form">
+              {{ csrf_input(request) }}
+              <button class="button small" type="submit">Wachtwoord resetten</button>
+            </form>
+            {% if user.active %}
+              {% if user.id == current_user_id %}
+                <span class="small muted">Je kunt je eigen account niet deactiveren.</span>
+              {% elif user.role == 'admin' and active_admins <= 1 %}
+                <span class="small muted">Laatste actieve beheerder.</span>
+              {% else %}
+                <form method="post" action="/users/{{ user.id }}/deactivate" class="inline-form">
+                  {{ csrf_input(request) }}
+                  <button class="button small" type="submit">Deactiveren</button>
+                </form>
+              {% endif %}
+            {% else %}
+              <form method="post" action="/users/{{ user.id }}/activate" class="inline-form">
+                {{ csrf_input(request) }}
+                <button class="button small" type="submit">Activeren</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Account toevoegen</h2>
+  <form method="post" action="/users" class="users-form">
+    {{ csrf_input(request) }}
+    <label for="new-username">Gebruikersnaam</label>
+    <input id="new-username" name="username" type="text" autocapitalize="none" spellcheck="false" required>
+    <label for="new-display-name">Naam (optioneel)</label>
+    <input id="new-display-name" name="display_name" type="text">
+    <label for="new-role">Rol</label>
+    <select id="new-role" name="role">
+      <option value="user">Gebruiker</option>
+      <option value="admin">Beheerder</option>
+    </select>
+    <label for="new-password">Wachtwoord (leeg = automatisch genereren)</label>
+    <input id="new-password" name="password" type="text" autocomplete="new-password" minlength="10">
+    <button class="button primary" type="submit">Account aanmaken</button>
+  </form>
+  <p class="small muted">De nieuwe persoon wijzigt het wachtwoord zelf via <em>Mijn account</em>. Er is geen openbare registratie.</p>
+</section>
+
+<style>
+  .users-form { display: grid; gap: 6px; max-width: 380px; }
+  .users-form label { display: block; font-size: 12px; font-weight: 600; }
+  .users-form input, .users-form select {
+    width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 8px; background: #f8faf8;
+    color: var(--ink); font: inherit; font-size: 14px;
+  }
+  .users-form input:focus-visible, .users-form select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; background: #fff; }
+  .users-form .button { margin-top: 14px; justify-self: start; }
+  #one-time-password + .small + .doc { margin-bottom: 0; }
+</style>
+{% endblock %}

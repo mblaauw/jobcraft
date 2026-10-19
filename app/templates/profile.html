@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Profiel · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Profiel</h1>
+  <p class="sub">Dit ben jij en dit zoek je. De basis voor passende vacatures en persoonlijke documenten. Wijzigingen uit gesprekken beoordeel je altijd eerst.</p>
+</div>
+
+{% if saved %}
+  <div class="banner ok">
+    {% if saved == "accepted" %}Voorstel geaccepteerd — profiel en voorkeuren bijgewerkt.
+    {% elif saved == "profile" %}Profiel opgeslagen als nieuwe versie.
+    {% elif saved == "preferences" %}Voorkeuren opgeslagen.
+    {% elif saved == "draft" %}Voorstel bewaard.
+    {% elif saved == "restore" %}Versie hersteld; de vorige versie is gearchiveerd.
+    {% else %}Opgeslagen.{% endif %}
+  </div>
+{% endif %}
+{% if error == "seed" %}
+  <div class="banner warn">Seed-documenten ontbreken; bootstrap is niet mogelijk.</div>
+{% elif error == "draft" %}
+  <div class="banner warn">Er is geen open consolidatievoorstel.</div>
+{% endif %}
+{% if profile_error %}<div class="banner warn">{{ profile_error }}</div>{% endif %}
+{% if pref_error %}<div class="banner warn">Voorkeuren niet opgeslagen: {{ pref_error }}</div>{% endif %}
+
+{% if bootstrap_status == "running" %}
+  <div class="banner">Consolidatie loopt… deze pagina ververst automatisch ({{ consolidation_cost_note }}).<meta http-equiv="refresh" content="5"></div>
+{% elif bootstrap_status == "ready" %}
+  <div class="banner ok">Een nieuw voorstel staat klaar. Vergelijk hieronder en accepteer of verwerp.</div>
+{% elif bootstrap_status == "interrupted" %}
+  <div class="banner warn">De vorige consolidatie is onderbroken (app herstart). Start opnieuw.</div>
+{% elif bootstrap_status.startswith("error") %}
+  <div class="banner warn">Consolidatie mislukt: {{ bootstrap_status[7:] }}</div>
+{% elif bootstrapped_at %}
+  <div class="banner ok">Laatste geaccepteerde consolidatie: {{ bootstrapped_at[:19] | replace("T", " ") }}</div>
+{% endif %}
+
+<section class="card">
+  <div class="sidebar-head">
+    <h2>Je profiel aanvullen vanuit gesprekken</h2>
+    <span class="muted small">{{ new_answer_chars }} tekens nieuwe antwoorden · {{ consolidation_cost_note }}</span>
+  </div>
+
+  {% if draft %}
+    <p class="muted">Voorstel gemaakt{% if draft.mode %} ({{ draft.mode }}){% endif %}. Pas tekst aan vóór acceptatie; de diff hieronder is tegen de huidige canon.</p>
+    <h3>Profielverschil</h3>
+    <pre class="diff">{{ draft_diff or "Geen tekstuele verschillen." }}</pre>
+
+    <details>
+      <summary>Volledig voorstel bekijken</summary>
+      <pre class="doc">{{ draft_profile_text }}</pre>
+    </details>
+
+    <h3>Voorkeuren: huidig (links) vs voorstel (rechts)</h3>
+    <div class="grid two">
+      <pre class="doc">{{ preferences | tojson(indent=2) }}</pre>
+      <pre class="doc">{{ draft_preferences_text }}</pre>
+    </div>
+
+    <form method="post" action="/profile/consolidate/save-draft">
+      {% include '_csrf.html' %}
+      <h3>Voorstel bewerken</h3>
+      <label class="small muted" for="draft_profile">profile.md</label>
+      <textarea id="draft_profile" class="doc-edit" name="profile_md">{{ draft_profile_text }}</textarea>
+      <label class="small muted" for="draft_preferences">preferences.json</label>
+      <textarea id="draft_preferences" class="doc-edit" name="preferences">{{ draft_preferences_text }}</textarea>
+      {% if draft_error %}<p class="warn-text">{{ draft_error }}</p>{% endif %}
+      <div class="btn-row">
+        <button class="button" type="submit">Voorstel opslaan</button>
+      </div>
+    </form>
+    <div class="btn-row">
+      <form method="post" action="/profile/consolidate/accept">
+        {% include '_csrf.html' %}
+        <button class="button primary" type="submit">Accepteren</button>
+      </form>
+      <form method="post" action="/profile/consolidate/discard">
+        {% include '_csrf.html' %}
+        <button class="button" type="submit">Verwerpen</button>
+      </form>
+    </div>
+    <p class="muted small">Accepteren gebruikt het laatst opgeslagen voorstel. Accepteren schrijft profiel + voorkeuren en markeert de verwerkte antwoorden; verwerpen laat de canon ongemoeid.</p>
+  {% else %}
+    <div class="btn-row">
+      <form method="post" action="/profile/consolidate">
+        {% include '_csrf.html' %}
+        <input type="hidden" name="full" value="0">
+        <button class="button primary" type="submit" {% if bootstrap_status == "running" %}disabled{% endif %}>Voorstel maken</button>
+      </form>
+      <form method="post" action="/profile/consolidate">
+        {% include '_csrf.html' %}
+        <input type="hidden" name="full" value="1">
+        <button class="button" type="submit" {% if bootstrap_status == "running" %}disabled{% endif %}>Volledige herconsolidatie</button>
+      </form>
+    </div>
+    <p class="muted small">“Voorstel maken” verwerkt alleen nieuwe antwoorden. “Volledige herconsolidatie” leest ook het dossier en de zoekstrategie opnieuw (duurder, ±$0.018).</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <div class="sidebar-head">
+    <h2>Jouw profiel bewerken</h2>
+    <span class="muted small" id="editor-stats">{{ editor_chars }} tekens · {{ editor_lines }} regels</span>
+  </div>
+  <form method="post" action="/profile/save">
+    {% include '_csrf.html' %}
+    <textarea class="doc-edit doc-edit-large" id="profile-editor" name="content" aria-label="profile.md" spellcheck="true">{{ profile_text or profile_md }}</textarea>
+    <div class="btn-row">
+      <button class="button primary" type="submit">Opslaan als nieuwe versie</button>
+      <span class="muted small">De huidige versie wordt gearchiveerd; terugzetten kan bij “Versies”.</span>
+    </div>
+  </form>
+  <p class="muted small">{{ private_note }} Voorkeuren werk je bij via een gesprek en een geaccepteerd profielvoorstel.</p>
+</section>
+
+<script>
+const editor = document.getElementById("profile-editor");
+const stats = document.getElementById("editor-stats");
+function updateEditorStats() {
+  if (!editor || !stats) return;
+  const lines = editor.value ? editor.value.split("\n").length : 0;
+  stats.textContent = `${editor.value.length} tekens · ${lines} regels`;
+}
+if (editor) {
+  editor.addEventListener("input", updateEditorStats);
+  updateEditorStats();
+}
+</script>
+
+<section class="card">
+  <h2>Huidig profiel</h2>
+  <details>
+    <summary>Toon profile.md</summary>
+    <pre class="doc">{{ profile_md or "Nog geen profiel." }}</pre>
+  </details>
+
+  <h3>Versies</h3>
+  <ul class="list small">
+    {% for v in versions %}
+      <li>
+        <span>{{ v.created_at[:19] | replace("T", " ") }} — <code>{{ v.path.split("/")[-1] }}</code></span>
+        <form method="post" action="/profile/restore/{{ v.id }}" class="inline-form">
+          {% include '_csrf.html' %}
+          <button class="button small" type="submit">Herstel</button>
+        </form>
+      </li>
+    {% else %}
+      <li class="muted">Nog geen versies.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

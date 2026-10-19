@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+uv.lock.bak
+
+# Local runtime and personal data
+data/
+data-docker/
+seed/
+.runtime/
+.env
+.env.*
+!.env.example
+bootstrap-accounts.json
+
+# Databases, generated documents and personal media
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.docx
+*.pdf
+*.log
+*.pid
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/

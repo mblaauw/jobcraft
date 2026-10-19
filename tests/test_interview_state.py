@@ -1,0 +1,55 @@
+from __future__ import annotations
+
+from app import interview_state
+
+
+def _patch(monkeypatch, tmp_path):
+    monkeypatch.setattr(interview_state, "STATE_FILE", tmp_path / "state.json")
+    monkeypatch.setattr(interview_state, "PLAN_FILE", tmp_path / "plan.md")
+    monkeypatch.setattr(interview_state, "ANSWER_LOG_FILE", tmp_path / "answer-log.md")
+
+
+def test_record_answer_marks_topic_after_two_signals(tmp_path, monkeypatch):
+    _patch(monkeypatch, tmp_path)
+    state = interview_state.ensure_state(seed_from_log=False)
+    assert len(state["topics"]) == len(interview_state.TOPIC_SPECS)
+
+    interview_state.record_answer(
+        "Wat geeft je energie?", "Ik werk graag buiten en 24 uur per week."
+    )
+    summary = interview_state.summary()
+    assert summary["question_count"] == 1
+    uren = next(topic for topic in summary["topics"] if topic["id"] == "uren_ritme")
+    assert uren["status"] == "open"  # one signal is not enough
+
+    interview_state.record_answer("Hoeveel uur?", "32 uur per week is goed.")
+    uren = next(
+        topic for topic in interview_state.summary()["topics"] if topic["id"] == "uren_ritme"
+    )
+    assert uren["status"] == "covered"
+    plan = (tmp_path / "plan.md").read_text()
+    assert "- [x] Uren, ritme en voorspelbaarheid" in plan
+
+
+def test_manual_toggle_wins_over_heuristic(tmp_path, monkeypatch):
+    _patch(monkeypatch, tmp_path)
+    interview_state.ensure_state(seed_from_log=False)
+    interview_state.toggle("reistijd", "covered")
+    summary = interview_state.summary()
+    reistijd = next(topic for topic in summary["topics"] if topic["id"] == "reistijd")
+    assert reistijd["status"] == "covered" and reistijd["manual"] is True
+    assert "- [x] Reistijd, fiets/OV, bedrijfsauto" in (tmp_path / "plan.md").read_text()
+
+    interview_state.toggle("reistijd", "open")
+    assert "- [ ] Reistijd, fiets/OV, bedrijfsauto" in (tmp_path / "plan.md").read_text()
+
+
+def test_unknown_topic_is_rejected(tmp_path, monkeypatch):
+    _patch(monkeypatch, tmp_path)
+    interview_state.ensure_state(seed_from_log=False)
+    try:
+        interview_state.toggle("does-not-exist", "covered")
+    except ValueError:
+        pass
+    else:  # pragma: no cover - defensive
+        raise AssertionError("unknown topic should raise")

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}{{ job["title"] or "Vacature" }} · Jobcraft{% endblock %}
+{% block content %}
+<div data-job-detail data-job-id="{{ job['id'] }}" data-job-vote="{{ job['vote'] or 0 }}" data-job-status="{{ job['status'] }}" data-job-score="{{ job['rank_score'] if job['rank_score'] is not none else '' }}" data-job-confidence="{{ '%.0f' | format(signals['confidence'] * 100) if signals and signals.get('confidence') is not none else '' }}" data-document-state="{{ doc_status.state if doc_status else '' }}">
+<div class="page-head">
+  <p class="muted small detail-back"><a href="{{ list_return or '/jobs' }}">← Terug naar vacatures</a></p>
+  <h1>{{ job["title"] or "Zonder titel" }}</h1>
+  <p class="sub">
+    {{ job["company"] or "Onbekende organisatie" }}{% if job["location"] %} · {{ job["location"] }}{% endif %}
+    · <a id="detail-original" href="{{ job['url'] }}" target="_blank" rel="noopener">originele vacature</a>
+    · <span class="travel {{ 'ok' if travel.in_range is true else ('warn' if travel.in_range is false else 'unknown') }}">{{ travel.label }}</span>
+  </p>
+</div>
+
+<div class="banner vote-banner">
+  <span class="muted small">Jouw stem:</span>
+  <form method="post" action="/jobs/{{ job['id'] }}/vote" class="vote-form">
+    {% include '_csrf.html' %}
+    <input type="hidden" name="next" value="{{ detail_return or ('/jobs/' ~ job['id']) }}">
+    <button id="detail-vote-up" type="submit" name="vote" value="{{ 'clear' if job['vote'] and job['vote'] > 0 else 'up' }}" class="vote up {% if job['vote'] and job['vote'] > 0 %}active{% endif %}" aria-pressed="{{ 'true' if job['vote'] and job['vote'] > 0 else 'false' }}" title="Interessant — klik opnieuw om te wissen" aria-label="{{ 'Wis positieve stem' if job['vote'] and job['vote'] > 0 else 'Interessant' }}">↑</button>
+    <button id="detail-vote-down" type="submit" name="vote" value="{{ 'clear' if job['vote'] and job['vote'] < 0 else 'down' }}" class="vote down {% if job['vote'] and job['vote'] < 0 %}active{% endif %}" aria-pressed="{{ 'true' if job['vote'] and job['vote'] < 0 else 'false' }}" title="Minder passend — klik opnieuw om te wissen" aria-label="{{ 'Wis negatieve stem' if job['vote'] and job['vote'] < 0 else 'Minder passend' }}">↓</button>
+  </form>
+   <span class="muted small">Je stem telt direct mee in de rangschikking, zonder extra AI-aanroep.</span>
+</div>
+
+{% if doc_error %}
+  <div class="banner warn">Document maken mislukt: {{ doc_error }}</div>
+{% endif %}
+{% if doc_status and doc_status.state == "running" %}
+  <div class="banner">Document genereren ({{ "CV" if doc_status.kind == "resume" else "motivatiebrief" }})… deze pagina ververst automatisch.<meta http-equiv="refresh" content="4"></div>
+{% elif doc_status and doc_status.state == "error" %}
+  <div class="banner warn">Document maken mislukt: {{ doc_status.error }}</div>
+{% elif doc_status and doc_status.state == "done" %}
+  <div class="banner ok">{{ "CV" if doc_status.kind == "resume" else "Motivatiebrief" }} v{{ doc_status.version }} is klaar.</div>
+{% endif %}
+
+<section class="card document-actions" id="documenten" data-detail-section="documents">
+  <div><p class="eyebrow">Klaar voor de volgende stap?</p><h2 id="detail-documents-title">Maak je sollicitatie persoonlijk</h2><p class="muted">Een CV of brief voor deze vacature, op basis van jouw profiel. Elke versie blijft bewaard.</p></div>
+  <div class="btn-row">
+  <form method="post" action="/jobs/{{ job['id'] }}/documents" class="inline-form" data-doc-form>
+    {% include '_csrf.html' %}
+    <input type="hidden" name="kind" value="resume">
+    <input type="hidden" name="next" value="{{ detail_return or ('/jobs/' ~ job['id']) }}">
+    <button id="detail-resume" class="button primary" type="submit" {% if doc_status and doc_status.state == "running" %}disabled{% endif %}>Maak een CV <span aria-hidden="true">↗</span></button>
+  </form>
+  <form method="post" action="/jobs/{{ job['id'] }}/documents" class="inline-form" data-doc-form>
+    {% include '_csrf.html' %}
+    <input type="hidden" name="kind" value="motivatie">
+    <input type="hidden" name="next" value="{{ detail_return or ('/jobs/' ~ job['id']) }}">
+    <button id="detail-letter" class="button" type="submit" {% if doc_status and doc_status.state == "running" %}disabled{% endif %}>Maak een motivatiebrief</button>
+  </form>
+  </div>
+  <p class="muted small">Indicatie: $0.002–0.003 per document · circa 10–20 seconden · PDF en Word</p>
+</section>
+<div id="doc-status" class="chat-status" aria-live="polite"></div>
+
+<section class="card">
+  <h2 id="detail-document-versions-title">Documenten</h2>
+  {% if documents %}
+    <div id="detail-document-table" class="table-scroll" role="region" aria-label="Documentversies" tabindex="0">
+    <table class="table">
+      <thead><tr><th>Type</th><th>Versie</th><th>Gemaakt</th><th>PDF</th><th>Word</th></tr></thead>
+      <tbody>
+        {% for doc in documents %}
+          <tr>
+            <td>{{ "CV" if doc["kind"] == "resume" else "Motivatiebrief" }}</td>
+            <td>v{{ doc["version"] }}</td>
+            <td class="muted small">{{ doc["created_at"][:19] | replace("T", " ") }}</td>
+            <td>
+              {% if doc["pdf_path"] %}
+                <a id="detail-document-{{ doc['id'] }}-preview" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/pdf?inline=1" target="_blank" rel="noopener">bekijk</a> ·
+                <a id="detail-document-{{ doc['id'] }}-pdf" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/pdf">download</a>
+              {% else %}<span class="muted">niet beschikbaar</span>{% endif %}
+            </td>
+            <td><a id="detail-document-{{ doc['id'] }}-docx" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/docx">docx</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted empty-state">Hier verschijnen je CV’s en brieven. Maak hierboven je eerste document voor deze vacature.</p>
+  {% endif %}
+</section>
+
+<div class="grid two" data-detail-section="assessment">
+  <section class="card">
+    <h2 id="detail-assessment-title">Match</h2>
+    {% if job["match_score"] is not none %}
+      <p class="score-big">{{ "%.0f" | format(job["match_score"]) }}<span class="muted">/100</span></p>
+      {% if reason and reason.why %}<p>{{ reason.why }}</p>{% endif %}
+      {% if reason and reason.concerns %}
+        <h3>Aandachtspunten</h3>
+        <ul class="list small">{% for item in reason.concerns %}<li>{{ item }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if reason and reason.questions_for_employer %}
+        <h3>Vragen aan werkgever</h3>
+        <ul class="list small">{% for item in reason.questions_for_employer %}<li>{{ item }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if reason and reason.rule_notes %}
+        <p class="muted small">Regelsignalen: {{ reason.rule_notes | join(" · ") }}</p>
+      {% endif %}
+    {% else %}
+      <p class="muted">Nog niet gematcht. Gebruik “Match vacatures”.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>System One (Jev)</h2>
+    {% if signals %}
+      {% set n = signals.noul %}
+      <p class="muted small">confidence {{ "%.2f" | format(signals.confidence) }} · fit {{ signals.fit }}/100{% if signals.escalate %} · <span class="warn-text">lage confidence, doorgestuurd naar de LLM-matcher</span>{% endif %}</p>
+      <dl class="stats">
+        <div><dt>Categorie</dt><dd>{{ signals.category or "—" }}</dd></div>
+        <div><dt>Buiten / mobiel</dt><dd>{{ "ja" if (n.get('outdoor_mobile') or 0) > 0.5 else "nee" }}</dd></div>
+        <div><dt>Telefoon/sales hoofdmoot</dt><dd>{{ "ja" if (n.get('phone_sales_main') or 0) > 0.5 else "nee" }}</dd></div>
+        <div><dt>Avond/weekend</dt><dd>{{ "ja" if (n.get('evening_weekend') or 0) > 0.5 else "nee" }}</dd></div>
+        <div><dt>Zwaar fysiek</dt><dd>{{ "ja" if (n.get('physically_heavy') or 0) > 0.5 else "nee" }}</dd></div>
+        <div><dt>Bedrijfsauto</dt><dd>{{ "ja" if (n.get('company_car') or 0) > 0.5 else "nee" }}</dd></div>
+        <div><dt>Dagwerk</dt><dd>{{ "ja" if (n.get('day_hours') or 0) > 0.5 else "nee" }}</dd></div>
+        <div><dt>Inwerk/begeleiding</dt><dd>{{ "ja" if (n.get('guidance') or 0) > 0.5 else "nee" }}</dd></div>
+      </dl>
+    {% else %}
+      <p class="muted">Nog geen Jev-signalen voor deze vacature. Start een matchronde.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Details</h2>
+    <dl class="stats">
+      <div><dt>Bron</dt><dd>{{ job["source_id"] }}</dd></div>
+      <div><dt>Geplaatst</dt><dd>{{ (job["posted_at"] or "")[:10] or "—" }}</dd></div>
+      <div><dt>Eerst gezien</dt><dd>{{ job["first_seen"][:10] }}</dd></div>
+        <div><dt>Status</dt><dd>{{ {'new': 'Nieuw', 'saved': 'Bewaard', 'applied': 'Gereageerd', 'ignored': 'Genegeerd'}.get(job['status'], job['status']) }}</dd></div>
+    </dl>
+    <form method="post" action="/jobs/{{ job['id'] }}/status" class="inline-form" style="margin-top:10px">
+      {% include '_csrf.html' %}
+      <input type="hidden" name="next" value="{{ detail_return or ('/jobs/' ~ job['id']) }}">
+      <select id="detail-status" name="status" aria-label="Status van deze vacature" onchange="this.form.requestSubmit()">
+        {% for option in ["new", "saved", "applied", "ignored"] %}
+          <option value="{{ option }}" {% if job["status"] == option %}selected{% endif %}>{{ {'new': 'Nieuw', 'saved': 'Bewaard', 'applied': 'Gereageerd', 'ignored': 'Genegeerd'}[option] }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </section>
+</div>
+
+<section class="card" data-detail-section="text">
+  <h2 id="detail-text-title">Vacaturetekst</h2>
+  <div class="job-body">{{ job["description"] or "Geen tekst opgehaald." }}</div>
+</section>
+
+</div>
+<script>
+document.querySelectorAll("form[data-doc-form]").forEach((form) => {
+  form.addEventListener("submit", () => {
+    document.querySelectorAll("form[data-doc-form] button").forEach((button) => {
+      button.disabled = true;
+    });
+    const status = document.getElementById("doc-status");
+    if (status) status.textContent = "Document genereren… (10–20 s)";
+  });
+});
+</script>
+{% endblock %}

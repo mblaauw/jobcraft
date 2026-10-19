@@ -1,0 +1,26 @@
+services:
+  app:
+    build: .
+    image: jobcraft:local
+    # 18080 is deliberately outside AzuraCast's stream range (8000-8500) and bound
+    # to loopback only: docker-published ports bypass UFW on the shared VPS.
+    ports:
+      - "127.0.0.1:18080:8080"
+    env_file:
+      - .env.local
+    environment:
+      APP_DATA_DIR: /data
+      APP_RUNTIME_DIR: /data/runtime
+      APP_SEED_DIR: /seed
+    volumes:
+      - ./data:/data
+      - ./seed:/seed:ro
+    restart: unless-stopped
+    # Keep the co-hosted radio station safe from runaway LibreOffice/opencode work.
+    mem_limit: 2g
+    cpus: 2.0
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,0 +1,18 @@
+.git
+.gitignore
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+data
+data-docker
+seed
+.runtime
+.env
+.env.local
+spikes
+tests
+*.md
+
+# Project skills ship with the app; the *.md rule above must not drop them.
+!.opencode/skills/*/SKILL.md

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Admin · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Instellingen &amp; inzicht</h1>
+  <p class="sub">Alleen-lezen weergave van de voorkeuren en de interne staat. Er is hier bewust geen editor: voorkeuren veranderen via het interview of via een geaccepteerd consolidatievoorstel.</p>
+</div>
+
+<section class="card">
+  <h2>Voorkeuren — leesbaar</h2>
+  <dl class="stats">
+    <div><dt>Bijgewerkt</dt><dd>{{ (preferences.updated_at or "")[:19] | replace("T", " ") }}</dd></div>
+    <div><dt>Woonplaats</dt><dd>{{ preferences.home.label }}</dd></div>
+    <div><dt>Reisbudget</dt><dd>{{ preferences.home.bike_minutes }} min e-bike · {{ preferences.home.transit_minutes }} min OV</dd></div>
+    <div><dt>Coördinaten</dt><dd>{{ "%.4f" | format(preferences.home.lat) }}, {{ "%.4f" | format(preferences.home.lon) }}</dd></div>
+  </dl>
+
+  <h3>Harde filters</h3>
+  <dl class="stats">
+    <div><dt>Locatie</dt><dd>{{ preferences.hard_filters.location or "—" }}</dd></div>
+    <div><dt>Uren</dt><dd>{{ preferences.hard_filters.hours_min or "?" }}–{{ preferences.hard_filters.hours_max or "?" }} uur</dd></div>
+    <div><dt>Geen telefoon als hoofdmoot</dt><dd>{{ "ja" if preferences.hard_filters.no_phone_main else "nee" }}</dd></div>
+    <div><dt>Geen structureel avondwerk</dt><dd>{{ "ja" if preferences.hard_filters.no_structural_evenings else "nee" }}</dd></div>
+  </dl>
+
+  <h3>Sporen</h3>
+  <div class="table-scroll" role="region" aria-label="Zoekrichtingen" tabindex="0">
+  <table class="table">
+    <thead><tr><th>Spoor</th><th>Naam</th><th>Gewicht</th><th>Trefwoorden</th></tr></thead>
+    <tbody>
+      {% for track in preferences.tracks %}
+        <tr>
+          <td><code>{{ track.id }}</code></td>
+          <td>{{ track.name }}</td>
+          <td>{{ track.weight }}</td>
+          <td>{% for keyword in track.keywords %}<span class="chip">{{ keyword }}</span>{% endfor %}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="muted">Geen sporen.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Likes en dislikes</h3>
+  <p class="small">
+    Positief:
+    {% for item in preferences.likes %}<span class="chip chip-ok">{{ item.tag }} ({{ item.weight }})</span>{% else %}<span class="muted">—</span>{% endfor %}
+  </p>
+  <p class="small">
+    Negatief:
+    {% for item in preferences.dislikes %}<span class="chip chip-warn">{{ item.tag }} ({{ item.weight }})</span>{% else %}<span class="muted">—</span>{% endfor %}
+  </p>
+
+  <h3>Trefwoorden</h3>
+  <p class="small">
+    Boost:
+    {% for keyword in preferences.keywords.boost %}<span class="chip">{{ keyword }}</span>{% else %}<span class="muted">—</span>{% endfor %}
+  </p>
+  <p class="small">
+    Veto:
+    {% for keyword in preferences.keywords.veto %}<span class="chip chip-warn">{{ keyword }}</span>{% else %}<span class="muted">—</span>{% endfor %}
+  </p>
+
+  <h3>Notities</h3>
+  <p class="small muted">{{ preferences.notes or "—" }}</p>
+
+  <details>
+    <summary>Ruwe JSON (alleen lezen)</summary>
+    <pre class="doc">{{ preferences | tojson(indent=2) }}</pre>
+  </details>
+</section>
+
+<section class="card">
+  <h2>Interne staat</h2>
+  <dl class="stats">
+    <div><dt>Profiel</dt><dd>{{ profile_chars }} tekens</dd></div>
+    <div><dt>Vacatures</dt><dd>{{ jobs.total }} ({{ jobs.matched }} met uitgebreide beoordeling)</dd></div>
+    <div><dt>Documenten</dt><dd>{{ documents }}</dd></div>
+    <div><dt>Stemmen</dt><dd>{{ votes.up }} ↑ · {{ votes.down }} ↓</dd></div>
+    <div><dt>Antwoordcursor</dt><dd>{{ answer_log_offset }}</dd></div>
+    <div><dt>Consolidatiestatus</dt><dd>{{ bootstrap_status }}</dd></div>
+    <div><dt>Model</dt><dd>{{ model }}</dd></div>
+    <div><dt>Gebruik</dt><dd>{{ usage.calls }} aanroepen · ${{ "%.4f" | format(usage.cost) }}</dd></div>
+  </dl>
+
+  <h3>Leerprofiel uit stemmen</h3>
+  <p class="small">
+    Positief:
+    {% for item in feedback.liked_keywords[:12] %}<span class="chip chip-ok">{{ item.keyword }}</span>{% else %}<span class="muted">nog geen signalen</span>{% endfor %}
+  </p>
+  <p class="small">
+    Negatief:
+    {% for item in feedback.disliked_keywords[:12] %}<span class="chip chip-warn">{{ item.keyword }}</span>{% else %}<span class="muted">nog geen signalen</span>{% endfor %}
+  </p>
+
+  <h3>Bronnen</h3>
+  <p class="muted small">{{ enabled_count }} van {{ sources | length }} actief · beheer op <a href="/sources">Bronnen</a>.</p>
+  <div class="table-scroll" role="region" aria-label="Bronoverzicht" tabindex="0">
+  <table class="table">
+    <thead><tr><th>Bron</th><th>Actief</th><th>Vacatures</th><th>Laatste status</th></tr></thead>
+    <tbody>
+      {% for s in sources %}
+        <tr>
+          <td>{{ s["name"] }}</td>
+          <td>{{ "ja" if s["enabled"] else "nee" }}</td>
+          <td>{{ jobs_by_source.get(s["id"], 0) }}</td>
+          <td class="muted small">{{ s["last_status"] or "—" }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Bestanden</h3>
+  <ul class="list small">
+    {% for label, path in paths.items() %}
+      <li><span>{{ label }}</span><code>{{ path }}</code></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

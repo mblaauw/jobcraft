@@ -1,0 +1,229 @@
+# Curated job sources for the Amsterdam region, seeded from the strategy document.
+#
+# Verified 2026-10-18 (adapter in parentheses):
+#   greenjobs            Exenzo public API, ~294 jobs, lat/lon per job        (exenzo-json)
+#   baneninhetgroen      HTML listing with Amsterdam filter + slug locations  (html-listing)
+#   gemeentebanen        sitemap -> JobPosting JSON-LD on detail pages        (sitemap-jsonld)
+#   colourfuljobs        sitemap -> JobPosting JSON-LD on detail pages        (sitemap-jsonld)
+#   werkenbij-amsterdam  HTML listing (gemeente Amsterdam), paged             (html-listing)
+#   vca-vacaturebank     WordPress RSS feed                                   (rss)
+#   culturele-vacatures  WordPress REST                                       (wp-posts)
+#   social-enterprise    WordPress REST (vacature CPT, body from page)        (wp-posts)
+#   fondsen              HTML list + detail (WP REST is gone)                 (html-fondsen)
+#
+# Broad channels without a structured route (Indeed, LinkedIn, Nationale
+# Vacaturebank, Jobbird, Intermediair, Werk.nl) stay manual until the
+# import-by-URL feature lands; scraping them is against their terms/anti-bot.
+#
+# Edits here are copied to data/sources.yaml once; edit the data copy afterwards.
+sources:
+  - id: culturele-vacatures
+    name: Culturele Vacatures (Amsterdam)
+    kind: wp-posts
+    base_url: https://www.culturele-vacatures.nl
+    path: /wp-json/wp/v2/posts
+    per_page: 30
+    enabled: true
+    notes: "Culturele en maatschappelijke vacatures; titel bevat vaak 'Organisatie: Functie'."
+
+  - id: fondsen
+    name: Fondsen.org vacatures
+    kind: html-fondsen
+    base_url: https://fondsen.org
+    path: /vacatures/
+    per_page: 30
+    enabled: true
+    notes: "Maatschappelijke werkgevers; WP REST geeft sinds 17-10-2026 een 301/404, HTML-lijst + detailpagina's."
+
+  - id: social-enterprise
+    name: Social Enterprise NL vacatures
+    kind: wp-posts
+    base_url: https://social-enterprise.nl
+    path: /wp-json/wp/v2/vacature
+    per_page: 20
+    content_from_page: true
+    enabled: true
+    notes: "Vacature CPT; REST body is leeg, inhoud komt van de vacaturepagina."
+
+  - id: greenjobs
+    name: Greenjobs.nl (Exenzo API)
+    kind: exenzo-json
+    base_url: https://greenjobs.api.exenzo.com
+    path: /api/public/v1/jobs
+    public_site: https://greenjobs.nl
+    per_page: 100
+    max_pages: 3
+    search: Amsterdam
+    enabled: true
+    notes: "Duurzame/groene vacaturebank met coördinaten (lat/lon) per vacature; search=Amsterdam om de regio te pakken. Publieke URL: greenjobs.nl/vacature/{slug}."
+
+  - id: baneninhetgroen
+    name: Banen in het Groen (Amsterdam)
+    kind: html-listing
+    base_url: https://baneninhetgroen.nl
+    listing_url: "https://baneninhetgroen.nl/vacatures?filter-location=Amsterdam%2C+Nederland"
+    link_pattern: "/vacatures/[a-z0-9-]{4,}$"
+    location_from_slug: "-in-([a-z-]+?)(?:-[0-9]+)?$"
+    per_page: 30
+    enabled: true
+    notes: "Groene vacatures met Amsterdam-filter; de plaats staat vaak in de slug (…-in-{plaats})."
+
+  - id: gemeentebanen
+    name: Gemeentebanen.nl (publieke sector)
+    kind: sitemap-jsonld
+    base_url: https://www.gemeentebanen.nl
+    sitemap_url: https://www.gemeentebanen.nl/sitemap.xml
+    child_pattern: vacanc
+    url_pattern: "/vacatures/[0-9]+/"
+    per_page: 40
+    enabled: true
+    notes: "Vacatures bij gemeenten en publieke organisaties; detailpagina's hebben schema.org JobPosting met locatie."
+
+  - id: colourfuljobs
+    name: Colourful Jobs (maatschappelijk)
+    kind: sitemap-jsonld
+    base_url: https://www.colourfuljobs.nl
+    sitemap_url: https://www.colourfuljobs.nl/sitemap.xml
+    url_pattern: "/vacatures/[a-z0-9-]+$"
+    per_page: 40
+    enabled: true
+    notes: "Inclusieve/maatschappelijke werkgevers; detailpagina's met JobPosting JSON-LD."
+
+  - id: werkenbij-amsterdam
+    name: Werken bij Amsterdam (gemeente)
+    kind: html-listing
+    base_url: https://werkenbij.amsterdam.nl
+    listing_url: "https://werkenbij.amsterdam.nl/vacatures?pageNumber={page}"
+    pages: 3
+    link_pattern: "/vacatures/[a-z0-9-]{4,}$"
+    default_location: Amsterdam
+    per_page: 50
+    enabled: true
+    notes: "Gemeentelijke vacatures (groen, facilitair, openbare ruimte, ondersteuning); geen JSON-LD, dus h1 + paginatekst."
+
+  - id: vca-vacaturebank
+    name: VCA Amsterdam vacaturebank
+    kind: rss
+    base_url: https://vacaturebank.vca.nu
+    feed_url: https://vacaturebank.vca.nu/feed/
+    per_page: 20
+    enabled: true
+    notes: "Kleine feed (vrijwilligers/community); nuttig als netwerk- en ervaringsroute."
+
+  - id: amsterdamsebos
+    name: Amsterdamse Bos
+    kind: html-listing
+    base_url: https://www.amsterdamsebos.nl
+    listing_url: https://www.amsterdamsebos.nl/vacatures/
+    link_pattern: "/vacatures/[a-z0-9-]{4,}$"
+    per_page: 15
+    enabled: false
+    notes: "Geen WP REST/feed gevonden (2026-10-18); HTML-patroon nog niet geverifieerd — aanzetten na controle."
+
+  - id: sustainablejobs
+    name: SustainableJobs
+    kind: sitemap-jsonld
+    base_url: https://sustainablejobs.nl
+    sitemap_url: https://sustainablejobs.nl/sitemap.xml
+    url_pattern: "/vacatures/[a-z0-9-]+$"
+    per_page: 30
+    enabled: false
+    notes: "Detailpagina's bevatten (nog) geen JobPosting JSON-LD; sitemap bevat vooral freelance/nieuws. Later opnieuw bekijken."
+
+  - id: impactjobs-doen
+    name: DOEN Impact Jobs
+    kind: getro-html
+    base_url: https://impactjobs.doen.nl
+    path: /jobs
+    enabled: false
+    notes: "Getro-board: vacaturedata zit in de Next.js-payload; aparte adapter nodig. Nog niet gebouwd."
+
+  - id: ivn
+    name: IVN Natuureducatie
+    kind: html-listing
+    base_url: https://www.ivn.nl
+    listing_url: https://www.ivn.nl/werken-bij-ivn/vacatures/
+    link_pattern: "/afdeling/[a-z-]+/werken-bij-ivn/vacatures/[a-z0-9-]{4,}$"
+    per_page: 10
+    enabled: false
+    notes: "Vooral vrijwilligersrollen door het hele land; handmatig bekijken, niet als primaire inkomensbron."
+
+  - id: nationalevacaturebank
+    name: Nationale Vacaturebank (handmatig)
+    kind: manual
+    base_url: https://www.nationalevacaturebank.nl
+    enabled: false
+    notes: "JS/anti-bot; handmatig zoeken of via import-by-URL toen die functie bestaat."
+
+  - id: jobbird
+    name: Jobbird (handmatig)
+    kind: manual
+    base_url: https://www.jobbird.com
+    enabled: false
+    notes: "Nuxt-SPA zonder publieke feed; handmatig."
+
+  - id: indeed
+    name: Indeed (handmatig)
+    kind: manual
+    base_url: https://nl.indeed.com
+    enabled: false
+    notes: "ToS/anti-bot; alleen handmatig of via import-by-URL."
+
+  - id: defensie-civilian
+    name: Defensie (burgerfuncties)
+    kind: defensie-cms
+    feed_url: https://werkenbijdefensie.nl/api/v1/feed/xml/nl_NL/dynamic-creatives-civilian
+    per_page: 20
+    enrich_details: true
+    enabled: true
+    notes: "Alleen niet-militaire functies (feed dynamic-creatives-civilian: 294 items op 18-10-2026). Inhoud via de publieke CMS-API: routing/route?href=<vacature> -> component/component -> VacancyJobDescriptionParagraph.body. De feed levert salaris, vakantiedagen, rijbewijs-via-Defensie en organisatieonderdeel; locatie alleen als de detailcomponenten die noemen."
+
+  - id: waterschappen
+    name: Waterschappen (landelijk)
+    kind: html-listing
+    base_url: https://www.waterschappen.nl
+    listing_url: https://www.waterschappen.nl/vacatures
+    link_pattern: "^https?://[a-z0-9.-]+/werken-bij/vacatures/[a-z0-9-]{4,}"
+    per_page: 25
+    company_from_host: true
+    enabled: true
+    notes: "Aggregator: links wijzen naar de vacaturepagina's van de individuele waterschappen (Amsterdamse regio: AGV, Waternet). Detailtekst komt van de lidpagina."
+
+  - id: rijksoverheid
+    name: Werken bij de Overheid (Rijk)
+    kind: hn-resource
+    base_url: https://www.werkenbijdeoverheid.nl
+    path: /vacatures
+    pages: 2
+    per_page: 20
+    enabled: true
+    notes: "Lijst via de component-resource (_hn:type=resource&_hn:rid=vacancy-results; de ref wordt automatisch herontdekt uit de shell), paginering met &pagina=N. Detailpagina's zijn server-rendered en bevatten de volledige tekst (Dit ga je doen / Dit vragen wij). Dekt het Rijk: Rijkswaterstaat, ILT, Justis, Belastingdienst, DJI enzovoort."
+
+  - id: ats-platform
+    name: ATS Platform (OLVG, Staatsbosbeheer, Zaanstad, ...) - client-id nodig
+    kind: browser-import
+    base_url: https://api.ats-platform.com
+    enabled: false
+    notes: "Gedeeld sollicitatieplatform achter de applicant-widget; api.ats-platform.com reageert maar vereist een client-id die niet in de paginamarkup staat. Zodra bekend: json-adapter voor meerdere publieke werkgevers tegelijk."
+
+  - id: politie
+    name: Politie (burgerfuncties) - browser-import nodig
+    kind: browser-import
+    base_url: https://www.werkenbijdepolitie.nl
+    enabled: false
+    notes: "Verbinding wordt gereset voor niet-browser clients (WAF, 18-10-2026). Alleen via browser-import."
+
+  - id: brandweer-regio
+    name: Brandweer / veiligheidsregio's - per regio
+    kind: browser-import
+    base_url: https://www.brandweer.nl
+    enabled: false
+    notes: "De landelijke sitemap bevat medewerkersverhalen, geen vacatures; elke veiligheidsregio heeft een eigen vacaturepagina (Amsterdam-Amstelland nog te vinden)."
+
+  - id: handmatige-import
+    name: Handmatige import uit JSON
+    kind: local-json
+    file: imports/handmatige-import.json
+    per_page: 100
+    enabled: false
+    notes: "Leest data/imports/<bestand>.json met [{url,title,company,location,hours,description}], gevuld door scripts/browser_import.py of met de hand. Bedoeld voor bronnen die alleen via een browser te lezen zijn (ATS-platform van OLVG/Staatsbosbeheer/Zaanstad, Politie)."

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ request.state.csrf_token if request.state is defined else '' }}">
+  <title>{% block title %}Jobcraft{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Naar de inhoud</a>
+  <header class="top">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">j.</span><span class="brand-name">Jobcraft<span>Career workspace</span></span></a>
+    <p class="nav-label">Jouw werkruimte</p>
+    <nav aria-label="Hoofdnavigatie">
+      {% for href, label, icon in [('/', 'Overzicht', '◈'), ('/jobs', 'Vacatures', '▤'), ('/interview', 'Gesprekken', '◌'), ('/profile', 'Mijn profiel', '◎'), ('/sources', 'Bronnen', '⊞')] %}
+      {% set active = request.url.path == href or (href != '/' and request.url.path.startswith(href + '/')) %}
+      <a href="{{ href }}" {% if active %}aria-current="page"{% endif %}><span class="nav-icon" aria-hidden="true">{{ icon }}</span>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="nav-note"><span class="nav-note-mark" aria-hidden="true">↗</span><strong>Een stap dichterbij.</strong><p>Ontdek werk dat bij je past, op jouw tempo.</p></div>
+    {% if request.state is defined and request.state.user %}
+    <details class="account-menu"><summary>{{ request.state.user.display_name or request.state.user.username }} <span aria-hidden="true">⌄</span></summary><div><a href="/account">Mijn account</a>{% if request.state.user.role == 'admin' %}<a href="/users" {% if request.url.path == '/users' %}aria-current="page"{% endif %}>Gebruikers beheren</a><a href="/admin" {% if request.url.path == '/admin' %}aria-current="page"{% endif %}>Technisch inzicht</a>{% endif %}<form method="post" action="/logout">{% include '_csrf.html' %}<button type="submit">Uitloggen</button></form></div></details>
+    {% endif %}
+  </header>
+  <main id="main-content" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+  <footer><span>Jobcraft</span><span>Jouw loopbaan. Jouw volgende stap. · <a href="/account">Mijn account</a></span></footer>
+</body>
+</html>
