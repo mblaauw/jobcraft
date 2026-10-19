@@ -129,7 +129,7 @@ def make_job(
         "location": (location or "").strip(),
         "hours": hours,
         "description": description or "",
-        "posted_at": posted_at or "",
+        "posted_at": store.normalize_posted_at(posted_at),
         "lat": lat,
         "lon": lon,
         "content_hash": hashlib.sha256(f"{title}:{description}".encode()).hexdigest(),

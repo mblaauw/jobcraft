@@ -9,6 +9,7 @@ Safety notes:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -20,7 +21,7 @@ from typing import Any
 
 import httpx
 
-from . import config, profile, tenancy
+from . import config, interview_state, profile, store, tenancy
 
 _PASSWORD_RE = re.compile(r"server password (\S+)")
 _SECRET_RE = re.compile(r"sk-[A-Za-z0-9_\-]{8,}")
@@ -303,12 +304,24 @@ class ServerManager:
         if self.client is None:
             raise LLMError("server not started")
         before = self.client.session_info(session_id)
+        open_topics = interview_state.open_topics()
+        topics_line = (
+            "Nog open onderwerpen: " + "; ".join(open_topics)
+            if open_topics
+            else "Alle interviewonderwerpen zijn besproken."
+        )
         context = (
             "[ACCOUNT_CONTEXT]\nUse only this user's supplied context, never files or other sessions.\n"
             f"Name: {tenancy.display_name()}\nPublic profile:\n{profile.read_public_excerpt(16000)}\n"
+            f"{topics_line}\n"
             "[/ACCOUNT_CONTEXT]\n[USER_MESSAGE]\n"
         )
-        self.client.prompt(session_id, context + text)
+        digest = hashlib.sha256(context.encode()).hexdigest()
+        session = store.get_session(session_id)
+        fresh_context = session is None or session["context_digest"] != digest
+        self.client.prompt(session_id, context + text if fresh_context else text)
+        if session is not None:
+            store.update_session(session_id, context_digest=digest)
         self.client.wait(session_id)
         raw_messages = self.client.messages(session_id)
         raw_messages.reverse()  # the API returns newest-first

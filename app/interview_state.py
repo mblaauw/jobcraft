@@ -1,9 +1,8 @@
 """Structured interview coverage: deterministic signals + manual overrides.
 
-The interviewer reads `interview-plan.md`; this module regenerates that file from
-the state after every answer/toggle so coverage stays visible to both sides.
-Keywords are transparent heuristics, not semantic understanding; the UI allows
-manual correction.
+Open topics are injected into the interviewer context; coverage is no longer
+written to a separate plan file. Keywords are transparent heuristics, not
+semantic understanding; the UI allows manual correction.
 """
 
 from __future__ import annotations
@@ -197,20 +196,9 @@ def _save(state: dict) -> None:
     config.user_path(STATE_FILE).write_text(json.dumps(state, ensure_ascii=False, indent=2))
 
 
-def _write_plan(state: dict) -> None:
-    lines = [
-        "# Interview plan",
-        "",
-        "Automatisch bijgehouden op basis van interview-antwoorden en handmatige aanvullingen.",
-        "De interviewer leest deze lijst om open onderwerpen te kiezen.",
-        "",
-    ]
-    for topic in state["topics"]:
-        marker = "x" if topic["status"] == "covered" else " "
-        lines.append(f"- [{marker}] {topic['label']}")
-    lines.extend(["", f"Laatst bijgewerkt: {state['updated_at']}", ""])
-    config.user_path(PLAN_FILE).parent.mkdir(parents=True, exist_ok=True)
-    config.user_path(PLAN_FILE).write_text("\n".join(lines))
+def open_topics() -> list[str]:
+    """Labels the interviewer still needs to cover; fed into its context."""
+    return [topic["label"] for topic in summary()["topics"] if topic["status"] != "covered"]
 
 
 def _apply_log(state: dict) -> None:
@@ -236,7 +224,6 @@ def ensure_state(seed_from_log: bool = True) -> dict:
         if seed_from_log:
             _apply_log(state)
         _save(state)
-        _write_plan(state)
         return state
 
 
@@ -258,7 +245,6 @@ def record_answer(question: str, answer: str) -> dict:
                     topic["status"] = "covered"
         state["question_count"] = int(state.get("question_count") or 0) + 1
         _save(state)
-        _write_plan(state)
         return state
 
 
@@ -275,7 +261,6 @@ def toggle(topic_id: str, status: str) -> dict:
         topic["manual"] = True
         topic["last_touched"] = now_iso()
         _save(state)
-        _write_plan(state)
         return state
 
 

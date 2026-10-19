@@ -332,7 +332,3 @@ def assess(
         "source": source,
         "label": label,
     }
-
-
-def within_range(*args, **kwargs) -> bool | None:
-    return assess(*args, **kwargs)["in_range"]

@@ -27,8 +27,8 @@ def test_record_answer_marks_topic_after_two_signals(tmp_path, monkeypatch):
         topic for topic in interview_state.summary()["topics"] if topic["id"] == "uren_ritme"
     )
     assert uren["status"] == "covered"
-    plan = (tmp_path / "plan.md").read_text()
-    assert "- [x] Uren, ritme en voorspelbaarheid" in plan
+    assert "Uren, ritme en voorspelbaarheid" not in interview_state.open_topics()
+    assert not (tmp_path / "plan.md").exists()
 
 
 def test_manual_toggle_wins_over_heuristic(tmp_path, monkeypatch):
@@ -38,10 +38,11 @@ def test_manual_toggle_wins_over_heuristic(tmp_path, monkeypatch):
     summary = interview_state.summary()
     reistijd = next(topic for topic in summary["topics"] if topic["id"] == "reistijd")
     assert reistijd["status"] == "covered" and reistijd["manual"] is True
-    assert "- [x] Reistijd, fiets/OV, bedrijfsauto" in (tmp_path / "plan.md").read_text()
+    assert "Reistijd, fiets/OV, bedrijfsauto" not in interview_state.open_topics()
 
     interview_state.toggle("reistijd", "open")
-    assert "- [ ] Reistijd, fiets/OV, bedrijfsauto" in (tmp_path / "plan.md").read_text()
+    assert "Reistijd, fiets/OV, bedrijfsauto" in interview_state.open_topics()
+    assert not (tmp_path / "plan.md").exists()
 
 
 def test_unknown_topic_is_rejected(tmp_path, monkeypatch):

@@ -27,7 +27,14 @@ IDENTITY_FILE = DOC_TEMPLATES_DIR / "identity.json"
 
 LETTER_MAX_LINES = 15
 LETTER_CHARS_PER_LINE = 95
-_GENERATION_LOCK = threading.Lock()
+_GENERATION_LOCKS: dict[tuple[str, int, str], threading.Lock] = {}
+_GENERATION_LOCKS_GUARD = threading.Lock()
+
+
+def _generation_lock(owner: str, job_id: int, kind: str) -> threading.Lock:
+    key = (owner, job_id, kind)
+    with _GENERATION_LOCKS_GUARD:
+        return _GENERATION_LOCKS.setdefault(key, threading.Lock())
 
 
 # ---------------------------------------------------------------- templates
@@ -457,6 +464,6 @@ def _generate_job_document(mgr: llm.ServerManager, job, kind: str) -> dict:
 
 
 def generate_for_job(mgr: llm.ServerManager, job, kind: str) -> dict:
-    """Serialize generation so two requests cannot claim the same version."""
-    with _GENERATION_LOCK:
+    """Serialize one owner/job/kind without blocking other accounts."""
+    with _generation_lock(tenancy.user_id(), job["id"], kind):
         return _generate_job_document(mgr, job, kind)

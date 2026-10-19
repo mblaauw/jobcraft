@@ -31,7 +31,9 @@ def rule_score(
     job, preferences: dict, feedback_data: dict | None = None
 ) -> tuple[float, list[str]]:
     """Fast deterministic pre-score in 0..100 with short reason notes."""
-    text = _norm(" ".join([job["title"] or "", job["company"] or "", job["description"] or ""]))
+    text = _row_get(job, "search_text") or _norm(
+        " ".join([job["title"] or "", job["company"] or "", job["description"] or ""])
+    )
     score = 40.0
     notes: list[str] = []
 
@@ -83,20 +85,14 @@ def rule_score(
     if preferences.get("hard_filters", {}).get("no_phone_main") and "callcenter" in text:
         score -= 10.0
 
-    travel = geo.assess(
-        _row_get(job, "location"),
-        _row_get(job, "lat"),
-        _row_get(job, "lon"),
-        description=_row_get(job, "description"),
-        title=_row_get(job, "title"),
-    )
-    if travel["in_range"] is False and not travel["auto"]:
+    travel = ranking.travel_of(job)
+    if travel.get("in_range") is False and not travel.get("auto"):
         score -= 25.0
         notes.append(f"te ver: {travel['label']}")
-    elif travel["in_range"] is True:
+    elif travel.get("in_range") is True:
         score += 4.0
         notes.append("binnen reisbereik (schatting)")
-    elif travel["auto"]:
+    elif travel.get("auto"):
         notes.append("mobiel werk met auto")
 
     fb_delta, fb_notes = feedback.rule_adjust(
@@ -205,13 +201,10 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
             job
             for job in store.list_jobs_for_matching(2000)
             if job["signals_key"] != systemone.signals_key(job, excerpt)
+            and not ranking.excluded_from_matching(job)
         ]
+        consecutive_failures = 0
         for job in pending[:batch]:
-            if job["vote"] or job["status"] in ("ignored", "applied"):
-                continue
-            travel = ranking.travel_of(job)
-            if travel["in_range"] is False and not travel["auto"]:
-                continue
             try:
                 data, usage, _latency = systemone.decide(systemone.compose_state(job, excerpt))
                 signals = systemone.signals_from_answers(data.get("answers") or {})
@@ -232,9 +225,13 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
                     agent="jev",
                 )
                 summary["signals"] += 1
+                consecutive_failures = 0
             except Exception as exc:  # noqa: BLE001 - one bad job must not stop the round
                 summary["errors"].append(f"job {job['id']} systemone: {type(exc).__name__}")
-                break
+                consecutive_failures += 1
+                if consecutive_failures >= 3:
+                    summary["errors"].append("systemone gestopt na 3 opeenvolgende fouten")
+                    break
 
     # Stage 2 — free deterministic rerank: votes and fresh signals apply instantly.
     ranking.rerank_all(preferences, feedback_data, digest_base)
@@ -261,7 +258,6 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
                 agent="matcher",
             )
             verdict = _parse_verdict(text)
-            final = round(0.4 * base + 0.6 * verdict["score"], 1)
             reason = json.dumps(
                 {
                     "why": verdict["why"],
@@ -273,7 +269,7 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
                 },
                 ensure_ascii=False,
             )
-            store.update_job_match(job["id"], final, reason, digest)
+            store.update_job_match(job["id"], float(verdict["score"]), reason, digest)
             summary["matched"] += 1
         except Exception as exc:  # noqa: BLE001 - retry next round via the queue
             summary["failed"] += 1

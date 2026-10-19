@@ -14,7 +14,6 @@ human-readable and can be inspected or reset (delete it and vote again).
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 from collections import Counter
@@ -233,8 +232,7 @@ def _tokens(row) -> set[str]:
     return {word for word in re.findall(r"[a-zà-ÿ]{4,}", text) if word not in STOPWORDS}
 
 
-def _document_frequency() -> tuple[Counter, int]:
-    """How many jobs contain each token: used to drop boilerplate keywords."""
+def _compute_document_frequency() -> tuple[Counter, int]:
     corpus: Counter = Counter()
     with store.connect() as con:
         rows = con.execute("SELECT title, description FROM jobs").fetchall()
@@ -246,6 +244,21 @@ def _document_frequency() -> tuple[Counter, int]:
         total += 1
         for token in tokens:
             corpus[token] += 1
+    return corpus, total
+
+
+def refresh_document_frequency() -> None:
+    corpus, total = _compute_document_frequency()
+    store.save_token_df(dict(corpus), total)
+
+
+def _document_frequency() -> tuple[Counter, int]:
+    """Read the scan-time corpus counts; compute and persist once if missing."""
+    cached = store.load_token_df()
+    if cached is not None:
+        return Counter(cached[0]), cached[1]
+    corpus, total = _compute_document_frequency()
+    store.save_token_df(dict(corpus), total)
     return corpus, total
 
 
@@ -306,19 +319,6 @@ def load() -> dict:
         return rebuild()
 
 
-def signature() -> str:
-    data = load()
-    basis = {
-        "liked": [item["keyword"] for item in data.get("liked_keywords", [])],
-        "disliked": [item["keyword"] for item in data.get("disliked_keywords", [])],
-        "counts": data.get("counts"),
-        "companies": [data.get("liked_companies"), data.get("disliked_companies")],
-    }
-    return hashlib.sha256(
-        json.dumps(basis, ensure_ascii=False, sort_keys=True).encode()
-    ).hexdigest()[:10]
-
-
 def rule_adjust(
     text: str, company: str | None, source_id: str | None, data: dict | None = None
 ) -> tuple[float, list[str]]:
@@ -360,26 +360,3 @@ def rule_adjust(
             delta += 2.0
 
     return round(delta, 1), notes
-
-
-def prompt_block(data: dict | None = None, limit: int = 10) -> str:
-    data = data if data is not None else load()
-    counts = data.get("counts", {})
-    if not counts.get("up") and not counts.get("down"):
-        return ""
-    lines = ["## Feedback van de gebruiker (leer hiervan)"]
-    liked = [item["keyword"] for item in data.get("liked_keywords", [])[:limit]]
-    disliked = [item["keyword"] for item in data.get("disliked_keywords", [])[:limit]]
-    if liked:
-        lines.append("Terugkerende woorden in omhoog gestemde vacatures: " + ", ".join(liked))
-    if disliked:
-        lines.append("Terugkerende woorden in omlaag gestemde vacatures: " + ", ".join(disliked))
-    if data.get("liked_titles"):
-        lines.append("Gewaardeerde vacatures: " + " | ".join(data["liked_titles"][:6]))
-    if data.get("disliked_titles"):
-        lines.append("Afgewezen vacatures: " + " | ".join(data["disliked_titles"][:6]))
-    lines.append(
-        "Weeg vacatures die sterk lijken op de gewaardeerde voorbeelden hoger en op de "
-        "afgewezen voorbeelden lager. Noem 'feedback' in je reden als dit meeweegt."
-    )
-    return "\n".join(lines)
