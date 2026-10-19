@@ -39,7 +39,9 @@ generated passwords are written once to `.runtime/bootstrap-accounts.json`
 (mode 0600, git-ignored). Change passwords through **Mijn account** afterwards.
 
 `APP_USER` / `APP_PASSWORD` only seed the first account. They are not consulted
-for later logins.
+for later logins. In an existing workspace, keep the current `APP_USER` value:
+changing it renames the legacy account (its password is unchanged); other
+accounts are unaffected.
 
 ## Data and privacy
 
