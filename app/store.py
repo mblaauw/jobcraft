@@ -665,7 +665,7 @@ def save_token_df(counter: dict[str, int], total: int) -> None:
 
 def meta_get(key: str, default: str | None = None) -> str | None:
     with connect() as con:
-        if key in ("scan_status", "scan_summary", "ownership_v1", "token_df_total"):
+        if key in ("scan_status", "scan_summary", "ownership_v1", "token_df_total", "scheduler_last_fire"):
             row = con.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
         else:
             row = con.execute(
@@ -676,7 +676,7 @@ def meta_get(key: str, default: str | None = None) -> str | None:
 
 def meta_set(key: str, value: str) -> None:
     with connect() as con:
-        if key in ("scan_status", "scan_summary", "ownership_v1", "token_df_total"):
+        if key in ("scan_status", "scan_summary", "ownership_v1", "token_df_total", "scheduler_last_fire"):
             con.execute(
                 "INSERT INTO meta(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                 (key, value),
