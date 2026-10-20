@@ -23,6 +23,7 @@ def test_record_answer_marks_topic_after_two_signals(tmp_path, monkeypatch):
     assert uren["status"] == "open"  # one signal is not enough
 
     interview_state.record_answer("Hoeveel uur?", "32 uur per week is goed.")
+    interview_state.record_answer("En je rooster?", "Dagdienst, 32 uur per week.")
     uren = next(
         topic for topic in interview_state.summary()["topics"] if topic["id"] == "uren_ritme"
     )

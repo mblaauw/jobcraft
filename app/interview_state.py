@@ -17,7 +17,7 @@ STATE_FILE = config.PROFILE_DIR / "interview-state.json"
 PLAN_FILE = config.PROFILE_DIR / "interview-plan.md"
 ANSWER_LOG_FILE = config.PROFILE_DIR / "answer-log.md"
 _LOCK = threading.Lock()
-COVERED_THRESHOLD = 2
+COVERED_THRESHOLD = 3
 
 TOPIC_SPECS = [
     {
