@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import threading
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -104,6 +106,56 @@ def latest(kind: str, *, owner: str | None = None, key: str | None = None) -> di
                 (kind, owner),
             ).fetchone()
     return dict(row) if row else None
+
+
+_HANDLERS: dict[str, Callable[[dict], dict | None]] = {}
+_STOP = threading.Event()
+_WORKERS: list[threading.Thread] = []
+
+
+def handler(kind: str):
+    def register(function: Callable[[dict], dict | None]):
+        _HANDLERS[kind] = function
+        return function
+
+    return register
+
+
+def run_one() -> bool:
+    task = claim_next()
+    if task is None:
+        return False
+    function = _HANDLERS.get(task["kind"])
+    if function is None:
+        fail(task["id"], f"geen handler voor {task['kind']}")
+        return True
+    try:
+        result = function(task)
+        finish(task["id"], result if isinstance(result, dict) else {})
+    except Exception as exc:  # noqa: BLE001 - the queue must keep running
+        fail(task["id"], f"{type(exc).__name__}: {exc}")
+    return True
+
+
+def start_workers(count: int = 2) -> None:
+    _STOP.clear()
+
+    def loop():
+        while not _STOP.is_set():
+            if not run_one():
+                _STOP.wait(0.5)
+
+    for _ in range(max(1, count)):
+        thread = threading.Thread(target=loop, daemon=True)
+        thread.start()
+        _WORKERS.append(thread)
+
+
+def stop_workers() -> None:
+    _STOP.set()
+    for thread in _WORKERS:
+        thread.join(timeout=5)
+    _WORKERS.clear()
 
 
 def recover_stale(timeout_seconds: int = 120) -> int:
