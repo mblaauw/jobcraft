@@ -414,11 +414,10 @@ def _run_scan() -> None:
 @app.post("/sources/scan")
 def sources_scan(request: Request):
     auth.require_admin(request)
-    with _scan_lock:
-        if store.meta_get("scan_status") == "running":
-            return RedirectResponse(url="/sources", status_code=303)
-        store.meta_set("scan_status", "running")
-    threading.Thread(target=tenancy.capture(_run_scan), daemon=True).start()
+    if store.meta_get("scan_status") == "running":
+        return RedirectResponse(url="/sources", status_code=303)
+    store.meta_set("scan_status", "running")
+    tasks.enqueue("scan", owner=None, dedupe_key="scan")
     return RedirectResponse(url="/sources", status_code=303)
 
 
@@ -887,7 +886,6 @@ def api_send(session_id: str, body: SendBody):
 # ---------------------------------------------------------------- bootstrap
 
 
-_scan_lock = threading.Lock()
 _document_lock = threading.Lock()
 
 
