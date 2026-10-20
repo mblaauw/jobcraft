@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app import config, feedback, interview_state, profile, store
+from app import config, feedback, interview_state, profile, sources, store
 
 
 def test_migrations_are_versioned_and_idempotent():
@@ -70,6 +70,16 @@ def test_runtime_state_reads_from_sqlite_not_removed_files():
     assert store.list_answers()[0]["answer"] == "Antwoord."
     assert interview_state.summary()["topics"]
     assert feedback.load()["counts"] == {"up": 0, "down": 0}
+
+
+def test_source_configuration_is_persisted_in_sqlite():
+    sources.ensure_sources_file()
+    entries = sources.load_sources()
+    assert entries and store.load_source_configs()
+    source_id = entries[0]["id"]
+    assert sources.set_enabled(source_id, False)
+    stored = {entry["id"]: entry for entry in store.load_source_configs()}
+    assert stored[source_id]["enabled"] is False
 
 
 def test_existing_database_is_backed_up_before_migrating():

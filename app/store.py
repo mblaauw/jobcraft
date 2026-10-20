@@ -691,6 +691,44 @@ def meta_set(key: str, value: str) -> None:
 # ---------------------------------------------------------------- phase 2
 
 
+def load_source_configs() -> list[dict]:
+    with connect() as con:
+        rows = con.execute("SELECT config_json, enabled FROM source_configs ORDER BY id").fetchall()
+    configs = []
+    for row in rows:
+        try:
+            entry = json.loads(row["config_json"])
+        except ValueError:
+            continue
+        if isinstance(entry, dict) and entry.get("id"):
+            entry["enabled"] = bool(row["enabled"])
+            configs.append(entry)
+    return configs
+
+
+def save_source_config(entry: dict, enabled: bool | None = None) -> None:
+    source_id = entry.get("id")
+    if not source_id:
+        return
+    state = bool(entry.get("enabled", True)) if enabled is None else enabled
+    with connect() as con:
+        con.execute(
+            "INSERT INTO source_configs(id, config_json, enabled, updated_at) VALUES (?,?,?,?) "
+            "ON CONFLICT(id) DO UPDATE SET config_json=excluded.config_json, "
+            "enabled=excluded.enabled, updated_at=excluded.updated_at",
+            (source_id, json.dumps(entry, ensure_ascii=False), 1 if state else 0, now()),
+        )
+
+
+def set_source_config_enabled(source_id: str, enabled: bool) -> bool:
+    with connect() as con:
+        cursor = con.execute(
+            "UPDATE source_configs SET enabled=?, updated_at=? WHERE id=?",
+            (1 if enabled else 0, now(), source_id),
+        )
+    return cursor.rowcount > 0
+
+
 def sync_sources(entries: list[dict]) -> None:
     with connect() as con:
         for entry in entries:
