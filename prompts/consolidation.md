@@ -8,12 +8,12 @@ current version. Return STRICT JSON only, no markdown fences, with this shape:
     ## Zoekprofiel, ## Open vragen, ## Privé (niet openbaar gebruiken)>",
   "preferences": {
     "updated_at": "<ISO date>",
-    "tracks": [{"id": "groen|locatie|community", "name": "...", "weight": 0.0,
+    "tracks": [{"id": "...", "name": "...", "weight": 0.0,
                 "keywords": ["..."]}],
     "likes": [{"tag": "...", "weight": 1, "evidence": "..."}],
     "dislikes": [{"tag": "...", "weight": -1, "evidence": "..."}],
-    "hard_filters": {"location": "...", "hours_min": 24, "hours_max": 32,
-                     "no_phone_main": true, "no_structural_evenings": true},
+    "hard_filters": {"location": "...", "hours_min": 0, "hours_max": 0,
+                     "no_phone_main": false, "no_structural_evenings": false},
     "keywords": {"boost": ["..."], "veto": ["..."]},
     "notes": "..."
   }

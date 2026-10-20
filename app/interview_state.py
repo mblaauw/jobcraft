@@ -115,7 +115,7 @@ TOPIC_SPECS = [
     },
     {
         "id": "afknappers",
-        "label": "Afknappers: sales, telefonie, nachten/weekenden, zwaar werk, vlees",
+        "label": "Persoonlijke grenzen en afknappers",
         "keywords": [
             "sales",
             "bellen",
@@ -123,8 +123,9 @@ TOPIC_SPECS = [
             "callcenter",
             "nacht",
             "weekend",
-            "vlees",
             "zwaar",
+            "grens",
+            "afknapper",
         ],
     },
     {
