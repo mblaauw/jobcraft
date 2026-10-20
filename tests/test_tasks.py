@@ -64,3 +64,12 @@ def test_fail_and_stale_recovery():
         )
     assert tasks.recover_stale() == 1
     assert tasks.latest("scan")["status"] == "error"
+
+
+def test_user_source_preferences_are_owner_scoped():
+    from app import store
+
+    store.set_user_source("fixture", False)
+    assert store.list_user_sources() == {"fixture": False}
+    store.set_user_source("fixture", True)
+    assert store.list_user_sources() == {"fixture": True}

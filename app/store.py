@@ -691,6 +691,24 @@ def meta_set(key: str, value: str) -> None:
 # ---------------------------------------------------------------- phase 2
 
 
+def list_user_sources(owner: str | None = None) -> dict[str, bool]:
+    with connect() as con:
+        rows = con.execute(
+            "SELECT source_id, enabled FROM user_sources WHERE owner=?",
+            (owner or tenancy.user_id(),),
+        ).fetchall()
+    return {row["source_id"]: bool(row["enabled"]) for row in rows}
+
+
+def set_user_source(source_id: str, enabled: bool, owner: str | None = None) -> None:
+    with connect() as con:
+        con.execute(
+            "INSERT INTO user_sources(owner, source_id, enabled) VALUES (?,?,?) "
+            "ON CONFLICT(owner, source_id) DO UPDATE SET enabled=excluded.enabled",
+            (owner or tenancy.user_id(), source_id, 1 if enabled else 0),
+        )
+
+
 def active_owners_with_profile() -> list[str]:
     with connect() as con:
         rows = con.execute(
