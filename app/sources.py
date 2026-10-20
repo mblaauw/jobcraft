@@ -48,12 +48,18 @@ def ensure_sources_file() -> None:
 
 
 def load_sources() -> list[dict]:
+    configured = store.load_source_configs()
+    if configured:
+        return configured
     ensure_sources_file()
     if not DATA_FILE.exists():
         return []
     payload = yaml.safe_load(DATA_FILE.read_text()) or {}
     sources = payload.get("sources") or []
-    return [source for source in sources if isinstance(source, dict) and source.get("id")]
+    result = [source for source in sources if isinstance(source, dict) and source.get("id")]
+    for source in result:
+        store.save_source_config(source)
+    return result
 
 
 def set_enabled(source_id: str, enabled: bool) -> bool:
@@ -66,7 +72,7 @@ def set_enabled(source_id: str, enabled: bool) -> bool:
     )
     match = block.search(text)
     if not match:
-        return False
+        return store.set_source_config_enabled(source_id, enabled)
     body = match.group(2)
     desired = "true" if enabled else "false"
     if re.search(r"^[ \t]*enabled:[ \t]*(true|false)[ \t]*$", body, re.M):
@@ -80,6 +86,7 @@ def set_enabled(source_id: str, enabled: bool) -> bool:
     else:
         new_body = body.rstrip("\n") + f"\n    enabled: {desired}\n"
     DATA_FILE.write_text(text[: match.start(2)] + new_body + text[match.end(2) :])
+    store.set_source_config_enabled(source_id, enabled)
     return True
 
 

@@ -172,6 +172,7 @@ def init_db() -> None:
         _normalize_job_dates(con)
         _recover_raw_verdicts(con)
         _fill_search_text(con)
+        migrate(con)
 
 
 def _normalize_job_dates(con) -> None:
@@ -184,6 +185,43 @@ def _normalize_job_dates(con) -> None:
         if normalized != row["posted_at"]:
             con.execute("UPDATE jobs SET posted_at=? WHERE id=?", (normalized, row["id"]))
     con.execute("INSERT INTO meta(key,value) VALUES ('posted_at_normalized_v2','1')")
+
+
+def _backup_database() -> None:
+    from .migrations import MIGRATIONS
+
+    directory = config.DATA_DIR / "backups"
+    directory.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    target = directory / f"app-{stamp}-pre-v{len(MIGRATIONS)}.db"
+    source = sqlite3.connect(config.DB_PATH)
+    try:
+        with sqlite3.connect(target) as destination:
+            source.backup(destination)
+    finally:
+        source.close()
+    for old in sorted(directory.glob("app-*.db"), reverse=True)[5:]:
+        old.unlink(missing_ok=True)
+
+
+def migrate(con) -> None:
+    from .migrations import MIGRATIONS
+
+    current = int(con.execute("PRAGMA user_version").fetchone()[0])
+    if current >= len(MIGRATIONS):
+        return
+    if current == 0 and con.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] > 0:
+        _backup_database()
+    con.commit()
+    for index, module in enumerate(MIGRATIONS[current:], start=current + 1):
+        con.execute("BEGIN IMMEDIATE")
+        try:
+            module.up(con)
+            con.execute(f"PRAGMA user_version={index}")
+            con.commit()
+        except Exception:
+            con.rollback()
+            raise
 
 
 def _migrate_ownership(con):
@@ -496,6 +534,112 @@ def list_profile_versions(limit: int = 30) -> list[sqlite3.Row]:
         ).fetchall()
 
 
+def get_profile(owner: str | None = None) -> str | None:
+    with connect() as con:
+        row = con.execute(
+            "SELECT profile_md FROM profiles WHERE owner=?", (owner or tenancy.user_id(),)
+        ).fetchone()
+    return row["profile_md"] if row else None
+
+
+def set_profile(profile_md: str, owner: str | None = None) -> None:
+    with connect() as con:
+        con.execute(
+            "INSERT INTO profiles(owner, profile_md, updated_at) VALUES (?,?,?) "
+            "ON CONFLICT(owner) DO UPDATE SET profile_md=excluded.profile_md, "
+            "updated_at=excluded.updated_at",
+            (owner or tenancy.user_id(), profile_md, now()),
+        )
+
+
+def get_preferences(owner: str | None = None) -> dict | None:
+    with connect() as con:
+        row = con.execute(
+            "SELECT data_json FROM preferences WHERE owner=?", (owner or tenancy.user_id(),)
+        ).fetchone()
+    if not row:
+        return None
+    try:
+        return json.loads(row["data_json"])
+    except ValueError:
+        return None
+
+
+def set_preferences(data: dict, owner: str | None = None) -> None:
+    with connect() as con:
+        con.execute(
+            "INSERT INTO preferences(owner, data_json, updated_at) VALUES (?,?,?) "
+            "ON CONFLICT(owner) DO UPDATE SET data_json=excluded.data_json, "
+            "updated_at=excluded.updated_at",
+            (owner or tenancy.user_id(), json.dumps(data, ensure_ascii=False), now()),
+        )
+
+
+def get_feedback_profile(owner: str | None = None) -> dict | None:
+    with connect() as con:
+        row = con.execute(
+            "SELECT data_json FROM feedback_profiles WHERE owner=?",
+            (owner or tenancy.user_id(),),
+        ).fetchone()
+    if not row:
+        return None
+    try:
+        return json.loads(row["data_json"])
+    except ValueError:
+        return None
+
+
+def set_feedback_profile(data: dict, owner: str | None = None) -> None:
+    with connect() as con:
+        con.execute(
+            "INSERT INTO feedback_profiles(owner, data_json, updated_at) VALUES (?,?,?) "
+            "ON CONFLICT(owner) DO UPDATE SET data_json=excluded.data_json, "
+            "updated_at=excluded.updated_at",
+            (owner or tenancy.user_id(), json.dumps(data, ensure_ascii=False), now()),
+        )
+
+
+def get_interview_state(owner: str | None = None) -> dict | None:
+    with connect() as con:
+        row = con.execute(
+            "SELECT data_json FROM interview_state WHERE owner=?",
+            (owner or tenancy.user_id(),),
+        ).fetchone()
+    if not row:
+        return None
+    try:
+        return json.loads(row["data_json"])
+    except ValueError:
+        return None
+
+
+def set_interview_state(data: dict, owner: str | None = None) -> None:
+    with connect() as con:
+        con.execute(
+            "INSERT INTO interview_state(owner, data_json, updated_at) VALUES (?,?,?) "
+            "ON CONFLICT(owner) DO UPDATE SET data_json=excluded.data_json, "
+            "updated_at=excluded.updated_at",
+            (owner or tenancy.user_id(), json.dumps(data, ensure_ascii=False), now()),
+        )
+
+
+def append_answer(question: str, answer: str, session_id: str | None = None) -> None:
+    with connect() as con:
+        con.execute(
+            "INSERT INTO answers(owner, session_id, question, answer, created_at) "
+            "VALUES (?,?,?,?,?)",
+            (tenancy.user_id(), session_id, question, answer, now()),
+        )
+
+
+def list_answers(owner: str | None = None) -> list:
+    with connect() as con:
+        return con.execute(
+            "SELECT * FROM answers WHERE owner=? ORDER BY id",
+            (owner or tenancy.user_id(),),
+        ).fetchall()
+
+
 def load_token_df() -> tuple[dict[str, int], int] | None:
     with connect() as con:
         rows = con.execute("SELECT token, n FROM token_df").fetchall()
@@ -545,6 +689,44 @@ def meta_set(key: str, value: str) -> None:
 
 
 # ---------------------------------------------------------------- phase 2
+
+
+def load_source_configs() -> list[dict]:
+    with connect() as con:
+        rows = con.execute("SELECT config_json, enabled FROM source_configs ORDER BY id").fetchall()
+    configs = []
+    for row in rows:
+        try:
+            entry = json.loads(row["config_json"])
+        except ValueError:
+            continue
+        if isinstance(entry, dict) and entry.get("id"):
+            entry["enabled"] = bool(row["enabled"])
+            configs.append(entry)
+    return configs
+
+
+def save_source_config(entry: dict, enabled: bool | None = None) -> None:
+    source_id = entry.get("id")
+    if not source_id:
+        return
+    state = bool(entry.get("enabled", True)) if enabled is None else enabled
+    with connect() as con:
+        con.execute(
+            "INSERT INTO source_configs(id, config_json, enabled, updated_at) VALUES (?,?,?,?) "
+            "ON CONFLICT(id) DO UPDATE SET config_json=excluded.config_json, "
+            "enabled=excluded.enabled, updated_at=excluded.updated_at",
+            (source_id, json.dumps(entry, ensure_ascii=False), 1 if state else 0, now()),
+        )
+
+
+def set_source_config_enabled(source_id: str, enabled: bool) -> bool:
+    with connect() as con:
+        cursor = con.execute(
+            "UPDATE source_configs SET enabled=?, updated_at=? WHERE id=?",
+            (1 if enabled else 0, now(), source_id),
+        )
+    return cursor.rowcount > 0
 
 
 def sync_sources(entries: list[dict]) -> None:

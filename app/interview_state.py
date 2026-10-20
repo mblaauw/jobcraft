@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import threading
 
-from . import config, tenancy
+from . import config, store, tenancy
 from .util import now_iso
 
 STATE_FILE = config.PROFILE_DIR / "interview-state.json"
@@ -173,7 +173,9 @@ def _new_state() -> dict:
 
 
 def _load() -> dict:
-    state = json.loads(config.user_path(STATE_FILE).read_text())
+    state = store.get_interview_state()
+    if state is None:
+        state = json.loads(config.user_path(STATE_FILE).read_text())
     known = {topic["id"] for topic in state.get("topics", [])}
     for spec in _specs():
         if spec["id"] not in known:
@@ -194,6 +196,7 @@ def _save(state: dict) -> None:
     state["updated_at"] = now_iso()
     config.user_path(STATE_FILE).parent.mkdir(parents=True, exist_ok=True)
     config.user_path(STATE_FILE).write_text(json.dumps(state, ensure_ascii=False, indent=2))
+    store.set_interview_state(state)
 
 
 def open_topics() -> list[str]:
