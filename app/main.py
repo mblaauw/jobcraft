@@ -880,7 +880,6 @@ def api_send(session_id: str, body: SendBody):
 # ---------------------------------------------------------------- bootstrap
 
 
-_bootstrap_lock = threading.Lock()
 _scan_lock = threading.Lock()
 _document_lock = threading.Lock()
 
@@ -926,20 +925,19 @@ def _run_bootstrap() -> None:
 
 @app.post("/profile/consolidate")
 def profile_consolidate(full: str = Form("0")):
-    if manager is None:
-        raise HTTPException(status_code=503, detail="LLM runtime is disabled.")
+    get_manager()
     if tenancy.user_id() == tenancy.LEGACY_ID and not profile.seed_available():
         return RedirectResponse(url="/profile?error=seed", status_code=303)
     if tenancy.user_id() != tenancy.LEGACY_ID and not profile.read_answer_log().strip():
         return RedirectResponse(url="/interview", status_code=303)
     if profile.pending_draft():
         return RedirectResponse(url="/profile?error=draft", status_code=303)
-    with _bootstrap_lock:
-        if store.meta_get("bootstrap_status") == "running":
-            return RedirectResponse(url="/profile", status_code=303)
-        store.meta_set("consolidation_full", "1" if full == "1" else "0")
-        store.meta_set("bootstrap_status", "running")
-    threading.Thread(target=tenancy.capture(_run_bootstrap), daemon=True).start()
+    if store.meta_get("bootstrap_status") == "running":
+        return RedirectResponse(url="/profile", status_code=303)
+    store.meta_set("consolidation_full", "1" if full == "1" else "0")
+    store.meta_set("bootstrap_status", "running")
+    owner = tenancy.user_id()
+    tasks.enqueue("consolidate", owner=owner, dedupe_key=f"consolidate:{owner}")
     return RedirectResponse(url="/profile", status_code=303)
 
 
@@ -1081,6 +1079,22 @@ def _task_match(task):
         }
     ):
         _run_match()
+
+
+@tasks.handler("consolidate")
+def _task_consolidate(task):
+    user = auth._get_user_by_id(task["owner"])
+    if user is None:
+        raise RuntimeError("unknown task owner")
+    with tenancy.scope(
+        {
+            "id": user["id"],
+            "username": user["username"],
+            "display_name": user["display_name"],
+            "role": user["role"],
+        }
+    ):
+        _run_bootstrap()
 
 
 tasks.handler("scan")(_run_scan)
