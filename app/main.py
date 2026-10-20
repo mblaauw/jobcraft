@@ -671,8 +671,7 @@ def job_document(job_id: int, kind: str = Form(...), url: str = Form("", alias="
     job = store.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="unknown job")
-    if manager is None:
-        raise HTTPException(status_code=503, detail="LLM runtime is disabled.")
+    get_manager()
     if kind not in ("resume", "motivatie"):
         raise HTTPException(status_code=400, detail="unknown document kind")
     target = _jobs_return_target(url)
@@ -688,9 +687,13 @@ def job_document(job_id: int, kind: str = Form(...), url: str = Form("", alias="
                 {"state": "running", "kind": kind, "started_at": datetime.now(UTC).isoformat()}
             ),
         )
-    threading.Thread(
-        target=tenancy.capture(_run_document), args=(job_id, kind), daemon=True
-    ).start()
+    owner = tenancy.user_id()
+    tasks.enqueue(
+        "document",
+        owner=owner,
+        payload={"job_id": job_id, "kind": kind},
+        dedupe_key=f"document:{owner}:{job_id}:{kind}",
+    )
     return RedirectResponse(url=target, status_code=303)
 
 
@@ -1095,6 +1098,23 @@ def _task_consolidate(task):
         }
     ):
         _run_bootstrap()
+
+
+@tasks.handler("document")
+def _task_document(task):
+    user = auth._get_user_by_id(task["owner"])
+    if user is None:
+        raise RuntimeError("unknown task owner")
+    payload = json.loads(task["payload_json"])
+    with tenancy.scope(
+        {
+            "id": user["id"],
+            "username": user["username"],
+            "display_name": user["display_name"],
+            "role": user["role"],
+        }
+    ):
+        _run_document(int(payload["job_id"]), str(payload["kind"]))
 
 
 tasks.handler("scan")(_run_scan)

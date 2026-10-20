@@ -371,7 +371,7 @@ def test_detail_back_link_rejects_unrelated_return_targets(client, target):
 
 def test_document_post_retains_context_without_starting_a_second_generation(client, monkeypatch):
     job_id = add_job()
-    monkeypatch.setattr(main, "manager", object())
+    monkeypatch.setattr(main, "manager", SimpleNamespace(client=object()))
     store.meta_set(f"doc_status:{job_id}", '{"state":"running","kind":"resume"}')
     target = f"/jobs/{job_id}?return_to=%2Fjobs%3Fq%3DGroen"
     response = client.post(
@@ -386,15 +386,6 @@ def test_document_post_retains_context_without_starting_a_second_generation(clie
 
 def test_document_requests_from_multiple_views_start_one_generation(client, monkeypatch):
     job_id = add_job()
-    starts = []
-
-    class FakeThread:
-        def __init__(self, **kwargs):
-            self.args = kwargs["args"]
-
-        def start(self):
-            starts.append(self.args)
-
     original_set = store.meta_set
 
     def slow_status_set(key, value):
@@ -402,8 +393,7 @@ def test_document_requests_from_multiple_views_start_one_generation(client, monk
             time.sleep(0.05)
         original_set(key, value)
 
-    monkeypatch.setattr(main, "manager", object())
-    monkeypatch.setattr(main, "threading", SimpleNamespace(Thread=FakeThread))
+    monkeypatch.setattr(main, "manager", SimpleNamespace(client=object()))
     monkeypatch.setattr(store, "meta_set", slow_status_set)
     with ThreadPoolExecutor(max_workers=4) as executor:
         responses = list(
@@ -415,7 +405,12 @@ def test_document_requests_from_multiple_views_start_one_generation(client, monk
             )
         )
     assert all(response.status_code == 303 for response in responses)
-    assert starts == [(job_id, "resume")]
+    with store.connect() as con:
+        owner = con.execute("SELECT id FROM users WHERE username='test'").fetchone()["id"]
+        rows = con.execute(
+            "SELECT COUNT(*) FROM tasks WHERE kind='document' AND owner=?", (owner,)
+        ).fetchone()[0]
+    assert rows == 1
 
 
 def test_drawer_focus_targets_are_stable_across_document_refreshes(client):
