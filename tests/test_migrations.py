@@ -5,14 +5,14 @@ from app import config, feedback, interview_state, profile, sources, store
 
 def test_migrations_are_versioned_and_idempotent():
     with store.connect() as con:
-        assert con.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert con.execute("PRAGMA user_version").fetchone()[0] == 4
         tables = {
             row[0] for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
         assert {"profiles", "preferences", "answers", "profile_drafts"} <= tables
     store.init_db()
     with store.connect() as con:
-        assert con.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert con.execute("PRAGMA user_version").fetchone()[0] == 4
 
 
 def test_existing_files_are_imported_without_deletion():
@@ -100,6 +100,6 @@ def test_existing_database_is_backed_up_before_migrating():
     backups = list((config.DATA_DIR / "backups").glob("app-*.db"))
     assert backups
     with store.connect() as con:
-        assert con.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert con.execute("PRAGMA user_version").fetchone()[0] == 4
         assert con.execute("SELECT COUNT(*) FROM profiles").fetchone()[0] == 0
         assert con.execute("SELECT id FROM jobs WHERE id=?", (job_id,)).fetchone()
