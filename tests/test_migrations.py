@@ -5,14 +5,56 @@ from app import config, store
 
 def test_migrations_are_versioned_and_idempotent():
     with store.connect() as con:
-        assert con.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert con.execute("PRAGMA user_version").fetchone()[0] == 3
         tables = {
             row[0] for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
         assert {"profiles", "preferences", "answers", "profile_drafts"} <= tables
     store.init_db()
     with store.connect() as con:
-        assert con.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert con.execute("PRAGMA user_version").fetchone()[0] == 3
+
+
+def test_existing_files_are_imported_without_deletion():
+    profile_dir = config.DATA_DIR / "profile"
+    profile_dir.mkdir(parents=True)
+    (profile_dir / "profile.md").write_text("## Werk\nSynthetic profile")
+    (profile_dir / "preferences.json").write_text('{"notes": "fixture"}')
+    (profile_dir / "feedback.json").write_text('{"counts": {"up": 1, "down": 0}}')
+    (profile_dir / "interview-state.json").write_text('{"topics": []}')
+    (profile_dir / "answer-log.md").write_text(
+        "## 2026-10-01T10:00:00\n**Vraag:** Wat zoek je?\n**Antwoord:** Buiten werk.\n"
+    )
+    drafts = profile_dir / "drafts"
+    drafts.mkdir()
+    (drafts / "consolidation-20261001.json").write_text(
+        '{"status":"pending","profile_md":"## Werk\\nDraft",'
+        '"preferences":{},"created_at":"2026-10-01T10:00:00+00:00"}'
+    )
+    (config.DATA_DIR / "sources.yaml").write_text("sources:\n  - id: fixture\n    enabled: true\n")
+    with store.connect() as con:
+        for table in (
+            "profiles",
+            "preferences",
+            "feedback_profiles",
+            "interview_state",
+            "answers",
+            "profile_drafts",
+            "source_configs",
+        ):
+            con.execute(f"DELETE FROM {table}")
+        con.execute("PRAGMA user_version=2")
+    store.init_db()
+    with store.connect() as con:
+        assert (
+            con.execute("SELECT profile_md FROM profiles")
+            .fetchone()[0]
+            .endswith("Synthetic profile")
+        )
+        assert con.execute("SELECT answer FROM answers").fetchone()[0] == "Buiten werk."
+        assert con.execute("SELECT COUNT(*) FROM profile_drafts").fetchone()[0] == 1
+        assert con.execute("SELECT id FROM source_configs").fetchone()[0] == "fixture"
+    assert (profile_dir / "profile.md").exists()
 
 
 def test_existing_database_is_backed_up_before_migrating():
@@ -32,6 +74,6 @@ def test_existing_database_is_backed_up_before_migrating():
     backups = list((config.DATA_DIR / "backups").glob("app-*.db"))
     assert backups
     with store.connect() as con:
-        assert con.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert con.execute("PRAGMA user_version").fetchone()[0] == 3
         assert con.execute("SELECT COUNT(*) FROM profiles").fetchone()[0] == 0
         assert con.execute("SELECT id FROM jobs WHERE id=?", (job_id,)).fetchone()
