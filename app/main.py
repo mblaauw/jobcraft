@@ -1085,6 +1085,10 @@ def _task_match(task):
             "role": user["role"],
         }
     ):
+        budget = float(os.environ.get("MATCH_DAILY_BUDGET_USD", "0.50") or 0)
+        if budget > 0 and store.daily_usage_cost() >= budget:
+            store.meta_set("match_status", "error: dagbudget bereikt")
+            return
         _run_match()
 
 

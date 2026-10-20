@@ -699,6 +699,17 @@ def active_owners_with_profile() -> list[str]:
     return [row["id"] for row in rows]
 
 
+def daily_usage_cost(owner: str | None = None) -> float:
+    start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    with connect() as con:
+        row = con.execute(
+            "SELECT COALESCE(SUM(cost_usd),0) AS cost FROM usage_log "
+            "WHERE owner=? AND created_at >= ?",
+            (owner or tenancy.user_id(), start),
+        ).fetchone()
+    return float(row["cost"] or 0.0)
+
+
 def load_source_configs() -> list[dict]:
     with connect() as con:
         rows = con.execute("SELECT config_json, enabled FROM source_configs ORDER BY id").fetchall()
