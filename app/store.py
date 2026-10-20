@@ -172,6 +172,7 @@ def init_db() -> None:
         _normalize_job_dates(con)
         _recover_raw_verdicts(con)
         _fill_search_text(con)
+        migrate(con)
 
 
 def _normalize_job_dates(con) -> None:
@@ -184,6 +185,43 @@ def _normalize_job_dates(con) -> None:
         if normalized != row["posted_at"]:
             con.execute("UPDATE jobs SET posted_at=? WHERE id=?", (normalized, row["id"]))
     con.execute("INSERT INTO meta(key,value) VALUES ('posted_at_normalized_v2','1')")
+
+
+def _backup_database() -> None:
+    from .migrations import MIGRATIONS
+
+    directory = config.DATA_DIR / "backups"
+    directory.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    target = directory / f"app-{stamp}-pre-v{len(MIGRATIONS)}.db"
+    source = sqlite3.connect(config.DB_PATH)
+    try:
+        with sqlite3.connect(target) as destination:
+            source.backup(destination)
+    finally:
+        source.close()
+    for old in sorted(directory.glob("app-*.db"), reverse=True)[5:]:
+        old.unlink(missing_ok=True)
+
+
+def migrate(con) -> None:
+    from .migrations import MIGRATIONS
+
+    current = int(con.execute("PRAGMA user_version").fetchone()[0])
+    if current >= len(MIGRATIONS):
+        return
+    if current == 0 and con.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] > 0:
+        _backup_database()
+    con.commit()
+    for index, module in enumerate(MIGRATIONS[current:], start=current + 1):
+        con.execute("BEGIN IMMEDIATE")
+        try:
+            module.up(con)
+            con.execute(f"PRAGMA user_version={index}")
+            con.commit()
+        except Exception:
+            con.rollback()
+            raise
 
 
 def _migrate_ownership(con):
