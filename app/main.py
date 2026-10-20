@@ -554,13 +554,9 @@ def jobs_page(
 def jobs_match_route(url: str = Form("/jobs", alias="next")):
     if tenancy.user_id() != tenancy.LEGACY_ID and not profile.profile_exists():
         return RedirectResponse(url="/interview", status_code=303)
-    if manager is None:
-        raise HTTPException(status_code=503, detail="LLM runtime is disabled.")
-    with _match_lock:
-        if store.meta_get("match_status") == "running":
-            return RedirectResponse(url=_jobs_return_target(url), status_code=303)
-        store.meta_set("match_status", "running")
-    threading.Thread(target=tenancy.capture(_run_match), daemon=True).start()
+    get_manager()
+    owner = tenancy.user_id()
+    tasks.enqueue("match", owner=owner, dedupe_key=f"match:{owner}")
     return RedirectResponse(url=_jobs_return_target(url), status_code=303)
 
 
@@ -886,7 +882,6 @@ def api_send(session_id: str, body: SendBody):
 
 _bootstrap_lock = threading.Lock()
 _scan_lock = threading.Lock()
-_match_lock = threading.Lock()
 _document_lock = threading.Lock()
 
 
@@ -1070,6 +1065,22 @@ def _task_rerank(task):
         }
     ):
         ranking.rerank_all()
+
+
+@tasks.handler("match")
+def _task_match(task):
+    user = auth._get_user_by_id(task["owner"])
+    if user is None:
+        raise RuntimeError("unknown task owner")
+    with tenancy.scope(
+        {
+            "id": user["id"],
+            "username": user["username"],
+            "display_name": user["display_name"],
+            "role": user["role"],
+        }
+    ):
+        _run_match()
 
 
 tasks.handler("scan")(_run_scan)

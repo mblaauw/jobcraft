@@ -302,23 +302,18 @@ def test_running_does_not_reload_the_page_and_errors_offer_recovery(client):
 
 
 def test_match_action_preserves_view_and_starts_only_once(client, monkeypatch):
-    started = []
-
-    class FakeThread:
-        def __init__(self, **kwargs):
-            self.target = kwargs["target"]
-
-        def start(self):
-            started.append(self.target)
-
-    monkeypatch.setattr(main, "manager", object())
-    monkeypatch.setattr(main, "threading", SimpleNamespace(Thread=FakeThread))
+    monkeypatch.setattr(main, "manager", SimpleNamespace(client=object()))
     target = "/jobs?q=groen&within=0&sort=newest"
     for _ in range(2):
         response = client.post("/jobs/match", data={"next": target}, follow_redirects=False)
         assert response.status_code == 303
         assert response.headers["location"] == target
-    assert len(started) == 1
+    with store.connect() as con:
+        owner = con.execute("SELECT id FROM users WHERE username='test'").fetchone()["id"]
+        rows = con.execute(
+            "SELECT COUNT(*) FROM tasks WHERE kind='match' AND owner=?", (owner,)
+        ).fetchone()[0]
+    assert rows == 1
 
 
 def test_match_history_records_completion_time_without_provider_calls(client, monkeypatch):
