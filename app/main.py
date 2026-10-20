@@ -70,6 +70,8 @@ async def lifespan(_app: FastAPI):
         log.warning("document templates unavailable: %s", exc)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     store.recover_interrupted_work()
+    tasks.recover_stale()
+    tasks.start_workers(2)
     if not config.APP_SKIP_LLM:
         manager = llm.ServerManager()
         manager.start()
@@ -78,6 +80,7 @@ async def lifespan(_app: FastAPI):
         else:
             log.info("LLM client ready for %s", manager.base_url)
     yield
+    tasks.stop_workers()
     if manager:
         manager.stop()
 
@@ -1059,3 +1062,6 @@ def profile_restore(version_id: int):
 @app.get("/healthz")
 def healthz():
     return JSONResponse({"ok": True})
+
+
+tasks.handler("scan")(_run_scan)
