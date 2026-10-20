@@ -25,6 +25,30 @@ def test_one_llm_task_per_owner_but_other_owners_run():
     assert blocked["id"] == second
 
 
+def test_worker_dispatches_handler_and_records_failure():
+    seen = []
+
+    @tasks.handler("fixture")
+    def fixture(task):
+        seen.append(task["id"])
+        return {"ok": True}
+
+    task_id = tasks.enqueue("fixture", owner="a")
+    assert tasks.run_one() is True
+    assert seen == [task_id]
+    assert tasks.latest("fixture", owner="a")["status"] == "done"
+
+    @tasks.handler("broken")
+    def broken(task):
+        raise RuntimeError("boom")
+
+    failed = tasks.enqueue("broken", owner="a")
+    assert tasks.run_one() is True
+    assert tasks.latest("broken", owner="a")["status"] == "error"
+    assert "boom" in tasks.latest("broken", owner="a")["error"]
+    assert failed
+
+
 def test_fail_and_stale_recovery():
     task_id = tasks.enqueue("scan", owner=None)
     claimed = tasks.claim_next()
