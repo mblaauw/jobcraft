@@ -73,3 +73,8 @@ def test_home_base_and_budget_come_from_preferences(tmp_path, monkeypatch):
 def test_place_matching_uses_word_boundaries():
     assert geo._find_place("centrum van laren") == "laren"
     assert geo._find_place("klarenbeek") != "laren"
+
+
+def test_gazetteer_csv_is_loaded():
+    assert geo.GAZETTEER_FILE.exists()
+    assert "utrecht" in geo.PLACES

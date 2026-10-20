@@ -16,6 +16,7 @@ veto a job just because a source does not publish a location.
 
 from __future__ import annotations
 
+import csv
 import json
 import math
 import re
@@ -127,6 +128,25 @@ RAIL_PLACES = {
     "diemen",
     "duivendrecht",
 }
+
+GAZETTEER_FILE = Path(__file__).with_name("data") / "places_nl.csv"
+
+
+def _load_gazetteer() -> None:
+    try:
+        with GAZETTEER_FILE.open(newline="") as handle:
+            for row in csv.DictReader(handle):
+                name = (row.get("name") or "").strip().lower()
+                if not name:
+                    continue
+                PLACES[name] = (float(row["lat"]), float(row["lon"]))
+                if row.get("rail") == "1":
+                    RAIL_PLACES.add(name)
+    except (OSError, KeyError, ValueError):
+        return
+
+
+_load_gazetteer()
 
 AMSTERDAM_DISTRICTS = (
     "noord",
