@@ -691,6 +691,14 @@ def meta_set(key: str, value: str) -> None:
 # ---------------------------------------------------------------- phase 2
 
 
+def active_owners_with_profile() -> list[str]:
+    with connect() as con:
+        rows = con.execute(
+            "SELECT u.id FROM users u JOIN profiles p ON p.owner=u.id WHERE u.active=1"
+        ).fetchall()
+    return [row["id"] for row in rows]
+
+
 def load_source_configs() -> list[dict]:
     with connect() as con:
         rows = con.execute("SELECT config_json, enabled FROM source_configs ORDER BY id").fetchall()
