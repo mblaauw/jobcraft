@@ -6,6 +6,7 @@ import difflib
 import io
 import json
 import logging
+import os
 import threading
 import uuid
 import zipfile
@@ -402,6 +403,9 @@ def _run_scan() -> None:
         feedback.refresh_document_frequency()
         store.meta_set("scan_summary", json.dumps(summary, ensure_ascii=False))
         store.meta_set("scan_status", "done")
+        if os.environ.get("MATCH_AFTER_SCAN", "1") != "0":
+            for owner in store.active_owners_with_profile():
+                tasks.enqueue("match", owner=owner, dedupe_key=f"match:{owner}")
     except Exception as exc:  # noqa: BLE001 - surface failures in the UI
         log.exception("scan failed")
         store.meta_set("scan_status", f"error: {exc}"[:400])
