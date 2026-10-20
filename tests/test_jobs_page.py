@@ -106,6 +106,18 @@ def test_cards_scores_and_collapsed_history(client):
     assert html.select_one('script[src="/static/jobs.js"]')
 
 
+def test_task_status_api_is_owner_scoped(client):
+    from app import tasks
+
+    with store.connect() as con:
+        owner = con.execute("SELECT id FROM users WHERE username='test'").fetchone()["id"]
+    task_id = tasks.enqueue("scan", owner=owner)
+    response = client.get(f"/api/tasks/{task_id}")
+    assert response.status_code == 200
+    assert response.json()["kind"] == "scan"
+    assert client.get("/api/tasks/999999").status_code == 404
+
+
 def test_document_status_is_not_cleared_by_get(client):
     job_id = add_job()
     raw = '{"state":"done","kind":"resume","version":1,"finished_at":"2026-10-19T10:00:00+00:00"}'

@@ -39,6 +39,7 @@ from . import (
     sources,
     store,
     systemone,
+    tasks,
     tenancy,
 )
 from .util import now_local
@@ -830,6 +831,27 @@ async def account_cv(request: Request, cv: UploadFile = File(...)):
 
 class SendBody(BaseModel):
     text: str = Field(min_length=1, max_length=8000)
+
+
+@app.get("/api/tasks/{task_id}")
+def api_task(task_id: int, request: Request):
+    user = auth.require_user(request)
+    task = tasks.get(task_id, owner=user["id"])
+    if task is None:
+        raise HTTPException(status_code=404, detail="unknown task")
+    result = None
+    if task.get("result_json"):
+        try:
+            result = json.loads(task["result_json"])
+        except ValueError:
+            result = None
+    return {
+        "id": task["id"],
+        "kind": task["kind"],
+        "status": task["status"],
+        "error": task["error"],
+        "result": result,
+    }
 
 
 @app.get("/api/sessions")
