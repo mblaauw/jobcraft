@@ -231,15 +231,19 @@ def _minutes(distance_km: float, rail: bool) -> tuple[int, int]:
     return int(round(bike)), int(round(transit))
 
 
+def _contains_place(text: str, place: str) -> bool:
+    return bool(re.search(rf"(?<!\w){re.escape(place)}(?!\w)", text))
+
+
 def _find_place(text: str) -> str | None:
     if not text:
         return None
     for district in AMSTERDAM_DISTRICTS:
-        if district in text and "amsterdam" in text:
+        if _contains_place(text, district) and _contains_place(text, "amsterdam"):
             return "amsterdam"
     best = None
     for place in PLACES:
-        if place in text and (best is None or len(place) > len(best)):
+        if _contains_place(text, place) and (best is None or len(place) > len(best)):
             best = place
     return best
 

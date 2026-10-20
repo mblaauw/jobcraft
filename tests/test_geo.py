@@ -68,3 +68,8 @@ def test_home_base_and_budget_come_from_preferences(tmp_path, monkeypatch):
     far = geo.assess("Amsterdam")
     assert far["in_range"] is False
     geo._settings_cached.cache_clear()
+
+
+def test_place_matching_uses_word_boundaries():
+    assert geo._find_place("centrum van laren") == "laren"
+    assert geo._find_place("klarenbeek") != "laren"
