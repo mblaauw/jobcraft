@@ -831,6 +831,22 @@ class SendBody(BaseModel):
     text: str = Field(min_length=1, max_length=8000)
 
 
+@app.get("/api/tasks")
+def api_tasks(request: Request):
+    user = auth.require_user(request)
+    return {
+        "tasks": [
+            {
+                "id": task["id"],
+                "kind": task["kind"],
+                "status": task["status"],
+                "error": task["error"],
+            }
+            for task in tasks.list_for_owner(user["id"])
+        ]
+    }
+
+
 @app.get("/api/tasks/{task_id}")
 def api_task(task_id: int, request: Request):
     user = auth.require_user(request)

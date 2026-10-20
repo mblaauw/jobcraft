@@ -88,6 +88,14 @@ def cancel(task_id: int, *, owner: str | None) -> bool:
     return cursor.rowcount > 0
 
 
+def list_for_owner(owner: str, limit: int = 20) -> list[dict]:
+    with store.connect() as con:
+        rows = con.execute(
+            "SELECT * FROM tasks WHERE owner=? ORDER BY id DESC LIMIT ?", (owner, limit)
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
 def get(task_id: int, *, owner: str | None = None) -> dict | None:
     with store.connect() as con:
         row = con.execute(
