@@ -414,11 +414,10 @@ def _run_scan() -> None:
 @app.post("/sources/scan")
 def sources_scan(request: Request):
     auth.require_admin(request)
-    with _scan_lock:
-        if store.meta_get("scan_status") == "running":
-            return RedirectResponse(url="/sources", status_code=303)
-        store.meta_set("scan_status", "running")
-    threading.Thread(target=tenancy.capture(_run_scan), daemon=True).start()
+    if store.meta_get("scan_status") == "running":
+        return RedirectResponse(url="/sources", status_code=303)
+    store.meta_set("scan_status", "running")
+    tasks.enqueue("scan", owner=None, dedupe_key="scan")
     return RedirectResponse(url="/sources", status_code=303)
 
 
@@ -832,6 +831,22 @@ class SendBody(BaseModel):
     text: str = Field(min_length=1, max_length=8000)
 
 
+@app.get("/api/tasks")
+def api_tasks(request: Request):
+    user = auth.require_user(request)
+    return {
+        "tasks": [
+            {
+                "id": task["id"],
+                "kind": task["kind"],
+                "status": task["status"],
+                "error": task["error"],
+            }
+            for task in tasks.list_for_owner(user["id"])
+        ]
+    }
+
+
 @app.get("/api/tasks/{task_id}")
 def api_task(task_id: int, request: Request):
     user = auth.require_user(request)
@@ -887,7 +902,6 @@ def api_send(session_id: str, body: SendBody):
 # ---------------------------------------------------------------- bootstrap
 
 
-_scan_lock = threading.Lock()
 _document_lock = threading.Lock()
 
 
