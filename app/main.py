@@ -564,17 +564,6 @@ def jobs_match_route(url: str = Form("/jobs", alias="next")):
     return RedirectResponse(url=_jobs_return_target(url), status_code=303)
 
 
-def _rerank_after_vote() -> None:
-    if not _rerank_lock.acquire(blocking=False):
-        return
-    try:
-        ranking.rerank_all()
-    except Exception:  # noqa: BLE001 - a vote must not fail after it was stored
-        log.exception("background rerank failed")
-    finally:
-        _rerank_lock.release()
-
-
 def _run_match() -> None:
     try:
         summary = matching.match_jobs(manager)
@@ -763,7 +752,8 @@ def job_vote(job_id: int, vote: str = Form(...), url: str = Form("/jobs", alias=
     store.set_job_vote(job_id, value)
     feedback.rebuild()
     ranking.rerank_one(job_id)
-    threading.Thread(target=tenancy.capture(_rerank_after_vote), daemon=True).start()
+    owner = tenancy.user_id()
+    tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}")
     target = _jobs_return_target(url)
     return RedirectResponse(url=f"{target}", status_code=303)
 
@@ -898,7 +888,6 @@ _bootstrap_lock = threading.Lock()
 _scan_lock = threading.Lock()
 _match_lock = threading.Lock()
 _document_lock = threading.Lock()
-_rerank_lock = threading.Lock()
 
 
 def _run_bootstrap() -> None:
@@ -1065,6 +1054,22 @@ def profile_restore(version_id: int):
 @app.get("/healthz")
 def healthz():
     return JSONResponse({"ok": True})
+
+
+@tasks.handler("rerank")
+def _task_rerank(task):
+    user = auth._get_user_by_id(task["owner"])
+    if user is None:
+        raise RuntimeError("unknown task owner")
+    with tenancy.scope(
+        {
+            "id": user["id"],
+            "username": user["username"],
+            "display_name": user["display_name"],
+            "role": user["role"],
+        }
+    ):
+        ranking.rerank_all()
 
 
 tasks.handler("scan")(_run_scan)
