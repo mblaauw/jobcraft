@@ -76,6 +76,7 @@ class HomeBase(BaseModel):
     lon: float = 4.9041
     bike_minutes: int = 30
     transit_minutes: int = 35
+    car_available: bool = False
 
 
 class Preferences(BaseModel):

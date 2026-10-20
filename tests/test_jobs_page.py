@@ -424,3 +424,19 @@ def test_drawer_focus_targets_are_stable_across_document_refreshes(client):
     assert detail.select_one("#detail-text-title")
     assert detail.select_one("#detail-assessment-title")
     assert detail.select_one("#detail-documents-title")
+
+
+def test_home_travel_settings_are_saved(client):
+    from app import profile
+
+    response = client.post(
+        "/profile/home",
+        data={"place": "Utrecht", "bike_minutes": "40", "transit_minutes": "50"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    home = profile.read_preferences()["home"]
+    assert home["label"] == "Utrecht"
+    assert home["bike_minutes"] == 40
+    assert home["transit_minutes"] == 50
+    assert home["lat"] != 0

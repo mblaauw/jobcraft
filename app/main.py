@@ -1000,6 +1000,28 @@ def profile_save_draft(request: Request, profile_md: str = Form(...), preference
     return RedirectResponse(url="/profile?saved=draft", status_code=303)
 
 
+@app.post("/profile/home")
+def profile_home(
+    place: str = Form(""),
+    bike_minutes: int = Form(30),
+    transit_minutes: int = Form(35),
+    car_available: str = Form(""),
+):
+    label = " ".join(place.split()) or "Nog niet ingesteld"
+    coords = geo.PLACES.get(label.lower())
+    preferences = profile.read_preferences()
+    preferences["home"] = {
+        "label": label,
+        "lat": coords[0] if coords else 0.0,
+        "lon": coords[1] if coords else 0.0,
+        "bike_minutes": max(5, min(180, bike_minutes)),
+        "transit_minutes": max(5, min(240, transit_minutes)),
+        "car_available": car_available == "1",
+    }
+    profile.write_preferences(preferences)
+    return RedirectResponse(url="/profile?saved=preferences", status_code=303)
+
+
 @app.post("/profile/save")
 def profile_save(request: Request, content: str = Form(...)):
     if len(content.strip()) < 50:

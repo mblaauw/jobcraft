@@ -6,6 +6,19 @@
   <p class="sub">Dit ben jij en dit zoek je. De basis voor passende vacatures en persoonlijke documenten. Wijzigingen uit gesprekken beoordeel je altijd eerst.</p>
 </div>
 
+<section class="card">
+  <h2>Woonplaats en reisbereik</h2>
+  <p class="muted small">Reistijden worden hiervandaan geschat. Onbekende plaatsen vragen om coördinaten.</p>
+  <form method="post" action="/profile/home" class="grid two">
+    {% include '_csrf.html' %}
+    <div><label for="home-place">Woonplaats</label><input id="home-place" name="place" value="{{ preferences.home.label if preferences.home.label != 'Nog niet ingesteld' else '' }}" placeholder="Bijv. Amersfoort"></div>
+    <div><label for="home-car">Auto beschikbaar</label><select id="home-car" name="car_available"><option value="0" {% if not preferences.home.car_available %}selected{% endif %}>Nee</option><option value="1" {% if preferences.home.car_available %}selected{% endif %}>Ja</option></select></div>
+    <div><label for="home-bike">Max. minuten e-bike</label><input id="home-bike" name="bike_minutes" type="number" min="5" max="180" value="{{ preferences.home.bike_minutes }}"></div>
+    <div><label for="home-transit">Max. minuten OV</label><input id="home-transit" name="transit_minutes" type="number" min="5" max="240" value="{{ preferences.home.transit_minutes }}"></div>
+    <div><button class="button" type="submit">Reisbereik opslaan</button></div>
+  </form>
+</section>
+
 {% if saved %}
   <div class="banner ok">
     {% if saved == "accepted" %}Voorstel geaccepteerd — profiel en voorkeuren bijgewerkt.
