@@ -88,6 +88,14 @@ def cancel(task_id: int, *, owner: str | None) -> bool:
     return cursor.rowcount > 0
 
 
+def get(task_id: int, *, owner: str | None = None) -> dict | None:
+    with store.connect() as con:
+        row = con.execute(
+            "SELECT * FROM tasks WHERE id=? AND owner IS ?", (task_id, owner)
+        ).fetchone()
+    return dict(row) if row else None
+
+
 def latest(kind: str, *, owner: str | None = None, key: str | None = None) -> dict | None:
     with store.connect() as con:
         if key is not None:
