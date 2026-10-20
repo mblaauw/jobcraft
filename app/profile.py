@@ -127,6 +127,13 @@ def read_profile() -> str:
 
 
 def read_answer_log() -> str:
+    rows = store.list_answers()
+    if rows:
+        return "\n".join(
+            f"## {row['created_at']}\n**Vraag:** {row['question']}\n\n"
+            f"**Antwoord:** {row['answer']}\n"
+            for row in rows
+        )
     path = config.user_path(ANSWER_LOG_FILE)
     return path.read_text() if path.exists() else ""
 

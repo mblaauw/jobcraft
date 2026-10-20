@@ -68,6 +68,7 @@ def test_runtime_state_reads_from_sqlite_not_removed_files():
     assert profile.read_profile().strip().endswith("Database profile")
     assert profile.read_preferences()["notes"] == "database preferences"
     assert store.list_answers()[0]["answer"] == "Antwoord."
+    assert "**Antwoord:** Antwoord." in profile.read_answer_log()
     assert interview_state.summary()["topics"]
     assert feedback.load()["counts"] == {"up": 0, "down": 0}
 
