@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app import config, store
+from app import config, feedback, interview_state, profile, store
 
 
 def test_migrations_are_versioned_and_idempotent():
@@ -55,6 +55,21 @@ def test_existing_files_are_imported_without_deletion():
         assert con.execute("SELECT COUNT(*) FROM profile_drafts").fetchone()[0] == 1
         assert con.execute("SELECT id FROM source_configs").fetchone()[0] == "fixture"
     assert (profile_dir / "profile.md").exists()
+
+
+def test_runtime_state_reads_from_sqlite_not_removed_files():
+    profile.write_profile("## Werk\nDatabase profile", "fixture")
+    profile.write_preferences({"notes": "database preferences"})
+    profile.append_answer("Vraag?", "Antwoord.")
+    interview_state.ensure_state()
+    feedback.rebuild()
+    config.user_path(profile.PROFILE_FILE).unlink()
+    config.user_path(profile.PREFERENCES_FILE).unlink()
+    assert profile.read_profile().strip().endswith("Database profile")
+    assert profile.read_preferences()["notes"] == "database preferences"
+    assert store.list_answers()[0]["answer"] == "Antwoord."
+    assert interview_state.summary()["topics"]
+    assert feedback.load()["counts"] == {"up": 0, "down": 0}
 
 
 def test_existing_database_is_backed_up_before_migrating():

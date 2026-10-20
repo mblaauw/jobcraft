@@ -307,10 +307,14 @@ def rebuild() -> dict:
     }
     config.user_path(FEEDBACK_FILE).parent.mkdir(parents=True, exist_ok=True)
     config.user_path(FEEDBACK_FILE).write_text(json.dumps(payload, ensure_ascii=False, indent=2))
+    store.set_feedback_profile(payload)
     return payload
 
 
 def load() -> dict:
+    stored = store.get_feedback_profile()
+    if stored is not None:
+        return stored
     if not config.user_path(FEEDBACK_FILE).exists():
         return rebuild()
     try:

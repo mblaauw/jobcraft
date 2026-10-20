@@ -119,6 +119,9 @@ def profile_exists() -> bool:
 
 
 def read_profile() -> str:
+    stored = store.get_profile()
+    if stored is not None:
+        return stored
     path = config.user_path(PROFILE_FILE)
     return path.read_text() if path.exists() else ""
 
@@ -129,10 +132,10 @@ def read_answer_log() -> str:
 
 
 def read_preferences() -> dict:
-    path = config.user_path(PREFERENCES_FILE)
-    if not path.exists():
-        return _validate_preferences({}).model_dump()
-    data = json.loads(path.read_text())
+    data = store.get_preferences()
+    if data is None:
+        path = config.user_path(PREFERENCES_FILE)
+        data = json.loads(path.read_text()) if path.exists() else {}
     if tenancy.user_id() == tenancy.LEGACY_ID:
         return data
     return _validate_preferences(data).model_dump()
@@ -164,15 +167,16 @@ def seed_status() -> dict:
 def write_profile(markdown: str, note: str) -> Path:
     """Archive the previous version, then write the new canon."""
     ensure_dirs()
-    path = config.user_path(PROFILE_FILE)
-    if path.exists():
-        previous = path.read_text()
+    previous = read_profile()
+    if previous:
         digest = hashlib.sha256(previous.encode()).hexdigest()[:10]
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
         archive = config.user_path(HISTORY_DIR) / f"{stamp}-{digest}.md"
         archive.write_text(previous)
         store.add_profile_version(str(archive), note)
+    path = config.user_path(PROFILE_FILE)
     path.write_text(markdown.rstrip() + "\n")
+    store.set_profile(markdown.rstrip() + "\n")
     return path
 
 
@@ -184,6 +188,7 @@ def append_answer(question: str, answer: str) -> None:
     answer = " ".join(answer.split())
     with config.user_path(ANSWER_LOG_FILE).open("a") as handle:
         handle.write(f"\n## {stamp}\n**Vraag:** {question}\n\n**Antwoord:** {answer}\n")
+    store.append_answer(question, answer)
 
 
 def split_sections(markdown: str) -> list[dict]:
@@ -260,6 +265,7 @@ def write_preferences(data: dict) -> dict:
     config.user_path(PREFERENCES_FILE).write_text(
         json.dumps(model.model_dump(), indent=2, ensure_ascii=False) + "\n"
     )
+    store.set_preferences(model.model_dump())
     return model.model_dump()
 
 
