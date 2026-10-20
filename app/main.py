@@ -36,6 +36,7 @@ from . import (
     matching,
     profile,
     ranking,
+    scheduler,
     sources,
     store,
     systemone,
@@ -72,6 +73,7 @@ async def lifespan(_app: FastAPI):
     store.recover_interrupted_work()
     tasks.recover_stale()
     tasks.start_workers(2)
+    scheduler.start()
     if not config.APP_SKIP_LLM:
         manager = llm.ServerManager()
         manager.start()
@@ -80,6 +82,7 @@ async def lifespan(_app: FastAPI):
         else:
             log.info("LLM client ready for %s", manager.base_url)
     yield
+    scheduler.stop()
     tasks.stop_workers()
     if manager:
         manager.stop()
