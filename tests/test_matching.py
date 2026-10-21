@@ -43,3 +43,22 @@ def test_score_is_clamped():
     assert 0 <= high <= 100
     low, _ = rule_score(job(description="sales targets callcenter callcenter"), preferences())
     assert 0 <= low <= 100
+
+
+def test_jev_signal_drives_phone_hard_filter():
+    import json
+
+    from app.matching import rule_score
+
+    prefs = preferences()
+    job = {
+        "title": "Kantoorfunctie",
+        "company": "",
+        "description": "Algemeen werk",
+        "source_id": "test",
+        "typed_signals": json.dumps({"noul": {"phone_sales_main": 0.9}}),
+    }
+    penalised, _ = rule_score(job, prefs)
+    job["typed_signals"] = json.dumps({"noul": {"phone_sales_main": 0.1}})
+    normal, _ = rule_score(job, prefs)
+    assert penalised < normal

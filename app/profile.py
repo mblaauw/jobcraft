@@ -61,6 +61,9 @@ class HardFilters(BaseModel):
     hours_max: float | None = None
     no_phone_main: bool = True
     no_structural_evenings: bool = True
+    no_heavy_physical: bool = False
+    day_work_only: bool = False
+    wants_guidance: bool = False
 
 
 class Keywords(BaseModel):

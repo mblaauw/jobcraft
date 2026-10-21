@@ -82,8 +82,31 @@ def rule_score(
             notes.append(f"{int(hours_min)}-{int(hours_max)} uur vermeld")
         elif offered > hours_max:
             score -= 3.0
-    if preferences.get("hard_filters", {}).get("no_phone_main") and "callcenter" in text:
-        score -= 10.0
+    filters = preferences.get("hard_filters", {})
+    noul = (ranking.signals_of(job) or {}).get("noul") or {}
+
+    def probability(key):
+        try:
+            return float(noul[key])
+        except (KeyError, TypeError, ValueError):
+            return None
+
+    phone = probability("phone_sales_main")
+    if filters.get("no_phone_main"):
+        if phone is not None and phone >= 0.75:
+            score -= 15.0
+        elif phone is None and "callcenter" in text:
+            score -= 10.0
+    if filters.get("no_structural_evenings") and (probability("evening_weekend") or 0) >= 0.75:
+        score -= 12.0
+    if filters.get("no_heavy_physical") and (probability("physically_heavy") or 0) >= 0.75:
+        score -= 12.0
+    if filters.get("day_work_only"):
+        day = probability("day_hours")
+        if day is not None and day <= 0.25:
+            score -= 10.0
+    if filters.get("wants_guidance") and (probability("guidance") or 0) >= 0.75:
+        score += 4.0
 
     travel = ranking.travel_of(job)
     if travel.get("in_range") is False and not travel.get("auto"):
