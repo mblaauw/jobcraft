@@ -291,3 +291,12 @@ def test_shared_skip_rule_agrees_between_jev_and_escalation():
         "title": "Fixture",
     }
     assert ranking.excluded_from_matching(job) is True
+
+
+def test_account_source_preferences_filter_jobs_and_matching():
+    job_id = add_job(900, "Amsterdam", "2026-10-01T10:00:00")
+    store.set_user_source("fixture", False)
+    assert store.list_jobs(50) == []
+    assert store.list_jobs_for_matching(50) == []
+    store.set_user_source("fixture", True)
+    assert any(row["id"] == job_id for row in store.list_jobs(50))
