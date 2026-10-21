@@ -440,3 +440,15 @@ def test_home_travel_settings_are_saved(client):
     assert home["bike_minutes"] == 40
     assert home["transit_minutes"] == 50
     assert home["lat"] != 0
+
+
+def test_source_preference_toggle_is_saved(client):
+    from app import sources
+
+    sources.ensure_sources_file()
+    source_id = sources.load_sources()[0]["id"]
+    response = client.post(
+        f"/sources/{source_id}/preference", data={"enabled": "0"}, follow_redirects=False
+    )
+    assert response.status_code == 303
+    assert store.list_user_sources()[source_id] is False

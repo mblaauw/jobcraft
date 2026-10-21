@@ -42,6 +42,11 @@
               {% include '_csrf.html' %}
               <button class="button small" type="submit" aria-label="{{ s['name'] }} {{ 'uitzetten' if s['enabled'] else 'aanzetten' }}" aria-pressed="{{ 'true' if s['enabled'] else 'false' }}">{{ "✓ Actief" if s["enabled"] else "Inactief" }}</button>
             </form>{% else %}<span class="chip">{{ 'Actief' if s['enabled'] else 'Inactief' }}</span>{% endif %}
+            {% set mine = user_sources.get(s['id'], True) %}<form method="post" action="/sources/{{ s['id'] }}/preference" class="inline-form">
+              {% include '_csrf.html' %}
+              <input type="hidden" name="enabled" value="{{ '0' if mine else '1' }}">
+              <button class="button small" type="submit" aria-label="{{ s['name'] }} voor mij {{ 'uitschakelen' if mine else 'inschakelen' }}">{{ 'Voor mij aan' if mine else 'Voor mij uit' }}</button>
+            </form>
           </td>
         </tr>
       {% else %}
