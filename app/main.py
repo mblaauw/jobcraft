@@ -376,6 +376,7 @@ def sources_page(request: Request):
         "sources.html",
         {
             "sources": store.list_sources(),
+            "user_sources": store.list_user_sources(),
             "jobs_by_source": store.count_jobs_by_source(),
             "scan_status": store.meta_get("scan_status", "idle"),
             "summary": summary,
@@ -418,6 +419,15 @@ def sources_scan(request: Request):
         return RedirectResponse(url="/sources", status_code=303)
     store.meta_set("scan_status", "running")
     tasks.enqueue("scan", owner=None, dedupe_key="scan")
+    return RedirectResponse(url="/sources", status_code=303)
+
+
+@app.post("/sources/{source_id}/preference")
+def source_preference(source_id: str, enabled: str = Form("1")):
+    known = {source["id"] for source in sources.load_sources()}
+    if source_id not in known:
+        raise HTTPException(status_code=404, detail="unknown source")
+    store.set_user_source(source_id, enabled == "1")
     return RedirectResponse(url="/sources", status_code=303)
 
 
