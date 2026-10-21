@@ -25,6 +25,8 @@ DOC_TEMPLATES_DIR = config.DATA_DIR / "templates"
 CV_TEMPLATE = DOC_TEMPLATES_DIR / "cv-template.docx"
 IDENTITY_FILE = DOC_TEMPLATES_DIR / "identity.json"
 
+PROFILE_HEADINGS = {"PROFIEL", "PROFIEL EN AMBITIE", "OVER MIJ", "SAMENVATTING", "PROFILE", "SUMMARY"}
+STRONG_HEADINGS = {"STERKE PUNTEN", "KERNKWALITEITEN", "COMPETENTIES", "VAARDIGHEDEN", "SKILLS"}
 LETTER_MAX_LINES = 15
 LETTER_CHARS_PER_LINE = 95
 _GENERATION_LOCKS: dict[tuple[str, int, str], threading.Lock] = {}
@@ -82,10 +84,10 @@ def ensure_templates() -> None:
     collecting = False
     for paragraph in paragraphs:
         text = paragraph.text.strip()
-        if text.upper() == "PROFIEL":
+        if text.upper() in PROFILE_HEADINGS:
             collecting = "profile"
             continue
-        if text.upper() == "STERKE PUNTEN":
+        if text.upper() in STRONG_HEADINGS:
             collecting = "strong"
             continue
         if collecting == "profile" and text:
@@ -119,7 +121,7 @@ def _extract_identity(document) -> dict:
     identity: dict[str, list[str]] = {"name": [], "tagline": [], "contact": []}
     for paragraph in _all_paragraphs(document):
         text = paragraph.text.strip()
-        if text.upper() == "PROFIEL":
+        if text.upper() in PROFILE_HEADINGS:
             break
         if not text:
             continue
