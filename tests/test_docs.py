@@ -47,3 +47,17 @@ def test_letter_rejects_empty():
 
     with pytest.raises(ValueError):
         parse_letter(json.dumps({"paragraphs": []}))
+
+
+def test_identity_stops_at_alternate_profile_heading():
+    from docx import Document
+
+    from app import docs
+
+    document = Document()
+    document.add_paragraph("Test Person")
+    document.add_paragraph("Role")
+    document.add_paragraph("OVER MIJ")
+    document.add_paragraph("Not identity")
+    identity = docs._extract_identity(document)
+    assert identity["name"] == ["Test Person"]
