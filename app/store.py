@@ -905,6 +905,16 @@ def job_date(job) -> datetime:
     return datetime.min.replace(tzinfo=UTC)
 
 
+def _enabled_user_sources() -> list[str] | None:
+    with connect() as con:
+        rows = con.execute(
+            "SELECT source_id, enabled FROM user_sources WHERE owner=?", (tenancy.user_id(),)
+        ).fetchall()
+    if not rows:
+        return None
+    return [row["source_id"] for row in rows if row["enabled"]]
+
+
 def list_jobs(
     limit: int | None = 200,
     status: str | None = None,
@@ -925,6 +935,13 @@ def list_jobs(
         like = f"%{query_text}%"
         clauses.append("(title LIKE ? OR company LIKE ? OR description LIKE ?)")
         params.extend([like, like, like])
+    enabled_sources = _enabled_user_sources()
+    if enabled_sources is not None:
+        if enabled_sources:
+            clauses.append("source_id IN (" + ",".join("?" for _ in enabled_sources) + ")")
+            params.extend(enabled_sources)
+        else:
+            clauses.append("0")
     if not include_stale:
         clauses.append(
             "NOT (last_seen < ? AND status NOT IN ('saved','applied') "
@@ -972,6 +989,15 @@ def update_job_status(job_id: int, status: str) -> None:
 
 
 def list_jobs_for_matching(limit: int = 2000) -> list:
+    enabled = _enabled_user_sources()
+    source_sql = ""
+    params: list = [tenancy.user_id(), stale_cutoff()]
+    if enabled is not None:
+        if enabled:
+            source_sql = " AND source_id IN (" + ",".join("?" for _ in enabled) + ")"
+            params.extend(enabled)
+        else:
+            source_sql = " AND 0"
     with connect() as con:
         return con.execute(
             "SELECT * FROM ("
@@ -979,8 +1005,9 @@ def list_jobs_for_matching(limit: int = 2000) -> list:
             + ") WHERE NOT (last_seen < ? AND status NOT IN ('saved','applied') "
             "AND EXISTS (SELECT 1 FROM sources src WHERE src.id=source_id "
             "AND src.last_status='ok' AND src.last_scan_at > last_seen)) "
-            "ORDER BY COALESCE(posted_at, first_seen) DESC, id DESC LIMIT ?",
-            (tenancy.user_id(), stale_cutoff(), limit),
+            + source_sql
+            + " ORDER BY COALESCE(posted_at, first_seen) DESC, id DESC LIMIT ?",
+            (*params, limit),
         ).fetchall()
 
 
