@@ -8,6 +8,10 @@ uv.lock.bak
 
 # Local runtime and personal data
 data/
+# Only this public, bundled gazetteer belongs in Git; other app data stays private.
+!/app/data/
+/app/data/*
+!/app/data/places_nl.csv
 data-docker/
 seed/
 .runtime/
