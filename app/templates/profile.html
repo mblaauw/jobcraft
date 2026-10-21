@@ -15,6 +15,8 @@
     <div><label for="home-car">Auto beschikbaar</label><select id="home-car" name="car_available"><option value="0" {% if not preferences.home.car_available %}selected{% endif %}>Nee</option><option value="1" {% if preferences.home.car_available %}selected{% endif %}>Ja</option></select></div>
     <div><label for="home-bike">Max. minuten e-bike</label><input id="home-bike" name="bike_minutes" type="number" min="5" max="180" value="{{ preferences.home.bike_minutes }}"></div>
     <div><label for="home-transit">Max. minuten OV</label><input id="home-transit" name="transit_minutes" type="number" min="5" max="240" value="{{ preferences.home.transit_minutes }}"></div>
+    <div><label for="home-lat">Breedtegraad (optioneel)</label><input id="home-lat" name="lat" type="number" step="0.0001" value="{{ preferences.home.lat or '' }}"></div>
+    <div><label for="home-lon">Lengtegraad (optioneel)</label><input id="home-lon" name="lon" type="number" step="0.0001" value="{{ preferences.home.lon or '' }}"></div>
     <div><button class="button" type="submit">Reisbereik opslaan</button></div>
   </form>
 </section>

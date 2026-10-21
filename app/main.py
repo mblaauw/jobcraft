@@ -1016,9 +1016,16 @@ def profile_home(
     bike_minutes: int = Form(30),
     transit_minutes: int = Form(35),
     car_available: str = Form(""),
+    lat: str = Form(""),
+    lon: str = Form(""),
 ):
     label = " ".join(place.split()) or "Nog niet ingesteld"
     coords = geo.PLACES.get(label.lower())
+    if coords is None:
+        try:
+            coords = (float(lat), float(lon)) if lat.strip() and lon.strip() else None
+        except ValueError:
+            coords = None
     preferences = profile.read_preferences()
     preferences["home"] = {
         "label": label,
