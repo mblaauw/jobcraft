@@ -452,3 +452,16 @@ def test_source_preference_toggle_is_saved(client):
     )
     assert response.status_code == 303
     assert store.list_user_sources()[source_id] is False
+
+
+def test_unknown_place_accepts_manual_coordinates(client):
+    from app import profile
+
+    response = client.post(
+        "/profile/home",
+        data={"place": "Onbekend dorp", "lat": "52.1", "lon": "5.2", "bike_minutes": "30", "transit_minutes": "35"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    home = profile.read_preferences()["home"]
+    assert (home["lat"], home["lon"]) == (52.1, 5.2)
