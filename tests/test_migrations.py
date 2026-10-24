@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import sqlite3
+from contextlib import closing
+
+import pytest
+
 from app import config, feedback, interview_state, profile, sources, store
 
 
@@ -103,3 +108,103 @@ def test_existing_database_is_backed_up_before_migrating():
         assert con.execute("PRAGMA user_version").fetchone()[0] == 5
         assert con.execute("SELECT COUNT(*) FROM profiles").fetchone()[0] == 0
         assert con.execute("SELECT id FROM jobs WHERE id=?", (job_id,)).fetchone()
+
+
+def test_versioned_upgrade_backs_up_profiles_even_without_jobs():
+    profile.write_profile("## Werk\nSynthetic retained profile", "fixture")
+    with store.connect() as con:
+        con.execute("PRAGMA user_version=4")
+    store.init_db()
+    backups = list((config.DATA_DIR / "backups").glob("app-*.db"))
+    assert len(backups) == 1
+    with sqlite3.connect(backups[0]) as con:
+        assert con.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert (
+            "Synthetic retained profile"
+            in con.execute("SELECT profile_md FROM profiles").fetchone()[0]
+        )
+    store.init_db()
+    assert list((config.DATA_DIR / "backups").glob("app-*.db")) == backups
+
+
+def test_backup_precedes_legacy_schema_and_data_changes():
+    with store.connect() as con:
+        con.execute("PRAGMA user_version=4")
+        con.execute("DROP TABLE feedback")
+        con.execute("DELETE FROM meta WHERE key='search_text_v1'")
+    store.init_db()
+    backup = next((config.DATA_DIR / "backups").glob("app-*.db"))
+    with sqlite3.connect(backup) as con:
+        assert con.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert con.execute("SELECT 1 FROM sqlite_master WHERE name='feedback'").fetchone() is None
+        assert con.execute("SELECT 1 FROM meta WHERE key='search_text_v1'").fetchone() is None
+
+
+def test_unversioned_data_fix_also_requires_backup():
+    with store.connect() as con:
+        con.execute("DELETE FROM meta WHERE key='posted_at_normalized_v2'")
+    store.init_db()
+    assert len(list((config.DATA_DIR / "backups").glob("app-*.db"))) == 1
+
+
+def test_backup_failure_aborts_before_mutating_database(monkeypatch):
+    with store.connect() as con:
+        con.execute("PRAGMA user_version=4")
+        con.execute("DROP TABLE feedback")
+
+    def fail(*args):
+        raise OSError("synthetic disk failure")
+
+    monkeypatch.setattr(store, "_backup_database", fail)
+    with pytest.raises(OSError, match="synthetic disk failure"):
+        store.init_db()
+    with store.connect() as con:
+        assert con.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert con.execute("SELECT 1 FROM sqlite_master WHERE name='feedback'").fetchone() is None
+
+
+def test_repeated_backup_never_overwrites_and_retains_five():
+    paths = []
+    for index in range(7):
+        with store.connect() as con:
+            con.execute("PRAGMA user_version=4")
+        store.init_db()
+        current = set((config.DATA_DIR / "backups").glob("app-*.db"))
+        new = current - set(paths)
+        assert len(new) == 1
+        paths.extend(new)
+        assert current == set(paths[-5:]), f"wrong retention after backup {index}"
+    backups = list((config.DATA_DIR / "backups").glob("app-*.db"))
+    assert len(backups) == 5
+    for backup in backups:
+        with sqlite3.connect(backup) as con:
+            assert con.execute("PRAGMA user_version").fetchone()[0] == 4
+
+
+def test_backup_includes_committed_uncheckpointed_wal():
+    with closing(store.connect()) as writer:
+        writer.execute("PRAGMA wal_autocheckpoint=0")
+        writer.execute("PRAGMA user_version=4")
+        writer.execute(
+            "INSERT INTO profiles(owner,profile_md,updated_at) VALUES (?,?,?)",
+            ("fixture", "Committed WAL profile", store.now()),
+        )
+        writer.commit()
+        assert config.DB_PATH.with_name("app.db-wal").stat().st_size > 0
+        store.init_db()
+        backup = next((config.DATA_DIR / "backups").glob("app-*.db"))
+        with closing(sqlite3.connect(backup)) as con:
+            assert (
+                con.execute("SELECT profile_md FROM profiles WHERE owner='fixture'").fetchone()[0]
+                == "Committed WAL profile"
+            )
+
+
+def test_partial_backup_is_removed_on_failure():
+    class BrokenSource:
+        def backup(self, destination):
+            raise OSError("synthetic backup failure")
+
+    with pytest.raises(OSError, match="synthetic backup failure"):
+        store._backup_database(BrokenSource(), 4)
+    assert list((config.DATA_DIR / "backups").glob("app-*.db")) == []

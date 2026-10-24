@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import tempfile
+from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from typing import Any
@@ -132,6 +134,7 @@ def connect() -> sqlite3.Connection:
 
 
 def init_db() -> None:
+    _backup_before_upgrade()
     with connect() as con:
         con.executescript(SCHEMA)
         session_columns = {row["name"] for row in con.execute("PRAGMA table_info(sessions)")}
@@ -187,19 +190,48 @@ def _normalize_job_dates(con) -> None:
     con.execute("INSERT INTO meta(key,value) VALUES ('posted_at_normalized_v2','1')")
 
 
-def _backup_database() -> None:
+def _backup_before_upgrade() -> None:
+    """Protect existing state before even the legacy schema setup can mutate it."""
     from .migrations import MIGRATIONS
 
+    if not config.DB_PATH.exists():
+        return
+    with closing(sqlite3.connect(config.DB_PATH)) as source:
+        tables = {
+            row[0]
+            for row in source.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            )
+        }
+        if not tables:
+            return
+        current = int(source.execute("PRAGMA user_version").fetchone()[0])
+        markers = (
+            {row[0] for row in source.execute("SELECT key FROM meta")}
+            if "meta" in tables
+            else set()
+        )
+        required = {"ownership_v1", "posted_at_normalized_v2", "raw_verdicts_v1", "search_text_v1"}
+        if current < len(MIGRATIONS) or not required <= markers:
+            _backup_database(source, current)
+
+
+def _backup_database(source: sqlite3.Connection, current: int) -> None:
+    """Take a WAL-safe, uniquely named backup; failures abort startup."""
     directory = config.DATA_DIR / "backups"
     directory.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    target = directory / f"app-{stamp}-pre-v{len(MIGRATIONS)}.db"
-    source = sqlite3.connect(config.DB_PATH)
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
+    descriptor, filename = tempfile.mkstemp(
+        prefix=f"app-{stamp}-v{current}-", suffix=".db", dir=directory
+    )
+    os.close(descriptor)
+    target = config.DATA_DIR / "backups" / os.path.basename(filename)
     try:
-        with sqlite3.connect(target) as destination:
+        with closing(sqlite3.connect(target)) as destination:
             source.backup(destination)
-    finally:
-        source.close()
+    except Exception:
+        target.unlink(missing_ok=True)
+        raise
     for old in sorted(directory.glob("app-*.db"), reverse=True)[5:]:
         old.unlink(missing_ok=True)
 
@@ -210,8 +242,6 @@ def migrate(con) -> None:
     current = int(con.execute("PRAGMA user_version").fetchone()[0])
     if current >= len(MIGRATIONS):
         return
-    if current == 0 and con.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] > 0:
-        _backup_database()
     con.commit()
     for index, module in enumerate(MIGRATIONS[current:], start=current + 1):
         con.execute("BEGIN IMMEDIATE")
@@ -665,7 +695,13 @@ def save_token_df(counter: dict[str, int], total: int) -> None:
 
 def meta_get(key: str, default: str | None = None) -> str | None:
     with connect() as con:
-        if key in ("scan_status", "scan_summary", "ownership_v1", "token_df_total", "scheduler_last_fire"):
+        if key in (
+            "scan_status",
+            "scan_summary",
+            "ownership_v1",
+            "token_df_total",
+            "scheduler_last_fire",
+        ):
             row = con.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
         else:
             row = con.execute(
@@ -676,7 +712,13 @@ def meta_get(key: str, default: str | None = None) -> str | None:
 
 def meta_set(key: str, value: str) -> None:
     with connect() as con:
-        if key in ("scan_status", "scan_summary", "ownership_v1", "token_df_total", "scheduler_last_fire"):
+        if key in (
+            "scan_status",
+            "scan_summary",
+            "ownership_v1",
+            "token_df_total",
+            "scheduler_last_fire",
+        ):
             con.execute(
                 "INSERT INTO meta(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                 (key, value),
