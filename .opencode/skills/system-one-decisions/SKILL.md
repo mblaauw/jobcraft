@@ -31,7 +31,7 @@ Content-Type: application/json
     "category": {
       "type": "choice",
       "instructions": "Wat voor functie is dit?",
-      "criteria": { "groen_buiten": "groen, parken, tuin", "kantoor": "beleid, administratie" }
+      "criteria": { "techniek": "installatie, onderhoud", "administratie": "planning, administratie" }
     },
     "fit": {
       "type": "score",

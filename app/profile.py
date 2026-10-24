@@ -37,7 +37,7 @@ this file is a human-readable map, not a script.
 - [ ] Reistijd, fiets/OV, bedrijfsauto
 - [ ] Inkomen en zekerheid
 - [ ] Leren, groei en ontwikkelpad
-- [ ] Afknappers: sales, telefonie, nachten/weekenden, zwaar werk
+- [ ] Persoonlijke grenzen en afknappers
 - [ ] Betekenis, teamcultuur en leiderschap
 """
 

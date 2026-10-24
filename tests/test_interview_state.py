@@ -9,7 +9,7 @@ def _patch(monkeypatch, tmp_path):
     monkeypatch.setattr(interview_state, "ANSWER_LOG_FILE", tmp_path / "answer-log.md")
 
 
-def test_record_answer_marks_topic_after_two_signals(tmp_path, monkeypatch):
+def test_record_answer_marks_topic_after_three_signals(tmp_path, monkeypatch):
     _patch(monkeypatch, tmp_path)
     state = interview_state.ensure_state(seed_from_log=False)
     assert len(state["topics"]) == len(interview_state.TOPIC_SPECS)
@@ -55,3 +55,10 @@ def test_unknown_topic_is_rejected(tmp_path, monkeypatch):
         pass
     else:  # pragma: no cover - defensive
         raise AssertionError("unknown topic should raise")
+
+
+def test_generic_words_do_not_mark_topics_covered():
+    interview_state.ensure_state(seed_from_log=False)
+    for _ in range(3):
+        interview_state.record_answer("", "Goed, fijn, leuk, druk, zin.")
+    assert all(topic["status"] == "open" for topic in interview_state.summary()["topics"])

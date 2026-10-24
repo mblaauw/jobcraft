@@ -30,7 +30,7 @@ dezelfde feiten rusten. Nooit gokken: onbekend blijft onbekend.
 - Mensen & cultuur: teamgrootte · publiek · inwerk/begeleiding · zelfstandigheid
 - Eisen: opleiding · ervaring · certificaten (VCA, heftruck, VOG, rijbewijs B) · talen
 - Rode vlaggen: sales of callcenter als hoofdmoot · structureel avond/weekend · ploegendienst · zwaar fysiek werk · geen daguren · geen begeleiding bij nieuw praktisch werk. Weeg ze alleen als de voorkeuren van de gebruiker ze ondersteunen.
-- Kansen: zichtbaar praktisch resultaat · buiten of bewegen · wisselende locaties · dagwerk · inwerkperiode · bedrijfsauto. Gebruik de wensen en reisafstand uit het profiel, niet als algemene aanname.
+- Kansen: positieve signalen die aansluiten bij de expliciete voorkeuren van de gebruiker. Leid geen persoonlijke voorkeur af uit een algemeen functiekenmerk.
 
 ## Regels
 
