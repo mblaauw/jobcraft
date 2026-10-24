@@ -20,6 +20,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.testclient import TestClient
 
 from app import auth, config
+from app.auth import rate_limit
+from app.auth import routes as auth_routes
 
 
 def _db(env) -> sqlite3.Connection:
@@ -125,7 +127,7 @@ def make_env(tmp_path, monkeypatch):
         monkeypatch.setattr(config, "APP_USER", app_user)
         monkeypatch.setattr(config, "APP_PASSWORD", app_password)
         monkeypatch.delenv("APP_COOKIE_SECURE", raising=False)
-        monkeypatch.setattr(auth, "_failures", {})
+        monkeypatch.setattr(rate_limit, "_failures", {})
         auth.init_auth()
         return Env(_build_app(), root)
 
@@ -344,7 +346,7 @@ def test_wrong_credentials_are_generic_and_rotate_the_form_token(env):
 
 def test_login_failures_are_rate_limited_with_an_expiring_window(env, monkeypatch):
     clock = {"now": 1000.0}
-    monkeypatch.setattr(auth, "_clock", lambda: clock["now"])
+    monkeypatch.setattr(rate_limit, "_clock", lambda: clock["now"])
     token = csrf_of(env.client.get("/login").text)
     statuses = []
     for _ in range(auth._FAILURE_MAX):
@@ -387,9 +389,9 @@ def test_successful_login_clears_recorded_failures(env):
         data={"username": "owner", "password": "fout", "_csrf": token},
         follow_redirects=False,
     )
-    assert auth._failures
+    assert rate_limit._failures
     login(env.client, "owner", "test-password")
-    assert auth._failures == {}
+    assert rate_limit._failures == {}
 
 
 def test_non_ascii_csrf_fails_closed_without_a_server_error(env):
@@ -713,7 +715,9 @@ def test_last_active_admin_branch_is_refused(env, monkeypatch):
             (auth.ROLE_ADMIN, auth.hash_password("wachtwoord-123"), "2026-01-01T00:00:00+00:00"),
         )
     assert login(env.client, "admin", env.password("admin")).status_code == 303
-    monkeypatch.setattr(auth, "_deactivate_without_losing_last_admin", lambda _: "last_admin")
+    monkeypatch.setattr(
+        auth_routes, "_deactivate_without_losing_last_admin", lambda _: "last_admin"
+    )
     token = csrf_of(env.client.get("/users").text)
     response = env.client.post("/_test/last-admin-guard", data={"_csrf": token})
     assert response.status_code == 400

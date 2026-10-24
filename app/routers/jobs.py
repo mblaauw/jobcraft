@@ -7,7 +7,7 @@ import logging
 from datetime import UTC, datetime
 from urllib.parse import urlencode, urlsplit
 
-from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -26,6 +26,7 @@ from .. import (
     tasks,
     tenancy,
 )
+from ..auth import require_user
 from ..runtime import get_manager
 from ..web import templates
 from ..web_helpers import _jobs_return_target
@@ -33,7 +34,7 @@ from ..workflows import _doc_status, _document_lock
 
 log = logging.getLogger("jobcraft")
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_user)])
 
 
 @router.get("/jobs", response_class=HTMLResponse)
