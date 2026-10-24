@@ -97,3 +97,20 @@ def test_duplicate_zip_entries_and_active_field_codes_are_rejected():
             rewritten.writestr(name, data)
     with pytest.raises(ValueError):
         docx_safety.validate_package(output.getvalue())
+
+
+def test_utf16_doctype_is_rejected_before_staging():
+    raw = cv_bytes()
+    output = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(raw)) as archive, zipfile.ZipFile(output, "w") as rewritten:
+        for name in archive.namelist():
+            content = archive.read(name)
+            if name == "word/document.xml":
+                text = content.decode("utf-8")
+                end = text.find("?>") + 2
+                text = text[:end] + '<!DOCTYPE document [<!ENTITY probe "synthetic">]>' + text[end:]
+                text = text.replace("encoding='UTF-8'", "encoding='UTF-16'")
+                content = text.encode("utf-16")
+            rewritten.writestr(name, content)
+    with pytest.raises(ValueError):
+        cv_uploads.stage(output.getvalue(), "unsafe.docx", "session")

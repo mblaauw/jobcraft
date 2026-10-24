@@ -269,6 +269,11 @@ def slugify(value: str, limit: int = 60) -> str:
 
 def parse_cv_tailoring(text: str, strong_count: int = 5) -> dict:
     data = parse_json_object(text)
+    if not isinstance(data.get("strong_points"), list):
+        raise ValueError("CV strong_points must be a JSON array")
+    if len(data["strong_points"]) != strong_count:
+        raise ValueError(f"CV tailoring needs exactly {strong_count} strong points")
+    llm_schemas.cv_tailoring_model(strong_count).model_validate(data)
     profile = str(data.get("profile") or "").strip()
     strong = [str(item).strip() for item in (data.get("strong_points") or []) if str(item).strip()]
     if not (120 <= len(profile) <= 800):

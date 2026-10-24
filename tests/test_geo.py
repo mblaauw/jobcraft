@@ -125,3 +125,47 @@ def test_gazetteer_is_authoritative_and_district_requires_city(tmp_path):
     invalid.write_text("name,lat,lon,rail,city\nbad,nan,5,0,\n")
     with pytest.raises(ValueError):
         geo.load_gazetteer(invalid)
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "Je bent in het bezit van rijbewijs B.",
+        "Eigen vervoer vereist.",
+        "Geen bedrijfsauto beschikbaar.",
+    ],
+)
+def test_license_private_car_or_negated_company_car_does_not_bypass_range(description):
+    result = geo.assess("Eindhoven", description=description)
+    assert result["in_range"] is False and result["auto"] is False
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "Geen ervaring vereist\nBedrijfsauto beschikbaar",
+        "Geen ervaring vereist, je krijgt een bedrijfsauto.",
+    ],
+)
+def test_unrelated_negation_does_not_hide_available_employer_transport(description):
+    assert geo.assess("Eindhoven", description=description)["auto"] is True
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "Een bedrijfsauto is helaas niet beschikbaar.",
+        "Een bedrijfsauto is momenteel helaas niet meer beschikbaar.",
+    ],
+)
+def test_modified_negative_availability_does_not_create_exemption(description):
+    assert geo.assess("Eindhoven", description=description)["auto"] is False
+
+
+def test_positive_availability_is_not_negated_by_later_experience_clause():
+    assert (
+        geo.assess(
+            "Eindhoven", description="Een bedrijfsauto is beschikbaar, ervaring is niet vereist."
+        )["auto"]
+        is True
+    )

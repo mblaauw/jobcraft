@@ -23,6 +23,11 @@ WORD_NAMESPACES = {
 MESSAGE = "Gebruik een DOCX zonder externe afbeeldingen, gekoppelde sjablonen, actieve objecten of uitvoerbare veldcodes."
 
 
+class _NoDoctype(ET.TreeBuilder):
+    def doctype(self, name, pubid, system):
+        raise ValueError(MESSAGE)
+
+
 def validate_package(raw: bytes) -> None:
     try:
         with zipfile.ZipFile(io.BytesIO(raw)) as archive:
@@ -51,7 +56,9 @@ def validate_package(raw: bytes) -> None:
                     xml = archive.read(name)
                     if b"<!DOCTYPE" in xml.upper():
                         raise ValueError(MESSAGE)
-                    root = roots[name] = ET.fromstring(xml)
+                    root = roots[name] = ET.fromstring(
+                        xml, parser=ET.XMLParser(target=_NoDoctype())
+                    )
                     for element in root.iter():
                         local = element.tag.rsplit("}", 1)[-1]
                         if element.tag.startswith("{urn:schemas-microsoft-com:vml}") or local in (

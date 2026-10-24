@@ -123,3 +123,42 @@ def test_matching_stores_the_question_snapshot_that_was_actually_sent(monkeypatc
     assert row["signals_key"] != systemone.signals_key(row, "")
     assert json.loads(row["typed_signals"])["version"] == systemone.question_version(questions)
     assert store.usage_total()["calls"] == 1
+
+
+def test_consolidation_excludes_and_locally_preserves_private_fields():
+    with tenancy.scope({"id": "account", "username": "account"}):
+        profile.write_profile(
+            "## Werk\nPUBLIC\n## Privé\nPRIVATE_BODY\n## Open vragen\nPRIVATE_QUESTION", "fixture"
+        )
+        profile.write_preferences(
+            {
+                "notes": "PRIVATE_NOTES",
+                "home": {"label": "Local", "lat": 12.345678, "lon": 23.456789},
+                "likes": [{"tag": "samenwerken", "weight": 1, "evidence": "PRIVATE_EVIDENCE"}],
+            }
+        )
+        prompt = profile.build_consolidation_prompt()
+        for secret in (
+            "PRIVATE_BODY",
+            "PRIVATE_QUESTION",
+            "PRIVATE_NOTES",
+            "PRIVATE_EVIDENCE",
+            "12.345678",
+            "23.456789",
+        ):
+            assert secret not in prompt
+        assert "PUBLIC" in prompt and "samenwerken" in prompt
+        draft = profile.save_draft(
+            "## Werk\nProposed public profile", {"likes": [{"tag": "samenwerken", "weight": 2}]}
+        )
+        data = json.loads(draft.read_text())
+        assert "PRIVATE_BODY" in data["profile_md"] and "PRIVATE_QUESTION" in data["profile_md"]
+        assert data["preferences"]["notes"] == "PRIVATE_NOTES"
+        assert data["preferences"]["home"]["lat"] == 12.345678
+        assert data["preferences"]["likes"][0]["evidence"] == "PRIVATE_EVIDENCE"
+
+
+def test_changed_matcher_prompt_invalidates_prior_verdict_version(monkeypatch):
+    current = matching.current_digest({}, "PUBLIC")
+    monkeypatch.setattr(matching, "VERDICT_PROMPT_VERSION", "verdict-2026-10-19-1")
+    assert matching.current_digest({}, "PUBLIC") != current

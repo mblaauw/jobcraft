@@ -195,3 +195,37 @@ def test_dynamic_schema_is_locally_exact():
         llm_schemas.cv_tailoring_model(2)
     with pytest.raises(ValueError):
         docs.parse_cv_tailoring(json.dumps({"profile": "x" * 200, "strong_points": ["a"] * 3}), 8)
+
+
+@pytest.mark.parametrize("points", ["abc", {"a": 1, "b": 2, "c": 3}])
+def test_strong_points_must_be_an_array_before_normalization(points):
+    with pytest.raises(ValueError, match="JSON array"):
+        docs.parse_cv_tailoring(json.dumps({"profile": "x" * 200, "strong_points": points}), 3)
+
+
+def test_successful_generation_uses_captured_template_and_preserves_first_version(monkeypatch):
+    install(cv_bytes(3))
+    job = store.get_job(add_job())
+    calls = []
+
+    class Manager:
+        def generate(self, prompt, *, agent, schema):
+            count = schema["properties"]["strong_points"]["minItems"]
+            calls.append(count)
+            if len(calls) == 1:
+                replacement, _ = docs.prepare_template(cv_bytes(8))
+                with docs.template_lock():
+                    docs._atomic_write(docs.CV_TEMPLATE, replacement)
+            return json.dumps(
+                {"profile": "x" * 200, "strong_points": [f"Tailored {i}" for i in range(count)]}
+            ), {}
+
+    monkeypatch.setattr(docs, "convert_pdf", lambda path: None)
+    first = docs.generate_for_job(Manager(), job, "resume")
+    from pathlib import Path
+
+    original = Path(first["docx"]).read_bytes()
+    second = docs.generate_for_job(Manager(), job, "resume")
+    assert calls == [3, 8]
+    assert first["version"] == 1 and second["version"] == 2
+    assert Path(first["docx"]).read_bytes() == original

@@ -62,3 +62,10 @@ def test_generic_words_do_not_mark_topics_covered():
     for _ in range(3):
         interview_state.record_answer("", "Goed, fijn, leuk, druk, zin.")
     assert all(topic["status"] == "open" for topic in interview_state.summary()["topics"])
+
+
+def test_keyword_fragments_in_generic_words_do_not_complete_topics():
+    interview_state.ensure_state(seed_from_log=False)
+    for _ in range(3):
+        interview_state.record_answer("", "Ik moet er nog over nadenken.")
+    assert all(topic["status"] == "open" for topic in interview_state.summary()["topics"])

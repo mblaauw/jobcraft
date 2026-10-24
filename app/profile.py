@@ -9,7 +9,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, field_validator
 
-from . import config, store, tenancy
+from . import config, store
 from .util import now_iso, now_local, parse_json_object
 
 PROFILE_FILE = config.PROFILE_DIR / "profile.md"
@@ -322,35 +322,31 @@ def write_preferences(data: dict) -> dict:
 
 
 def build_consolidation_prompt(full: bool = False) -> str:
-    if tenancy.user_id() != tenancy.LEGACY_ID:
-        return (
-            "Maak een Nederlands profielvoorstel voor deze gebruiker, uitsluitend op basis van diens eigen antwoorden en profiel. "
-            "Verzin geen persoonsgegevens, ervaring, beperkingen of voorkeuren. Ontbrekende gegevens blijven onbekend. "
-            "Antwoord alleen JSON met profile_md (Markdown met ## koppen) en preferences volgens dit bestaande schema. "
-            "Behoud privégegevens uitsluitend onder ## Privé. De gebruiker moet het voorstel zelf accepteren.\n"
-            f"Schema en bestaande voorkeuren: {json.dumps(read_preferences(), ensure_ascii=False)}\n"
-            f"Gebruiker: {tenancy.display_name()}\nProfiel: {read_profile()}\nAntwoorden: {read_answer_log()}"
-        )
     template = (config.PROMPTS_DIR / "consolidation.md").read_text()
     incremental_ready = profile_exists() and store.meta_get("answer_log_offset") is not None
     if full or not incremental_ready:
         mode = "volledige bootstrap"
-        answers = read_answer_log() or "(geen antwoorden)"
-        dossier = read_seed("dossier") or "(ontbreekt)"
-        sketch = read_seed("profile_sketch") or "(ontbreekt)"
-        strategy = read_seed("strategy") or "(ontbreekt)"
+        answers = public_excerpt(read_answer_log(), 100000) or "(geen antwoorden)"
+        dossier = public_excerpt(read_seed("dossier"), 100000) or "(ontbreekt)"
+        sketch = public_excerpt(read_seed("profile_sketch"), 100000) or "(ontbreekt)"
+        strategy = public_excerpt(read_seed("strategy"), 100000) or "(ontbreekt)"
     else:
         mode = "incrementele update"
-        answers = new_answer_log() or "(geen nieuwe antwoorden sinds de laatste consolidatie)"
+        answers = (
+            public_excerpt(new_answer_log(), 100000)
+            or "(geen nieuwe antwoorden sinds de laatste consolidatie)"
+        )
         note = "(al geïncorporeerd in het bestaande profiel; niet opnieuw toevoegen)"
         dossier = sketch = strategy = note
     return (
         template.replace("{{MODE}}", mode)
-        .replace("{{PROFILE_MD}}", read_profile() or "(nog geen profiel)")
+        .replace("{{PROFILE_MD}}", read_public_excerpt(100000) or "(nog geen profiel)")
         .replace("{{ANSWER_LOG}}", answers)
         .replace("{{DOSSIER}}", dossier)
         .replace("{{PROFILE_SKETCH}}", sketch)
         .replace("{{STRATEGY}}", strategy)
+        + "\n## Existing public matching preferences\n"
+        + json.dumps(public_preferences(read_preferences()), ensure_ascii=False)
     )
 
 
@@ -368,6 +364,32 @@ def save_draft(profile_md: str, preferences: dict, meta: dict | None = None) -> 
     ensure_dirs()
     stamp = now_local().strftime("%Y%m%dT%H%M%S")
     path = config.user_path(DRAFTS_DIR) / f"consolidation-{stamp}.json"
+    existing = read_preferences()
+    preferences = {**preferences, "home": existing["home"], "notes": existing["notes"]}
+    preferences["hard_filters"] = {
+        **(preferences.get("hard_filters") or {}),
+        "location": existing["hard_filters"]["location"],
+    }
+    for kind in ("likes", "dislikes"):
+        evidence = {item["tag"]: item.get("evidence", "") for item in existing[kind]}
+        preferences[kind] = [
+            {**item, **({"evidence": evidence[item["tag"]]} if item["tag"] in evidence else {})}
+            for item in preferences.get(kind, [])
+        ]
+    sections = split_sections(profile_md)
+    for local in split_sections(read_profile()):
+        if local["heading"].startswith(PRIVATE_HEADING) or local["heading"] in HIDDEN_HEADINGS:
+            matching_section = next(
+                (section for section in sections if section["heading"] == local["heading"]), None
+            )
+            if matching_section is None:
+                sections.append(local)
+            elif local["text"] and local["text"] not in matching_section["text"]:
+                matching_section["text"] += "\n\n" + local["text"]
+    profile_md = "\n\n".join(
+        (f"## {section['heading']}\n" if section["heading"] else "") + section["text"]
+        for section in sections
+    )
     payload = {
         "status": "pending",
         "created_at": now_iso(),

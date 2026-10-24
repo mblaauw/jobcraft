@@ -16,7 +16,7 @@ from .util import parse_json_object
 
 # Bump when the matcher prompt or its instructions change: cached verdicts must
 # not survive a prompt change even when preferences and vacancy text are equal.
-VERDICT_PROMPT_VERSION = "verdict-2026-10-19-1"
+VERDICT_PROMPT_VERSION = "verdict-2026-10-24-public-preferences-v2"
 PROFILE_PROMPT_LIMIT = 4000
 
 

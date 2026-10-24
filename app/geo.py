@@ -55,10 +55,33 @@ def valid_coordinates(lat: float, lon: float) -> bool:
 
 PLACES, RAIL_PLACES, DISTRICTS = load_gazetteer(GAZETTEER_FILE)
 AUTO_PATTERN = re.compile(
-    r"bedrijfsauto|dienstauto|auto van de zaak|rijdt? (?:langs|naar) (?:verschillende )?(?:locaties|vestigingen)"
-    r"|mobiel werk|(?:in het bezit van|hebt? een) rijbewijs|eigen vervoer",
+    r"\b(?:bedrijfsauto|dienstauto|auto van de zaak)\b",
     re.I,
 )
+
+
+def employer_transport(text: str) -> bool:
+    for clause in re.split(r"[.!?;\n]", text.lower()):
+        for match in AUTO_PATTERN.finditer(clause):
+            before, after = clause[: match.start()], clause[match.end() :]
+            negated_before = re.search(
+                r"\b(?:geen|zonder|niet)\s+(?:(?:een|eigen|vaste|persoonlijke|extra|nieuwe|met)\s+)*$",
+                before,
+            )
+            negated_after = re.match(
+                r"\s*[,(:-]?\s*(?:(?:is|wordt)\s+)?(?:niet|ontbreekt|geen)\b", after
+            )
+            unavailable_after = re.match(
+                r"\s*[,(:-]?\s*(?:is|wordt)\s+(?:\w+\s+){0,3}niet\s+(?:\w+\s+){0,2}beschikbaar\b",
+                after,
+            )
+            negated_list = re.search(
+                r"\b(?:geen|zonder)\s+(?:bedrijfsauto|dienstauto|auto van de zaak)\s+(?:of|en)\s+$",
+                before,
+            )
+            if not (negated_before or negated_after or unavailable_after or negated_list):
+                return True
+    return False
 
 
 @lru_cache(maxsize=128)
@@ -129,7 +152,7 @@ def assess(
     home_settings: dict | None = None,
 ) -> dict:
     settings = home_settings if home_settings is not None else home()
-    auto = bool(AUTO_PATTERN.search(_norm(f"{description or ''} {title or ''}")))
+    auto = employer_transport(f"{description or ''}\n{title or ''}")
     result = {
         "place": location or "onbekend",
         "distance_km": None,
