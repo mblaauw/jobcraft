@@ -6,6 +6,7 @@ from contextlib import closing
 import pytest
 
 from app import config, feedback, interview_state, profile, sources, store
+from app.store import schema
 
 
 def test_migrations_are_versioned_and_idempotent():
@@ -155,7 +156,7 @@ def test_backup_failure_aborts_before_mutating_database(monkeypatch):
     def fail(*args):
         raise OSError("synthetic disk failure")
 
-    monkeypatch.setattr(store, "_backup_database", fail)
+    monkeypatch.setattr(schema, "_backup_database", fail)
     with pytest.raises(OSError, match="synthetic disk failure"):
         store.init_db()
     with store.connect() as con:
