@@ -30,7 +30,7 @@ import httpx
 import yaml
 from bs4 import BeautifulSoup
 
-from . import config, store
+from . import config, source_policy, store
 from .util import now_iso
 
 USER_AGENT = (
@@ -50,7 +50,7 @@ def ensure_sources_file() -> None:
 def load_sources() -> list[dict]:
     configured = store.load_source_configs()
     if configured:
-        return configured
+        return [source_policy.effective_metadata(source) for source in configured]
     ensure_sources_file()
     if not DATA_FILE.exists():
         return []
@@ -59,7 +59,7 @@ def load_sources() -> list[dict]:
     result = [source for source in sources if isinstance(source, dict) and source.get("id")]
     for source in result:
         store.save_source_config(source)
-    return result
+    return [source_policy.effective_metadata(source) for source in result]
 
 
 def set_enabled(source_id: str, enabled: bool) -> bool:

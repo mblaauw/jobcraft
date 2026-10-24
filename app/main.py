@@ -388,7 +388,7 @@ def sources_page(request: Request):
         "sources.html",
         {
             "sources": store.list_sources(),
-            "user_sources": store.list_user_sources(),
+            "user_sources": store.effective_user_sources(),
             "jobs_by_source": store.count_jobs_by_source(),
             "scan_status": store.meta_get("scan_status", "idle"),
             "summary": summary,
