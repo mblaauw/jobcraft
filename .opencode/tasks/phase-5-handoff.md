@@ -1,6 +1,8 @@
 # Jobcraft handoff — Phase 5 remainder, Phases 6–7
 
-Recorded 2026-10-24. This is the authoritative starting point for a new session.
+Recorded 2026-10-24. Historical handoff; superseded by the repository-root
+`plan.md`, which is the single active delivery checkpoint. The status and
+publication instructions below describe the earlier session, not current policy.
 
 ## Current state
 
