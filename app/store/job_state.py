@@ -1,4 +1,5 @@
 """SQLite job_state operations."""
+
 from __future__ import annotations
 
 from .. import tenancy
@@ -7,6 +8,21 @@ from .jobs import _job_select
 
 
 def _set_job_state(con, job_id, **fields):
+    allowed = {
+        "status",
+        "vote",
+        "match_score",
+        "match_reason",
+        "profile_hash",
+        "rank_score",
+        "typed_signals",
+        "signals_key",
+        "signal_confidence",
+        "travel_key",
+        "travel_json",
+    }
+    if not fields or fields.keys() - allowed:
+        raise ValueError("Unknown or empty job state column")
     names = list(fields)
     con.execute(
         "INSERT INTO job_states(owner,job_id,"
@@ -17,7 +33,6 @@ def _set_job_state(con, job_id, **fields):
         + ",".join(f"{name}=excluded.{name}" for name in names),
         (tenancy.user_id(), job_id, *fields.values()),
     )
-
 
 
 def update_job_signals(
@@ -38,7 +53,6 @@ def update_job_signals(
         )
 
 
-
 def get_job_travel(job_id: int, key: str) -> str | None:
     with connect() as con:
         row = con.execute(
@@ -48,11 +62,11 @@ def get_job_travel(job_id: int, key: str) -> str | None:
     return row["travel_json"] if row else None
 
 
-
 def set_job_travel(job_id: int, key: str, payload: str) -> None:
     with connect() as con:
-        _set_job_state(con, job_id, travel_key=key, travel_json=payload)
-
+        # Transient scoring inputs need no persisted cache or fabricated parent.
+        if con.execute("SELECT 1 FROM jobs WHERE id=?", (job_id,)).fetchone():
+            _set_job_state(con, job_id, travel_key=key, travel_json=payload)
 
 
 def set_rank_scores(scores: dict[int, float]) -> None:
@@ -64,7 +78,6 @@ def set_rank_scores(scores: dict[int, float]) -> None:
             _set_job_state(con, job_id, rank_score=score)
 
 
-
 def set_job_vote(job_id: int, vote: int) -> None:
     """Store the account's up/down vote (1, -1 or 0) plus a learning event."""
     with connect() as con:
@@ -73,7 +86,6 @@ def set_job_vote(job_id: int, vote: int) -> None:
             "INSERT INTO feedback(job_id, vote, created_at,owner) VALUES (?,?,?,?)",
             (job_id, vote, now(), tenancy.user_id()),
         )
-
 
 
 def list_votes() -> dict:
@@ -91,11 +103,9 @@ def list_votes() -> dict:
     }
 
 
-
 def update_job_status(job_id: int, status: str) -> None:
     with connect() as con:
         _set_job_state(con, job_id, status=status)
-
 
 
 def update_job_match(job_id: int, score: float, reason: str, profile_hash: str) -> None:
@@ -103,4 +113,3 @@ def update_job_match(job_id: int, score: float, reason: str, profile_hash: str) 
         _set_job_state(
             con, job_id, match_score=score, match_reason=reason, profile_hash=profile_hash
         )
-

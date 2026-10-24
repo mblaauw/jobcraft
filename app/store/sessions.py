@@ -22,6 +22,9 @@ def create_session(session_id: str, title: str, agent: str, model: str) -> None:
 def update_session(session_id: str, **fields: Any) -> None:
     if not fields:
         return
+    allowed = {"title", "agent", "model", "context_digest", "cost_usd", "tokens_in", "tokens_out", "updated_at"}
+    if fields.keys() - allowed:
+        raise ValueError("Unknown session column")
     fields["updated_at"] = now()
     columns = ", ".join(f"{key}=?" for key in fields)
     with connect() as con:
