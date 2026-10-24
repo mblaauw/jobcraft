@@ -439,3 +439,6 @@ html.job-drawer-open { overflow: hidden; scrollbar-gutter: stable; }
 @media (prefers-reduced-motion: reduce) {
   .job-drawer[open] { animation: none; }
 }
+.cv-preview dd { overflow-wrap: anywhere; }
+.cv-preview .btn-row { flex-wrap: wrap; }
+#own-cv { max-width: 100%; }

@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import hashlib
+import io
 import json
 import math
 import os
 import re
 import shutil
 import subprocess
+import tempfile
 import threading
 import unicodedata
 from pathlib import Path
@@ -18,19 +21,32 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Pt
 from docx.text.paragraph import Paragraph
 
-from . import config, llm, profile, standards, store, tenancy
+from . import config, docx_safety, llm, llm_schemas, profile, standards, store, tenancy
 from .util import now_iso, now_local, parse_json_object
 
 DOC_TEMPLATES_DIR = config.DATA_DIR / "templates"
 CV_TEMPLATE = DOC_TEMPLATES_DIR / "cv-template.docx"
 IDENTITY_FILE = DOC_TEMPLATES_DIR / "identity.json"
 
-PROFILE_HEADINGS = {"PROFIEL", "PROFIEL EN AMBITIE", "OVER MIJ", "SAMENVATTING", "PROFILE", "SUMMARY"}
+PROFILE_HEADINGS = {
+    "PROFIEL",
+    "PROFIEL EN AMBITIE",
+    "OVER MIJ",
+    "SAMENVATTING",
+    "PROFILE",
+    "SUMMARY",
+}
 STRONG_HEADINGS = {"STERKE PUNTEN", "KERNKWALITEITEN", "COMPETENTIES", "VAARDIGHEDEN", "SKILLS"}
 LETTER_MAX_LINES = 15
 LETTER_CHARS_PER_LINE = 95
 _GENERATION_LOCKS: dict[tuple[str, int, str], threading.Lock] = {}
 _GENERATION_LOCKS_GUARD = threading.Lock()
+_TEMPLATE_LOCKS: dict[str, threading.RLock] = {}
+
+
+def template_lock():
+    with _GENERATION_LOCKS_GUARD:
+        return _TEMPLATE_LOCKS.setdefault(tenancy.user_id(), threading.RLock())
 
 
 def _generation_lock(owner: str, job_id: int, kind: str) -> threading.Lock:
@@ -58,63 +74,154 @@ def _set_text(paragraph, text: str) -> None:
         run.text = ""
 
 
-def ensure_templates() -> None:
-    config.user_path(CV_TEMPLATE, "templates").parent.mkdir(parents=True, exist_ok=True)
-    source = config.seed_dir() / config.seed_files()["cv"]
-    if not source.exists():
-        raise FileNotFoundError(f"base CV not found: {source}")
+def _is_list(paragraph) -> bool:
+    properties = paragraph._p.pPr
+    if properties is not None and properties.numPr is not None:
+        num_id = properties.numPr.numId
+        return num_id is None or num_id.val != 0
+    style = paragraph.style
+    seen = set()
+    while style is not None:
+        if style.style_id in seen:
+            return False
+        seen.add(style.style_id)
+        if style.name.startswith(("List Bullet", "List Number")):
+            return True
+        properties = style.element.pPr
+        if properties is not None and properties.numPr is not None:
+            num_id = properties.numPr.numId
+            return num_id is None or num_id.val != 0
+        style = style.base_style
+    return False
 
-    if config.user_path(CV_TEMPLATE, "templates").exists():
-        document = Document(str(config.user_path(CV_TEMPLATE, "templates")))
-        if not _is_a4(document):
-            _apply_a4(document)
-            document.save(str(config.user_path(CV_TEMPLATE, "templates")))
-        config.user_path(IDENTITY_FILE, "templates").write_text(
-            json.dumps(_extract_identity(document), ensure_ascii=False, indent=2)
+
+def inspect_cv(raw: bytes) -> dict:
+    """Inspect without writes; return structure only, never personal paragraph text."""
+    docx_safety.validate_package(raw)
+    try:
+        document = Document(io.BytesIO(raw))
+    except Exception:
+        raise ValueError("Geen leesbaar DOCX-bestand. Kies een geldig bestand opnieuw.") from None
+    paragraphs = list(_all_paragraphs(document))
+    profiles = [i for i, p in enumerate(paragraphs) if p.text.strip().upper() in PROFILE_HEADINGS]
+    strengths = [i for i, p in enumerate(paragraphs) if p.text.strip().upper() in STRONG_HEADINGS]
+    errors, profile_index, strong_indices = [], None, []
+    if len(profiles) != 1:
+        errors.append("Gebruik één herkenbare profielkop, bijvoorbeeld 'Profiel' of 'Over mij'.")
+    else:
+        for index in range(profiles[0] + 1, len(paragraphs)):
+            paragraph = paragraphs[index]
+            if not paragraph.text.strip():
+                continue
+            if index in strengths or paragraph.style.name.startswith("Heading"):
+                break
+            profile_index = index
+            break
+        if profile_index is None:
+            errors.append("De profielkop is gevonden, maar profieltekst ontbreekt.")
+    if len(strengths) != 1:
+        errors.append("Gebruik één kop 'Sterke punten' of 'Kernkwaliteiten', met 3–8 lijstpunten.")
+    else:
+        for index in range(strengths[0] + 1, len(paragraphs)):
+            paragraph = paragraphs[index]
+            if not paragraph.text.strip():
+                continue
+            if not _is_list(paragraph) or paragraph.style.name.startswith("Heading"):
+                break
+            strong_indices.append(index)
+        if not 3 <= len(strong_indices) <= 8:
+            errors.append(
+                f"{len(strong_indices)} sterke punten herkend; toegestaan zijn 3–8 lijstpunten."
+            )
+    if errors:
+        raise ValueError(" ".join(errors))
+    return {
+        "profile_heading": paragraphs[profiles[0]].text.strip(),
+        "strong_heading": paragraphs[strengths[0]].text.strip(),
+        "strong_count": len(strong_indices),
+        "profile_index": profile_index,
+        "strong_indices": strong_indices,
+        "source_hash": hashlib.sha256(raw).hexdigest(),
+    }
+
+
+def template_count(document) -> int:
+    texts = [p.text.strip() for p in _all_paragraphs(document)]
+    indices = [
+        int(match.group(1))
+        for text in texts
+        if (match := re.fullmatch(r"\{\{STRONG_(\d+)\}\}", text))
+    ]
+    if (
+        not 3 <= len(indices) <= 8
+        or sorted(indices) != list(range(1, len(indices) + 1))
+        or texts.count("{{PROFILE}}") != 1
+        or sum("{{STRONG_" in text for text in texts) != len(indices)
+    ):
+        raise ValueError(
+            "CV template placeholders must contain one profile and 3–8 unique contiguous strong points"
         )
-        return
+    return len(indices)
 
-    document = Document(str(source))
 
+def prepare_template(raw: bytes) -> tuple[bytes, dict]:
+    inspection = inspect_cv(raw)
+    document = Document(io.BytesIO(raw))
     identity = _extract_identity(document)
     paragraphs = list(_all_paragraphs(document))
-
-    profile_replaced = False
-    strong_points: list = []
-    collecting = False
-    for paragraph in paragraphs:
-        text = paragraph.text.strip()
-        if text.upper() in PROFILE_HEADINGS:
-            collecting = "profile"
-            continue
-        if text.upper() in STRONG_HEADINGS:
-            collecting = "strong"
-            continue
-        if collecting == "profile" and text:
-            _set_text(paragraph, "{{PROFILE}}")
-            profile_replaced = True
-            collecting = None
-        elif collecting == "strong":
-            if paragraph.style is not None and paragraph.style.name == "List Bullet":
-                strong_points.append(paragraph)
-                if len(strong_points) == 5:
-                    collecting = None
-            elif text:
-                collecting = None
-
-    if not profile_replaced or len(strong_points) != 5:
-        raise RuntimeError(
-            f"CV template structure unexpected (profile={profile_replaced}, "
-            f"strong_points={len(strong_points)})"
-        )
-    for index, paragraph in enumerate(strong_points, start=1):
-        _set_text(paragraph, f"{{{{STRONG_{index}}}}}")
-
+    _set_text(paragraphs[inspection["profile_index"]], "{{PROFILE}}")
+    for number, index in enumerate(inspection["strong_indices"], 1):
+        _set_text(paragraphs[index], f"{{{{STRONG_{number}}}}}")
     _apply_a4(document)
-    document.save(str(config.user_path(CV_TEMPLATE, "templates")))
-    config.user_path(IDENTITY_FILE, "templates").write_text(
-        json.dumps(identity, ensure_ascii=False, indent=2)
-    )
+    template_count(document)
+    output = io.BytesIO()
+    document.save(output)
+    prepared = output.getvalue()
+    return prepared, {
+        **identity,
+        "strong_count": inspection["strong_count"],
+        "template_hash": hashlib.sha256(prepared).hexdigest(),
+    }
+
+
+def _atomic_write(path: Path, raw: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as temporary:
+        name = Path(temporary.name)
+        try:
+            temporary.write(raw)
+            temporary.close()
+            name.replace(path)
+        finally:
+            name.unlink(missing_ok=True)
+
+
+def ensure_templates() -> None:
+    with template_lock():
+        target = config.user_path(CV_TEMPLATE, "templates")
+        if target.exists():
+            raw = target.read_bytes()
+            docx_safety.validate_package(raw)
+            document = Document(io.BytesIO(raw))
+            if not _is_a4(document):
+                _apply_a4(document)
+                output = io.BytesIO()
+                document.save(output)
+                raw = output.getvalue()
+                _atomic_write(target, raw)
+            identity = {
+                **_extract_identity(document),
+                "strong_count": template_count(document),
+                "template_hash": hashlib.sha256(raw).hexdigest(),
+            }
+        else:
+            source = config.seed_dir() / config.seed_files()["cv"]
+            raw, identity = prepare_template(source.read_bytes())
+            _atomic_write(target, raw)
+        identity_path = config.user_path(IDENTITY_FILE, "templates")
+        encoded = json.dumps(identity, ensure_ascii=False, indent=2).encode()
+        if not identity_path.exists() or identity_path.read_bytes() != encoded:
+            _atomic_write(identity_path, encoded)
 
 
 def _extract_identity(document) -> dict:
@@ -146,8 +253,9 @@ def _apply_a4(document) -> None:
 
 
 def cv_identity() -> dict:
-    ensure_templates()
-    return json.loads(config.user_path(IDENTITY_FILE, "templates").read_text())
+    with template_lock():
+        ensure_templates()
+        return json.loads(config.user_path(IDENTITY_FILE, "templates").read_text())
 
 
 # ---------------------------------------------------------------- parsing
@@ -159,17 +267,21 @@ def slugify(value: str, limit: int = 60) -> str:
     return (slug or "job")[:limit].strip("-")
 
 
-def parse_cv_tailoring(text: str) -> dict:
+def parse_cv_tailoring(text: str, strong_count: int = 5) -> dict:
     data = parse_json_object(text)
     profile = str(data.get("profile") or "").strip()
     strong = [str(item).strip() for item in (data.get("strong_points") or []) if str(item).strip()]
     if not (120 <= len(profile) <= 800):
         raise ValueError("CV profile must be 120-800 characters")
-    if len(strong) != 5:
-        raise ValueError("CV tailoring needs exactly 5 strong points")
+    if len(strong) != strong_count:
+        raise ValueError(f"CV tailoring needs exactly {strong_count} strong points")
     if any(len(item) > 70 for item in strong):
         raise ValueError("strong points must be at most 70 characters")
-    return {"profile": profile, "strong_points": strong}
+    return (
+        llm_schemas.cv_tailoring_model(strong_count)
+        .model_validate({"profile": profile, "strong_points": strong})
+        .model_dump()
+    )
 
 
 def parse_letter(text: str) -> list[str]:
@@ -189,7 +301,7 @@ def parse_letter(text: str) -> list[str]:
 # ---------------------------------------------------------------- prompts
 
 
-def cv_prompt(job, profile_md: str) -> str:
+def cv_prompt(job, profile_md: str, strong_count: int = 5) -> str:
     standards_text = standards.standards_block(("cv-brief-standaarden", "vacature-analyse"))
     extra = f"\n\n{standards_text}" if standards_text else ""
     return (
@@ -202,7 +314,7 @@ def cv_prompt(job, profile_md: str) -> str:
         f"{job['description'][:7000]}"
         f"{extra}\n\n"
         'Geef alleen JSON: {"profile": "<profielparagraaf van 3-4 zinnen, max 600 tekens>", '
-        '"strong_points": ["<vijf korte punten, elk max 60 tekens>"]}.'
+        f'"strong_points": ["<exact {strong_count} korte punten, elk max 60 tekens>"]}}.'
     )
 
 
@@ -272,8 +384,15 @@ def _record_generation_usage(kind: str, usage: dict) -> None:
     )
 
 
-def render_cv(job, tailoring: dict, out_path: Path) -> None:
-    document = Document(str(config.user_path(CV_TEMPLATE, "templates")))
+def render_cv(job, tailoring: dict, out_path: Path, *, template_bytes: bytes | None = None) -> None:
+    document = Document(
+        io.BytesIO(template_bytes)
+        if template_bytes is not None
+        else str(config.user_path(CV_TEMPLATE, "templates"))
+    )
+    count = template_count(document)
+    if count != len(tailoring["strong_points"]):
+        raise ValueError(f"CV template needs exactly {count} strong points")
     values = {"{{PROFILE}}": tailoring["profile"]}
     values.update(
         {f"{{{{STRONG_{i}}}}}": text for i, text in enumerate(tailoring["strong_points"], 1)}
@@ -284,8 +403,8 @@ def render_cv(job, tailoring: dict, out_path: Path) -> None:
         if key in values:
             _set_text(paragraph, values[key])
             replaced += 1
-    if replaced != 6:
-        raise RuntimeError(f"CV template placeholders missing (replaced {replaced}/6)")
+    if replaced != 1 + count:
+        raise RuntimeError(f"CV template placeholders missing (replaced {replaced}/{1 + count})")
     document.save(str(out_path))
 
 
@@ -413,6 +532,10 @@ def _generate_job_document(mgr: llm.ServerManager, job, kind: str) -> dict:
     if kind not in ("resume", "motivatie"):
         raise ValueError("kind must be resume or motivatie")
     ensure_templates()
+    with template_lock():
+        template_path = config.user_path(CV_TEMPLATE, "templates")
+        template_bytes = template_path.read_bytes() if template_path.exists() else None
+        strong_count = template_count(Document(io.BytesIO(template_bytes))) if template_bytes else 5
     profile_md = profile.read_public_excerpt(12000)
     directory = _job_dir(job)
     _job_json(job, directory)
@@ -423,13 +546,19 @@ def _generate_job_document(mgr: llm.ServerManager, job, kind: str) -> dict:
         raise FileExistsError(f"{docx_path.name} already exists")
 
     if kind == "resume":
-        text, usage = mgr.generate(cv_prompt(job, profile_md), agent="cv_writer")
+        text, usage = mgr.generate(
+            cv_prompt(job, profile_md, strong_count),
+            agent="cv_writer",
+            schema=llm_schemas.cv_tailoring_model(strong_count).model_json_schema(),
+        )
     else:
         text, usage = mgr.generate(letter_prompt(job, profile_md), agent="letter_writer")
     # Account for the paid call before parsing/rendering can fail.
     _record_generation_usage(kind, usage)
     if kind == "resume":
-        render_cv(job, parse_cv_tailoring(text), docx_path)
+        render_cv(
+            job, parse_cv_tailoring(text, strong_count), docx_path, template_bytes=template_bytes
+        )
     else:
         render_letter(job, parse_letter(text), docx_path)
 

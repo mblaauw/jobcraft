@@ -700,7 +700,11 @@ def _account_response(request: Request, *, user: dict, error: str = "", status_c
     return templates.TemplateResponse(
         request,
         "account.html",
-        {"account": _account_view(row) if row is not None else user, "error": error},
+        {
+            "account": _account_view(row) if row is not None else user,
+            "error": error,
+            "has_cv": (config.seed_dir() / config.seed_files()["cv"]).is_file(),
+        },
         status_code=status_code,
     )
 
