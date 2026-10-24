@@ -18,6 +18,9 @@
 - Current action: fix confirmed earlier-phase safety defects before P5.5.
 - Audit checkpoint commit: `d22520f`; backup safety commit: `9fae7f7` on
   `phase-3-backup-safety` (unpublished).
+- Queue safety branch `phase-4-queue-safety` ends at `1538c27`, containing
+  `0183121` (atomic/owner-safe queue), `890d9a3` (scan dispatch), `a941eb5`
+  (Amsterdam scheduler). These branches are stacked, not merged into main.
 
 ## Branch audit (2026-10-24)
 
@@ -152,6 +155,15 @@ acceptance coverage.
    **219 passed**, Ruff clean, seven adversarial probes passed. Correction review
    found no blocking issues. Safety slices accepted locally except Docker gate.
    Quick-restart orphan recovery remains a separate P4.2 lifecycle item.
+   Lifecycle implementation now frozen for review: exclusive process lock before
+   initialization; central owner scope and inactive-owner rejection; recent
+   orphan recovery; periodic heartbeat; client-before-workers startup and
+   finish-current-task shutdown; safe queued-only cancellation and terminal
+   transition guards. Thirteen regression cases pass; full suite **232 passed**,
+   Ruff clean, independently repeated. Static review completed with no blocking
+   findings; six adversarial lifecycle probes passed, including second-process
+   flock and recovery after a real six-second SQLite write lock. No publication
+   or deployment. Remaining lifecycle edge cases are listed below.
 3. P5.5: detect 3–8 styled or numbered CV bullets; preserve heading aliases and
    existing five-point templates; propagate exact count through metadata, prompt,
    schema, parser and renderer. Synthetic fixtures only.
@@ -197,3 +209,37 @@ acceptance coverage.
   prior slot to fire on first startup, including yesterday before today's first
   slot. Scheduled scanning remains provider-free; configured match-after-scan may
   enqueue paid work at runtime (never enabled against providers in these checks).
+- Lifecycle advice: `ses_e93238395ffeaRi8eQCwLeUBMc`; review:
+  `ses_e931a3845ffez34w7vVrYaxJkp` (partial static report), completed independent
+  static review `ses_e9316ec48ffeWNKQXt6TlLSAE3`; verification:
+  `ses_e931a3840ffefDijkH9TXlTYkY` (complete; source hashes checked unchanged).
+- Lifecycle scope is Unix/macOS/Linux only (`fcntl`), matching the supported host
+  and Docker platform. Forced container termination may still interrupt tasks;
+  deployment grace is an owner-controlled deployment setting, not changed here.
+- Matching quality script ran successfully on three synthetic scored jobs with
+  rank correlation 1.000. This verifies script execution, not real match quality.
+
+## Current blockers and exact continuation
+
+- At 08:00 UTC the next advisor dispatch (`ses_e93135952ffe2zBWGV8KSz3xWy`)
+  failed with **"Go usage limit exceeded"**. This is a subagent-provider quota
+  blocker, not exhaustion of primary tools. Do not bypass it or claim an
+  unreviewed implementation accepted. Existing lifecycle review/verification
+  completed; no new architectural work has started.
+- Next ready P4.3 item: move feedback rebuilding to the rerank task, keeping vote
+  persistence/single-job rerank instant and $0. Before doing so, resolve durable
+  coalescing: a vote arriving while rerank is running currently dedupes to the
+  active task and can be missed after its feedback snapshot. Proposed payload
+  revision + atomic requeue-on-finish needs advisor review; do not implement a
+  naive asynchronous move that loses votes.
+- Then enforce the daily budget between LLM escalations (not only at round start),
+  propagate document/match/consolidation failures/results into durable task rows,
+  and replace meta status/UI polling with tasks.
+- Follow up lifecycle edges: `scheduler.stop()` still uses a five-second timed
+  join; a slow scheduling tick could outlive the process lock. Fix its shutdown
+  contract before claiming the whole lifecycle phase accepted. A DB failure in
+  both terminal update and error recording may leave a running row until restart;
+  a worker may claim one last task in the stop-check race; unbounded handler join
+  requires deployment grace. Real resolver integration coverage can be stronger.
+- Docker remains unavailable, so **no branch satisfies the complete PR definition
+  of done yet**. No phase is being presented as wholly finished.
