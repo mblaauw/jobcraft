@@ -6,7 +6,7 @@ import json
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import (
     HTMLResponse,
     RedirectResponse,
@@ -20,13 +20,14 @@ from .. import (
     tasks,
     tenancy,
 )
+from ..auth import require_user
 from ..runtime import get_manager
 from ..web import templates
 from ..web_helpers import _profile_context
 
 log = logging.getLogger("jobcraft")
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_user)])
 
 
 @router.get("/profile", response_class=HTMLResponse)

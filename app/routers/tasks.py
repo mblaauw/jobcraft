@@ -5,16 +5,17 @@ from __future__ import annotations
 import json
 import logging
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from .. import (
     auth,
     tasks,
 )
+from ..auth import require_user
 
 log = logging.getLogger("jobcraft")
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_user)])
 
 
 @router.get("/api/tasks")
@@ -31,7 +32,6 @@ def api_tasks(request: Request):
             for task in tasks.list_for_owner(user["id"])
         ]
     }
-
 
 
 @router.get("/api/tasks/{task_id}")
@@ -53,4 +53,3 @@ def api_task(task_id: int, request: Request):
         "error": task["error"],
         "result": result,
     }
-

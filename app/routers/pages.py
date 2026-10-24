@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import (
     HTMLResponse,
     JSONResponse,
@@ -28,7 +28,7 @@ log = logging.getLogger("jobcraft")
 router = APIRouter()
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse, dependencies=[Depends(auth.require_user)])
 def dashboard(request: Request):
     sessions = store.list_sessions(8)
     profile_state = _profile_meta()
@@ -57,7 +57,7 @@ def dashboard(request: Request):
 
 
 
-@router.get("/admin", response_class=HTMLResponse)
+@router.get("/admin", response_class=HTMLResponse, dependencies=[Depends(auth.require_admin)])
 def admin_page(request: Request):
     auth.require_admin(request)
     votes = store.list_votes()

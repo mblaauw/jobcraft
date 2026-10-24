@@ -6,7 +6,7 @@ import io
 import logging
 import zipfile
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import (
     RedirectResponse,
 )
@@ -17,11 +17,12 @@ from .. import (
     cv_uploads,
     tenancy,
 )
+from ..auth import require_user
 from ..web import templates
 
 log = logging.getLogger("jobcraft")
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_user)])
 
 
 @router.post("/account/cv")

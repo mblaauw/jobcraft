@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 
-from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import (
     HTMLResponse,
     RedirectResponse,
@@ -17,11 +17,12 @@ from .. import (
     store,
     tasks,
 )
+from ..auth import require_user
 from ..web import templates
 
 log = logging.getLogger("jobcraft")
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_user)])
 
 
 @router.get("/sources", response_class=HTMLResponse)
@@ -48,7 +49,7 @@ def sources_page(request: Request):
 
 
 
-@router.post("/sources/{source_id}/toggle")
+@router.post("/sources/{source_id}/toggle", dependencies=[Depends(auth.require_admin)])
 def source_toggle(request: Request, source_id: str):
     auth.require_admin(request)
     known = {source["id"]: source for source in sources.load_sources()}
@@ -62,7 +63,7 @@ def source_toggle(request: Request, source_id: str):
 
 
 
-@router.post("/sources/scan")
+@router.post("/sources/scan", dependencies=[Depends(auth.require_admin)])
 def sources_scan(request: Request):
     auth.require_admin(request)
     tasks.enqueue("scan", owner=None, dedupe_key="scan")

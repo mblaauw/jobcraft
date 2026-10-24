@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import (
     HTMLResponse,
     RedirectResponse,
@@ -18,6 +18,7 @@ from .. import (
     profile,
     store,
 )
+from ..auth import require_user
 from ..runtime import _session_lock, get_manager
 from ..util import now_local
 from ..web import templates
@@ -25,7 +26,7 @@ from ..web_helpers import _last_assistant_text, _persist_turn, _visible_messages
 
 log = logging.getLogger("jobcraft")
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_user)])
 
 
 @router.get("/interview", response_class=HTMLResponse)
