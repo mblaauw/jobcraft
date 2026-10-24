@@ -149,7 +149,7 @@ class FakeLLMClient:
     def close(self) -> None:
         pass
 
-    def complete(self, messages, *, model=None, schema=None, session_key=None):
+    def complete(self, messages: list[dict[str, str]], *, model: str | None = None, schema: dict | None = None, session_key: str | None = None) -> Completion:
         self.calls.append(
             {"messages": messages, "model": model, "schema": schema, "session_key": session_key}
         )

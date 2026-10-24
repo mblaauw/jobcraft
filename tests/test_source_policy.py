@@ -17,7 +17,9 @@ def test_regional_defaults_overrides_and_no_home():
 def test_regional_boundary_is_inclusive(monkeypatch):
     regional = {"id": "region", "scope": "regional", "regions": ["Amsterdam"]}
     for distance, expected in [(39.9, True), (40, True), (40.1, False)]:
-        monkeypatch.setattr(source_policy.geo, "haversine_km", lambda *args: distance)
+        monkeypatch.setattr(
+            source_policy.geo, "haversine_km", lambda *args, distance=distance: distance
+        )
         assert source_policy.selection(regional, {"lat": 52, "lon": 5})["selected"] is expected
 
 

@@ -1,6 +1,8 @@
 """SQLite documents operations."""
 from __future__ import annotations
 
+import sqlite3
+
 from .. import tenancy
 from .connection import connect, now
 
@@ -32,7 +34,7 @@ def list_documents(job_id: int) -> list:
 
 
 
-def get_document(document_id: int):
+def get_document(document_id: int) -> sqlite3.Row | None:
     with connect() as con:
         return con.execute(
             "SELECT * FROM documents WHERE id=? AND owner=?", (document_id, tenancy.user_id())

@@ -6,6 +6,7 @@ import hashlib
 import logging
 import os
 import uuid
+from contextlib import suppress
 
 from . import config, interview_state, profile, prompts, store, tenancy
 from .llm_client import (
@@ -225,10 +226,8 @@ class ServerManager:
                 raise LLMError("the model returned no assistant message")
             return assistant[-1]["text"].strip(), usage
         finally:
-            try:
+            with suppress(LLMError):
                 self.client.delete_session(session_id)
-            except LLMError:
-                pass
 
 
 __all__ = [

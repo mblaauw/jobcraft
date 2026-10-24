@@ -38,7 +38,7 @@ async def _request_body(request: Request, limit: int = 256 * 1024) -> bytes | No
         return None
     try:
         body = await request.body()
-    except Exception:  # noqa: BLE001 - an unreadable body can never carry a valid token
+    except Exception:
         return None
     return body if len(body) <= limit else None
 

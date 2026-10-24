@@ -40,7 +40,7 @@ def _run_scan() -> dict:
             for owner in store.active_owners_with_profile():
                 tasks.enqueue("match", owner=owner, dedupe_key=f"match:{owner}")
         return summary
-    except Exception as exc:  # noqa: BLE001 - surface failures in the UI
+    except Exception as exc:
         log.exception("scan failed")
         store.meta_set("scan_status", f"error: {exc}"[:400])
         raise
@@ -52,7 +52,7 @@ def _run_match() -> None:
         summary["finished_at"] = datetime.now(UTC).isoformat()
         store.meta_set("match_summary", json.dumps(summary, ensure_ascii=False))
         store.meta_set("match_status", "done")
-    except Exception as exc:  # noqa: BLE001 - surface failures in the UI
+    except Exception as exc:
         log.exception("matching failed")
         store.meta_set("match_status", f"error: {exc}"[:400])
 
@@ -86,7 +86,7 @@ def _run_document(job_id: int, kind: str) -> None:
                 }
             ),
         )
-    except Exception as exc:  # noqa: BLE001 - surface failures in the UI
+    except Exception as exc:
         log.exception("document generation failed")
         message = str(exc)
         if "provider.auth" in message or "api_key_expired" in message:
@@ -125,7 +125,7 @@ def _run_bootstrap() -> None:
         store.meta_set("consolidation_draft", str(draft))
         store.meta_set("bootstrap_status", "ready")
         log.info("consolidation draft ready: %s", draft)
-    except Exception as exc:  # noqa: BLE001 - surface failures in the UI
+    except Exception as exc:
         log.exception("consolidation failed")
         message = str(exc)
         if "provider.auth" in message or "api_key_expired" in message:

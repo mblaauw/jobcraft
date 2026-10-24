@@ -1,4 +1,5 @@
 """html listing source adapter."""
+
 from __future__ import annotations
 
 import re
@@ -45,12 +46,11 @@ def _scan_html_listing(client, source, entry, summary, limit_per_source=None) ->
             continue
         items = jsonld_jobs(page.text)
         title = company = location = ""
-        lat = lon = None
         if items:
             data = items[0]
             title = str(data.get("title") or "").strip()
             company = jsonld_company(data)
-            location, lat, lon = jsonld_location(data)
+            location, _lat, _lon = jsonld_location(data)
             description = strip_html(data.get("description")) or page_text(page.text)
         else:
             soup = BeautifulSoup(page.text, "html.parser")
@@ -82,8 +82,7 @@ def _scan_html_listing(client, source, entry, summary, limit_per_source=None) ->
     store.update_source_status(source["id"], "ok")
 
 
-
 scan = _scan_html_listing
 
 
-KINDS = ('html-listing',)
+KINDS = ("html-listing",)

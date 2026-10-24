@@ -1,5 +1,38 @@
 # Jobcraft
 
+## Phase 6 code boundaries
+
+`app/main.py` composes the application; `routers/`, `runtime.py`, `workflows.py`
+and `web_helpers.py` own HTTP, lifecycle, queued work and presentation respectively.
+`web.py` owns the shared renderer. `auth/` separates credentials, sessions, security,
+bootstrap and account/admin routes. Every endpoint has an inventoried permission.
+
+`scoring/` contains acyclic rules, signals/travel, cache digest primitives and blend
+configuration. `MATCH_WEIGHT_RULE`, `MATCH_WEIGHT_FIT`, `MATCH_WEIGHT_LLM` default
+to `0.35`, `0.40`, `0.25`; missing components are renormalized and an all-unavailable
+configured blend falls back to rules. Feedback never enters paid verdict keys.
+
+`store/` groups persistence by tables. Connection contexts commit/rollback **and
+close**; each enables foreign keys, WAL and a 5000 ms busy timeout. Migration 6
+backs up through the existing upgrade path, refuses orphan/cross-owner references
+before rebuilding child tables, and never fabricates parents or deletes orphans.
+An integrity failure needs owner investigation; no production migration was part
+of Phase 6 acceptance.
+
+Adapters are discovered from `app/adapters/`: add one module declaring `KINDS` and
+`scan(client, source, entry, summary, limit_per_source=None)` plus configuration.
+`JobItem` and transport/adapter protocols live in `adapters/interfaces.py`.
+Public scans use cookie-free HTTP with robots checks, host pacing, bounded retries
+and conditional caching. Robots 404 permits fetching; denied, redirected or
+unavailable policies fail closed. Authenticated clients/requests are unsupported.
+Only public responses are cached (64 files, at most 2 MiB each) under the runtime
+directory. Known rich job details are skipped for 24 hours from the last real
+detail fetch; empty updates cannot erase existing fields.
+
+Ruff includes `B`, `SIM`, `RUF`. Public scoring/store/LLM/task interfaces are hinted;
+dynamic provider JSON remains explicit dictionaries. No extra type checker is
+required. Synthetic import/size/interface guards run in pytest.
+
 A local-first career workspace for discovering vacancies, keeping a living
 profile, ranking opportunities and generating tailored application documents.
 

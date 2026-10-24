@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 
 from .. import feedback
+from ..contracts import JobRow
 from . import signals as ranking
 
 
@@ -25,7 +26,7 @@ def _row_get(row, key: str, default=None):
 
 
 def rule_score(
-    job, preferences: dict, feedback_data: dict | None = None
+    job: JobRow, preferences: dict, feedback_data: dict | None = None
 ) -> tuple[float, list[str]]:
     """Fast deterministic pre-score in 0..100 with short reason notes."""
     text = _row_get(job, "search_text") or _norm(
@@ -82,7 +83,7 @@ def rule_score(
     filters = preferences.get("hard_filters", {})
     noul = (ranking.signals_of(job) or {}).get("noul") or {}
 
-    def probability(key):
+    def probability(key: str) -> float | None:
         try:
             return float(noul[key])
         except (KeyError, TypeError, ValueError):

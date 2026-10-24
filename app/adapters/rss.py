@@ -1,4 +1,5 @@
 """rss source adapter."""
+
 from __future__ import annotations
 
 from xml.etree import ElementTree
@@ -18,7 +19,7 @@ def _scan_rss(client, source, entry, summary, limit_per_source=None) -> None:
     limit = limit_per_source or int(source.get("per_page", 30))
     for item in items[:limit]:
 
-        def child_text(names) -> str:
+        def child_text(names, item=item) -> str:
             for child in item:
                 if child.tag.split("}")[-1] in names:
                     return (child.text or "").strip()
@@ -46,8 +47,7 @@ def _scan_rss(client, source, entry, summary, limit_per_source=None) -> None:
     store.update_source_status(source["id"], "ok")
 
 
-
 scan = _scan_rss
 
 
-KINDS = ('rss',)
+KINDS = ("rss",)

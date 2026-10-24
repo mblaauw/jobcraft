@@ -1,4 +1,5 @@
 """Local authentication: bootstrap."""
+
 from __future__ import annotations
 
 import json
@@ -6,7 +7,7 @@ import os
 import secrets
 import threading
 import uuid
-from contextlib import closing
+from contextlib import closing, suppress
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -28,10 +29,8 @@ from .users import _get_user_by_id, _get_user_by_username, _insert_user
 _bootstrap_credentials_lock = threading.Lock()
 
 
-
 def bootstrap_accounts_file() -> Path:
     return Path(config.RUNTIME_DIR) / BOOTSTRAP_FILE
-
 
 
 def _read_bootstrap_accounts() -> dict:
@@ -44,16 +43,13 @@ def _read_bootstrap_accounts() -> dict:
     return accounts if isinstance(accounts, dict) else {}
 
 
-
 def _write_bootstrap_accounts(accounts: dict) -> None:
     """Write the one-time generated passwords atomically with mode 0600."""
     path = bootstrap_accounts_file()
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists() and _read_bootstrap_accounts() == accounts:
-        try:
+        with suppress(OSError):
             os.chmod(path, 0o600)
-        except OSError:  # pragma: no cover - best effort on exotic filesystems
-            pass
         return
     payload = json.dumps({"accounts": accounts}, indent=2, sort_keys=True) + "\n"
     temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
@@ -68,7 +64,6 @@ def _write_bootstrap_accounts(accounts: dict) -> None:
     os.chmod(path, 0o600)
 
 
-
 def _ensure_schema() -> None:
     with closing(store.connect()) as con, con:
         con.executescript(AUTH_SCHEMA)
@@ -76,7 +71,6 @@ def _ensure_schema() -> None:
             "DELETE FROM auth_sessions WHERE expires_at <= ?",
             (_iso(datetime.now(UTC) - timedelta(days=7)),),
         )
-
 
 
 def init_auth() -> None:
@@ -137,4 +131,3 @@ def init_auth() -> None:
 
     if changed or not bootstrap_accounts_file().exists():
         _write_bootstrap_accounts(accounts)
-

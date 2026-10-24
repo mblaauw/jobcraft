@@ -2,6 +2,62 @@
 
 ## Active delivery checkpoint
 
+- **Current milestone: whole P6**, authorized 2026-10-24. Start 09:51 UTC;
+  delivery window through 11:21 UTC (90 minutes). Branch `phase-6-web-structure`
+  from `6f61220`. Fresh baseline: 305 tests passed and Ruff passed.
+- Execute P6.1 web/runtime/routers, P6.2 authorization dependencies/inventory,
+  P6.3 scoring package/cycle removal/configurable weights, P6.4 store connections,
+  grouping/allowlists/FK preflight, P6.5 adapter registry then separately reviewed
+  HTTP/ingestion improvements, P6.6 lint/type hints and size/import acceptance.
+- Publication authorized: feature branches, independent frozen review/verifier,
+  required current green quality CI and protected PR merges; never bypass rules.
+  Spend cap $0; no private directories/environment files, paid providers, production
+  migration/deployment or remote environment changes. Synthetic SQLite only.
+- Preserve route and document contracts, account isolation, public prompt projection,
+  usage accounting, immutable documents and feedback-free paid caches. P7 and
+  earlier-phase behavior gaps remain excluded. No additional type checker (D8).
+- Done: P6.1 merged #31 (`a771929`), 307 tests + three independent AST probes;
+  P6.2 merged #32 (`6dcfa90`), 308 tests, full 43-endpoint dependency inventory,
+  auth modules <=305 lines. Both independently reviewed, Docker/Ruff and required
+  current quality CI passed; no publication bypass.
+- P6.3 merged #33 (`88e583c`): 317 tests, independent scoring parity probes;
+  missing compatibility export and large-finite-weight overflow findings resolved.
+- P6.4a merged #34 (`22deb27`): 74 function/module-assignment AST parity checks,
+  317 tests; table-group extraction separate from integrity behavior.
+- P6.4b merged #35 (`8c5ff5f`): 323 tests and 14 independent integrity probes;
+  connection closure (including commit failure), busy timeout, allowlists and
+  orphan-checked transactional foreign keys, sequence/index/ID preservation.
+- P6.5a merged #36 (`bdcff10`): 327 tests, 27 helper ASTs plus inline WP parity;
+  registry, job/adapter interfaces and one-file adapter discovery.
+- P6.5b merged #37 (`7c1e7f7`): 341 tests plus 107 adversarial HTTP/recency probes.
+  All confirmed findings resolved: Rijk detail timestamps, gzip 304 metadata and
+  malformed cache mappings. Public cookie-free HTTP, robots checks, bounded
+  retries/pacing/conditional cache, nonempty merge and nonrolling detail recency.
+- P6.6 final source frozen at tree `bfd94216e47f5a79c0b302f22f07e12609753081`:
+  public interface annotations; shared prompt-version authority; B/SIM/RUF lint;
+  pure CV-template/conversion and preference-model extraction. All application
+  Python files <=400 lines (largest 393), main <100; fresh-process imports and
+  public annotation guards added. Primary full suite: 344 passed; strict Ruff,
+  all three JavaScript syntax checks and Docker image `a2019b69` passed.
+- Matching quality command exercised with 100 synthetic scored vacancies: all
+  top-N overlaps 100%, rank/fit correlations 1.000. This is command/fixture
+  correctness, **not** evidence of real-world matching quality; no private data
+  or provider calls were used. Final independent verification completed: **344
+  tests**, **72 focused acceptance tests**, strict Ruff passed on the exact frozen
+  source. No unresolved findings. Container smoke check also passed with networking
+  disabled: imports, renderer singleton, all ten adapter kinds and synthetic schema
+  version 6/FK enforcement. P6.1–P6.6 accepted; final publication remains gated on
+  current quality CI and protected merge (recorded in the final PR receipt).
+- Final static review `ses_e926211b9ffeAGbc3bcAIB6xoq`: complete, all 37 changed
+  files inspected, no material findings. Final verifier
+  `ses_e9261e3ddffeVgB49OCRVVz0M1` completed on the same frozen source tree.
+- All earlier P6 PRs passed independent review/verifier, Docker and required
+  quality checks before merge. No production migration/deployment or new spend.
+- Read-only architecture advice `ses_e92a7849fffefBfUy5eqSOxT31` and adapter
+  discovery `ses_e92a71d1cffeanQP2vtCC2t35P` inspected. Implementation stays primary.
+
+### Completed P5 checkpoint
+
 - **Current approved milestone (08:12 UTC, 2026-10-24):** commit, push and merge
   the prepared stack, then complete all P5.1–P5.5. Deadline 09:42 UTC (90 minutes).
 - Publication completed: #26 `3c210ef`, #27 `add36e1`, #28 `fc7dfac`, #29
@@ -179,7 +235,10 @@ proof and owner-only gates remain open.
 | P5.4 | Neutral consolidation/topic text and threshold 3 | Verify remaining skill text and full keyword cleanup |
 | P5.5 | Heading aliases present | Still exactly five bullets; numbered bullets, dynamic schema/parser/render and upload preview absent |
 
-### Phase 6 — not started
+### Phase 6 — completed (baseline audit retained below)
+
+All six items are now implemented and accepted; see the current delivery checkpoint
+and separate PRs #31–#38. The table below records the original gaps, not open work.
 
 | Item | Remaining |
 | --- | --- |

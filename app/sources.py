@@ -210,7 +210,7 @@ def scan(limit_per_source: int | None = None) -> dict:
                     entry["reason"] = f"adapter '{kind}' not implemented yet"
                     summary["sources"][source["id"]] = entry
                     continue
-            except Exception as exc:  # noqa: BLE001 - surface per-source failures
+            except Exception as exc:
                 entry["status"] = "error"
                 entry["reason"] = f"{type(exc).__name__}: {exc}"[:300]
                 summary["errors"].append({"source": source["id"], "reason": entry["reason"]})
