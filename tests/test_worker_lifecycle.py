@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app import config, main, profile, store, tasks, tenancy
+from app import config, main, profile, runtime, store, tasks, tenancy
 
 A = {"id": "a", "username": "a", "display_name": "Account A", "role": "user"}
 B = {"id": "b", "username": "b", "display_name": "Account B", "role": "user"}
@@ -178,7 +178,7 @@ def test_lifespan_initializes_client_before_workers_and_closes_it_last(monkeypat
     )
     monkeypatch.setattr(config, "APP_SKIP_LLM", False)
     monkeypatch.setattr(main.llm, "ServerManager", lambda: manager)
-    monkeypatch.setattr(main, "manager", None)
+    monkeypatch.setattr(runtime, "manager", None)
     monkeypatch.setenv("TASK_WORKERS", "3")
     for module, name in [
         (store, "init_db"),
@@ -200,7 +200,7 @@ def test_lifespan_initializes_client_before_workers_and_closes_it_last(monkeypat
 
     def start_workers(count, *, resolve_owner):
         assert count == 3
-        assert main.manager.client is client
+        assert runtime.manager.client is client
         assert resolve_owner is main._resolve_task_owner
         events.append("workers-start")
 

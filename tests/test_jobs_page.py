@@ -10,7 +10,7 @@ import pytest
 from bs4 import BeautifulSoup
 from fastapi.testclient import TestClient
 
-from app import auth, config, main, store
+from app import auth, config, main, runtime, store
 
 
 @pytest.fixture()
@@ -302,7 +302,7 @@ def test_running_does_not_reload_the_page_and_errors_offer_recovery(client):
 
 
 def test_match_action_preserves_view_and_starts_only_once(client, monkeypatch):
-    monkeypatch.setattr(main, "manager", SimpleNamespace(client=object()))
+    monkeypatch.setattr(runtime, "manager", SimpleNamespace(client=object()))
     target = "/jobs?q=groen&within=0&sort=newest"
     for _ in range(2):
         response = client.post("/jobs/match", data={"next": target}, follow_redirects=False)
@@ -371,7 +371,7 @@ def test_detail_back_link_rejects_unrelated_return_targets(client, target):
 
 def test_document_post_retains_context_without_starting_a_second_generation(client, monkeypatch):
     job_id = add_job()
-    monkeypatch.setattr(main, "manager", SimpleNamespace(client=object()))
+    monkeypatch.setattr(runtime, "manager", SimpleNamespace(client=object()))
     store.meta_set(f"doc_status:{job_id}", '{"state":"running","kind":"resume"}')
     target = f"/jobs/{job_id}?return_to=%2Fjobs%3Fq%3DGroen"
     response = client.post(
@@ -393,7 +393,7 @@ def test_document_requests_from_multiple_views_start_one_generation(client, monk
             time.sleep(0.05)
         original_set(key, value)
 
-    monkeypatch.setattr(main, "manager", SimpleNamespace(client=object()))
+    monkeypatch.setattr(runtime, "manager", SimpleNamespace(client=object()))
     monkeypatch.setattr(store, "meta_set", slow_status_set)
     with ThreadPoolExecutor(max_workers=4) as executor:
         responses = list(

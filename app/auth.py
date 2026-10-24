@@ -36,11 +36,11 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
-from fastapi.templating import Jinja2Templates
 from markupsafe import Markup, escape
 
 from . import config, store, tenancy
 from .util import LOCAL_TZ, now_iso
+from .web import templates
 
 log = logging.getLogger("jobcraft.auth")
 
@@ -104,7 +104,6 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions(user_id);
 """
 
-templates = Jinja2Templates(directory=str(config.TEMPLATES_DIR))
 router = APIRouter()
 
 
