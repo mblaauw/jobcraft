@@ -112,7 +112,7 @@ def test_signal_cache_tracks_own_preferences_but_not_votes(isolated):
         original = systemone.signals_key(row, "Own public profile")
         store.set_job_vote(jid, 1)
         assert systemone.signals_key(row, "Own public profile") == original
-        profile.write_preferences({"notes": "Own changed requirements"})
+        profile.write_preferences({"hard_filters": {"no_phone_main": True}})
         assert systemone.signals_key(row, "Own public profile") != original
     with tenancy.scope(B):
         assert systemone.signals_key(row, "Own public profile") == original

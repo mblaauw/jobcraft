@@ -7,7 +7,7 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from . import config, store, tenancy
 from .util import now_iso, now_local, parse_json_object
@@ -91,6 +91,51 @@ class Preferences(BaseModel):
     keywords: Keywords = Field(default_factory=Keywords)
     home: HomeBase = Field(default_factory=HomeBase)
     notes: str = ""
+
+    @field_validator("tracks")
+    @classmethod
+    def unique_tracks(cls, tracks: list[Track]) -> list[Track]:
+        ids = [track.id for track in tracks]
+        if len(set(ids)) != len(ids) or "overig" in ids or any(not item.strip() for item in ids):
+            raise ValueError("track ids must be unique, nonempty and not 'overig'")
+        return tracks
+
+
+def public_preferences(preferences: dict) -> dict:
+    """Only matching wishes, never free-form notes/evidence or home coordinates."""
+    return {
+        "tracks": [
+            {key: item[key] for key in ("id", "name", "weight", "keywords") if key in item}
+            for item in preferences.get("tracks", [])
+        ],
+        "likes": [
+            {key: item[key] for key in ("tag", "weight") if key in item}
+            for item in preferences.get("likes", [])
+        ],
+        "dislikes": [
+            {key: item[key] for key in ("tag", "weight") if key in item}
+            for item in preferences.get("dislikes", [])
+        ],
+        "hard_filters": {
+            key: value
+            for key, value in preferences.get("hard_filters", {}).items()
+            if key
+            in (
+                "hours_min",
+                "hours_max",
+                "no_phone_main",
+                "no_structural_evenings",
+                "no_heavy_physical",
+                "day_work_only",
+                "wants_guidance",
+            )
+        },
+        "keywords": {
+            key: value
+            for key, value in (preferences.get("keywords") or {}).items()
+            if key in ("boost", "veto")
+        },
+    }
 
 
 def _neutral_preferences(data: dict) -> dict:

@@ -6,6 +6,10 @@ import hashlib
 import json
 import os
 import re
+from functools import lru_cache
+from pathlib import Path
+
+import yaml
 
 from . import feedback, geo, llm, profile, ranking, standards, store, systemone, tenancy
 from .util import parse_json_object
@@ -95,7 +99,9 @@ def rule_score(
     if filters.get("no_phone_main"):
         if phone is not None and phone >= 0.75:
             score -= 15.0
-        elif phone is None and "callcenter" in text:
+        elif phone is None and any(
+            word in text for word in hard_filter_keywords().get("no_phone_main", [])
+        ):
             score -= 10.0
     if filters.get("no_structural_evenings") and (probability("evening_weekend") or 0) >= 0.75:
         score -= 12.0
@@ -127,6 +133,13 @@ def rule_score(
     return max(0.0, min(100.0, score)), notes
 
 
+@lru_cache(maxsize=1)
+def hard_filter_keywords() -> dict:
+    return yaml.safe_load(
+        (Path(__file__).with_name("data") / "hard_filter_keywords.yaml").read_text()
+    )
+
+
 def _parse_verdict(text: str) -> dict:
     data = parse_json_object(text)
     score = data.get("score")
@@ -155,7 +168,7 @@ def verdict_prompt(job, preferences: dict, profile_md: str) -> str:
     return (
         f"Beoordeel deze vacature voor {tenancy.display_name()}.\n\n"
         "## Voorkeuren (JSON)\n"
-        f"{json.dumps(preferences, ensure_ascii=False)}\n\n"
+        f"{json.dumps(profile.public_preferences(preferences), ensure_ascii=False)}\n\n"
         "## Profiel (samenvatting)\n"
         f"{profile_md[:PROFILE_PROMPT_LIMIT]}\n\n"
         "## Reistijd vanaf de woonplaats in de voorkeuren (schatting)\n"
@@ -219,25 +232,24 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
     # Stage 1 — System One gate: typed signals, cheap and cached per job.
     if systemone.enabled():
         excerpt = profile.read_public_excerpt(4000)
+        questions = systemone.questions_for(preferences)
         batch = int(os.environ.get("SYSTEMONE_BATCH", "40"))
         pending = [
             job
             for job in store.list_jobs_for_matching(2000)
-            if job["signals_key"] != systemone.signals_key(job, excerpt)
+            if job["signals_key"]
+            != systemone.signals_key(job, excerpt, preferences=preferences, questions=questions)
             and not ranking.excluded_from_matching(job)
         ]
         consecutive_failures = 0
         for job in pending[:batch]:
             try:
-                data, usage, _latency = systemone.decide(systemone.compose_state(job, excerpt))
-                signals = systemone.signals_from_answers(data.get("answers") or {})
-                rank, _ = ranking.rank_for(job, preferences, feedback_data, signals, digest_base)
-                store.update_job_signals(
-                    job["id"],
-                    rank,
-                    json.dumps(signals, ensure_ascii=False),
-                    systemone.signals_key(job, excerpt),
-                    float(signals["confidence"]),
+                key = systemone.signals_key(
+                    job, excerpt, preferences=preferences, questions=questions
+                )
+                data, usage, _latency = systemone.decide(
+                    systemone.compose_state(job, excerpt, preferences=preferences),
+                    questions=questions,
                 )
                 store.record_usage(
                     None,
@@ -246,6 +258,15 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
                     int(usage.get("output_tokens") or 0),
                     0.0,
                     agent="jev",
+                )
+                signals = systemone.signals_from_answers(data.get("answers") or {}, questions)
+                rank, _ = ranking.rank_for(job, preferences, feedback_data, signals, digest_base)
+                store.update_job_signals(
+                    job["id"],
+                    rank,
+                    json.dumps(signals, ensure_ascii=False),
+                    key,
+                    float(signals["confidence"]),
                 )
                 summary["signals"] += 1
                 consecutive_failures = 0
