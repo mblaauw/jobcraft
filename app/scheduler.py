@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import os
 import threading
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from . import store, tasks
 
@@ -13,23 +14,37 @@ _THREAD: threading.Thread | None = None
 
 
 def slots(raw: str) -> list[tuple[int, int]]:
-    result = []
+    result = set()
     for item in raw.split(","):
         try:
             hour, minute = item.strip().split(":")
-            result.append((int(hour), int(minute)))
+            hour, minute = int(hour), int(minute)
+            if 0 <= hour < 24 and 0 <= minute < 60:
+                result.add((hour, minute))
         except ValueError:
             continue
     return sorted(result)
 
 
 def due_slot(now: datetime, raw: str, last: str | None) -> str | None:
-    """Return the latest due ISO slot that has not fired yet."""
-    for hour, minute in slots(raw):
-        candidate = now.astimezone(UTC).replace(hour=hour, minute=minute, second=0, microsecond=0)
-        if candidate <= now and (not last or candidate.isoformat() > last):
-            return candidate.isoformat()
-    return None
+    """Use Amsterdam wall times and persist UTC instants, latest slot only.
+
+    An ambiguous autumn time fires on its first occurrence, never twice.
+    """
+    local = now.astimezone(ZoneInfo("Europe/Amsterdam"))
+    last_instant = datetime.fromisoformat(last).astimezone(UTC) if last else None
+    candidates = [
+        (local - timedelta(days=days))
+        .replace(hour=hour, minute=minute, second=0, microsecond=0, fold=0)
+        .astimezone(UTC)
+        for days in (0, 1)
+        for hour, minute in slots(raw)
+    ]
+    due = [candidate for candidate in candidates if candidate <= now]
+    latest = max(due) if due else None
+    return (
+        latest.isoformat() if latest and (last_instant is None or latest > last_instant) else None
+    )
 
 
 def run_due(now: datetime | None = None) -> str | None:
