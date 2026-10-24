@@ -21,40 +21,33 @@ def enqueue(
     dedupe_key: str | None = None,
 ) -> int:
     with store.connect() as con:
-        if dedupe_key:
-            existing = con.execute(
-                "SELECT id FROM tasks WHERE dedupe_key=? AND status IN ('queued','running')",
-                (dedupe_key,),
-            ).fetchone()
-            if existing:
-                return int(existing["id"])
-        cursor = con.execute(
+        row = con.execute(
             "INSERT INTO tasks(owner, kind, payload_json, dedupe_key, created_at) "
-            "VALUES (?,?,?,?,?)",
+            "VALUES (?,?,?,?,?) "
+            "ON CONFLICT(dedupe_key) WHERE status IN ('queued','running') "
+            "DO UPDATE SET dedupe_key=excluded.dedupe_key RETURNING id, owner",
             (owner, kind, json.dumps(payload or {}, ensure_ascii=False), dedupe_key, store.now()),
-        )
-        return int(cursor.lastrowid)
+        ).fetchone()
+        if row["owner"] != owner:
+            raise ValueError("dedupe key belongs to another owner")
+        return int(row["id"])
 
 
 def claim_next() -> dict | None:
     with store.connect() as con:
         row = con.execute(
-            "SELECT * FROM tasks t WHERE status='queued' "
+            "UPDATE tasks SET status='running', started_at=?, heartbeat_at=?, "
+            "attempts=attempts+1 WHERE id=("
+            "SELECT id FROM tasks t WHERE status='queued' "
             "AND (kind != 'scan' OR NOT EXISTS ("
             "  SELECT 1 FROM tasks running WHERE running.kind='scan' AND running.status='running')) "
             "AND (kind NOT IN ('match','consolidate','document') OR owner IS NULL OR NOT EXISTS ("
             "  SELECT 1 FROM tasks running WHERE running.owner=t.owner "
             "  AND running.kind IN ('match','consolidate','document') AND running.status='running')) "
-            "ORDER BY id LIMIT 1"
+            "ORDER BY id LIMIT 1) AND status='queued' RETURNING *",
+            (store.now(), store.now()),
         ).fetchone()
-        if row is None:
-            return None
-        con.execute(
-            "UPDATE tasks SET status='running', started_at=?, heartbeat_at=?, "
-            "attempts=attempts+1 WHERE id=?",
-            (store.now(), store.now(), row["id"]),
-        )
-        return dict(row) | {"status": "running"}
+        return dict(row) if row else None
 
 
 def heartbeat(task_id: int) -> None:
@@ -108,8 +101,9 @@ def latest(kind: str, *, owner: str | None = None, key: str | None = None) -> di
     with store.connect() as con:
         if key is not None:
             row = con.execute(
-                "SELECT * FROM tasks WHERE kind=? AND dedupe_key=? ORDER BY id DESC LIMIT 1",
-                (kind, key),
+                "SELECT * FROM tasks WHERE kind=? AND dedupe_key=? AND owner IS ? "
+                "ORDER BY id DESC LIMIT 1",
+                (kind, key, owner),
             ).fetchone()
         elif owner is None:
             row = con.execute(

@@ -398,7 +398,8 @@ def source_toggle(request: Request, source_id: str):
     return RedirectResponse(url="/sources", status_code=303)
 
 
-def _run_scan() -> None:
+def _run_scan() -> dict:
+    store.meta_set("scan_status", "running")
     try:
         summary = sources.scan()
         feedback.refresh_document_frequency()
@@ -407,17 +408,16 @@ def _run_scan() -> None:
         if os.environ.get("MATCH_AFTER_SCAN", "1") != "0":
             for owner in store.active_owners_with_profile():
                 tasks.enqueue("match", owner=owner, dedupe_key=f"match:{owner}")
+        return summary
     except Exception as exc:  # noqa: BLE001 - surface failures in the UI
         log.exception("scan failed")
         store.meta_set("scan_status", f"error: {exc}"[:400])
+        raise
 
 
 @app.post("/sources/scan")
 def sources_scan(request: Request):
     auth.require_admin(request)
-    if store.meta_get("scan_status") == "running":
-        return RedirectResponse(url="/sources", status_code=303)
-    store.meta_set("scan_status", "running")
     tasks.enqueue("scan", owner=None, dedupe_key="scan")
     return RedirectResponse(url="/sources", status_code=303)
 
@@ -1178,4 +1178,8 @@ def _task_document(task):
         _run_document(int(payload["job_id"]), str(payload["kind"]))
 
 
-tasks.handler("scan")(_run_scan)
+@tasks.handler("scan")
+def _task_scan(task):
+    if task["owner"] is not None:
+        raise RuntimeError("scan tasks must be shared")
+    return _run_scan()

@@ -7,7 +7,8 @@
 - Session: 2026-10-24, started 07:21 UTC; deadline 08:36 UTC (75 minutes).
 - Baseline: `main` / `origin/main` at `1ee1dd3`; clean worktree baseline:
   **195 tests passed**, Ruff passed. Docker daemon is unavailable locally.
-- Active branch: `phase-3-backup-safety`, in a clean temporary worktree. No personal
+- Active branch: `phase-4-worker-lifecycle`, stacked on Phase 4 queue safety, in a clean
+  temporary worktree. No personal
   directories, environment files, paid providers or remote services are used.
 - Spend cap: $0. Publication, deployments and real-data migrations are prohibited
   by agent policy; owner performs those after reviewing prepared commits.
@@ -15,6 +16,8 @@
   syntax, Docker build when available, independent review and verification of the
   same frozen revision. Do not treat historical green CI as current verification.
 - Current action: fix confirmed earlier-phase safety defects before P5.5.
+- Audit checkpoint commit: `d22520f`; backup safety commit: `9fae7f7` on
+  `phase-3-backup-safety` (unpublished).
 
 ## Branch audit (2026-10-24)
 
@@ -140,6 +143,15 @@ acceptance coverage.
    blocking issue. Backup safety slice accepted locally, except Docker gate.
 2. P4.1–4.4 safety slices: atomic task enqueue/claim; working scan dispatch/retry
    with durable errors/results; Amsterdam scheduler and latest-slot semantics.
+   Implemented regressions failed first; frozen revision now has **218 tests
+   passed**, Ruff and all three JavaScript syntax checks passed. Independent
+   stress verification confirmed atomic claims/dedupe. Verification found a
+   cross-midnight scheduler omission; fixed with a regression. Review requested
+   stronger race synchronization and nonvacuous no-fanout coverage; both added.
+   **24 affected tests passed**, independently verified; verifier full suite:
+   **219 passed**, Ruff clean, seven adversarial probes passed. Correction review
+   found no blocking issues. Safety slices accepted locally except Docker gate.
+   Quick-restart orphan recovery remains a separate P4.2 lifecycle item.
 3. P5.5: detect 3–8 styled or numbered CV bullets; preserve heading aliases and
    existing five-point templates; propagate exact count through metadata, prompt,
    schema, parser and renderer. Synthetic fixtures only.
@@ -175,3 +187,13 @@ acceptance coverage.
   `f6f8cec7a363e81c0af601adf9acfbf043647cfc6dfd0ec335c20701c246f663`.
 - Docker build attempted; failed to connect to the absent OrbStack daemon.
 - No JavaScript changed in the backup slice; node syntax checks not applicable.
+- Phase 4 review: `ses_e9326ac68ffeFTjfKJGB1Timtp`; verification:
+  `ses_e9326ac63fferYGsYOBBxWCo8P` (complete, including correction round).
+- Synthetic 2000-job benchmark (no providers): feedback rebuild 215 ms, full
+  rerank 2203 ms, cached queue depth 0 ms, single-job rerank 1 ms. These are
+  component timings, **not** proof of the brief's HTTP latency targets. Vote
+  still calls feedback rebuild synchronously; move it into the rerank task.
+- Scheduler catch-up is intentional: an empty last-fire marker causes the latest
+  prior slot to fire on first startup, including yesterday before today's first
+  slot. Scheduled scanning remains provider-free; configured match-after-scan may
+  enqueue paid work at runtime (never enabled against providers in these checks).
