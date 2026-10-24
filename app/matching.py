@@ -7,17 +7,18 @@ import json
 import os
 
 from . import feedback, geo, llm, profile, ranking, standards, store, systemone, tenancy
+
+# Bump when the matcher prompt or its instructions change: cached verdicts must
+# not survive a prompt change even when preferences and vacancy text are equal.
+from .scoring.digests import VERDICT_PROMPT_VERSION as VERDICT_PROMPT_VERSION
 from .scoring.digests import job_match_digest, profile_hash, public_profile_digest
 from .scoring.rules import (
     _row_get,
-    rule_score,  # noqa: F401 - public compatibility export
+    rule_score,
 )
 from .scoring.rules import hard_filter_keywords as hard_filter_keywords
 from .util import parse_json_object
 
-# Bump when the matcher prompt or its instructions change: cached verdicts must
-# not survive a prompt change even when preferences and vacancy text are equal.
-VERDICT_PROMPT_VERSION = "verdict-2026-10-24-public-preferences-v2"
 PROFILE_PROMPT_LIMIT = 4000
 
 
@@ -132,7 +133,7 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
                 )
                 summary["signals"] += 1
                 consecutive_failures = 0
-            except Exception as exc:  # noqa: BLE001 - one bad job must not stop the round
+            except Exception as exc:
                 summary["errors"].append(f"job {job['id']} systemone: {type(exc).__name__}")
                 consecutive_failures += 1
                 if consecutive_failures >= 3:
@@ -177,7 +178,7 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
             )
             store.update_job_match(job["id"], float(verdict["score"]), reason, digest)
             summary["matched"] += 1
-        except Exception as exc:  # noqa: BLE001 - retry next round via the queue
+        except Exception as exc:
             summary["failed"] += 1
             summary["errors"].append(f"job {job['id']}: {type(exc).__name__}")
 

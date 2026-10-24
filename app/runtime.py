@@ -48,7 +48,7 @@ async def lifespan(_app: FastAPI):
             try:
                 if not docs.CV_TEMPLATE.exists():
                     docs.ensure_templates()
-            except Exception as exc:  # noqa: BLE001 - documents stay disabled without the base CV
+            except Exception as exc:
                 log.warning("document templates unavailable: %s", exc)
             logging.getLogger("httpx").setLevel(logging.WARNING)
             store.recover_interrupted_work()

@@ -67,7 +67,7 @@ def start() -> None:
         while not _STOP.wait(60):
             try:
                 run_due()
-            except Exception:  # noqa: BLE001 - scheduler must not stop the app
+            except Exception:
                 continue
 
     _THREAD = threading.Thread(target=loop, daemon=True)

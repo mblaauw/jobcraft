@@ -24,7 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app import store, tenancy  # noqa: E402  (after the path fix)
+from app import store, tenancy
 
 
 def spearman(rows, left: str, right: str) -> float:

@@ -64,10 +64,12 @@ def test_task_owner_resolver_rejects_inactive_accounts(monkeypatch):
 def test_exclusive_data_dir_lock_is_not_unlinked_and_is_released(tmp_path):
     from app.runtime_lock import exclusive_data_dir
 
-    with exclusive_data_dir(tmp_path):
-        with pytest.raises(RuntimeError, match="already running"):
-            with exclusive_data_dir(tmp_path):
-                pytest.fail("second process lock was accepted")
+    with (
+        exclusive_data_dir(tmp_path),
+        pytest.raises(RuntimeError, match="already running"),
+        exclusive_data_dir(tmp_path),
+    ):
+        pytest.fail("second process lock was accepted")
     lock = tmp_path / ".jobcraft.lock"
     assert lock.exists()
     with exclusive_data_dir(tmp_path):
@@ -208,9 +210,11 @@ def test_lifespan_initializes_client_before_workers_and_closes_it_last(monkeypat
 
     async def serve():
         async with main.lifespan(main.app):
-            with pytest.raises(RuntimeError, match="already running"):
-                with exclusive_data_dir(config.DATA_DIR):
-                    pytest.fail("lock released before shutdown")
+            with (
+                pytest.raises(RuntimeError, match="already running"),
+                exclusive_data_dir(config.DATA_DIR),
+            ):
+                pytest.fail("lock released before shutdown")
             raise ValueError("synthetic lifespan body failure")
 
     with pytest.raises(ValueError, match="synthetic lifespan body failure"):

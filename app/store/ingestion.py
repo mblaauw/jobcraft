@@ -59,7 +59,7 @@ def upsert_job(job: dict) -> tuple[int, bool]:
                 "lon",
             ):
                 value = job.get(key)
-                if value is None or isinstance(value, str) and not value.strip():
+                if value is None or (isinstance(value, str) and not value.strip()):
                     if key in ("title", "description") and existing[key]:
                         merged_content = True
                     job[key] = existing[key]

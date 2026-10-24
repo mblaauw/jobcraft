@@ -121,9 +121,8 @@ def test_preview_confirmation_is_owner_session_bound_and_not_replayable():
         assert not config.user_path(docs.CV_TEMPLATE, "templates").exists()
         with pytest.raises(ValueError, match="niet beschikbaar"):
             cv_uploads.confirm(preview["token"], "other-session")
-    with tenancy.scope(B):
-        with pytest.raises(ValueError, match="niet beschikbaar"):
-            cv_uploads.confirm(preview["token"], "session-a")
+    with tenancy.scope(B), pytest.raises(ValueError, match="niet beschikbaar"):
+        cv_uploads.confirm(preview["token"], "session-a")
     with tenancy.scope(A):
         assert cv_uploads.confirm(preview["token"], "session-a")["strong_count"] == 3
         assert docs.cv_identity()["strong_count"] == 3

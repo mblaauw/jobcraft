@@ -28,7 +28,7 @@ def test_tracks_change_only_their_owners_questions_and_keys():
     with tenancy.scope({"id": "b", "username": "b"}):
         assert systemone.signals_key(job, "public") == other_key
         assert len(systemone.questions_for({})["category"]["criteria"]) == 11
-    assert systemone.QUESTIONS == original
+    assert original == systemone.QUESTIONS
 
 
 def test_question_contract_hash_includes_wording_and_excludes_private_bookkeeping():

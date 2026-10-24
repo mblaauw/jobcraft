@@ -124,7 +124,7 @@ def _minutes(distance_km: float, rail: bool) -> tuple[int, int]:
         if rail
         else (12 + distance_km * 1.8 if distance_km <= 8 else 18 + distance_km * 1.1)
     )
-    return int(round(bike)), int(round(transit))
+    return round(bike), round(transit)
 
 
 def _contains_place(text: str, place: str) -> bool:

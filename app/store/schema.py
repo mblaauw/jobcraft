@@ -219,7 +219,7 @@ def _backup_database(source: sqlite3.Connection, current: int) -> None:
 
 
 
-def migrate(con) -> None:
+def migrate(con: sqlite3.Connection) -> None:
     from ..migrations import MIGRATIONS
 
     current = int(con.execute("PRAGMA user_version").fetchone()[0])

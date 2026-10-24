@@ -89,7 +89,7 @@ def profile_save_draft(request: Request, profile_md: str = Form(...), preference
     try:
         data = json.loads(preferences)
         profile.update_draft(pair[0], profile_md, data)
-    except Exception as exc:  # noqa: BLE001 - show validation feedback in the form
+    except Exception as exc:
         return templates.TemplateResponse(
             request,
             "profile.html",

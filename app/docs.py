@@ -6,9 +6,7 @@ import hashlib
 import io
 import json
 import math
-import os
 import re
-import shutil
 import subprocess
 import tempfile
 import threading
@@ -17,26 +15,29 @@ from pathlib import Path
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml.ns import qn
 from docx.shared import Cm, Pt
-from docx.text.paragraph import Paragraph
 
 from . import config, docx_safety, llm, llm_schemas, profile, standards, store, tenancy
+from .cv_templates import (  # noqa: F401
+    PROFILE_HEADINGS,
+    STRONG_HEADINGS,
+    _all_paragraphs,
+    _apply_a4,
+    _extract_identity,
+    _is_a4,
+    _is_list,
+    _set_text,
+    inspect_cv,
+    prepare_template,
+    template_count,
+)
+from .document_conversion import _soffice, convert_pdf  # noqa: F401
 from .util import now_iso, now_local, parse_json_object
 
 DOC_TEMPLATES_DIR = config.DATA_DIR / "templates"
 CV_TEMPLATE = DOC_TEMPLATES_DIR / "cv-template.docx"
 IDENTITY_FILE = DOC_TEMPLATES_DIR / "identity.json"
 
-PROFILE_HEADINGS = {
-    "PROFIEL",
-    "PROFIEL EN AMBITIE",
-    "OVER MIJ",
-    "SAMENVATTING",
-    "PROFILE",
-    "SUMMARY",
-}
-STRONG_HEADINGS = {"STERKE PUNTEN", "KERNKWALITEITEN", "COMPETENTIES", "VAARDIGHEDEN", "SKILLS"}
 LETTER_MAX_LINES = 15
 LETTER_CHARS_PER_LINE = 95
 _GENERATION_LOCKS: dict[tuple[str, int, str], threading.Lock] = {}
@@ -56,132 +57,6 @@ def _generation_lock(owner: str, job_id: int, kind: str) -> threading.Lock:
 
 
 # ---------------------------------------------------------------- templates
-
-
-def _all_paragraphs(document):
-    """Yield every paragraph, including table cells (the CV layout is tabular)."""
-    for element in document.element.body.iter(qn("w:p")):
-        yield Paragraph(element, document)
-
-
-def _set_text(paragraph, text: str) -> None:
-    """Replace paragraph text while keeping the first run's formatting."""
-    if not paragraph.runs:
-        paragraph.add_run(text)
-        return
-    paragraph.runs[0].text = text
-    for run in paragraph.runs[1:]:
-        run.text = ""
-
-
-def _is_list(paragraph) -> bool:
-    properties = paragraph._p.pPr
-    if properties is not None and properties.numPr is not None:
-        num_id = properties.numPr.numId
-        return num_id is None or num_id.val != 0
-    style = paragraph.style
-    seen = set()
-    while style is not None:
-        if style.style_id in seen:
-            return False
-        seen.add(style.style_id)
-        if style.name.startswith(("List Bullet", "List Number")):
-            return True
-        properties = style.element.pPr
-        if properties is not None and properties.numPr is not None:
-            num_id = properties.numPr.numId
-            return num_id is None or num_id.val != 0
-        style = style.base_style
-    return False
-
-
-def inspect_cv(raw: bytes) -> dict:
-    """Inspect without writes; return structure only, never personal paragraph text."""
-    docx_safety.validate_package(raw)
-    try:
-        document = Document(io.BytesIO(raw))
-    except Exception:
-        raise ValueError("Geen leesbaar DOCX-bestand. Kies een geldig bestand opnieuw.") from None
-    paragraphs = list(_all_paragraphs(document))
-    profiles = [i for i, p in enumerate(paragraphs) if p.text.strip().upper() in PROFILE_HEADINGS]
-    strengths = [i for i, p in enumerate(paragraphs) if p.text.strip().upper() in STRONG_HEADINGS]
-    errors, profile_index, strong_indices = [], None, []
-    if len(profiles) != 1:
-        errors.append("Gebruik één herkenbare profielkop, bijvoorbeeld 'Profiel' of 'Over mij'.")
-    else:
-        for index in range(profiles[0] + 1, len(paragraphs)):
-            paragraph = paragraphs[index]
-            if not paragraph.text.strip():
-                continue
-            if index in strengths or paragraph.style.name.startswith("Heading"):
-                break
-            profile_index = index
-            break
-        if profile_index is None:
-            errors.append("De profielkop is gevonden, maar profieltekst ontbreekt.")
-    if len(strengths) != 1:
-        errors.append("Gebruik één kop 'Sterke punten' of 'Kernkwaliteiten', met 3–8 lijstpunten.")
-    else:
-        for index in range(strengths[0] + 1, len(paragraphs)):
-            paragraph = paragraphs[index]
-            if not paragraph.text.strip():
-                continue
-            if not _is_list(paragraph) or paragraph.style.name.startswith("Heading"):
-                break
-            strong_indices.append(index)
-        if not 3 <= len(strong_indices) <= 8:
-            errors.append(
-                f"{len(strong_indices)} sterke punten herkend; toegestaan zijn 3–8 lijstpunten."
-            )
-    if errors:
-        raise ValueError(" ".join(errors))
-    return {
-        "profile_heading": paragraphs[profiles[0]].text.strip(),
-        "strong_heading": paragraphs[strengths[0]].text.strip(),
-        "strong_count": len(strong_indices),
-        "profile_index": profile_index,
-        "strong_indices": strong_indices,
-        "source_hash": hashlib.sha256(raw).hexdigest(),
-    }
-
-
-def template_count(document) -> int:
-    texts = [p.text.strip() for p in _all_paragraphs(document)]
-    indices = [
-        int(match.group(1))
-        for text in texts
-        if (match := re.fullmatch(r"\{\{STRONG_(\d+)\}\}", text))
-    ]
-    if (
-        not 3 <= len(indices) <= 8
-        or sorted(indices) != list(range(1, len(indices) + 1))
-        or texts.count("{{PROFILE}}") != 1
-        or sum("{{STRONG_" in text for text in texts) != len(indices)
-    ):
-        raise ValueError(
-            "CV template placeholders must contain one profile and 3–8 unique contiguous strong points"
-        )
-    return len(indices)
-
-
-def prepare_template(raw: bytes) -> tuple[bytes, dict]:
-    inspection = inspect_cv(raw)
-    document = Document(io.BytesIO(raw))
-    identity = _extract_identity(document)
-    paragraphs = list(_all_paragraphs(document))
-    _set_text(paragraphs[inspection["profile_index"]], "{{PROFILE}}")
-    for number, index in enumerate(inspection["strong_indices"], 1):
-        _set_text(paragraphs[index], f"{{{{STRONG_{number}}}}}")
-    _apply_a4(document)
-    template_count(document)
-    output = io.BytesIO()
-    document.save(output)
-    prepared = output.getvalue()
-    return prepared, {
-        **identity,
-        "strong_count": inspection["strong_count"],
-        "template_hash": hashlib.sha256(prepared).hexdigest(),
-    }
 
 
 def _atomic_write(path: Path, raw: bytes) -> None:
@@ -222,34 +97,6 @@ def ensure_templates() -> None:
         encoded = json.dumps(identity, ensure_ascii=False, indent=2).encode()
         if not identity_path.exists() or identity_path.read_bytes() != encoded:
             _atomic_write(identity_path, encoded)
-
-
-def _extract_identity(document) -> dict:
-    identity: dict[str, list[str]] = {"name": [], "tagline": [], "contact": []}
-    for paragraph in _all_paragraphs(document):
-        text = paragraph.text.strip()
-        if text.upper() in PROFILE_HEADINGS:
-            break
-        if not text:
-            continue
-        if not identity["name"]:
-            identity["name"].append(text)
-        elif not identity["tagline"]:
-            identity["tagline"].append(text)
-        else:
-            identity["contact"].append(text)
-    return identity
-
-
-def _is_a4(document) -> bool:
-    section = document.sections[0]
-    return abs(section.page_width - Cm(21.0)) < 1000 and abs(section.page_height - Cm(29.7)) < 1000
-
-
-def _apply_a4(document) -> None:
-    for section in document.sections:
-        section.page_width = Cm(21.0)
-        section.page_height = Cm(29.7)
 
 
 def cv_identity() -> dict:
@@ -356,7 +203,7 @@ def _job_dir(job) -> Path:
 
 
 def _job_json(job, directory: Path) -> None:
-    payload = {key: job[key] for key in job.keys()}
+    payload = dict(job)
     payload["generated_at"] = now_iso()
     (directory / "job.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
 
@@ -469,65 +316,6 @@ def render_letter(job, paragraphs: list[str], out_path: Path) -> None:
 
 
 # ---------------------------------------------------------------- pdf
-
-
-def _soffice() -> str | None:
-    candidates = [
-        os.environ.get("SOFFICE_BIN"),
-        shutil.which("soffice"),
-        "/Applications/LibreOffice.app/Contents/MacOS/soffice",
-    ]
-    for candidate in candidates:
-        if candidate and Path(candidate).exists():
-            return candidate
-    return None
-
-
-def convert_pdf(docx_path: Path) -> Path | None:
-    """LibreOffice when present, else the app image as a converter (dev only)."""
-    soffice = _soffice()
-    if soffice:
-        subprocess.run(
-            [
-                soffice,
-                "--headless",
-                "--convert-to",
-                "pdf",
-                "--outdir",
-                str(docx_path.parent),
-                str(docx_path),
-            ],
-            check=True,
-            timeout=180,
-            capture_output=True,
-        )
-        pdf = docx_path.with_suffix(".pdf")
-        return pdf if pdf.exists() else None
-    if shutil.which("docker"):
-        image = os.environ.get("DOC_PDF_IMAGE", "jobcraft:local")
-        subprocess.run(
-            [
-                "docker",
-                "run",
-                "--rm",
-                "-v",
-                f"{docx_path.parent}:/work",
-                image,
-                "soffice",
-                "--headless",
-                "--convert-to",
-                "pdf",
-                "--outdir",
-                "/work",
-                f"/work/{docx_path.name}",
-            ],
-            check=True,
-            timeout=300,
-            capture_output=True,
-        )
-        pdf = docx_path.with_suffix(".pdf")
-        return pdf if pdf.exists() else None
-    return None
 
 
 # ---------------------------------------------------------------- generation

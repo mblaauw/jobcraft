@@ -6,6 +6,7 @@ import hashlib
 import json
 
 from .. import profile
+from ..contracts import JobRow
 
 PROFILE_PROMPT_LIMIT = 4000
 VERDICT_PROMPT_VERSION = "verdict-2026-10-24-public-preferences-v2"
@@ -35,7 +36,7 @@ def public_profile_digest(excerpt: str | None = None) -> str:
     return hashlib.sha256(text[:PROFILE_PROMPT_LIMIT].encode()).hexdigest()[:16]
 
 
-def job_match_digest(profile_digest: str, job) -> str:
+def job_match_digest(profile_digest: str, job: JobRow) -> str:
     """Fingerprint of everything that feeds one LLM verdict (no feedback)."""
     raw = f"{profile_digest}:{job['content_hash'] or ''}"
     return hashlib.sha256(raw.encode()).hexdigest()[:16]

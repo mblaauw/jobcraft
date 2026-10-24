@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 
 from .. import config, source_policy, tenancy
+from ..contracts import JobRow
 from .accounts import get_preferences
 from .connection import connect, stale_cutoff
 from .sources import list_sources, list_user_sources, load_source_configs
@@ -13,9 +15,7 @@ from .sources import list_sources, list_user_sources, load_source_configs
 
 def _job_select(owner: str | None = None) -> str:
     owner = owner or tenancy.user_id()
-    public = "id,source_id,url,title,company,location,hours,description,posted_at,first_seen,last_seen,content_hash,lat,lon,search_text".split(
-        ","
-    )
+    public = ["id", "source_id", "url", "title", "company", "location", "hours", "description", "posted_at", "first_seen", "last_seen", "content_hash", "lat", "lon", "search_text"]
     defaults = {
         "status": "'new'",
         "vote": "0",
@@ -39,7 +39,7 @@ def _job_select(owner: str | None = None) -> str:
 
 
 
-def parse_job_date(raw) -> datetime | None:
+def parse_job_date(raw: str | None) -> datetime | None:
     if not raw or not str(raw).strip():
         return None
     try:
@@ -53,14 +53,14 @@ def parse_job_date(raw) -> datetime | None:
 
 
 
-def normalize_posted_at(raw) -> str | None:
+def normalize_posted_at(raw: str | None) -> str | None:
     """Store one comparable ISO-8601 UTC form; absent or invalid becomes NULL."""
     parsed = parse_job_date(raw)
     return parsed.isoformat().replace("+00:00", "Z") if parsed else None
 
 
 
-def job_date(job) -> datetime:
+def job_date(job: JobRow) -> datetime:
     """Publication date, otherwise discovery date; feeds may use ISO or RFC dates."""
     for raw in (job["posted_at"], job["first_seen"]):
         parsed = parse_job_date(raw)
@@ -146,7 +146,7 @@ def list_jobs(
 
 
 
-def get_job(job_id: int):
+def get_job(job_id: int) -> sqlite3.Row | None:
     with connect() as con:
         return con.execute(
             "SELECT * FROM (" + _job_select() + ") WHERE id=?", (tenancy.user_id(), job_id)

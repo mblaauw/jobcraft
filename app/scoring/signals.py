@@ -1,13 +1,15 @@
 """Signal decoding, account travel snapshots and shared exclusion rules."""
+
 from __future__ import annotations
 
 import hashlib
 import json
 
 from .. import geo, store
+from ..contracts import JobRow
 
 
-def signals_of(job) -> dict | None:
+def signals_of(job: JobRow) -> dict | None:
     try:
         raw = job["typed_signals"]
     except (IndexError, KeyError):
@@ -20,7 +22,6 @@ def signals_of(job) -> dict | None:
         return None
 
 
-
 def _job_value(job, key):
     try:
         return job[key]
@@ -28,8 +29,7 @@ def _job_value(job, key):
         return None
 
 
-
-def travel_of(job) -> dict:
+def travel_of(job: JobRow) -> dict:
     settings = geo.home()
     raw = json.dumps(
         {
@@ -43,7 +43,7 @@ def travel_of(job) -> dict:
         sort_keys=True,
     )
     key = hashlib.sha256(raw.encode()).hexdigest()[:20]
-    job_id = job["id"] if "id" in job.keys() else None
+    job_id = _job_value(job, "id")
     if job_id is not None:
         cached = store.get_job_travel(job_id, key)
         if cached:
@@ -64,11 +64,9 @@ def travel_of(job) -> dict:
     return result
 
 
-
-def excluded_from_matching(job) -> bool:
+def excluded_from_matching(job: JobRow) -> bool:
     """One shared skip rule for the Jev gate and LLM escalation."""
     if job["vote"] or job["status"] in ("ignored", "applied"):
         return True
     travel = travel_of(job)
     return travel.get("in_range") is False and not travel.get("auto")
-

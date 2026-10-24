@@ -137,8 +137,8 @@ _RUNNING: set[int] = set()
 _RUNNING_GUARD = threading.Lock()
 
 
-def handler(kind: str):
-    def register(function: Callable[[dict], dict | None]):
+def handler(kind: str) -> Callable[[Callable[[dict], dict | None]], Callable[[dict], dict | None]]:
+    def register(function: Callable[[dict], dict | None]) -> Callable[[dict], dict | None]:
         _HANDLERS[kind] = function
         return function
 
@@ -164,7 +164,7 @@ def run_one(*, resolve_owner: Callable[[str], dict | None] | None = None) -> boo
         with tenancy.scope(principal):
             result = function(task)
         finish(task["id"], result if isinstance(result, dict) else {})
-    except Exception as exc:  # noqa: BLE001 - the queue must keep running
+    except Exception as exc:
         fail(task["id"], f"{type(exc).__name__}: {exc}")
     finally:
         with _RUNNING_GUARD:
@@ -181,7 +181,7 @@ def start_workers(
     _STOP.clear()
     _HEARTBEAT_STOP.clear()
 
-    def loop():
+    def loop() -> None:
         while not _STOP.is_set():
             try:
                 worked = run_one(resolve_owner=resolve_owner)
@@ -191,7 +191,7 @@ def start_workers(
             if not worked:
                 _STOP.wait(0.5)
 
-    def keep_alive():
+    def keep_alive() -> None:
         while not _HEARTBEAT_STOP.wait(HEARTBEAT_INTERVAL):
             with _RUNNING_GUARD:
                 running = tuple(_RUNNING)

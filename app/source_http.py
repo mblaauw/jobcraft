@@ -10,6 +10,7 @@ import os
 import tempfile
 import threading
 import time
+from contextlib import suppress
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -228,10 +229,8 @@ class PoliteClient:
                 and "private" not in control
                 and response.headers.get("vary") != "*"
             ):
-                try:
+                with suppress(OSError):
                     self._save(key, response)
-                except OSError:
-                    pass
             return response
         raise httpx.TooManyRedirects(
             "Source redirect limit reached", request=httpx.Request("GET", target)
