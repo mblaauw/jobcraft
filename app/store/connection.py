@@ -22,10 +22,25 @@ def stale_cutoff() -> str:
 
 
 
+class Connection(sqlite3.Connection):
+    """Transaction context with deterministic closure, including failed commits."""
+
+    def __exit__(self, *exc):
+        try:
+            return super().__exit__(*exc)
+        finally:
+            self.close()
+
+
 def connect() -> sqlite3.Connection:
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(config.DB_PATH)
-    con.row_factory = sqlite3.Row
-    con.execute("PRAGMA journal_mode=WAL")
-    return con
-
+    con = sqlite3.connect(config.DB_PATH, factory=Connection, timeout=5.0)
+    try:
+        con.row_factory = sqlite3.Row
+        con.execute("PRAGMA busy_timeout=5000")
+        con.execute("PRAGMA foreign_keys=ON")
+        con.execute("PRAGMA journal_mode=WAL")
+        return con
+    except Exception:
+        con.close()
+        raise
