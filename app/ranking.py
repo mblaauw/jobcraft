@@ -7,76 +7,19 @@ the Jev/LLM verdicts stay cached.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 
-from . import feedback, geo, matching, profile, store, tenancy
+from . import feedback, profile, store, tenancy
+from . import geo as geo
+from .scoring.digests import current_digest as _current_digest
+from .scoring.digests import job_match_digest
+from .scoring.rules import rule_score
+from .scoring.signals import excluded_from_matching, signals_of
+from .scoring.signals import travel_of as travel_of
+from .scoring.weights import read_weights
 
 MIN_RANK_FOR_LLM = float(os.environ.get("MATCH_MIN_RANK", "35"))
-
-
-def signals_of(job) -> dict | None:
-    try:
-        raw = job["typed_signals"]
-    except (IndexError, KeyError):
-        return None
-    if not raw:
-        return None
-    try:
-        return json.loads(raw)
-    except ValueError:
-        return None
-
-
-def _job_value(job, key):
-    try:
-        return job[key]
-    except (KeyError, IndexError):
-        return None
-
-
-def travel_of(job) -> dict:
-    settings = geo.home()
-    raw = json.dumps(
-        {
-            "version": geo.TRAVEL_VERSION,
-            "home": settings,
-            "job": {
-                key: _job_value(job, key)
-                for key in ("location", "lat", "lon", "description", "title")
-            },
-        },
-        sort_keys=True,
-    )
-    key = hashlib.sha256(raw.encode()).hexdigest()[:20]
-    job_id = job["id"] if "id" in job.keys() else None
-    if job_id is not None:
-        cached = store.get_job_travel(job_id, key)
-        if cached:
-            try:
-                return json.loads(cached)
-            except ValueError:
-                pass
-    result = geo.assess(
-        _job_value(job, "location"),
-        _job_value(job, "lat"),
-        _job_value(job, "lon"),
-        description=_job_value(job, "description"),
-        title=_job_value(job, "title"),
-        home_settings=settings,
-    )
-    if job_id is not None:
-        store.set_job_travel(job_id, key, json.dumps(result, ensure_ascii=False))
-    return result
-
-
-def excluded_from_matching(job) -> bool:
-    """One shared skip rule for the Jev gate and LLM escalation."""
-    if job["vote"] or job["status"] in ("ignored", "applied"):
-        return True
-    travel = travel_of(job)
-    return travel.get("in_range") is False and not travel.get("auto")
 
 
 def effective_fit(signals: dict | None) -> float | None:
@@ -89,7 +32,7 @@ def effective_fit(signals: dict | None) -> float | None:
 
 def verdict_is_fresh(job, digest_base: str) -> bool:
     """The stored hash is a per-job digest, not the base profile digest."""
-    return job["match_score"] is not None and job["profile_hash"] == matching.job_match_digest(
+    return job["match_score"] is not None and job["profile_hash"] == job_match_digest(
         digest_base, job
     )
 
@@ -137,20 +80,23 @@ def rank_for(
     digest: str | None = None,
     calibration: tuple[float, float] = (1.0, 0.0),
 ) -> tuple[float, dict]:
-    rule, notes = matching.rule_score(job, preferences, feedback_data)
+    rule, notes = rule_score(job, preferences, feedback_data)
     fit = calibrated_fit(signals, calibration)
     llm = None
     if digest is not None and verdict_is_fresh(job, digest):
         llm = float(job["match_score"])
     # Renormalized weights: components with different scales do not distort the
     # blend just because one is missing for a given job.
-    components: list[tuple[float, float]] = [(0.35, rule)]
+    weights = read_weights()
+    components: list[tuple[float, float]] = [(weights.rule, rule)]
     if fit is not None:
-        components.append((0.40, fit))
+        components.append((weights.fit, fit))
     if llm is not None:
-        components.append((0.25, llm))
-    weight = sum(component[0] for component in components)
-    rank = sum(component[0] * component[1] for component in components) / weight
+        components.append((weights.llm, llm))
+    scale = max(component[0] for component in components)
+    normalized = [(weight / scale, value) for weight, value in components] if scale else []
+    weight = sum(component[0] for component in normalized)
+    rank = sum(w * value for w, value in normalized) / weight if weight else rule
     return round(max(0.0, min(100.0, rank)), 1), {
         "rule": round(rule, 1),
         "fit": fit,
@@ -166,7 +112,7 @@ def rerank_one(job_id: int) -> float | None:
         return None
     prefs = profile.read_preferences()
     data = feedback.load()
-    digest = matching.current_digest()
+    digest = _current_digest()
     rank, _ = rank_for(job, prefs, data, signals_of(job), digest)
     store.set_rank_scores({job_id: rank})
     return rank
@@ -181,7 +127,7 @@ def rerank_all(
         return 0
     prefs = preferences if preferences is not None else profile.read_preferences()
     data = feedback_data if feedback_data is not None else feedback.load()
-    digest = digest or matching.current_digest(prefs)
+    digest = digest or _current_digest(prefs)
     jobs = store.list_jobs_for_matching(2000)
     calibration = fit_calibration(jobs, digest)
     store.meta_set(
