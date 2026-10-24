@@ -7,7 +7,8 @@
 - Session: 2026-10-24, started 07:21 UTC; deadline 08:36 UTC (75 minutes).
 - Baseline: `main` / `origin/main` at `1ee1dd3`; clean worktree baseline:
   **195 tests passed**, Ruff passed. Docker daemon is unavailable locally.
-- Active branch: `phase-4-worker-lifecycle`, stacked on Phase 4 queue safety, in a clean
+- Active branch: `phase-4-scheduler-shutdown`, stacked on reviewed lifecycle work,
+  in a clean
   temporary worktree. No personal
   directories, environment files, paid providers or remote services are used.
 - Spend cap: $0. Publication, deployments and real-data migrations are prohibited
@@ -21,6 +22,8 @@
 - Queue safety branch `phase-4-queue-safety` ends at `1538c27`, containing
   `0183121` (atomic/owner-safe queue), `890d9a3` (scan dispatch), `a941eb5`
   (Amsterdam scheduler). These branches are stacked, not merged into main.
+- Lifecycle branch `phase-4-worker-lifecycle` ends at `29934d9`, with code commit
+  `3e314d9`. Main remains unchanged at `1ee1dd3`.
 
 ## Branch audit (2026-10-24)
 
@@ -235,11 +238,49 @@ acceptance coverage.
 - Then enforce the daily budget between LLM escalations (not only at round start),
   propagate document/match/consolidation failures/results into durable task rows,
   and replace meta status/UI polling with tasks.
-- Follow up lifecycle edges: `scheduler.stop()` still uses a five-second timed
-  join; a slow scheduling tick could outlive the process lock. Fix its shutdown
-  contract before claiming the whole lifecycle phase accepted. A DB failure in
+- Scheduler shutdown follow-up is now implemented in its own branch: removed the
+  five-second timed join and clear the completed thread reference. A new failing
+  regression reproduced the old timed join before the fix. Final local checks:
+  **233 tests passed**, Ruff passed, all three JavaScript syntax checks passed,
+  diff whitespace check passed. **Independent review/verification of this final
+  two-file follow-up remains pending because of the provider quota blocker.**
+  Do not conflate earlier lifecycle reviews with these newer bytes.
+- Other lifecycle edges remain: a DB failure in
   both terminal update and error recording may leave a running row until restart;
   a worker may claim one last task in the stop-check race; unbounded handler join
   requires deployment grace. Real resolver integration coverage can be stronger.
 - Docker remains unavailable, so **no branch satisfies the complete PR definition
   of done yet**. No phase is being presented as wholly finished.
+
+## Final evidence / handoff
+
+Status: **partial / blocked**, stopped for subagent-provider quota and unavailable
+Docker, not a claimed primary runtime limit. No pending background writers or
+servers. Child sessions finished; scratch probes remain untracked and are not
+part of any commit.
+
+Prepared branch stack (publish/review in this dependency order, owner only):
+
+| Branch | Base | Work IDs / acceptance |
+| --- | --- | --- |
+| `phase-3-backup-safety` | `main` (`1ee1dd3`) | Audit + P3.3 backup safety; reviewed and independently verified; Docker gate open |
+| `phase-4-queue-safety` | `phase-3-backup-safety` | P4.1/P4.3/P4.4 safety slices; reviewed and verified after corrections; Docker gate open |
+| `phase-4-worker-lifecycle` | `phase-4-queue-safety` | P4.2/I2/I3 lifecycle safety; static review complete, verifier full232 + six probes; documented residuals and Docker gate open |
+| `phase-4-scheduler-shutdown` | `phase-4-worker-lifecycle` | Final scheduler stop safety; local233/Ruff/JS pass; independent review and Docker pending |
+
+Final follow-up bytes:
+- `app/scheduler.py` SHA-256
+  `b36d23ff45930a0e185bf83a4ee92d005aa5afb35850df88d28d2c14039b3ea5`.
+- `tests/test_scheduler.py` SHA-256
+  `aa6c3076084415cb393703a3bf9c28f940e91961b68d36240c80c106268fba9e`.
+
+No dependencies added; no real-data migration, destructive cleanup, provider
+smoke call, remote environment change, push, PR creation, merge or deploy was
+performed. Primary workspace is the clean temporary worktree
+`/private/var/folders/9r/1qfn68ds57jd6hcmhn32j47c0000gn/T/opencode/jobcraft-cv-bullets`;
+the original `/Users/mich/dev/jobcraft` stays on unchanged `main`.
+
+Resume: review the final scheduler follow-up, run Docker when the owner makes its
+daemon available, then obtain advisor input on durable rerank coalescing before
+moving feedback rebuilding out of the vote route. Continue the unmet earlier
+phase contracts listed above; do not skip directly to Phase 6 or claim P5 done.
