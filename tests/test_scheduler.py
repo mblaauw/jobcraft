@@ -70,3 +70,18 @@ def test_restart_after_midnight_catches_up_yesterdays_latest_slot():
     due = scheduler.due_slot(now, "07:30,17:30", last)
     assert due == "2026-10-20T15:30:00+00:00"
     assert scheduler.due_slot(now, "07:30,17:30", due) is None
+
+
+def test_shutdown_waits_for_the_scheduler_before_releasing_its_thread(monkeypatch):
+    joined = []
+
+    class SchedulerThread:
+        def join(self, timeout=None):
+            joined.append(timeout)
+
+    monkeypatch.setattr(scheduler, "_THREAD", SchedulerThread())
+    scheduler.stop()
+    assert joined == [None], "a timed join can release the process lock while a tick still runs"
+    assert scheduler._THREAD is None
+    scheduler.stop()  # repeated cleanup must not join the previous thread again
+    assert joined == [None]
