@@ -7,7 +7,15 @@
 </div>
 
 {% if account.id != 'legacy' %}
-<section class="card"><h2>Je eigen basis-CV</h2><p class="muted">Er worden nooit gegevens of een CV van een andere gebruiker overgenomen. Voeg je eigen DOCX toe voordat je documenten maakt. Het huidige sjabloon verwacht de secties PROFIEL en STERKE PUNTEN met vijf opsommingstekens.</p>{% if request.query_params.get('uploaded') %}<p class="banner ok">Je basis-CV is toegevoegd.</p>{% endif %}<form method="post" action="/account/cv" enctype="multipart/form-data">{{ csrf_input(request) }}<label for="own-cv">Basis-CV (DOCX, maximaal 5 MB)</label><input id="own-cv" type="file" name="cv" accept=".docx" required><button class="button" type="submit">Eigen CV toevoegen</button></form></section>
+<section class="card"><h2>Je eigen basis-CV</h2>
+{% if has_cv %}
+  {% if request.query_params.get('uploaded') %}<p class="banner ok" role="status">Je basis-CV is opgeslagen.</p>{% endif %}
+  <p class="muted">Je basis-CV is al toegevoegd. Bestaande documenten blijven behouden.</p>
+{% else %}
+  <p class="muted" id="cv-upload-help">Kies je eigen DOCX-bestand (maximaal 5 MB). We controleren eerst de profielsectie en 3–8 sterke punten. Je slaat het bestand pas op na je bevestiging. Koppen zoals ‘Over mij’ en ‘Kernkwaliteiten’ worden ook herkend. Gebruik een opsomming of genummerde lijst.</p>
+  <form method="post" action="/account/cv" enctype="multipart/form-data">{{ csrf_input(request) }}<label for="own-cv">Basis-CV (DOCX, maximaal 5 MB)</label><input id="own-cv" type="file" name="cv" accept=".docx" aria-describedby="cv-upload-help" required><button class="button" type="submit">CV controleren</button></form>
+{% endif %}
+</section>
 {% endif %}
 
 {% if request.query_params.get('changed') %}<p class="banner ok" role="status">Je wachtwoord is gewijzigd. Je andere sessies zijn afgemeld.</p>{% endif %}

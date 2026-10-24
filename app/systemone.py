@@ -22,28 +22,31 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
 import os
 import time
+from functools import lru_cache
+from pathlib import Path
 
 import httpx
+import yaml
 
-from . import profile, tenancy
+from . import profile
 
 DEFAULT_URL = "https://api.runware.ai/v1/decisions"
 DEFAULT_MODEL = "typesafe:jev@1"
-QUESTION_VERSION = "s1-2026-10-19-2"
+QUESTION_VERSION = "s1-account-categories-v1"
 DESCRIPTION_LIMIT = 3000
 PROFILE_LIMIT = 600
 
-CATEGORY_CRITERIA = {
-    "groen_buiten": "groen, parken, tuinen, planten, buitenwerk, natuur",
-    "facilitair": "locatie, receptie, beheer, huismeester, facilitair, logistiek",
-    "cultuur_community": "cultuur, community, gastheer, activiteiten, welzijn",
-    "zorg_welzijn": "zorg, ondersteuning, begeleiding van mensen",
-    "sales_telefoon": "verkoop, bellen, callcenter, acquisitie, targets",
-    "kantoor_beleid": "beleid, administratie, management, kantoorwerk",
-    "overig": "past niet in de andere categorieën",
-}
+
+@lru_cache(maxsize=1)
+def default_categories() -> dict:
+    path = Path(__file__).with_name("data") / "job_categories.yaml"
+    return yaml.safe_load(path.read_text())
+
+
+CATEGORY_CRITERIA = {**default_categories(), "overig": "past niet in de andere categorieën"}
 
 QUESTIONS: dict[str, dict] = {
     "fit": {
@@ -106,6 +109,27 @@ QUESTIONS: dict[str, dict] = {
 }
 
 
+def questions_for(preferences: dict) -> dict:
+    questions = copy.deepcopy(QUESTIONS)
+    tracks = preferences.get("tracks") or []
+    criteria = {}
+    for track in tracks:
+        key = track["id"]
+        if not key.strip() or key == "overig" or key in criteria:
+            raise ValueError("track ids must be unique, nonempty and not 'overig'")
+        criteria[key] = ": ".join([track["name"], ", ".join(track.get("keywords") or [])])
+    questions["category"]["criteria"] = {
+        **(criteria or default_categories()),
+        "overig": "past niet in de andere categorieën",
+    }
+    return questions
+
+
+def question_version(questions: dict) -> str:
+    raw = QUESTION_VERSION + json.dumps(questions, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(raw.encode()).hexdigest()[:20]
+
+
 class SystemOneError(RuntimeError):
     pass
 
@@ -135,7 +159,7 @@ def endpoint() -> str:
     return os.environ.get("SYSTEMONE_URL", DEFAULT_URL)
 
 
-def compose_state(job, profile_excerpt: str = "") -> str:
+def compose_state(job, profile_excerpt: str = "", *, preferences: dict | None = None) -> str:
     parts = [
         "Vacature",
         f"Titel: {job['title'] or ''}",
@@ -147,13 +171,11 @@ def compose_state(job, profile_excerpt: str = "") -> str:
     ]
     if profile_excerpt:
         parts += ["", "Profiel (publiek, ingekort):", profile_excerpt[:PROFILE_LIMIT]]
-    if tenancy.user_id() != tenancy.LEGACY_ID:
-        import json
-
-        parts += [
-            "Voorkeuren van deze gebruiker:",
-            json.dumps(profile.read_preferences(), ensure_ascii=False),
-        ]
+    preferences = preferences if preferences is not None else profile.read_preferences()
+    parts += [
+        "Voorkeuren van deze gebruiker:",
+        json.dumps(profile.public_preferences(preferences), ensure_ascii=False),
+    ]
     return "\n".join(parts)
 
 
@@ -163,12 +185,9 @@ def decide(
     key = api_key()
     if not key:
         raise SystemOneError("RUNWARE_API_KEY ontbreekt")
-    effective_questions = questions or QUESTIONS
-    if questions is None and tenancy.user_id() != tenancy.LEGACY_ID:
-        effective_questions = copy.deepcopy(QUESTIONS)
-        effective_questions["fit"]["instructions"] = (
-            "Hoe goed past deze vacature bij de meegeleverde gebruiker en diens eigen voorkeuren? Neem geen voorkeuren aan die niet in het profiel staan."
-        )
+    effective_questions = (
+        questions if questions is not None else questions_for(profile.read_preferences())
+    )
     payload = {
         "model": model or model_id(),
         "state": state,
@@ -225,7 +244,7 @@ def signals_from_answers(answers: dict, questions: dict | None = None) -> dict:
 
     confidence = round(min(confidences), 3) if confidences else 0.0
     return {
-        "version": QUESTION_VERSION,
+        "version": question_version(questions if questions is not None else QUESTIONS),
         "fit": fit_value,
         "category": category.get("choice"),
         "category_probabilities": category.get("probabilities"),
@@ -235,16 +254,19 @@ def signals_from_answers(answers: dict, questions: dict | None = None) -> dict:
     }
 
 
-def signals_key(job, profile_excerpt: str) -> str:
-    raw = f"{QUESTION_VERSION}:{job['content_hash'] or ''}:{hashlib.sha256(profile_excerpt.encode()).hexdigest()[:16]}"
-    if tenancy.user_id() != tenancy.LEGACY_ID:
-        # New-account decisions also receive structured preferences. Keep the
-        # existing legacy key intact, but never reuse new-user signals after a
-        # preference change. Feedback is deliberately excluded.
-        import json
-
-        stable = {
-            key: value for key, value in profile.read_preferences().items() if key != "updated_at"
-        }
-        raw += json.dumps(stable, sort_keys=True, ensure_ascii=False)
+def signals_key(
+    job, profile_excerpt: str, *, preferences: dict | None = None, questions: dict | None = None
+) -> str:
+    preferences = preferences if preferences is not None else profile.read_preferences()
+    questions = questions if questions is not None else questions_for(preferences)
+    raw = json.dumps(
+        {
+            "questions": question_version(questions),
+            "content": job["content_hash"] or "",
+            "profile": profile_excerpt,
+            "preferences": profile.public_preferences(preferences),
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+    )
     return hashlib.sha256(raw.encode()).hexdigest()[:20]

@@ -151,7 +151,9 @@ class ServerManager:
         }
         return {"messages": [assistant], "usage": completion.usage, "session": {}}
 
-    def generate(self, prompt: str, *, agent: str, timeout_note: str = "") -> tuple[str, dict]:
+    def generate(
+        self, prompt: str, *, agent: str, timeout_note: str = "", schema: dict | None = None
+    ) -> tuple[str, dict]:
         if self.client is None:
             raise LLMError("LLM client is not configured")
         if not hasattr(self.client, "complete"):
@@ -164,6 +166,7 @@ class ServerManager:
         completion = self.client.complete(
             messages,
             model=config.role_model(agent),
+            schema=schema,
             session_key=f"{agent}-{uuid.uuid4().hex}",
         )
         return completion.text, completion.usage

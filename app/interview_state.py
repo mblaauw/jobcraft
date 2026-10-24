@@ -8,6 +8,7 @@ semantic understanding; the UI allows manual correction.
 from __future__ import annotations
 
 import json
+import re
 import threading
 
 from . import config, store, tenancy
@@ -25,14 +26,10 @@ TOPIC_SPECS = [
         "label": "Dagelijkse werkzaamheden die energie geven",
         "keywords": [
             "energie",
-            "fijn",
-            "leuk",
-            "goed",
             "werkdag",
             "bezig",
             "voldoening",
             "blij",
-            "zin",
         ],
     },
     {
@@ -43,7 +40,6 @@ TOPIC_SPECS = [
             "moe",
             "vervelend",
             "stress",
-            "druk",
             "saai",
             "irrit",
             "afknapper",
@@ -74,7 +70,6 @@ TOPIC_SPECS = [
             "kantoor",
             "lawaai",
             "rustig",
-            "druk",
             "mensen",
             "team",
             "alleen",
@@ -117,15 +112,10 @@ TOPIC_SPECS = [
         "id": "afknappers",
         "label": "Persoonlijke grenzen en afknappers",
         "keywords": [
-            "sales",
-            "bellen",
-            "telefoon",
-            "callcenter",
-            "nacht",
-            "weekend",
-            "zwaar",
             "grens",
             "afknapper",
+            "vermijd",
+            "uitsluiten",
         ],
     },
     {
@@ -213,7 +203,11 @@ def _apply_log(state: dict) -> None:
         spec = TOPIC_MAP.get(topic["id"])
         if not spec:
             continue
-        mentions = sum(1 for keyword in spec["keywords"] if keyword in text)
+        mentions = sum(
+            1
+            for keyword in spec["keywords"]
+            if re.search(rf"(?<!\w){re.escape(keyword)}(?!\w)", text)
+        )
         topic["mentions"] = mentions
         if mentions >= COVERED_THRESHOLD:
             topic["status"] = "covered"
@@ -241,7 +235,11 @@ def record_answer(question: str, answer: str) -> dict:
             spec = TOPIC_MAP.get(topic["id"])
             if not spec:
                 continue
-            hits = sum(1 for keyword in spec["keywords"] if keyword in text)
+            hits = sum(
+                1
+                for keyword in spec["keywords"]
+                if re.search(rf"(?<!\w){re.escape(keyword)}(?!\w)", text)
+            )
             if hits:
                 topic["mentions"] = int(topic.get("mentions") or 0) + hits
                 topic["last_touched"] = now_iso()

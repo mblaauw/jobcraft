@@ -2,6 +2,72 @@
 
 ## Active delivery checkpoint
 
+- **Current approved milestone (08:12 UTC, 2026-10-24):** commit, push and merge
+  the prepared stack, then complete all P5.1–P5.5. Deadline 09:42 UTC (90 minutes).
+- Publication completed: #26 `3c210ef`, #27 `add36e1`, #28 `fc7dfac`, #29
+  `95054f0`; required quality green for each current merge head. Each snapshot
+  Docker build passed. Latest independent verification: 233 tests, Ruff and real
+  blocked-tick/flock probe passed; primary checked all three JavaScript files.
+- Current branch: `phase-5-per-user-domain`, based on `origin/main` / `95054f0`.
+- User authorized GPT-6.1 Sol read-only subagents after Go quota failure. OrbStack
+  was started successfully. Prior provider/Docker/publication blockers below are
+  historical, not current authority or blockers.
+- Authorized: source/config changes and synthetic checks for all Phase 5, commit,
+  push, PR and protected merge. No paid app-provider calls, production deployment,
+  real-data migration, personal-directory/environment-file access or new packages.
+- D6 default: ship the existing 68 places as authoritative CSV plus manual
+  coordinates; no national dataset acquisition required. D7: propose a neutral
+  roughly ten-category YAML catalogue. Existing scoring weights remain unchanged.
+- Implementation order: P5.1 neutral travel/cache correctness; P5.2 shared regional
+  metadata and coherent per-owner defaults; P5.3/P5.4 effective question snapshots,
+  public-preference projection and neutral text; P5.5 exact-count CV contracts and
+  owner/session-bound inspect-confirm upload. One work item per commit, one P5 PR.
+- Acceptance: all requested regressions, full isolated pytest, Ruff, all changed
+  JS syntax, Docker build, independent frozen-revision review and verification,
+  synthetic rendered DOCX/PDF and upload/source UI evidence, required green CI.
+- **P5.1–P5.5 implemented and accepted under the brief's defaults:** authoritative 68-place
+  catalogue plus district data; neutral defaults and correct home-snapshot cache;
+  coherent regional/owner source policy; per-account category snapshots and
+  private-preference projection; common neutral standards; exact 3–8 CV contracts,
+  owner/session-bound inspect-confirm flow and conservative DOCX-resource policy.
+- Final source commit: `0f122623b50e9c25ecff23750c326e1e011216f6`; tracked tree
+  `18579e38e3cfc6fd8a83ead0cdb9260b64a3246b`, identical to independently reviewed
+  and verified source. Five work-item commits plus one confirmed-review-fix commit.
+- Final checks: **305 tests passed**, Ruff clean, all three JS syntax checks
+  passed, Docker image `b6258d64` built successfully. No dependencies or schema
+  migrations added. Publication: **PR #30**, protected merge requires green quality
+  on the final documentation-inclusive head; no bypass or direct push to main.
+- Independent review: domain `ses_e92d23268ffezxfQGYTA1pqZxy`, CV/upload
+  `ses_e92d23259ffe4Xk06l3zJddsUc`; independent verifier
+  `ses_e92d23257ffekwv9w7bowUMmgl` repeated full305, Ruff and 18 adversarial probes.
+  All confirmed findings resolved: consolidation privacy/local preservation,
+  matcher cache version, interview boundaries, original JSON array validation,
+  encoding-independent DTD rejection, template snapshot regression and scoped
+  employer-transport negation (advisor `ses_e92bbada8ffe9CrLPosggmXXVQ`).
+- Synthetic PDF evidence: numbered 3/5/8-point CVs each rendered as **one A4 page**
+  inside Docker. Browser: eight-point preview preceded canonical save; confirmation
+  succeeded and removed the upload input; Eindhoven regional-source defaults off.
+  Narrow rendered frame (~375 px) had no horizontal overflow, focusable 44 px-high
+  confirmation button. Screenshot/contrast inspection was unavailable (tab not
+  visible to screenshot tool); no pixel-perfect claim. Owned UI server stopped.
+- Remaining after P5: full P2 structured-client contract, P3 settings/workspace and
+  legacy migration, P4 residual UI/results/budget/coalescing work, then P6/P7 as
+  listed in the historical audit. D6 national expansion, legacy CV replacement,
+  general Dutch NLP and LibreOffice sandboxing are not part of this P5 default.
+- Architecture advice `ses_e92fe5c3bffen1L83taQNLZnf9`
+  and upload UX specification `ses_e92fe5c35ffeNqBYj0dnEvFAPj` inspected; no source
+  work delegated. Car ownership is kept distinct from employer-provided transport;
+  no invented driving budget or automatic travel veto bypass.
+- Upload security advice `ses_e92de52a6ffewxf0TMtpSBmrPe`: DOCX policy rejects
+  external loaded resources, active objects/fields and ambiguous packages while
+  allowing ordinary web/mail hyperlinks. This is **not** a LibreOffice sandbox;
+  general converter confinement remains P7. Existing unsafe templates fail closed.
+- Domain-code grep has no region/category/taste literals left; remaining
+  `Europe/Amsterdam` references are scheduler/display timezones required by P4,
+  not home-region defaults. The brief's literal grep must account for this conflict.
+
+### Historical delivery checkpoint (through 08:03 UTC)
+
 - Objective: audit the October 19 brief against code, then finish successive ready
   items in phase order without mixing refactors and behavior changes.
 - Session: 2026-10-24, started 07:21 UTC; deadline 08:36 UTC (75 minutes).

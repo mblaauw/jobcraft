@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Controleer je basis-CV · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head"><h1 tabindex="-1">Controleer je basis-CV</h1><p class="sub">Structuurcontrole zonder AI. Er is nog geen basis-CV opgeslagen.</p></div>
+<section class="card cv-preview">
+  {% if error %}
+  <div class="banner warn" role="alert">{{ error }} Je bestaande documenten blijven behouden.</div>
+  <a class="button" href="/account">Aangepast bestand kiezen</a>
+  {% else %}
+  <p>Controleer wat is herkend. Deze controle is 15 minuten geldig, alleen in deze sessie.</p>
+  <dl class="stats">
+    <div><dt>Bestand</dt><dd>{{ preview.filename }}</dd></div>
+    <div><dt>Profielkop</dt><dd>{{ preview.inspection.profile_heading }}</dd></div>
+    <div><dt>Sterke-puntenkop</dt><dd>{{ preview.inspection.strong_heading }}</dd></div>
+    <div><dt>Sterke punten</dt><dd>{{ preview.inspection.strong_count }} herkend — toegestaan: 3–8</dd></div>
+  </dl>
+  <p class="small muted">Dit is een structuurcontrole, geen voorbeeld van de uiteindelijke pagina-indeling. Er worden geen gegevens naar een AI-provider gestuurd.</p>
+  <div class="btn-row">
+    <form method="post" action="/account/cv/confirm">{{ csrf_input(request) }}<input type="hidden" name="token" value="{{ preview.token }}"><button class="button primary" type="submit">Bevestigen en basis-CV opslaan</button></form>
+    <form method="post" action="/account/cv/cancel">{{ csrf_input(request) }}<input type="hidden" name="token" value="{{ preview.token }}"><button class="button" type="submit">Annuleren</button></form>
+    <a class="button" href="/account">Ander bestand kiezen</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

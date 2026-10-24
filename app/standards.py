@@ -12,7 +12,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from . import config, tenancy
+from . import config
 
 SKILLS_DIR = config.BASE_DIR / ".opencode" / "skills"
 
@@ -47,11 +47,6 @@ def standards_block(
     names: tuple[str, ...], heading: str = "## Standaarden (verplicht volgen)"
 ) -> str:
     """Compose one prompt section from several skills; empty when none exist."""
-    if tenancy.user_id() != tenancy.LEGACY_ID:
-        return (
-            heading
-            + "\nGebruik uitsluitend feiten en voorkeuren van de huidige gebruiker. Verzin geen beschikbaarheid, woonplaats, opleiding of ervaring. Een CV is precies één A4; een Nederlandse motivatiebrief maximaal 15 regels. Analyseer functie-inhoud, uren, contract, reistijd, belasting en begeleiding zonder onbewezen persoonlijke aannames."
-        )
     bodies = [(name, body) for name in names if (body := load_skill(name))]
     if not bodies:
         return ""

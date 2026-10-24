@@ -29,6 +29,7 @@ from pydantic import BaseModel, Field
 from . import (
     auth,
     config,
+    cv_uploads,
     docs,
     feedback,
     geo,
@@ -388,7 +389,7 @@ def sources_page(request: Request):
         "sources.html",
         {
             "sources": store.list_sources(),
-            "user_sources": store.list_user_sources(),
+            "user_sources": store.effective_user_sources(),
             "jobs_by_source": store.count_jobs_by_source(),
             "scan_status": store.meta_get("scan_status", "idle"),
             "summary": summary,
@@ -820,30 +821,71 @@ async def account_cv(request: Request, cv: UploadFile = File(...)):
                 len(archive.infolist()) > 1000
                 or sum(item.file_size for item in archive.infolist()) > 20 * 1024 * 1024
                 or "word/document.xml" not in archive.namelist()
-                or any("vbaProject" in name for name in archive.namelist())
+                or any("vbaproject" in name.lower() for name in archive.namelist())
             ):
                 raise ValueError("unsupported document")
     except (zipfile.BadZipFile, ValueError):
         raise HTTPException(
             status_code=400, detail="Geen geldig, macro-vrij DOCX-bestand."
         ) from None
-    target = config.seed_dir() / "cv.docx"
-    if target.exists():
+    if (config.seed_dir() / "cv.docx").exists():
         raise HTTPException(
             status_code=409,
             detail="Je basis-CV is al toegevoegd; bestaande documenten blijven behouden.",
         )
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_bytes(raw)
     try:
-        docs.ensure_templates()
+        preview = cv_uploads.stage(raw, cv.filename or "cv.docx", request.state.auth_session_id)
+    except ValueError as exc:
+        return templates.TemplateResponse(
+            request, "cv_preview.html", {"error": str(exc)}, status_code=400
+        )
     except Exception:
-        target.unlink(missing_ok=True)
-        raise HTTPException(
+        return templates.TemplateResponse(
+            request,
+            "cv_preview.html",
+            {"error": "Geen leesbaar DOCX-bestand. Kies een geldig bestand opnieuw."},
             status_code=400,
-            detail="Gebruik een basis-CV met de secties PROFIEL en STERKE PUNTEN (vijf opsommingstekens).",
-        ) from None
+        )
+    return templates.TemplateResponse(request, "cv_preview.html", {"preview": preview})
+
+
+@app.post("/account/cv/confirm")
+def account_cv_confirm(request: Request, token: str = Form(...)):
+    auth.require_user(request)
+    if tenancy.user_id() == tenancy.LEGACY_ID:
+        raise HTTPException(status_code=409, detail="Het bestaande basis-CV wordt behouden.")
+    try:
+        cv_uploads.confirm(token, request.state.auth_session_id)
+    except ValueError as exc:
+        return templates.TemplateResponse(
+            request, "cv_preview.html", {"error": str(exc)}, status_code=400
+        )
+    except FileExistsError as exc:
+        return templates.TemplateResponse(
+            request, "cv_preview.html", {"error": str(exc)}, status_code=409
+        )
+    except OSError:
+        return templates.TemplateResponse(
+            request,
+            "cv_preview.html",
+            {
+                "error": "Opslaan is onderbroken. Controleer je account en probeer het later opnieuw."
+            },
+            status_code=500,
+        )
     return RedirectResponse(url="/account?uploaded=1", status_code=303)
+
+
+@app.post("/account/cv/cancel")
+def account_cv_cancel(request: Request, token: str = Form(...)):
+    auth.require_user(request)
+    try:
+        cv_uploads.discard(token, request.state.auth_session_id)
+    except ValueError as exc:
+        return templates.TemplateResponse(
+            request, "cv_preview.html", {"error": str(exc)}, status_code=400
+        )
+    return RedirectResponse(url="/account", status_code=303)
 
 
 # ---------------------------------------------------------------- chat api
@@ -1038,6 +1080,10 @@ def profile_home(
             coords = (float(lat), float(lon)) if lat.strip() and lon.strip() else None
         except ValueError:
             coords = None
+    if (lat.strip() or lon.strip()) and (coords is None or not geo.valid_coordinates(*coords)):
+        raise HTTPException(status_code=400, detail="Vul geldige breedte- en lengtecoördinaten in.")
+    if coords is not None and not geo.valid_coordinates(*coords):
+        raise HTTPException(status_code=400, detail="Vul geldige breedte- en lengtecoördinaten in.")
     preferences = profile.read_preferences()
     preferences["home"] = {
         "label": label,

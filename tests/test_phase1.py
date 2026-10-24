@@ -280,6 +280,7 @@ def test_old_blended_verdict_is_recovered_once():
 
 
 def test_shared_skip_rule_agrees_between_jev_and_escalation():
+    profile.write_preferences({"home": {"label": "Amsterdam", "lat": 52.3676, "lon": 4.9041}})
     job = {
         "id": 1,
         "vote": 0,

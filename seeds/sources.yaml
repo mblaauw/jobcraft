@@ -1,4 +1,4 @@
-# Curated job sources for the Amsterdam region, seeded from the strategy document.
+# Shared source catalogue. Regional defaults follow each account's home.
 #
 # Verified 2026-10-18 (adapter in parentheses):
 #   greenjobs            Exenzo public API, ~294 jobs, lat/lon per job        (exenzo-json)
@@ -18,7 +18,7 @@
 # Edits here are copied to data/sources.yaml once; edit the data copy afterwards.
 sources:
   - id: culturele-vacatures
-    name: Culturele Vacatures (Amsterdam)
+    name: Culturele Vacatures
     kind: wp-posts
     base_url: https://www.culturele-vacatures.nl
     path: /wp-json/wp/v2/posts
@@ -46,6 +46,8 @@ sources:
     notes: "Vacature CPT; REST body is leeg, inhoud komt van de vacaturepagina."
 
   - id: greenjobs
+    scope: regional
+    regions: [Amsterdam]
     name: Greenjobs.nl (Exenzo API)
     kind: exenzo-json
     base_url: https://greenjobs.api.exenzo.com
@@ -58,6 +60,8 @@ sources:
     notes: "Duurzame/groene vacaturebank met coördinaten (lat/lon) per vacature; search=Amsterdam om de regio te pakken. Publieke URL: greenjobs.nl/vacature/{slug}."
 
   - id: baneninhetgroen
+    scope: regional
+    regions: [Amsterdam]
     name: Banen in het Groen (Amsterdam)
     kind: html-listing
     base_url: https://baneninhetgroen.nl
@@ -90,6 +94,8 @@ sources:
     notes: "Inclusieve/maatschappelijke werkgevers; detailpagina's met JobPosting JSON-LD."
 
   - id: werkenbij-amsterdam
+    scope: regional
+    regions: [Amsterdam]
     name: Werken bij Amsterdam (gemeente)
     kind: html-listing
     base_url: https://werkenbij.amsterdam.nl
@@ -102,6 +108,8 @@ sources:
     notes: "Gemeentelijke vacatures (groen, facilitair, openbare ruimte, ondersteuning); geen JSON-LD, dus h1 + paginatekst."
 
   - id: vca-vacaturebank
+    scope: regional
+    regions: [Amsterdam]
     name: VCA Amsterdam vacaturebank
     kind: rss
     base_url: https://vacaturebank.vca.nu
@@ -111,6 +119,8 @@ sources:
     notes: "Kleine feed (vrijwilligers/community); nuttig als netwerk- en ervaringsroute."
 
   - id: amsterdamsebos
+    scope: regional
+    regions: [Amsterdam]
     name: Amsterdamse Bos
     kind: html-listing
     base_url: https://www.amsterdamsebos.nl

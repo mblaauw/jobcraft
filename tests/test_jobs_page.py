@@ -459,9 +459,21 @@ def test_unknown_place_accepts_manual_coordinates(client):
 
     response = client.post(
         "/profile/home",
-        data={"place": "Onbekend dorp", "lat": "52.1", "lon": "5.2", "bike_minutes": "30", "transit_minutes": "35"},
+        data={
+            "place": "Onbekend dorp",
+            "lat": "52.1",
+            "lon": "5.2",
+            "bike_minutes": "30",
+            "transit_minutes": "35",
+        },
         follow_redirects=False,
     )
     assert response.status_code == 303
     home = profile.read_preferences()["home"]
     assert (home["lat"], home["lon"]) == (52.1, 5.2)
+
+
+@pytest.mark.parametrize(("lat", "lon"), [("nan", "5"), ("100", "5"), ("52", "inf"), ("52", "181")])
+def test_home_rejects_nonfinite_or_out_of_range_coordinates(client, lat, lon):
+    response = client.post("/profile/home", data={"place": "Unknown", "lat": lat, "lon": lon})
+    assert response.status_code == 400

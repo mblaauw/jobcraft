@@ -112,7 +112,7 @@ def test_signal_cache_tracks_own_preferences_but_not_votes(isolated):
         original = systemone.signals_key(row, "Own public profile")
         store.set_job_vote(jid, 1)
         assert systemone.signals_key(row, "Own public profile") == original
-        profile.write_preferences({"notes": "Own changed requirements"})
+        profile.write_preferences({"hard_filters": {"no_phone_main": True}})
         assert systemone.signals_key(row, "Own public profile") != original
     with tenancy.scope(B):
         assert systemone.signals_key(row, "Own public profile") == original
@@ -245,15 +245,17 @@ def test_failed_document_still_records_usage_and_never_overwrites_orphan(isolate
         orphan.write_bytes(b"ORIGINAL_UNREGISTERED_DOCUMENT")
         monkeypatch.setattr(docs, "ensure_templates", lambda: None)
         monkeypatch.setattr(docs, "cv_prompt", lambda *args: "prompt")
-        monkeypatch.setattr(docs, "parse_cv_tailoring", lambda text: {})
-        monkeypatch.setattr(docs, "render_cv", lambda job, data, path: path.write_bytes(b"NEW"))
+        monkeypatch.setattr(docs, "parse_cv_tailoring", lambda *args: {})
+        monkeypatch.setattr(
+            docs, "render_cv", lambda job, data, path, **kwargs: path.write_bytes(b"NEW")
+        )
         monkeypatch.setattr(docs, "convert_pdf", lambda path: None)
         result = docs.generate_for_job(FakeGenerator('{"ok": true}'), store.get_job(jid), "resume")
         assert result["version"] == 2
         assert orphan.read_bytes() == b"ORIGINAL_UNREGISTERED_DOCUMENT"
         assert store.usage_total()["cost"] == 0.01
 
-        def fail_parse(text):
+        def fail_parse(*args):
             raise ValueError("malformed provider answer")
 
         monkeypatch.setattr(docs, "parse_cv_tailoring", fail_parse)
@@ -353,13 +355,51 @@ def test_own_cv_upload_cannot_read_or_replace_owners_template(isolated):
         },
         follow_redirects=False,
     )
-    assert response.status_code == 303
+    assert response.status_code == 200
+    preview_token = BeautifulSoup(response.text, "html.parser").select_one('input[name="token"]')[
+        "value"
+    ]
     uid = auth._get_user_by_username("test-user")["id"]
+    with tenancy.scope({"id": uid, "username": "test-user"}):
+        assert not (config.seed_dir() / "cv.docx").exists()
+    saved = client.post(
+        "/account/cv/confirm", data={"_csrf": token, "token": preview_token}, follow_redirects=False
+    )
+    assert saved.status_code == 303
     with tenancy.scope({"id": uid, "username": "test-user"}):
         assert (config.seed_dir() / "cv.docx").exists()
         assert "Synthetic Test Person" in docs.cv_identity()["name"]
     assert not docs.CV_TEMPLATE.exists()
     assert not (config.SEED_DIR / config.SEED_FILES["cv"]).exists()
+    client.close()
+
+
+def test_cv_preview_requires_confirmation_csrf_and_escapes_filename(isolated):
+    from tests.test_flexible_cv import cv_bytes
+
+    credentials = json.loads((config.RUNTIME_DIR / "bootstrap-accounts.json").read_text())[
+        "accounts"
+    ]
+    client = TestClient(main.app)
+    login(client, "test-user", credentials["test-user"]["password"])
+    assert "Je basis-CV is opgeslagen" not in client.get("/account?uploaded=1").text
+    response = client.post("/account/cv", files={"cv": ("<script>.docx", cv_bytes(4))})
+    assert response.status_code == 200
+    assert "&lt;script&gt;.docx" in response.text and "<script>.docx" not in response.text
+    assert "Original public profile from this account." not in response.text
+    html = BeautifulSoup(response.text, "html.parser")
+    token = html.select_one('input[name="token"]')["value"]
+    assert {field["name"] for field in html.select("form input")} == {"token", "_csrf"}
+    csrf = client.headers.pop("x-csrf-token")
+    denied = client.post("/account/cv/confirm", data={"token": token})
+    assert denied.status_code == 403
+    client.headers["x-csrf-token"] = csrf
+    cancelled = client.post("/account/cv/cancel", data={"token": token}, follow_redirects=False)
+    assert cancelled.status_code == 303
+    assert client.post("/account/cv/confirm", data={"token": token}).status_code == 400
+    invalid = client.post("/account/cv", files={"cv": ("own.docx", cv_bytes(2))})
+    assert invalid.status_code == 400 and "2 sterke punten" in invalid.text
+    assert "/account/cv/confirm" not in invalid.text
     client.close()
 
 

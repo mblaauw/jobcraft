@@ -58,3 +58,13 @@ def test_missing_skills_degrade_gracefully(tmp_path, monkeypatch):
     prompt = docs.cv_prompt(_job(), "profieltekst")
     assert "Standaarden" not in prompt
     assert "Geef alleen JSON" in prompt
+
+
+def test_all_accounts_receive_the_same_neutral_standards():
+    from app import tenancy
+
+    with tenancy.scope({"id": "legacy", "username": "owner"}):
+        first = standards.standards_block(("vacature-analyse",))
+    with tenancy.scope({"id": "other", "username": "other"}):
+        assert standards.standards_block(("vacature-analyse",)) == first
+    assert "expliciete voorkeuren" in first
