@@ -1,4 +1,4 @@
-name,lat,lon,rail
+name,lat,lon,rail,city
 aalsmeer,52.2594,4.7611,0
 abcoude,52.2717,4.9697,0
 alkmaar,52.6324,4.7539,1
@@ -67,3 +67,35 @@ zaandam,52.4389,4.8289,1
 zaandijk,52.4744,4.8064,0
 zandvoort,52.3714,4.5333,0
 zwolle,52.5168,6.083,0
+noord,,,,amsterdam
+zuid,,,,amsterdam
+oost,,,,amsterdam
+west,,,,amsterdam
+centrum,,,,amsterdam
+nieuw-west,,,,amsterdam
+zuidoost,,,,amsterdam
+ijburg,,,,amsterdam
+de pijp,,,,amsterdam
+pijp,,,,amsterdam
+watergraafsmeer,,,,amsterdam
+bos en lommer,,,,amsterdam
+westerpark,,,,amsterdam
+oud-west,,,,amsterdam
+de baarsjes,,,,amsterdam
+slotervaart,,,,amsterdam
+geuzenveld,,,,amsterdam
+osdorp,,,,amsterdam
+bijlmer,,,,amsterdam
+gaasperdam,,,,amsterdam
+sloterdijk,,,,amsterdam
+amstel,,,,amsterdam
+rivierenbuurt,,,,amsterdam
+indische buurt,,,,amsterdam
+jordaan,,,,amsterdam
+oude west,,,,amsterdam
+kinkerbuurt,,,,amsterdam
+staatsliedenbuurt,,,,amsterdam
+frederikspark,,,,amsterdam
+zuidas,,,,amsterdam
+buitenveldert,,,,amsterdam
+driemond,,,,amsterdam

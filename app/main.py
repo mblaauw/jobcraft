@@ -1038,6 +1038,10 @@ def profile_home(
             coords = (float(lat), float(lon)) if lat.strip() and lon.strip() else None
         except ValueError:
             coords = None
+    if (lat.strip() or lon.strip()) and (coords is None or not geo.valid_coordinates(*coords)):
+        raise HTTPException(status_code=400, detail="Vul geldige breedte- en lengtecoördinaten in.")
+    if coords is not None and not geo.valid_coordinates(*coords):
+        raise HTTPException(status_code=400, detail="Vul geldige breedte- en lengtecoördinaten in.")
     preferences = profile.read_preferences()
     preferences["home"] = {
         "label": label,

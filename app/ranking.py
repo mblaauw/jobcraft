@@ -38,18 +38,16 @@ def _job_value(job, key):
 
 def travel_of(job) -> dict:
     settings = geo.home()
-    raw = "|".join(
-        str(value or "")
-        for value in (
-            _job_value(job, "location"),
-            _job_value(job, "lat"),
-            _job_value(job, "lon"),
-            _job_value(job, "description"),
-            _job_value(job, "title"),
-            settings.get("label"),
-            settings.get("bike_minutes"),
-            settings.get("transit_minutes"),
-        )
+    raw = json.dumps(
+        {
+            "version": geo.TRAVEL_VERSION,
+            "home": settings,
+            "job": {
+                key: _job_value(job, key)
+                for key in ("location", "lat", "lon", "description", "title")
+            },
+        },
+        sort_keys=True,
     )
     key = hashlib.sha256(raw.encode()).hexdigest()[:20]
     job_id = job["id"] if "id" in job.keys() else None
@@ -66,6 +64,7 @@ def travel_of(job) -> dict:
         _job_value(job, "lon"),
         description=_job_value(job, "description"),
         title=_job_value(job, "title"),
+        home_settings=settings,
     )
     if job_id is not None:
         store.set_job_travel(job_id, key, json.dumps(result, ensure_ascii=False))

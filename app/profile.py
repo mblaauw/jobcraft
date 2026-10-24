@@ -59,8 +59,8 @@ class HardFilters(BaseModel):
     location: str = ""
     hours_min: float | None = None
     hours_max: float | None = None
-    no_phone_main: bool = True
-    no_structural_evenings: bool = True
+    no_phone_main: bool = False
+    no_structural_evenings: bool = False
     no_heavy_physical: bool = False
     day_work_only: bool = False
     wants_guidance: bool = False
@@ -74,9 +74,9 @@ class Keywords(BaseModel):
 class HomeBase(BaseModel):
     """Home point for travel-time estimates (edit in preferences.json)."""
 
-    label: str = "Amsterdam"
-    lat: float = 52.3676
-    lon: float = 4.9041
+    label: str = "Nog niet ingesteld"
+    lat: float = Field(default=0, ge=-90, le=90, allow_inf_nan=False)
+    lon: float = Field(default=0, ge=-180, le=180, allow_inf_nan=False)
     bike_minutes: int = 30
     transit_minutes: int = 35
     car_available: bool = False
@@ -95,8 +95,6 @@ class Preferences(BaseModel):
 
 def _neutral_preferences(data: dict) -> dict:
     """Never inherit the legacy account's home or restrictive defaults."""
-    if tenancy.user_id() == tenancy.LEGACY_ID:
-        return data
     return {
         **data,
         "hard_filters": {
@@ -147,8 +145,6 @@ def read_preferences() -> dict:
     if data is None:
         path = config.user_path(PREFERENCES_FILE)
         data = json.loads(path.read_text()) if path.exists() else {}
-    if tenancy.user_id() == tenancy.LEGACY_ID:
-        return data
     return _validate_preferences(data).model_dump()
 
 
