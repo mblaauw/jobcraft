@@ -75,6 +75,9 @@ def start() -> None:
 
 
 def stop() -> None:
+    """Finish an in-flight tick before the lifespan releases its process lock."""
+    global _THREAD
     _STOP.set()
     if _THREAD:
-        _THREAD.join(timeout=5)
+        _THREAD.join()
+        _THREAD = None
