@@ -27,7 +27,8 @@ def display_name() -> str:
 
 @contextmanager
 def scope(user):
-    token = _principal.set(MappingProxyType(dict(user)))
+    """Scope an owner explicitly; None clears ownership for shared work."""
+    token = _principal.set(MappingProxyType(dict(user)) if user is not None else None)
     try:
         yield
     finally:

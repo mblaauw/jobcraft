@@ -43,6 +43,24 @@ for later logins. In an existing workspace, keep the current `APP_USER` value:
 changing it renames the legacy account (its password is unchanged); other
 accounts are unaffected.
 
+### Worker lifecycle
+
+Run **one uvicorn process/worker per data directory**. Startup holds an exclusive
+`data/.jobcraft.lock` before database setup; a second instance exits with a clear
+error. Do not delete this lock file to bypass a running instance.
+
+`TASK_WORKERS` (default `2`) controls the in-process task worker threads, not
+uvicorn workers. Tasks restore their persisted owner's scope; inactive or missing
+owners fail closed. Active tasks receive a heartbeat every 30 seconds. After a
+restart, tasks left running are marked interrupted so they can be retried.
+
+Shutdown stops scheduling and waits for current handlers before closing the LLM
+client and releasing the process lock. Allow enough termination grace for long
+provider calls; an external forced kill can still interrupt work. Only queued
+tasks can be cancelled; running handlers finish before their concurrency slot is
+released. This queue does not promise exactly-once external side effects after a
+crash; inspect immutable document versions before retrying interrupted work.
+
 ## Data and privacy
 
 Everything personal stays on disk and is git-ignored:

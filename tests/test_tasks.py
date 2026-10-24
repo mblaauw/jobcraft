@@ -39,19 +39,19 @@ def test_worker_dispatches_handler_and_records_failure():
         seen.append(task["id"])
         return {"ok": True}
 
-    task_id = tasks.enqueue("fixture", owner="a")
+    task_id = tasks.enqueue("fixture", owner=None)
     assert tasks.run_one() is True
     assert seen == [task_id]
-    assert tasks.latest("fixture", owner="a")["status"] == "done"
+    assert tasks.latest("fixture")["status"] == "done"
 
     @tasks.handler("broken")
     def broken(task):
         raise RuntimeError("boom")
 
-    failed = tasks.enqueue("broken", owner="a")
+    failed = tasks.enqueue("broken", owner=None)
     assert tasks.run_one() is True
-    assert tasks.latest("broken", owner="a")["status"] == "error"
-    assert "boom" in tasks.latest("broken", owner="a")["error"]
+    assert tasks.latest("broken")["status"] == "error"
+    assert "boom" in tasks.latest("broken")["error"]
     assert failed
 
 
