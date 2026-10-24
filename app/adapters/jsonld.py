@@ -7,7 +7,7 @@ import time
 from html import unescape
 
 from .. import store
-from .common import _tally, make_job, page_text, strip_html
+from .common import _skip_recent_detail, _tally, detail_get, make_job, page_text, strip_html
 
 
 def jsonld_jobs(raw_html: str) -> list[dict]:
@@ -90,7 +90,9 @@ def _scan_sitemap_jsonld(client, source, entry, summary, limit_per_source=None) 
         seen.add(url)
         if len(seen) > limit:
             break
-        page = client.get(url)
+        if _skip_recent_detail(url, entry, summary):
+            continue
+        page = detail_get(client, url)
         if page.status_code >= 400:
             continue
         items = jsonld_jobs(page.text)

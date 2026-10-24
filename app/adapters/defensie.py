@@ -8,7 +8,7 @@ import time
 from xml.etree import ElementTree
 
 from .. import store
-from .common import _tally, make_job, strip_html
+from .common import _skip_recent_detail, _tally, make_job, strip_html
 
 DEFENSIE_HOST = "https://werkenbijdefensie.nl"
 
@@ -124,11 +124,14 @@ def _scan_defensie(client, source, entry, summary, limit_per_source=None) -> Non
         job = normalize_defensie(source, item)
         if not job:
             continue
+        if enrich and _skip_recent_detail(job["url"], entry, summary):
+            continue
         if enrich:
             path = re.sub(r"^https?://[^/]+", "", job["url"]) or "/"
             payloads = _defensie_component_payloads(client, path)
             details, location = _defensie_details(payloads)
             if details:
+                store.record_detail_fetch(job["url"])
                 job["description"] = f"{job['description']}\n\n{details}"[:20000]
             if location:
                 job["location"] = location

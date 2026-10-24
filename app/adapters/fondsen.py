@@ -7,7 +7,7 @@ import time
 from bs4 import BeautifulSoup
 
 from .. import store
-from .common import _tally, make_job, page_text
+from .common import _skip_recent_detail, _tally, detail_get, make_job, page_text
 
 
 def _scan_fondsen(client, source, entry, summary, limit_per_source=None) -> None:
@@ -25,7 +25,9 @@ def _scan_fondsen(client, source, entry, summary, limit_per_source=None) -> None
                 links.append(absolute)
     limit = limit_per_source or int(source.get("per_page", 30))
     for link in links[:limit]:
-        page = client.get(link)
+        if _skip_recent_detail(link, entry, summary):
+            continue
+        page = detail_get(client, link)
         if page.status_code >= 400:
             continue
         page_soup = BeautifulSoup(page.text, "html.parser")
