@@ -7,7 +7,15 @@ import time
 import httpx
 
 from .. import store
-from .common import USER_AGENT, _tally, make_job, page_text, split_company, strip_html
+from .common import (
+    _skip_recent_detail,
+    _tally,
+    detail_get,
+    make_job,
+    page_text,
+    split_company,
+    strip_html,
+)
 
 
 def normalize_wp_item(source: dict, item: dict, client: httpx.Client | None = None) -> dict | None:
@@ -18,7 +26,7 @@ def normalize_wp_item(source: dict, item: dict, client: httpx.Client | None = No
     description = strip_html(item.get("content"))
     if not description and source.get("content_from_page") and client is not None:
         try:
-            response = client.get(url, headers={"User-Agent": USER_AGENT})
+            response = detail_get(client, url)
             if response.status_code < 400:
                 description = page_text(response.text)
             time.sleep(0.4)
@@ -46,6 +54,8 @@ def scan(client, source, entry, summary, limit_per_source=None) -> None:
     limit = limit_per_source or len(items)
     for item in items[:limit]:
         if not isinstance(item, dict):
+            continue
+        if _skip_recent_detail(str(item.get("link") or ""), entry, summary):
             continue
         job = normalize_wp_item(source, item, client)
         if not job:

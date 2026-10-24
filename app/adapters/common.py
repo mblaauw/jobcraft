@@ -9,6 +9,21 @@ from bs4 import BeautifulSoup
 
 from .. import store
 
+
+def detail_get(client, url: str, **kwargs):
+    response = client.get(url, **kwargs)
+    if response.status_code == 200:
+        store.record_detail_fetch(url)
+    return response
+
+
+def _skip_recent_detail(url: str, entry: dict, summary: dict) -> bool:
+    if not url or not store.touch_recent_detail(url):
+        return False
+    _tally(entry, summary, False)
+    return True
+
+
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"

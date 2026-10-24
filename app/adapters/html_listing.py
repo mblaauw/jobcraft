@@ -7,7 +7,7 @@ import time
 from bs4 import BeautifulSoup
 
 from .. import store
-from .common import _tally, make_job, page_text, strip_html
+from .common import _skip_recent_detail, _tally, detail_get, make_job, page_text, strip_html
 from .jsonld import jsonld_company, jsonld_jobs, jsonld_location
 
 
@@ -38,7 +38,9 @@ def _scan_html_listing(client, source, entry, summary, limit_per_source=None) ->
     limit = limit_per_source or int(source.get("per_page", 30))
     slug_location = source.get("location_from_slug")
     for link in links[:limit]:
-        page = client.get(link)
+        if _skip_recent_detail(link, entry, summary):
+            continue
+        page = detail_get(client, link)
         if page.status_code >= 400:
             continue
         items = jsonld_jobs(page.text)

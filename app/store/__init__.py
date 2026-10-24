@@ -1,4 +1,5 @@
 """SQLite persistence facade, grouped by owned tables."""
+
 from .accounts import (  # noqa: F401
     active_owners_with_profile,
     add_profile_version,
@@ -16,6 +17,12 @@ from .accounts import (  # noqa: F401
 )
 from .connection import connect, now, stale_cutoff  # noqa: F401
 from .documents import add_document, count_documents, get_document, list_documents  # noqa: F401
+from .ingestion import (
+    record_detail_fetch as record_detail_fetch,
+)
+from .ingestion import (
+    touch_recent_detail as touch_recent_detail,
+)
 from .ingestion import upsert_job  # noqa: F401
 from .job_state import (  # noqa: F401
     _set_job_state,

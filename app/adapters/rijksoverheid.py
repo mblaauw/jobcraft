@@ -1,4 +1,5 @@
 """rijksoverheid source adapter."""
+
 from __future__ import annotations
 
 import re
@@ -8,7 +9,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from .. import store
-from .common import _tally, make_job
+from .common import _skip_recent_detail, _tally, detail_get, make_job
 
 
 def _hn_ref(client, listing_url: str, fallback: str) -> str:
@@ -21,7 +22,6 @@ def _hn_ref(client, listing_url: str, fallback: str) -> str:
     except httpx.HTTPError:
         pass
     return fallback
-
 
 
 def _parse_hn_cards(html: str) -> list[dict]:
@@ -50,9 +50,8 @@ def _parse_hn_cards(html: str) -> list[dict]:
     return cards
 
 
-
 def _rijksoverheid_detail(client, url: str) -> tuple[str, str, str, str]:
-    page = client.get(url)
+    page = detail_get(client, url)
     if page.status_code >= 400:
         return "", "", "", ""
     soup = BeautifulSoup(page.text, "html.parser")
@@ -78,7 +77,6 @@ def _rijksoverheid_detail(client, url: str) -> tuple[str, str, str, str]:
         location = match.group(1).strip()
         hours = f"{match.group(2)} uur"
     return title, location, hours, text[:20000]
-
 
 
 def _scan_rijksoverheid(client, source, entry, summary, limit_per_source=None) -> None:
@@ -108,6 +106,8 @@ def _scan_rijksoverheid(client, source, entry, summary, limit_per_source=None) -
         if not href:
             continue
         job_url = href if href.startswith("http") else base + href
+        if _skip_recent_detail(job_url, entry, summary):
+            continue
         title, meta_location, meta_hours, description = _rijksoverheid_detail(client, job_url)
         title = title or card["title"]
         labels = card.get("labels") or {}
@@ -141,8 +141,7 @@ def _scan_rijksoverheid(client, source, entry, summary, limit_per_source=None) -
     store.update_source_status(source["id"], "ok")
 
 
-
 scan = _scan_rijksoverheid
 
 
-KINDS = ('hn-resource',)
+KINDS = ("hn-resource",)

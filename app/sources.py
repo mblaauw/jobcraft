@@ -22,7 +22,6 @@ import re
 import shutil
 import time
 
-import httpx
 import yaml
 
 from . import config, source_policy, store
@@ -47,6 +46,7 @@ from .adapters.rijksoverheid import (  # noqa: F401
 )
 from .adapters.rss import _scan_rss  # noqa: F401
 from .adapters.wordpress import normalize_wp_item  # noqa: F401
+from .source_http import PoliteClient
 from .util import now_iso
 
 USER_AGENT = (
@@ -197,9 +197,7 @@ def scan(limit_per_source: int | None = None) -> dict:
         "updated": 0,
         "errors": [],
     }
-    with httpx.Client(
-        headers={"User-Agent": USER_AGENT}, follow_redirects=True, timeout=30
-    ) as client:
+    with PoliteClient() as client:
         for source in sources:
             kind = source.get("kind")
             entry: dict = {"status": "ok", "new": 0, "updated": 0, "items": 0}
