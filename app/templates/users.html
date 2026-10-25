@@ -1,66 +1,56 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block title %}Gebruikers · Jobcraft{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Gebruikers</h1>
-  <p class="sub">Accounts voor deze werkruimte. Je ziet hier alleen accountgegevens — nooit de persoonlijke inhoud van een gebruiker.</p>
+  <div>
+    <h1>Gebruikers</h1>
+    <p class="lede">Wie toegang heeft tot deze werkruimte. Je ziet alleen accountgegevens, nooit de profielen, gesprekken of documenten van anderen.</p>
+  </div>
+  <a class="button primary page-actions" href="#nieuw">{{ ui.icon('plus') }}Account toevoegen</a>
 </div>
 
-{% if notice %}<p class="banner ok" role="status">{{ notice }}</p>{% endif %}
-{% if error %}<p class="banner warn" role="alert">{{ error }}</p>{% endif %}
+{% if notice %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>{{ notice }}</span></p>{% endif %}
+{% if error %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ error }}</span></p>{% endif %}
 
 {% if new_password %}
-<section class="card" aria-labelledby="one-time-password">
-  <h2 id="one-time-password">Eenmalig wachtwoord{% if created_username %} voor <code>{{ created_username }}</code>{% endif %}</h2>
-  <p class="small">Kopieer dit nu en deel het persoonlijk. Zodra je deze pagina verlaat, is het niet meer op te vragen.</p>
-  <pre class="doc" tabindex="0">{{ new_password }}</pre>
+<section class="panel" aria-labelledby="one-time-password">
+  <h2 id="one-time-password">Eenmalig wachtwoord{% if created_username %} voor {{ created_username }}{% endif %}</h2>
+  <p class="small">Kopieer het nu en geef het persoonlijk door. Na het verlaten van deze pagina is het niet meer op te vragen.</p>
+  <div class="btn-row">
+    <div class="one-time" id="one-time-value"><pre class="doc" tabindex="0">{{ new_password }}</pre></div>
+    <button class="button" type="button" data-copy="#one-time-value" hidden>Kopiëren</button>
+  </div>
 </section>
 {% endif %}
 
-<section class="card">
-  <h2>Accounts ({{ users | length }}) · {{ active_admins }} actieve beheerder(s)</h2>
+<section class="panel panel-flush" aria-labelledby="accounts-title">
+  <div class="panel-head padded"><h2 id="accounts-title">Accounts</h2><span class="small subtle">{{ users | length }} accounts, {{ active_admins }} actieve beheerder(s)</span></div>
   <div class="table-scroll" role="region" aria-label="Accounts" tabindex="0">
     <table class="table">
-      <thead>
-        <tr><th>Gebruiker</th><th>Rol</th><th>Status</th><th>Aangemaakt</th><th>Laatste login</th><th>Acties</th></tr>
-      </thead>
+      <thead><tr><th>Gebruiker</th><th>Rol</th><th>Status</th><th>Laatst ingelogd</th><th><span class="visually-hidden">Acties</span></th></tr></thead>
       <tbody>
         {% for user in users %}
         <tr>
-          <td>
-            <strong>{{ user.display_name }}</strong><br>
-            <code>{{ user.username }}</code>
-            {% if user.id == current_user_id %}<span class="chip">jij</span>{% endif %}
-          </td>
+          <td><strong>{{ user.display_name }}</strong>{% if user.id == current_user_id %} <span class="chip chip-lime">jij</span>{% endif %}<br><span class="subtle small">{{ user.username }}</span></td>
           <td>{{ 'Beheerder' if user.role == 'admin' else 'Gebruiker' }}</td>
+          <td>{% if user.active %}<span class="chip chip-ok">actief</span>{% else %}<span class="chip chip-warn">gedeactiveerd</span>{% endif %}{% if user.sessions %}<br><span class="small subtle">{{ user.sessions }} sessie(s)</span>{% endif %}</td>
+          <td class="small">{{ user.last_login_label }}<br><span class="subtle">sinds {{ user.created_label }}</span></td>
           <td>
-            {% if user.active %}<span class="chip chip-ok">actief</span>{% else %}<span class="chip chip-warn">gedeactiveerd</span>{% endif %}
-            {% if user.sessions %}<span class="small muted">· {{ user.sessions }} sessie(s)</span>{% endif %}
-          </td>
-          <td class="small">{{ user.created_label }}</td>
-          <td class="small">{{ user.last_login_label }}</td>
-          <td>
-            <form method="post" action="/users/{{ user.id }}/reset-password" class="inline-form">
-              {{ csrf_input(request) }}
-              <button class="button small" type="submit">Wachtwoord resetten</button>
-            </form>
-            {% if user.active %}
-              {% if user.id == current_user_id %}
-                <span class="small muted">Je kunt je eigen account niet deactiveren.</span>
-              {% elif user.role == 'admin' and active_admins <= 1 %}
-                <span class="small muted">Laatste actieve beheerder.</span>
+            <div class="user-actions">
+              <form method="post" action="/users/{{ user.id }}/reset-password">{{ csrf_input(request) }}<button class="button small" type="submit">Nieuw wachtwoord</button></form>
+              {% if user.active %}
+                {% if user.id == current_user_id %}
+                  <span class="small subtle">Je kunt je eigen account niet deactiveren.</span>
+                {% elif user.role == 'admin' and active_admins <= 1 %}
+                  <span class="small subtle">Laatste actieve beheerder.</span>
+                {% else %}
+                  <form method="post" action="/users/{{ user.id }}/deactivate">{{ csrf_input(request) }}<button class="button small danger" type="submit">Deactiveren</button></form>
+                {% endif %}
               {% else %}
-                <form method="post" action="/users/{{ user.id }}/deactivate" class="inline-form">
-                  {{ csrf_input(request) }}
-                  <button class="button small" type="submit">Deactiveren</button>
-                </form>
+                <form method="post" action="/users/{{ user.id }}/activate">{{ csrf_input(request) }}<button class="button small" type="submit">Activeren</button></form>
               {% endif %}
-            {% else %}
-              <form method="post" action="/users/{{ user.id }}/activate" class="inline-form">
-                {{ csrf_input(request) }}
-                <button class="button small" type="submit">Activeren</button>
-              </form>
-            {% endif %}
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -69,36 +59,16 @@
   </div>
 </section>
 
-<section class="card">
-  <h2>Account toevoegen</h2>
-  <form method="post" action="/users" class="users-form">
+<section class="panel" id="nieuw" aria-labelledby="new-title">
+  <h2 id="new-title">Account toevoegen</h2>
+  <form method="post" action="/users" class="form-grid users-form">
     {{ csrf_input(request) }}
-    <label for="new-username">Gebruikersnaam</label>
-    <input id="new-username" name="username" type="text" autocapitalize="none" spellcheck="false" required>
-    <label for="new-display-name">Naam (optioneel)</label>
-    <input id="new-display-name" name="display_name" type="text">
-    <label for="new-role">Rol</label>
-    <select id="new-role" name="role">
-      <option value="user">Gebruiker</option>
-      <option value="admin">Beheerder</option>
-    </select>
-    <label for="new-password">Wachtwoord (leeg = automatisch genereren)</label>
-    <input id="new-password" name="password" type="text" autocomplete="new-password" minlength="10">
-    <button class="button primary" type="submit">Account aanmaken</button>
+    <div class="field"><label for="new-username">Gebruikersnaam</label><input id="new-username" name="username" type="text" autocapitalize="none" spellcheck="false" required><span class="hint">3 tot 32 tekens: letters, cijfers, punt of streepje</span></div>
+    <div class="field"><label for="new-display-name">Naam <span class="subtle">(optioneel)</span></label><input id="new-display-name" name="display_name" type="text"></div>
+    <div class="field"><label for="new-role">Rol</label><select id="new-role" name="role"><option value="user">Gebruiker</option><option value="admin">Beheerder</option></select></div>
+    <div class="field"><label for="new-password">Wachtwoord <span class="subtle">(optioneel)</span></label><input id="new-password" name="password" type="text" autocomplete="new-password" minlength="10"><span class="hint">Leeg laten maakt een sterk wachtwoord aan</span></div>
+    <div class="span-2"><button class="button primary" type="submit">Account aanmaken</button></div>
   </form>
-  <p class="small muted">De nieuwe persoon wijzigt het wachtwoord zelf via <em>Mijn account</em>. Er is geen openbare registratie.</p>
+  <p class="small subtle">De nieuwe gebruiker kan het wachtwoord daarna zelf wijzigen bij Account.</p>
 </section>
-
-<style>
-  .users-form { display: grid; gap: 6px; max-width: 380px; }
-  .users-form label { display: block; font-size: 12px; font-weight: 600; }
-  .users-form input, .users-form select {
-    width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px;
-    border: 1px solid var(--line); border-radius: 8px; background: #f8faf8;
-    color: var(--ink); font: inherit; font-size: 14px;
-  }
-  .users-form input:focus-visible, .users-form select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; background: #fff; }
-  .users-form .button { margin-top: 14px; justify-self: start; }
-  #one-time-password + .small + .doc { margin-bottom: 0; }
-</style>
 {% endblock %}

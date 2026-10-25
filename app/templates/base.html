@@ -1,32 +1,79 @@
+{% import "_ui.html" as ui %}
 <!doctype html>
 <html lang="nl">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="csrf-token" content="{{ request.state.csrf_token if request.state is defined else '' }}">
+  <meta name="theme-color" content="#133a2d">
   <title>{% block title %}Jobcraft{% endblock %}</title>
+  <link rel="preload" href="/static/fonts/schibsted-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/app.css">
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 </head>
+{% set user = request.state.user if request.state is defined and request.state.user else None %}
+{% set path = request.url.path %}
+{% set primary = [('/', 'Overzicht', 'house'), ('/jobs', 'Vacatures', 'briefcase-business'), ('/interview', 'Gesprek', 'message-circle'), ('/profile', 'Profiel', 'user-round')] %}
+{% set secondary = [('/sources', 'Bronnen', 'rss'), ('/account', 'Account', 'settings-2')] %}
+{% if user and user.role == 'admin' %}{% set secondary = secondary + [('/users', 'Gebruikers', 'users'), ('/admin', 'Systeem', 'activity')] %}{% endif %}
+{% macro is_active(href) -%}{{ 'yes' if path == href or (href != '/' and path.startswith(href + '/')) else '' }}{%- endmacro %}
 <body>
   <a class="skip-link" href="#main-content">Naar de inhoud</a>
-  <header class="top">
-    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">j.</span><span class="brand-name">Jobcraft<span>Career workspace</span></span></a>
-    <p class="nav-label">Jouw werkruimte</p>
-    <nav aria-label="Hoofdnavigatie">
-      {% for href, label, icon in [('/', 'Overzicht', '◈'), ('/jobs', 'Vacatures', '▤'), ('/interview', 'Gesprekken', '◌'), ('/profile', 'Mijn profiel', '◎'), ('/sources', 'Bronnen', '⊞')] %}
-      {% set active = request.url.path == href or (href != '/' and request.url.path.startswith(href + '/')) %}
-      <a href="{{ href }}" {% if active %}aria-current="page"{% endif %}><span class="nav-icon" aria-hidden="true">{{ icon }}</span>{{ label }}</a>
-      {% endfor %}
-    </nav>
-    <div class="nav-note"><span class="nav-note-mark" aria-hidden="true">↗</span><strong>Een stap dichterbij.</strong><p>Ontdek werk dat bij je past, op jouw tempo.</p></div>
-    {% if request.state is defined and request.state.user %}
-    <details class="account-menu"><summary>{{ request.state.user.display_name or request.state.user.username }} <span aria-hidden="true">⌄</span></summary><div><a href="/account">Mijn account</a>{% if request.state.user.role == 'admin' %}<a href="/users" {% if request.url.path == '/users' %}aria-current="page"{% endif %}>Gebruikers beheren</a><a href="/admin" {% if request.url.path == '/admin' %}aria-current="page"{% endif %}>Technisch inzicht</a>{% endif %}<form method="post" action="/logout">{% include '_csrf.html' %}<button type="submit">Uitloggen</button></form></div></details>
-    {% endif %}
-  </header>
-  <main id="main-content" tabindex="-1">
-    {% block content %}{% endblock %}
-  </main>
-  <footer><span>Jobcraft</span><span>Jouw loopbaan. Jouw volgende stap. · <a href="/account">Mijn account</a></span></footer>
+  <div class="shell">
+    <header class="top rail">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">j</span>Jobcraft</a>
+      <nav aria-label="Hoofdnavigatie">
+        <div class="rail-nav">
+          {% for href, label, icon in primary %}
+          <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}{{ label }}</a>
+          {% endfor %}
+        </div>
+        <div class="rail-group">
+          <p class="rail-group-title">Instellingen</p>
+          <div class="rail-nav">
+            {% for href, label, icon in secondary %}
+            <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}{{ label }}</a>
+            {% endfor %}
+          </div>
+        </div>
+      </nav>
+      {% if user %}
+      <footer class="rail-foot">
+        <div class="rail-user"><strong>{{ user.display_name or user.username }}</strong><span>{{ 'Beheerder' if user.role == 'admin' else 'Ingelogd' }}</span></div>
+        <form method="post" action="/logout">{% include '_csrf.html' %}<button class="rail-logout" type="submit" title="Uitloggen" aria-label="Uitloggen">{{ ui.icon('log-out') }}</button></form>
+      </footer>
+      {% else %}
+      <footer class="rail-foot"></footer>
+      {% endif %}
+    </header>
+
+    <div class="topbar">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">j</span>Jobcraft</a>
+      {% if user %}
+      <details class="topbar-menu">
+        <summary aria-label="Menu: instellingen en account">{{ ui.icon('settings-2', 'icon-lg') }}</summary>
+        <div>
+          <p class="who">Ingelogd als <strong>{{ user.display_name or user.username }}</strong></p>
+          {% for href, label, icon in secondary %}
+          <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}{{ label }}</a>
+          {% endfor %}
+          <form method="post" action="/logout">{% include '_csrf.html' %}<button type="submit">{{ ui.icon('log-out') }}Uitloggen</button></form>
+        </div>
+      </details>
+      {% endif %}
+    </div>
+
+    <main id="main-content" class="main" tabindex="-1">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <nav class="tabbar" aria-label="Snelnavigatie">
+    {% for href, label, icon in primary %}
+    <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}<span>{{ label }}</span></a>
+    {% endfor %}
+  </nav>
+  <script src="/static/ui.js" defer></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

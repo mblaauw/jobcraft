@@ -7,15 +7,34 @@
   const input = document.getElementById("chat-input");
   const status = document.getElementById("chat-status");
 
-  function render(messages) {
-    log.innerHTML = "";
-    for (const message of messages) {
-      const div = document.createElement("div");
-      div.className = "msg " + message.role;
-      div.textContent = message.text;
-      log.appendChild(div);
-    }
+  function bubble(role, text) {
+    const div = document.createElement("div");
+    div.className = "msg " + role;
+    div.textContent = text;
+    return div;
+  }
+
+  function scrollToEnd() {
     log.scrollTop = log.scrollHeight;
+  }
+
+  function render(messages) {
+    log.replaceChildren(...messages.map((message) => bubble(message.role, message.text)));
+    scrollToEnd();
+  }
+
+  function typingIndicator() {
+    const div = document.createElement("div");
+    div.className = "msg assistant typing";
+    div.setAttribute("aria-label", "De interviewer schrijft");
+    div.append(document.createElement("span"), document.createElement("span"), document.createElement("span"));
+    return div;
+  }
+
+  // Grow the composer with its content, up to the CSS max-height.
+  function autosize() {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 200) + "px";
   }
 
   async function load() {
@@ -25,7 +44,7 @@
       const data = await response.json();
       render(data.messages);
     } catch (error) {
-      status.textContent = "Kon gesprek niet laden: " + error.message;
+      status.textContent = "Het gesprek kon niet worden geladen: " + error.message;
     }
   }
 
@@ -35,14 +54,14 @@
     if (!text || form.dataset.busy === "1") return;
     form.dataset.busy = "1";
     input.value = "";
+    autosize();
     input.disabled = true;
-    status.textContent = "Interviewer denkt…";
-
-    const optimistic = document.createElement("div");
-    optimistic.className = "msg user";
-    optimistic.textContent = text;
-    log.appendChild(optimistic);
-    log.scrollTop = log.scrollHeight;
+    status.textContent = "";
+    const sent = bubble("user", text);
+    log.append(sent);
+    const typing = typingIndicator();
+    log.append(typing);
+    scrollToEnd();
 
     try {
       const response = await fetch(`/api/sessions/${sessionId}/send`, {
@@ -53,9 +72,12 @@
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || "versturen mislukt");
       render(data.messages);
-      status.textContent = "";
     } catch (error) {
-      status.textContent = "Fout: " + error.message;
+      typing.remove();
+      sent.remove();
+      status.textContent = "Je antwoord is niet verstuurd: " + error.message + ". Je tekst staat weer in het invoerveld.";
+      input.value = text;
+      autosize();
     } finally {
       form.dataset.busy = "0";
       input.disabled = false;
@@ -63,12 +85,14 @@
     }
   });
 
+  input.addEventListener("input", autosize);
   input.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
       form.requestSubmit();
     }
   });
 
+  scrollToEnd();
   load();
 })();
