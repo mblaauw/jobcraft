@@ -75,3 +75,25 @@ def test_server_error_raises_llm_error():
 
     with pytest.raises(LLMError):
         _client(handler, retries=0).complete([{"role": "user", "content": "Hoi"}])
+
+
+def test_stream_complete_yields_tokens_and_usage():
+    seen = {}
+
+    def handler(request: httpx.Request):
+        seen["body"] = request.read().decode()
+        body = (
+            'data: {"choices":[{"delta":{"content":"Hal"}}]}\n\n'
+            'data: {"choices":[{"delta":{"content":"lo"}}]}\n\n'
+            'data: {"usage":{"prompt_tokens":5,"completion_tokens":2}}\n\n'
+            "data: [DONE]\n\n"
+        )
+        return httpx.Response(200, content=body.encode())
+
+    events = list(_client(handler).stream_complete([{"role": "user", "content": "Hoi"}]))
+    assert [event["text"] for event in events if event["type"] == "token"] == ["Hal", "lo"]
+    usage = next(event["usage"] for event in events if event["type"] == "usage")
+    assert usage["input_tokens"] == 5
+    assert usage["output_tokens"] == 2
+    assert '"stream":true' in seen["body"]
+    assert "include_usage" in seen["body"]

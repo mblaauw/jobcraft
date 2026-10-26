@@ -22,12 +22,12 @@ from .. import (
     profile,
     ranking,
     store,
-    systemone,
     tasks,
     tenancy,
 )
 from ..auth import require_user
 from ..runtime import get_manager
+from ..util import LOCAL_TZ
 from ..web import templates
 from ..web_helpers import _jobs_return_target
 from ..workflows import _doc_status, _document_lock
@@ -59,27 +59,43 @@ def jobs_page(
         except ValueError:
             summary = None
     rows = store.list_jobs(
-        None, status or None, q or None, source or None, sort=sort, include_stale=stale_active
+        None, None, q or None, source or None, sort=sort, include_stale=stale_active
     )
     source_rows = store.list_sources()
     source_names = {row["id"]: row["name"] for row in source_rows}
-    jobs_view = []
+    all_items = []
     for row in rows:
         item = dict(row)
         date = store.job_date(row)
-        item["display_date"] = date.strftime("%d-%m-%Y") if date.year > 1 else ""
+        item["display_date"] = (
+            date.astimezone(LOCAL_TZ).strftime("%d-%m-%Y") if date.year > 1 else ""
+        )
         item["date_iso"] = date.date().isoformat() if date.year > 1 else ""
         item["source_name"] = source_names.get(
             item["source_id"], item["source_id"] or "Onbekende bron"
         )
         item["travel"] = ranking.travel_of(item)
         item["signals"] = ranking.signals_of(row)
-        jobs_view.append(item)
+        all_items.append(item)
     within_active = within != "0"  # reisbereik-filter staat standaard aan
-    excluded = 0
+    excluded_by_status: dict[str, int] = {}
     if within_active:
-        excluded = sum(1 for item in jobs_view if item["travel"]["in_range"] is False)
-        jobs_view = [item for item in jobs_view if item["travel"]["in_range"] is not False]
+        kept = []
+        for item in all_items:
+            if item["travel"]["in_range"] is False:
+                key = item["status"]
+                excluded_by_status[key] = excluded_by_status.get(key, 0) + 1
+            else:
+                kept.append(item)
+        all_items = kept
+    status_totals: dict[str, int] = {}
+    for item in all_items:
+        key = item["status"]
+        status_totals[key] = status_totals.get(key, 0) + 1
+    jobs_view = (
+        all_items if not status else [item for item in all_items if item["status"] == status]
+    )
+    excluded = excluded_by_status.get(status, 0) if status else sum(excluded_by_status.values())
     total_filtered = len(jobs_view)
     per_page = max(10, min(200, per_page))
     pages = max(1, (total_filtered + per_page - 1) // per_page)
@@ -97,16 +113,13 @@ def jobs_page(
         "per_page": per_page,
     }
     pager_base = "/jobs?" + urlencode(params)
-    status_counts = store.status_counts(
-        source=source or None, query_text=q or None, include_stale=stale_active
-    )
-    total_status = sum(status_counts.values())
+    total_status = sum(status_totals.values())
     status_count_for = {
         "": total_status,
-        "new": status_counts.get("new", 0),
-        "saved": status_counts.get("saved", 0),
-        "applied": status_counts.get("applied", 0),
-        "ignored": status_counts.get("ignored", 0),
+        "new": status_totals.get("new", 0),
+        "saved": status_totals.get("saved", 0),
+        "applied": status_totals.get("applied", 0),
+        "ignored": status_totals.get("ignored", 0),
     }
     status_links = [
         {
@@ -148,6 +161,11 @@ def jobs_page(
     return_to = str(request.url.path)
     if request.url.query:
         return_to += f"?{request.url.query}"
+    geo_home = geo.home()
+    geo_home["configured"] = bool(
+        (geo_home.get("lat") or geo_home.get("lon"))
+        and geo.valid_coordinates(geo_home.get("lat") or 0, geo_home.get("lon") or 0)
+    )
     return templates.TemplateResponse(
         request,
         "jobs.html",
@@ -177,9 +195,8 @@ def jobs_page(
             "match_status": store.meta_get("match_status", "idle"),
             "match_summary": summary,
             "feedback": feedback.load(),
-            "geo_home": geo.home(),
+            "geo_home": geo_home,
             "queue": ranking.queue_depth(matching.current_digest()),
-            "systemone_enabled": systemone.enabled(),
             "return_to": return_to,
         },
     )

@@ -37,6 +37,18 @@
     }
   }
 
+  // Keep the server-rendered status tab counts in step with drawer actions.
+  function moveStatusCount(from, to) {
+    if (!from || from === to) return;
+    document.querySelectorAll(".status-tabs a[data-status]").forEach((tab) => {
+      if (tab.dataset.status !== from && tab.dataset.status !== to) return;
+      const count = tab.querySelector(".tab-count");
+      if (!count) return;
+      const value = Number(count.textContent) || 0;
+      count.textContent = String(Math.max(0, value + (tab.dataset.status === to ? 1 : -1)));
+    });
+  }
+
   // Mirror a change made in the drawer onto the list row, without reordering the list.
   function syncRow(detail, jobTitle, revision) {
     if (rowVersions.get(detail.dataset.jobId) !== revision) return;
@@ -51,7 +63,12 @@
       button.value = selected ? "clear" : (direction === 1 ? "up" : "down");
       button.setAttribute("aria-label", (selected ? "Wis je stem voor: " : (direction === 1 ? "Interessant: " : "Minder passend: ")) + jobTitle);
     });
-    const status = detail.dataset.jobStatus;
+    const status = detail.dataset.jobStatus || "new";
+    const previousStatus = row.dataset.jobStatus || "new";
+    if (previousStatus !== status) {
+      moveStatusCount(previousStatus, status);
+      row.dataset.jobStatus = status;
+    }
     const [save, hide] = row.querySelectorAll(".vacancy-save button");
     if (save && hide) {
       const saved = status === "saved";
@@ -108,8 +125,8 @@
     const active = document.activeElement;
     const restoreFocus = body.contains(active) || active === document.body || active === dialog;
     const focusedId = focusId || (body.contains(active) ? active.id : "");
-    // Parsed content is inert: never execute embedded scripts or a page refresh.
-    detail.querySelectorAll('script, meta[http-equiv="refresh"], .detail-back').forEach((element) => element.remove());
+    // Parsed content is inert: never execute embedded scripts or navigation links.
+    detail.querySelectorAll("script, .detail-back").forEach((element) => element.remove());
     if (heading) heading.remove();
     title.textContent = jobTitle;
     title.title = jobTitle;

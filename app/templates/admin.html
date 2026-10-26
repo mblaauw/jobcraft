@@ -20,7 +20,7 @@
       <div><dt>Stemmen</dt><dd>{{ votes.up }} omhoog, {{ votes.down }} omlaag</dd></div>
       <div><dt>Profielvoorstel</dt><dd>{{ bootstrap_status }}</dd></div>
       <div><dt>Verwerkte antwoorden tot</dt><dd>teken {{ answer_log_offset }}</dd></div>
-      <div><dt>Bijgewerkt</dt><dd>{{ (preferences.updated_at or "—")[:16] | replace("T", " ") }}</dd></div>
+      <div><dt>Bijgewerkt</dt><dd>{% if preferences.updated_at %}{{ ui.nl_date(preferences.updated_at, time=True) }}{% else %}—{% endif %}</dd></div>
     </dl>
   </section>
   <section class="panel" aria-labelledby="usage-title">

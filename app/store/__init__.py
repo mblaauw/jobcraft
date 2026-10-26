@@ -48,7 +48,6 @@ from .jobs import (  # noqa: F401
     list_scored_jobs,
     normalize_posted_at,
     parse_job_date,
-    status_counts,
 )
 from .meta import load_token_df, meta_get, meta_set, save_token_df  # noqa: F401
 from .recovery import recover_interrupted_work  # noqa: F401

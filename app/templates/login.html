@@ -1,6 +1,7 @@
 {% import "_ui.html" as ui %}
 <!doctype html>
-<html lang="nl">
+{% set _theme = (request.cookies.get('theme') if request.cookies is defined else '') %}
+<html lang="nl"{% if _theme in ('light', 'dark') %} data-theme="{{ _theme }}"{% endif %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">

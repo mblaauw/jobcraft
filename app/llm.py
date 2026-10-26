@@ -113,6 +113,15 @@ class ServerManager:
     def create_session(self, *, agent: str | None = None, model: bool = True) -> str:
         return uuid.uuid4().hex
 
+    def _user_message(self, text: str) -> dict:
+        return {
+            "id": uuid.uuid4().hex,
+            "role": "user",
+            "text": text,
+            "model": None,
+            "error": None,
+        }
+
     def run_turn(self, session_id: str, text: str) -> dict:
         if self.client is None:
             raise LLMError("LLM client is not configured")
@@ -151,13 +160,15 @@ class ServerManager:
             "model": completion.model,
             "error": None,
         }
-        return {"messages": [assistant], "usage": completion.usage, "session": {}}
+        return {
+            "messages": [self._user_message(text), assistant],
+            "usage": completion.usage,
+            "session": {},
+        }
 
     def run_turn_stream(self, session_id: str, text: str) -> Iterator[dict[str, object]]:
         if self.client is None:
             raise LLMError("LLM client is not configured")
-        if not hasattr(self.client, "stream_complete"):
-            raise LLMError("streaming is not supported")
         open_topics = interview_state.open_topics()
         topics_line = (
             "Nog open onderwerpen: " + "; ".join(open_topics)
@@ -181,15 +192,58 @@ class ServerManager:
         messages = [{"role": "system", "content": system + "\n\n" + context}]
         messages.extend(history)
         messages.append({"role": "user", "content": text})
+        user_message = self._user_message(text)
+
+        def complete_without_stream() -> tuple[dict, dict]:
+            result = self.run_turn(session_id, text)
+            assistant = next(
+                message
+                for message in reversed(result["messages"])
+                if message["role"] == "assistant"
+            )
+            return assistant, result.get("usage") or {}
+
+        def streamed_done(assistant: dict, usage: dict) -> dict:
+            return {
+                "type": "done",
+                "assistant": assistant,
+                "user": user_message,
+                "usage": usage,
+            }
+
+        if not hasattr(self.client, "stream_complete"):
+            assistant, fallback_usage = complete_without_stream()
+            yield {"type": "token", "text": assistant["text"]}
+            yield streamed_done(assistant, fallback_usage)
+            return
         assistant_id = uuid.uuid4().hex
         model = config.role_model("interviewer")
         full = ""
+        usage: dict[str, object] = {}
         try:
-            for token in self.client.stream_complete(messages, model=model, session_key=session_id):
-                full += token
-                yield {"type": "token", "text": token}
+            for event in self.client.stream_complete(messages, model=model, session_key=session_id):
+                if event.get("type") == "token":
+                    token = str(event.get("text") or "")
+                    if token:
+                        full += token
+                        yield {"type": "token", "text": token}
+                elif event.get("type") == "usage":
+                    usage = event.get("usage") or {}
         except LLMError as exc:
-            yield {"type": "error", "detail": str(exc)}
+            if full:
+                yield {"type": "error", "detail": str(exc)}
+                return
+            # Streaming failed before any text; fall back to the non-streaming call.
+            assistant, fallback_usage = complete_without_stream()
+            yield {"type": "token", "text": assistant["text"]}
+            yield streamed_done(assistant, fallback_usage)
+            return
+        if not full:
+            # A provider that ignores stream=true returns no deltas; use the
+            # regular completion path instead of persisting an empty reply.
+            assistant, fallback_usage = complete_without_stream()
+            yield {"type": "token", "text": assistant["text"]}
+            yield streamed_done(assistant, fallback_usage)
             return
         assistant = {
             "id": assistant_id,
@@ -198,7 +252,7 @@ class ServerManager:
             "model": model,
             "error": None,
         }
-        yield {"type": "done", "assistant": assistant, "usage": {}}
+        yield streamed_done(assistant, usage)
 
     def generate(
         self, prompt: str, *, agent: str, timeout_note: str = "", schema: dict | None = None

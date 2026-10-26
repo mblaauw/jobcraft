@@ -26,6 +26,7 @@
   function typingIndicator() {
     const div = document.createElement("div");
     div.className = "msg assistant typing";
+    div.setAttribute("role", "status");
     div.setAttribute("aria-label", "De interviewer schrijft");
     div.append(document.createElement("span"), document.createElement("span"), document.createElement("span"));
     return div;
@@ -66,6 +67,7 @@
     let assistantBubble = null;
     let fullText = "";
     let streamed = false;
+    let doneReceived = false;
     try {
       const response = await fetch(`/api/sessions/${sessionId}/send/stream`, {
         method: "POST",
@@ -92,7 +94,12 @@
           let payload = null;
           try { payload = JSON.parse(dataLine.slice(5).trim()); } catch (_) { continue; }
           if (payload.type === "token") {
-            if (!assistantBubble) { typing.remove(); assistantBubble = bubble("assistant", ""); log.append(assistantBubble); }
+            if (!assistantBubble) {
+              typing.remove();
+              assistantBubble = bubble("assistant", "");
+              assistantBubble.setAttribute("aria-live", "off");
+              log.append(assistantBubble);
+            }
             fullText += payload.text;
             assistantBubble.textContent = fullText;
             scrollToEnd();
@@ -100,13 +107,22 @@
           } else if (payload.type === "error") {
             throw new Error(payload.detail || "versturen mislukt");
           } else if (payload.type === "done") {
+            doneReceived = true;
             if (payload.messages && payload.messages[0]) {
               if (!assistantBubble) { typing.remove(); assistantBubble = bubble("assistant", ""); log.append(assistantBubble); }
               assistantBubble.textContent = payload.messages[0].text || fullText;
+            } else if (!assistantBubble) {
+              typing.remove();
+              assistantBubble = bubble("assistant", fullText);
+              log.append(assistantBubble);
             }
+            if (assistantBubble) assistantBubble.removeAttribute("aria-live");
             streamed = true;
           }
         }
+      }
+      if (!doneReceived) {
+        throw new Error("De verbinding werd onderbroken. Probeer het opnieuw.");
       }
       if (!streamed) {
         typing.remove();

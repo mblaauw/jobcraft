@@ -5,8 +5,8 @@
 {% set stamp_job = dict(job, signals=signals) %}
 {% set next_url = detail_return or ('/jobs/' ~ job['id']) %}
 {% set running = doc_status and doc_status.state == "running" %}
-{% set n = signals.noul if signals else {} %}
-<div data-job-detail data-job-id="{{ job['id'] }}" data-job-vote="{{ job['vote'] or 0 }}" data-job-status="{{ job['status'] }}" data-job-score="{{ job['rank_score'] if job['rank_score'] is not none else '' }}" data-job-confidence="{{ '%.0f' | format(signals['confidence'] * 100) if signals and signals.get('confidence') is not none else '' }}" data-job-provisional="{{ 'true' if job['match_score'] is none else 'false' }}" data-document-state="{{ doc_status.state if doc_status else '' }}">
+{% set n = (signals.get('noul') if signals else none) or {} %}
+<div data-job-detail data-job-id="{{ job['id'] }}" data-job-vote="{{ job['vote'] or 0 }}" data-job-status="{{ job['status'] }}" data-job-score="{{ job['rank_score'] if job['rank_score'] is not none else '' }}" data-job-provisional="{{ 'true' if job['match_score'] is none else 'false' }}" data-document-state="{{ doc_status.state if doc_status else '' }}">
 <p class="detail-back"><a href="{{ list_return or '/jobs' }}">{{ ui.icon('arrow-left') }}Terug naar vacatures</a></p>
 
 <header class="job-head">
@@ -91,7 +91,7 @@
       <dl class="stats small">
         {% if job["match_score"] is not none %}<div><dt>Uitgebreide beoordeling</dt><dd>{{ "%.0f" | format(job["match_score"]) }}/100</dd></div>{% endif %}
         {% if job["rank_score"] is not none %}<div><dt>Rangschikking</dt><dd>{{ "%.0f" | format(job["rank_score"]) }}/100</dd></div>{% endif %}
-        {% if signals %}<div><dt>Snelle beoordeling</dt><dd>{{ signals.fit }}/100</dd></div><div><dt>Zekerheid</dt><dd>{{ "%.0f" | format(signals.confidence * 100) }}%</dd></div><div><dt>Categorie</dt><dd>{{ signals.category or "—" }}</dd></div>{% endif %}
+        {% if signals %}<div><dt>Snelle beoordeling</dt><dd>{% if signals.get('fit') is not none %}{{ signals.get('fit') }}/100{% else %}—{% endif %}</dd></div><div><dt>Zekerheid</dt><dd>{% if signals.get('confidence') is not none %}{{ "%.0f" | format(signals.get('confidence') * 100) }}%{% else %}—{% endif %}</dd></div><div><dt>Categorie</dt><dd>{{ signals.get('category') or "—" }}</dd></div>{% endif %}
         <div><dt>Bron</dt><dd>{{ job["source_id"] }}</dd></div>
         <div><dt>Eerst gezien</dt><dd>{{ ui.nl_date(job["first_seen"]) }}</dd></div>
       </dl>

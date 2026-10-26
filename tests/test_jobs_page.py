@@ -136,6 +136,29 @@ def test_score_is_color_coded_and_shows_signal_confidence(client):
     assert "90% zeker" in score_box.get_text()
 
 
+def test_job_detail_tolerates_partial_signal_payloads(client):
+    job_id = add_job(rank=82)
+    store.update_job_signals(job_id, 82, '{"fit": 80, "confidence": 0.9}', "signals-key", 0.9)
+    response = client.get(f"/jobs/{job_id}")
+    assert response.status_code == 200
+    html = soup(response)
+    assert "Snelle beoordeling" in html.get_text()
+    assert "Zekerheid" in html.get_text()
+
+
+def test_status_tab_counts_match_travel_filtered_results(client):
+    add_job(title="Dichtbij", location="unknown")
+    add_job(title="Ver weg", location="far")
+    html = soup(client.get("/jobs?within=1"))
+    tabs = {
+        tab["data-status"]: tab.get_text(" ", strip=True) for tab in html.select(".status-tabs a")
+    }
+    assert tabs[""] == "Alle 1"
+    assert tabs["new"] == "Nieuw 1"
+    assert "1 resultaat" in html.get_text()
+    assert "1 buiten je reisbereik verborgen" in html.get_text()
+
+
 def test_signal_tags_are_collapsed_below_the_results(client, monkeypatch):
     add_job()
     monkeypatch.setattr(
@@ -479,3 +502,26 @@ def test_unknown_place_accepts_manual_coordinates(client):
 def test_home_rejects_nonfinite_or_out_of_range_coordinates(client, lat, lon):
     response = client.post("/profile/home", data={"place": "Unknown", "lat": lat, "lon": lon})
     assert response.status_code == 400
+
+
+def test_stream_endpoint_persists_user_and_assistant_messages(client, monkeypatch):
+    from app import llm, tenancy
+    from app.routers import interview
+
+    with store.connect() as con:
+        owner = con.execute("SELECT id FROM users WHERE username='test'").fetchone()["id"]
+    with tenancy.scope({"id": owner}):
+        store.create_session("stream-test", "Stream", "interviewer", "fixture")
+    manager = llm.ServerManager()
+    manager.client = llm.FakeLLMClient(["Hallo daar"])
+    monkeypatch.setattr(interview, "get_manager", lambda: manager)
+    response = client.post(
+        "/api/sessions/stream-test/send/stream", json={"text": "Mijn antwoord"}
+    )
+    assert response.status_code == 200
+    assert '"type": "token"' in response.text
+    assert '"type": "done"' in response.text
+    with tenancy.scope({"id": owner}):
+        messages = store.list_messages("stream-test")
+    assert [message["role"] for message in messages] == ["user", "assistant"]
+    assert messages[0]["text"] == "Mijn antwoord"
