@@ -47,9 +47,24 @@ def due_slot(now: datetime, raw: str, last: str | None) -> str | None:
     )
 
 
+def _schedule_times() -> str:
+    return store.meta_get("scan_schedule_times", os.environ.get("SCAN_TIMES", "07:30,17:30")) or ""
+
+
+def _schedule_enabled() -> bool:
+    value = store.meta_get("scan_schedule_enabled")
+    if value is None:
+        return bool(os.environ.get("SCAN_TIMES", "07:30,17:30").strip())
+    return value == "1"
+
+
 def run_due(now: datetime | None = None) -> str | None:
+    if not _schedule_enabled():
+        return None
     now = now or datetime.now(UTC)
-    raw = os.environ.get("SCAN_TIMES", "07:30,17:30")
+    raw = _schedule_times()
+    if not raw.strip():
+        return None
     due = due_slot(now, raw, store.meta_get("scheduler_last_fire"))
     if due:
         tasks.enqueue("scan", owner=None, dedupe_key="scan")

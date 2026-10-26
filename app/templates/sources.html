@@ -58,6 +58,19 @@
   {% endif %}
 </div>
 
+{% if admin %}
+<section class="panel" aria-labelledby="schedule-title">
+  <h2 id="schedule-title">Automatisch ophalen</h2>
+  <form method="post" action="/sources/schedule" class="form-stack">
+    {{ csrf_input(request) }}
+    <label class="switch-row"><input type="checkbox" name="enabled" value="1" {% if schedule_enabled %}checked{% endif %}> Dagelijks automatisch ophalen</label>
+    <div class="field"><label for="schedule-times">Tijden (HH:MM, komma-gescheiden)</label><input id="schedule-times" name="times" value="{{ schedule_times }}"></div>
+    <div><button class="button" type="submit">Planning opslaan</button></div>
+  </form>
+  {% if schedule_last_fire %}<p class="small muted">Laatste geplande run: {{ ui.nl_date(schedule_last_fire, time=True) }}</p>{% endif %}
+</section>
+{% endif %}
+
 {% if scan_status == "running" %}
   <div class="banner" data-auto-refresh="4000">{{ ui.icon('clock') }}<span>Vacatures worden opgehaald.</span></div>
 {% elif scan_status.startswith("error") %}
