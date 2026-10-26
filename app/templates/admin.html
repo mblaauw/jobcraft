@@ -5,24 +5,11 @@
 <div class="page-head">
   <div>
     <h1>Systeem</h1>
-    <p class="lede">Technische stand van je eigen werkruimte en van de gedeelde bronnen. Alleen lezen. Je voorkeuren staan voortaan voor iedereen leesbaar op <a href="/profile#voorkeuren">Profiel</a>.</p>
+    <p class="lede">Technische stand van de gedeelde werkruimte. Alleen lezen.</p>
   </div>
 </div>
 
 <div class="grid two">
-  <section class="panel" aria-labelledby="state-title">
-    <h2 id="state-title">Werkruimte</h2>
-    <dl class="stats">
-      <div><dt>Profiel</dt><dd>{{ profile_chars }} tekens</dd></div>
-      <div><dt>Vacatures</dt><dd>{{ jobs.total }}</dd></div>
-      <div><dt>Uitgebreid beoordeeld</dt><dd>{{ jobs.matched }}</dd></div>
-      <div><dt>Documenten</dt><dd>{{ documents }}</dd></div>
-      <div><dt>Stemmen</dt><dd>{{ votes.up }} omhoog, {{ votes.down }} omlaag</dd></div>
-      <div><dt>Profielvoorstel</dt><dd>{{ bootstrap_status }}</dd></div>
-      <div><dt>Verwerkte antwoorden tot</dt><dd>teken {{ answer_log_offset }}</dd></div>
-      <div><dt>Bijgewerkt</dt><dd>{% if preferences.updated_at %}{{ ui.nl_date(preferences.updated_at, time=True) }}{% else %}—{% endif %}</dd></div>
-    </dl>
-  </section>
   <section class="panel" aria-labelledby="usage-title">
     <h2 id="usage-title">AI-gebruik</h2>
     <dl class="stats">
@@ -31,8 +18,10 @@
       <div><dt>Kosten</dt><dd>${{ "%.4f" | format(usage.cost) }}</dd></div>
       <div><dt>Bronnen actief</dt><dd>{{ enabled_count }} van {{ sources | length }}</dd></div>
     </dl>
-    <h3 class="small">Geleerd uit stemmen</h3>
-    <div class="chips">{% for item in feedback.liked_keywords[:12] %}<span class="chip chip-ok">{{ item.keyword }}</span>{% endfor %}{% for item in feedback.disliked_keywords[:12] %}<span class="chip chip-warn">{{ item.keyword }}</span>{% endfor %}{% if not feedback.liked_keywords and not feedback.disliked_keywords %}<span class="small subtle">Nog geen signalen</span>{% endif %}</div>
+  </section>
+  <section class="panel" aria-labelledby="sources-title">
+    <h2 id="sources-title">Bronnen</h2>
+    <p class="small muted">Beheer de gedeelde bronnen onder <a href="/sources">Bronnen</a>.</p>
   </section>
 </div>
 
