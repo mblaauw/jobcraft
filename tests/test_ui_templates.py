@@ -18,7 +18,7 @@ def _register_filters(env):
     return env
 
 
-def render(name, path="/", cookies=None, **context):
+def render(name, path="/", cookies=None, role="admin", **context):
     env = _register_filters(
         Environment(loader=FileSystemLoader(TEMPLATES), autoescape=select_autoescape())
     )
@@ -32,7 +32,7 @@ def render(name, path="/", cookies=None, **context):
                         "id": "legacy",
                         "username": "owner",
                         "display_name": "Owner",
-                        "role": "admin",
+                        "role": role,
                     },
                     csrf_token="test",
                 ),
@@ -54,15 +54,26 @@ def test_navigation_marks_only_current_section_and_has_skip_link():
         ("/", "/"),
         ("/jobs/120", "/jobs"),
         ("/profile", "/profile"),
-        ("/admin", "/admin"),
+        ("/sources", "/sources"),
     ]:
-        html = render("base.html", path)
+        html = render("base.html", path, role="user")
         active = html.select('.top [aria-current="page"]')
         assert len(active) == 1
         assert active[0]["href"] == expected
         assert html.select_one('.skip-link[ href="#main-content"]')
         assert html.select_one("main#main-content")
         assert "deepseek" not in html.footer.get_text()
+
+
+def test_admin_navigation_is_settings_only():
+    html = render("base.html", "/admin")
+    labels = [link.get_text(strip=True) for link in html.select(".rail-nav a")]
+    assert labels == ["Bronnen", "Account", "Gebruikers", "Systeem"]
+    active = html.select('.top [aria-current="page"]')
+    assert len(active) == 1
+    assert active[0]["href"] == "/admin"
+    assert not html.select(".tabbar")
+    assert html.select_one(".brand")["href"] == "/admin"
 
 
 def test_interview_empty_coverage_and_accessible_composer():
@@ -216,3 +227,30 @@ def test_status_tabs_show_counts_when_provided():
     }
     assert tabs[""] == "Alle 4"
     assert tabs["saved"] == "Bewaard 2"
+
+
+def test_admin_sources_hide_personal_preference_toggle():
+    source = {
+        "id": "bron-a",
+        "name": "Bron A",
+        "enabled": True,
+        "last_status": "ok",
+        "last_scan_at": "2026-10-25T10:00:00+00:00",
+        "notes": "",
+        "kind": "rss",
+    }
+    context = {
+        "sources": [source],
+        "user_sources": {"bron-a": {"selected": True, "reason": ""}},
+        "jobs_by_source": {"bron-a": 1},
+        "scan_status": "idle",
+        "summary": None,
+        "counts": {"total": 1},
+    }
+    admin_html = render("sources.html", "/sources", **context)
+    assert "Voor mij" not in admin_html.get_text()
+    assert "Voor iedereen uitzetten" in admin_html.get_text()
+
+    user_html = render("sources.html", "/sources", role="user", **context)
+    assert "Voor mij aan" in user_html.get_text()
+    assert "Voor iedereen uitzetten" not in user_html.get_text()

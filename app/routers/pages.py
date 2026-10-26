@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import (
     HTMLResponse,
     JSONResponse,
+    RedirectResponse,
 )
 
 from .. import (
@@ -30,6 +31,8 @@ router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse, dependencies=[Depends(auth.require_user)])
 def dashboard(request: Request):
+    if auth.require_user(request)["role"] == auth.ROLE_ADMIN:
+        return RedirectResponse(url="/admin", status_code=303)
     sessions = store.list_sessions(8)
     profile_state = _profile_meta()
     jobs = store.count_jobs()
