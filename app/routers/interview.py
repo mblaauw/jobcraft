@@ -137,8 +137,11 @@ def api_send_stream(session_id: str, body: SendBody):
                         )
                         return
                     elif event["type"] == "done":
+                        messages = [event["assistant"]]
+                        if event.get("user"):
+                            messages.insert(0, event["user"])
                         result = {
-                            "messages": [event["assistant"]],
+                            "messages": messages,
                             "usage": event.get("usage", {}),
                             "session": {},
                         }
@@ -153,4 +156,8 @@ def api_send_stream(session_id: str, body: SendBody):
             except Exception as exc:  # pragma: no cover - defensive
                 yield "data: " + json.dumps({"type": "error", "detail": str(exc)}) + "\n\n"
 
-    return StreamingResponse(generate(), media_type="text/event-stream")
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

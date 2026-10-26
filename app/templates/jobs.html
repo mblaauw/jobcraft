@@ -50,10 +50,10 @@
   <input type="hidden" name="per_page" value="{{ per_page }}">
   <input type="hidden" name="stale" value="{{ stale }}">
   <button class="button primary filters-submit" type="submit">{{ ui.icon('search') }}Zoeken</button>
-  {% if geo_home.label == 'Nog niet ingesteld' %}
+  {% if not geo_home.configured %}
   <p class="travel-note">Reistijden zijn nog onbekend. <a href="/profile#reisbereik">Stel je woonplaats in</a> om vacatures buiten je bereik te verbergen.</p>
   {% else %}
-  <p class="travel-note">Reisbereik vanaf {{ geo_home.label }}: {{ geo_home.bike_minutes }} min e-bike of {{ geo_home.transit_minutes }} min OV. <a href="/profile#reisbereik">Aanpassen</a></p>
+  <p class="travel-note">Reisbereik vanaf {{ geo_home.label if geo_home.label != 'Nog niet ingesteld' else 'je woonplaats' }}: {{ geo_home.bike_minutes }} min e-bike of {{ geo_home.transit_minutes }} min OV. <a href="/profile#reisbereik">Aanpassen</a></p>
   {% endif %}
 </form>
 
@@ -66,11 +66,11 @@
 
 <div class="jobs-bar">
   <nav class="status-tabs jobs-tabs" aria-label="Vacaturestatus">
-    {% for tab in status_links %}<a href="{{ tab.url }}" {% if status_filter == tab.value %}aria-current="page"{% endif %}>{{ tab.label }}{% if tab.count is defined and tab.count is not none %} {{ tab.count }}{% endif %}</a>{% endfor %}
+    {% for tab in status_links %}<a href="{{ tab.url }}" data-status="{{ tab.value }}" {% if status_filter == tab.value %}aria-current="page"{% endif %}>{{ tab.label }}{% if tab.count is defined and tab.count is not none %} <span class="tab-count">{{ tab.count }}</span>{% endif %}</a>{% endfor %}
   </nav>
   <div class="jobs-results-head">
     <h2>{{ total_filtered }} {{ 'resultaat' if total_filtered == 1 else 'resultaten' }}</h2>
-    <span>{% if within == '1' %}binnen je reisbereik of met onbekende reistijd{% else %}ook buiten je reisbereik{% endif %}{% if not stale_active %} · <a href="{{ stale_url }}">toon ook verlopen</a>{% endif %}</span>
+    <span>{% if within == '1' %}binnen je reisbereik of met onbekende reistijd{% else %}ook buiten je reisbereik{% endif %}{% if excluded %} · {{ excluded }} buiten je reisbereik verborgen{% endif %}{% if not stale_active %} · <a href="{{ stale_url }}">toon ook verlopen</a>{% endif %}</span>
   </div>
 </div>
 
@@ -81,7 +81,7 @@
   {% set row_next = return_to ~ '#job-' ~ job['id'] %}
   {% set up = job['vote'] and job['vote'] > 0 %}
   {% set down = job['vote'] and job['vote'] < 0 %}
-  <article class="vacancy-row{% if job['status'] == 'ignored' %} is-dimmed{% endif %}" id="job-{{ job['id'] }}" aria-labelledby="job-title-{{ job['id'] }}">
+  <article class="vacancy-row{% if job['status'] == 'ignored' %} is-dimmed{% endif %}" id="job-{{ job['id'] }}" data-job-status="{{ job['status'] }}" aria-labelledby="job-title-{{ job['id'] }}">
     {{ ui.stamp(job, href=detail_url, link=True) }}
     <div class="vacancy-main">
       <h3 id="job-title-{{ job['id'] }}"><a href="{{ detail_url }}" data-job-link>{{ job['title'] or 'Zonder titel' }}</a>{% if job['status'] in ('applied', 'ignored', 'saved') %}<span class="vacancy-flags"><span class="chip {{ 'chip-lime' if job['status'] != 'ignored' else '' }}">{{ ui.status_label(job['status']) }}</span></span>{% endif %}</h3>
@@ -136,7 +136,7 @@
     <p class="small muted">Automatisch gevonden woorden uit vacatures die je hebt beoordeeld. Ze zijn niet hetzelfde als je voorkeuren in je profiel.</p>
   </details>
   {% endif %}
-  {% if match_summary %}<details class="card disclosure"><summary><span>Laatste beoordelingsronde</span>{{ ui.icon('chevron-down', 'chev') }}</summary><p class="small">{% if match_summary.finished_at %}Afgerond op {{ match_summary.finished_at[:16] | replace('T', ' om ') }}.{% else %}Bij deze ronde is geen tijdstip opgeslagen.{% endif %} {{ match_summary.matched }} uitgebreide en {{ match_summary.signals or 0 }} snelle beoordelingen. Kosten ${{ '%.4f' | format(match_summary.cost_usd) }}.</p></details>{% endif %}
+  {% if match_summary %}<details class="card disclosure"><summary><span>Laatste beoordelingsronde</span>{{ ui.icon('chevron-down', 'chev') }}</summary><p class="small">{% if match_summary.finished_at %}Afgerond op {{ ui.nl_date(match_summary.finished_at, time=True) }}.{% else %}Bij deze ronde is geen tijdstip opgeslagen.{% endif %} {{ match_summary.matched }} uitgebreide en {{ match_summary.signals or 0 }} snelle beoordelingen. Kosten ${{ '%.4f' | format(match_summary.cost_usd) }}.</p></details>{% endif %}
 </div>
 
 <dialog class="job-drawer" id="job-drawer" aria-labelledby="job-drawer-title">

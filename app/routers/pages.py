@@ -60,13 +60,10 @@ def dashboard(request: Request):
     )
 
 
-
 def _top_new_jobs(limit: int) -> list[dict]:
     """Best-ranked new vacancies the user has not voted on and can plausibly reach."""
     picks: list[dict] = []
-    for row in store.list_jobs(limit * 8, "new"):
-        if row["vote"]:
-            continue
+    for row in store.list_jobs(None, "new", only_unvoted=True):
         item = dict(row)
         item["travel"] = ranking.travel_of(item)
         if item["travel"]["in_range"] is False:
@@ -115,8 +112,6 @@ def admin_page(request: Request):
     )
 
 
-
 @router.get("/healthz")
 def healthz():
     return JSONResponse({"ok": True})
-

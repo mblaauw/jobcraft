@@ -301,3 +301,16 @@ def test_account_source_preferences_filter_jobs_and_matching():
     assert store.list_jobs_for_matching(50) == []
     store.set_user_source("fixture", True)
     assert any(row["id"] == job_id for row in store.list_jobs(50))
+
+
+def test_interview_turn_includes_user_message_and_streams_tokens():
+    store.create_session("stream-session", "Stream", "interviewer", "fixture")
+    manager = llm.ServerManager()
+    manager.client = llm.FakeLLMClient(["Hallo daar", "Nog hallo"])
+    result = manager.run_turn("stream-session", "Mijn antwoord")
+    assert [message["role"] for message in result["messages"]] == ["user", "assistant"]
+    events = list(manager.run_turn_stream("stream-session", "Nog een antwoord"))
+    assert "".join(event["text"] for event in events if event["type"] == "token") == "Nog hallo"
+    done = next(event for event in events if event["type"] == "done")
+    assert done["user"]["text"] == "Nog een antwoord"
+    assert done["assistant"]["text"] == "Nog hallo"

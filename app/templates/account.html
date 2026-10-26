@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
+{% set _theme = (request.cookies.get('theme') if request.cookies is defined else '') %}
 {% block title %}Account · Jobcraft{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -17,12 +18,13 @@
   <div class="field">
     <label for="theme-select">Thema</label>
     <select id="theme-select">
-      <option value="system" {% if not request.cookies.get('theme') %}selected{% endif %}>Systeeminstelling</option>
-      <option value="light" {% if request.cookies.get('theme') == 'light' %}selected{% endif %}>Licht</option>
-      <option value="dark" {% if request.cookies.get('theme') == 'dark' %}selected{% endif %}>Donker</option>
+      <option value="system" {% if not _theme %}selected{% endif %}>Systeeminstelling</option>
+      <option value="light" {% if _theme == 'light' %}selected{% endif %}>Licht</option>
+      <option value="dark" {% if _theme == 'dark' %}selected{% endif %}>Donker</option>
     </select>
   </div>
   <p class="small muted">Je keuze wordt bewaard in deze browser.</p>
+  <noscript><p class="small muted">Thema wisselen werkt alleen met JavaScript.</p></noscript>
 </section>
 
 {% if account.id != 'legacy' %}

@@ -1,19 +1,17 @@
 """One shared renderer; lazy CSRF binding avoids authentication import cycles."""
 
 from datetime import UTC, datetime
-from zoneinfo import ZoneInfo
 
 from fastapi.templating import Jinja2Templates
 
 from . import config
+from .util import LOCAL_TZ
 
 templates = Jinja2Templates(directory=str(config.TEMPLATES_DIR))
 
-_AMSTERDAM = ZoneInfo("Europe/Amsterdam")
-
 
 def _amsterdam(value):
-    """Convert a UTC ISO timestamp to Europe/Amsterdam local time."""
+    """Convert a UTC ISO timestamp to the account's local Europe/Amsterdam time."""
     if not value:
         return value
     try:
@@ -21,7 +19,7 @@ def _amsterdam(value):
         dt = datetime.fromisoformat(text)
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=UTC)
-        return dt.astimezone(_AMSTERDAM).isoformat()
+        return dt.astimezone(LOCAL_TZ).isoformat()
     except ValueError:
         return value
 

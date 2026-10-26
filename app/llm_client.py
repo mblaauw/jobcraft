@@ -93,11 +93,12 @@ class OpenAICompatClient:
         *,
         model: str | None = None,
         session_key: str | None = None,
-    ) -> Iterator[str]:
+    ) -> Iterator[dict[str, Any]]:
         body: dict[str, Any] = {
             "model": model or self.model,
             "messages": messages,
             "stream": True,
+            "stream_options": {"include_usage": True},
         }
         headers = {"x-opencode-session": session_key} if session_key else {}
         with self._client.stream(
@@ -122,12 +123,14 @@ class OpenAICompatClient:
                     payload = json.loads(payload_text)
                 except json.JSONDecodeError:
                     continue
+                if payload.get("usage"):
+                    yield {"type": "usage", "usage": _usage(payload, body["model"])}
                 choices = payload.get("choices") or []
                 if not choices:
                     continue
                 delta = (choices[0].get("delta") or {}).get("content")
                 if delta:
-                    yield delta
+                    yield {"type": "token", "text": delta}
 
     def complete(
         self,
@@ -215,7 +218,7 @@ class FakeLLMClient:
         *,
         model: str | None = None,
         session_key: str | None = None,
-    ) -> Iterator[str]:
+    ) -> Iterator[dict[str, Any]]:
         self.calls.append(
             {"messages": messages, "model": model, "schema": None, "session_key": session_key}
         )
@@ -224,4 +227,5 @@ class FakeLLMClient:
         text = self.replies.pop(0)
         # Yield in small chunks so streaming UI can be exercised.
         for i in range(0, len(text), 12):
-            yield text[i : i + 12]
+            yield {"type": "token", "text": text[i : i + 12]}
+        yield {"type": "usage", "usage": {}}

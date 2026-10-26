@@ -1,38 +1,24 @@
 """UI rendering contracts, without touching personal data or starting the LLM."""
 
-from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import parse_qs, urlencode, urlsplit
-from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from app.web import _amsterdam
+
 TEMPLATES = Path(__file__).resolve().parents[1] / "app" / "templates"
-
-_AMSTERDAM = ZoneInfo("Europe/Amsterdam")
-
-
-def _amsterdam(value):
-    if not value:
-        return value
-    try:
-        text = str(value).replace("Z", "+00:00")
-        dt = datetime.fromisoformat(text)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=UTC)
-        return dt.astimezone(_AMSTERDAM).isoformat()
-    except ValueError:
-        return value
 
 
 def _register_filters(env):
     env.filters["amsterdam"] = _amsterdam
+    env.globals["csrf_input"] = lambda request: ""
     return env
 
 
-def render(name, path="/", **context):
+def render(name, path="/", cookies=None, **context):
     env = _register_filters(
         Environment(loader=FileSystemLoader(TEMPLATES), autoescape=select_autoescape())
     )
@@ -40,6 +26,7 @@ def render(name, path="/", **context):
         env.get_template(name).render(
             request=SimpleNamespace(
                 url=SimpleNamespace(path=path),
+                cookies=cookies or {},
                 state=SimpleNamespace(
                     user={
                         "id": "legacy",
@@ -163,3 +150,69 @@ def test_dashboard_diagnostics_are_collapsed_and_metrics_are_real_values():
     assert [el.get_text() for el in html.select(".metric strong")] == ["12", "7", "2", "3"]
     assert not html.select_one(".technical-details").has_attr("open")
     assert len(html.select("h1")) == 1
+
+
+def test_long_running_banners_poll_instead_of_meta_refresh():
+    for name in ("profile.html", "sources.html", "job_detail.html"):
+        text = (TEMPLATES / name).read_text()
+        assert 'http-equiv="refresh"' not in text
+        assert "data-auto-refresh=" in text
+
+
+def test_theme_cookie_is_applied_to_base_and_login():
+    assert render("base.html", cookies={"theme": "dark"}).html["data-theme"] == "dark"
+    assert render("login.html", "/login", cookies={"theme": "light"}).html["data-theme"] == "light"
+    assert not render("base.html", cookies={}).html.has_attr("data-theme")
+
+
+def test_amsterdam_filter_converts_utc_to_local_time():
+    assert _amsterdam("2026-10-25T23:30:00+00:00").startswith("2026-10-26T00:30")
+    assert _amsterdam("2026-07-01T12:00:00Z").startswith("2026-07-01T14:00")
+    assert _amsterdam(None) is None
+
+
+def test_status_tabs_show_counts_when_provided():
+    html = render(
+        "jobs.html",
+        "/jobs",
+        jobs=[],
+        sources=[],
+        counts={"total": 0, "matched": 0},
+        status_links=[
+            {"label": "Alle", "value": "", "count": 4, "url": "/jobs"},
+            {"label": "Bewaard", "value": "saved", "count": 2, "url": "/jobs?status=saved"},
+        ],
+        status_filter="",
+        query="",
+        source_filter="",
+        within="1",
+        stale="0",
+        stale_active=False,
+        stale_url="/jobs",
+        filter_chips=[],
+        reset_url="/jobs",
+        sort="rank",
+        excluded=0,
+        page=1,
+        pages=1,
+        per_page=50,
+        total_filtered=0,
+        pager_base="/jobs",
+        scan_status="idle",
+        match_status="idle",
+        match_summary=None,
+        feedback={"counts": {"up": 0, "down": 0}},
+        geo_home={
+            "label": "Amsterdam",
+            "configured": True,
+            "bike_minutes": 30,
+            "transit_minutes": 35,
+        },
+        queue=0,
+        return_to="/jobs",
+    )
+    tabs = {
+        tab["data-status"]: tab.get_text(" ", strip=True) for tab in html.select(".status-tabs a")
+    }
+    assert tabs[""] == "Alle 4"
+    assert tabs["saved"] == "Bewaard 2"

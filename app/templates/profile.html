@@ -150,8 +150,7 @@
   <div class="panel">
   {% if draft %}
     <p><strong>Er ligt een voorstel klaar.</strong> Hieronder zie je wat er verandert. Groen komt erbij, rood verdwijnt.</p>
-    <pre class="diff" tabindex="0" aria-label="Wijzigingen in je profiel">{% for line in (draft_diff or '').splitlines() %}{% if line.startswith('+++') or line.startswith('---') %}{% elif line.startswith('@@') %}<span class="hunk">…</span>{% elif line.startswith('+') %}<span class="add">{{ line[1:] }}</span>{% elif line.startswith('-') %}<span class="del">{{ line[1:] }}</span>{% else %}{{ line[1:] }}
-{% endif %}{% else %}Geen tekstuele verschillen.{% endfor %}</pre>
+    <pre class="diff" tabindex="0" aria-label="Wijzigingen in je profiel">{% for line in (draft_diff or '').splitlines() %}{% if line.startswith('+++') or line.startswith('---') %}{% elif line.startswith('@@') %}<span class="hunk">…</span>{{ "\n" }}{% elif line.startswith('+') %}<span class="add">{{ line[1:] }}</span>{{ "\n" }}{% elif line.startswith('-') %}<span class="del">{{ line[1:] }}</span>{{ "\n" }}{% else %}{{ line[1:] }}{{ "\n" }}{% endif %}{% else %}Geen tekstuele verschillen.{% endfor %}</pre>
     <div class="btn-row">
       <form method="post" action="/profile/consolidate/accept">{% include '_csrf.html' %}<button class="button primary" type="submit">{{ ui.icon('check') }}Overnemen</button></form>
       <form method="post" action="/profile/consolidate/discard">{% include '_csrf.html' %}<button class="button" type="submit">{{ ui.icon('x') }}Verwerpen</button></form>
