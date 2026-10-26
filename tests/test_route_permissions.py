@@ -14,6 +14,7 @@ ADMIN = {
     ("POST", "/users/{user_id}/activate"),
     ("POST", "/users/{user_id}/reset-password"),
     ("POST", "/sources/scan"),
+    ("POST", "/sources/schedule"),
     ("POST", "/sources/{source_id}/toggle"),
 }
 USER = {
