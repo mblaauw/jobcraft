@@ -177,7 +177,7 @@ sources:
     kind: manual
     base_url: https://nl.indeed.com
     enabled: false
-    notes: "ToS/anti-bot; alleen handmatig of via import-by-URL."
+    notes: "Recon 2026-10-26: robots.txt staat /job/ en /jobs/ disallowed; geen publieke feed/API gevonden. Vereist account en anti-bot. Alleen browser-import of handmatige import. Kandidaat voor een toekomstige authenticated connector met admin-entered credentials, mits ToS en robots dat toestaan."
 
   - id: defensie-civilian
     name: Defensie (burgerfuncties)
@@ -208,6 +208,16 @@ sources:
     per_page: 20
     enabled: true
     notes: "Lijst via de component-resource (_hn:type=resource&_hn:rid=vacancy-results; de ref wordt automatisch herontdekt uit de shell), paginering met &pagina=N. Detailpagina's zijn server-rendered en bevatten de volledige tekst (Dit ga je doen / Dit vragen wij). Dekt het Rijk: Rijkswaterstaat, ILT, Justis, Belastingdienst, DJI enzovoort."
+
+  - id: werkenvoornederland
+    name: Werken voor Nederland (Rijksoverheid)
+    kind: sitemap-jsonld
+    base_url: https://www.werkenvoornederland.nl
+    sitemap_url: https://www.werkenvoornederland.nl/sitemap-vacatures.xml
+    url_pattern: "/vacatures/[A-Za-z0-9-]+$"
+    per_page: 40
+    enabled: true
+    notes: "Recon 2026-10-26: sitemap-vacatures.xml levert individuele vacature-URL's; detailpagina's bevatten schema.org JobPosting JSON-LD met titel, organisatie, locatie en beschrijving. Aanvulling op de rijksoverheid-bron; geen login nodig."
 
   - id: ats-platform
     name: ATS Platform (OLVG, Staatsbosbeheer, Zaanstad, ...) - client-id nodig
