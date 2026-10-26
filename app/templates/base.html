@@ -14,21 +14,25 @@
 </head>
 {% set user = request.state.user if request.state is defined and request.state.user else None %}
 {% set path = request.url.path %}
-{% set primary = [('/', 'Overzicht', 'house'), ('/jobs', 'Vacatures', 'briefcase-business'), ('/interview', 'Gesprek', 'message-circle'), ('/profile', 'Profiel', 'user-round')] %}
+{% set is_admin = user and user.role == 'admin' %}
+{% set primary = [] if is_admin else [('/', 'Overzicht', 'house'), ('/jobs', 'Vacatures', 'briefcase-business'), ('/interview', 'Gesprek', 'message-circle'), ('/profile', 'Profiel', 'user-round')] %}
 {% set secondary = [('/sources', 'Bronnen', 'rss'), ('/account', 'Account', 'settings-2')] %}
-{% if user and user.role == 'admin' %}{% set secondary = secondary + [('/users', 'Gebruikers', 'users'), ('/admin', 'Systeem', 'activity')] %}{% endif %}
+{% if is_admin %}{% set secondary = secondary + [('/users', 'Gebruikers', 'users'), ('/admin', 'Systeem', 'activity')] %}{% endif %}
+{% set home_href = '/admin' if is_admin else '/' %}
 {% macro is_active(href) -%}{{ 'yes' if path == href or (href != '/' and path.startswith(href + '/')) else '' }}{%- endmacro %}
 <body>
   <a class="skip-link" href="#main-content">Naar de inhoud</a>
   <div class="shell">
     <header class="top rail">
-      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">j</span>Jobcraft</a>
+      <a class="brand" href="{{ home_href }}"><span class="brand-mark" aria-hidden="true">j</span>Jobcraft</a>
       <nav aria-label="Hoofdnavigatie">
+        {% if primary %}
         <div class="rail-nav">
           {% for href, label, icon in primary %}
           <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}{{ label }}</a>
           {% endfor %}
         </div>
+        {% endif %}
         <div class="rail-group">
           <p class="rail-group-title">Instellingen</p>
           <div class="rail-nav">
@@ -49,7 +53,7 @@
     </header>
 
     <div class="topbar">
-      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">j</span>Jobcraft</a>
+      <a class="brand" href="{{ home_href }}"><span class="brand-mark" aria-hidden="true">j</span>Jobcraft</a>
       {% if user %}
       <details class="topbar-menu">
         <summary aria-label="Menu: instellingen en account">{{ ui.icon('settings-2', 'icon-lg') }}</summary>
@@ -69,11 +73,13 @@
     </main>
   </div>
 
+  {% if primary %}
   <nav class="tabbar" aria-label="Snelnavigatie">
     {% for href, label, icon in primary %}
     <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}<span>{{ label }}</span></a>
     {% endfor %}
   </nav>
+  {% endif %}
   <script src="/static/ui.js" defer></script>
   {% block scripts %}{% endblock %}
 </body>

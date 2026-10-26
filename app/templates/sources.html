@@ -14,10 +14,10 @@
       <li>{% if s["last_scan_at"] %}opgehaald {{ ui.nl_date(s["last_scan_at"], time=True) }}{% else %}nog niet opgehaald{% endif %}</li>
       {% if status and status != 'ok' %}<li class="warn-text">laatste ronde mislukt</li>{% endif %}
     </ul>
-    {% if selection.reason %}<p class="why">{{ selection.reason }}</p>{% endif %}
+    {% if not admin and selection.reason %}<p class="why">{{ selection.reason }}</p>{% endif %}
   </div>
   <div class="source-controls">
-    {% if s['enabled'] %}
+    {% if not admin and s['enabled'] %}
     <form method="post" action="/sources/{{ s['id'] }}/preference">
       {% include '_csrf.html' %}
       <input type="hidden" name="enabled" value="{{ '0' if mine else '1' }}">
@@ -48,7 +48,7 @@
 <div class="page-head">
   <div>
     <h1>Bronnen</h1>
-    <p class="lede">De vacaturesites waar Jobcraft vacatures ophaalt. Zet een bron uit als je er geen vacatures van wilt zien.</p>
+    <p class="lede">{% if admin %}Beheer de vacaturesites waar Jobcraft vacatures ophaalt. Zet een bron voor iedereen aan of uit.{% else %}De vacaturesites waar Jobcraft vacatures ophaalt. Zet een bron uit als je er geen vacatures van wilt zien.{% endif %}</p>
   </div>
   {% if admin %}
   <form method="post" action="/sources/scan" class="page-actions">

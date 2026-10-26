@@ -17,6 +17,7 @@ from .constants import (
     ANONYMOUS_TTL_SECONDS,
     CSRF_FIELD,
     MIN_PASSWORD_LENGTH,
+    ROLE_ADMIN,
     ROLE_USER,
     ROLES,
     SESSION_TTL_SECONDS,
@@ -54,11 +55,16 @@ from .views import (
 )
 
 
+def _default_home(user) -> str:
+    return "/admin" if user and user["role"] == ROLE_ADMIN else "/"
+
+
 @router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
     if current_user(request) is not None:
         return RedirectResponse(
-            url=safe_next(request.query_params.get("next")) or "/", status_code=303
+            url=safe_next(request.query_params.get("next")) or _default_home(current_user(request)),
+            status_code=303,
         )
     target = safe_next(request.query_params.get("next"))
     token, _ = _start_anonymous_session(request)
@@ -81,7 +87,7 @@ def login_submit(
     session = _session_row(session_id) if session_id else None
     target = safe_next(next_url)
     if current_user(request) is not None:
-        return RedirectResponse(url=target or "/", status_code=303)
+        return RedirectResponse(url=target or _default_home(current_user(request)), status_code=303)
 
     # CSRF first: credentials are only inspected with a token bound to this session.
     if (
@@ -141,7 +147,7 @@ def login_submit(
         ):
             accounts[row["username"]]["password"] = None
             _write_bootstrap_accounts(accounts)
-    response = RedirectResponse(url=target or "/", status_code=303)
+    response = RedirectResponse(url=target or _default_home(row), status_code=303)
     _set_session_cookie(response, token, SESSION_TTL_SECONDS)
     log.info("login ok for user id=%s", row["id"])
     return response
