@@ -57,7 +57,7 @@
   <div class="banner ok">{{ ui.icon('sparkles') }}<span>Er ligt een voorstel klaar om je profiel bij te werken. <a href="#bijwerken">Bekijk wat er verandert</a></span></div>
 {% endif %}
 {% if bootstrap_status == "running" %}
-  <div class="banner">{{ ui.icon('clock') }}<span>Je profielvoorstel wordt gemaakt. Dit duurt 20 tot 90 seconden; de pagina ververst vanzelf.</span><meta http-equiv="refresh" content="5"></div>
+  <div class="banner" data-auto-refresh="5000">{{ ui.icon('clock') }}<span>Je profielvoorstel wordt gemaakt. Dit duurt 20 tot 90 seconden.</span></div>
 {% elif bootstrap_status == "interrupted" %}
   <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Het maken van een voorstel is onderbroken door een herstart. Probeer het opnieuw.</span></div>
 {% elif bootstrap_status.startswith("error") %}

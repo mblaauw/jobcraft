@@ -12,6 +12,19 @@
 {% if request.query_params.get('changed') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je wachtwoord is gewijzigd. Op je andere apparaten ben je uitgelogd.</span></p>{% endif %}
 {% if error %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ error }}</span></p>{% endif %}
 
+<section class="panel" aria-labelledby="theme-title">
+  <h2 id="theme-title">Weergave</h2>
+  <div class="field">
+    <label for="theme-select">Thema</label>
+    <select id="theme-select">
+      <option value="system" {% if not request.cookies.get('theme') %}selected{% endif %}>Systeeminstelling</option>
+      <option value="light" {% if request.cookies.get('theme') == 'light' %}selected{% endif %}>Licht</option>
+      <option value="dark" {% if request.cookies.get('theme') == 'dark' %}selected{% endif %}>Donker</option>
+    </select>
+  </div>
+  <p class="small muted">Je keuze wordt bewaard in deze browser.</p>
+</section>
+
 {% if account.id != 'legacy' %}
 <section class="panel" aria-labelledby="cv-title">
   <h2 id="cv-title">Je basis-CV</h2>

@@ -1,17 +1,41 @@
 """UI rendering contracts, without touching personal data or starting the LLM."""
 
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import parse_qs, urlencode, urlsplit
+from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 TEMPLATES = Path(__file__).resolve().parents[1] / "app" / "templates"
 
+_AMSTERDAM = ZoneInfo("Europe/Amsterdam")
+
+
+def _amsterdam(value):
+    if not value:
+        return value
+    try:
+        text = str(value).replace("Z", "+00:00")
+        dt = datetime.fromisoformat(text)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=UTC)
+        return dt.astimezone(_AMSTERDAM).isoformat()
+    except ValueError:
+        return value
+
+
+def _register_filters(env):
+    env.filters["amsterdam"] = _amsterdam
+    return env
+
 
 def render(name, path="/", **context):
-    env = Environment(loader=FileSystemLoader(TEMPLATES), autoescape=select_autoescape())
+    env = _register_filters(
+        Environment(loader=FileSystemLoader(TEMPLATES), autoescape=select_autoescape())
+    )
     return BeautifulSoup(
         env.get_template(name).render(
             request=SimpleNamespace(

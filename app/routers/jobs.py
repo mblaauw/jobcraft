@@ -97,8 +97,24 @@ def jobs_page(
         "per_page": per_page,
     }
     pager_base = "/jobs?" + urlencode(params)
+    status_counts = store.status_counts(
+        source=source or None, query_text=q or None, include_stale=stale_active
+    )
+    total_status = sum(status_counts.values())
+    status_count_for = {
+        "": total_status,
+        "new": status_counts.get("new", 0),
+        "saved": status_counts.get("saved", 0),
+        "applied": status_counts.get("applied", 0),
+        "ignored": status_counts.get("ignored", 0),
+    }
     status_links = [
-        {"label": label, "value": value, "url": "/jobs?" + urlencode({**params, "status": value})}
+        {
+            "label": label,
+            "value": value,
+            "count": status_count_for[value],
+            "url": "/jobs?" + urlencode({**params, "status": value}),
+        }
         for value, label in (
             ("", "Alle"),
             ("new", "Nieuw"),

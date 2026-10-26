@@ -50,7 +50,7 @@
 
 {% if doc_error %}<div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Document maken is niet gelukt: {{ doc_error }}</span></div>{% endif %}
 {% if running %}
-  <div class="banner">{{ ui.icon('clock') }}<span>Je {{ "CV" if doc_status.kind == "resume" else "motivatiebrief" }} wordt gemaakt. Dit duurt meestal 10 tot 20 seconden; deze pagina ververst vanzelf.</span><meta http-equiv="refresh" content="4"></div>
+  <div class="banner" data-auto-refresh="4000">{{ ui.icon('clock') }}<span>Je {{ "CV" if doc_status.kind == "resume" else "motivatiebrief" }} wordt gemaakt. Dit duurt meestal 10 tot 20 seconden.</span></div>
 {% elif doc_status and doc_status.state == "error" %}
   <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Document maken is niet gelukt: {{ doc_status.error }}</span></div>
 {% elif doc_status and doc_status.state == "done" and doc_status_recent %}

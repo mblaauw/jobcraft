@@ -59,7 +59,7 @@
 </div>
 
 {% if scan_status == "running" %}
-  <div class="banner">{{ ui.icon('clock') }}<span>Vacatures worden opgehaald. Deze pagina ververst vanzelf.</span><meta http-equiv="refresh" content="4"></div>
+  <div class="banner" data-auto-refresh="4000">{{ ui.icon('clock') }}<span>Vacatures worden opgehaald.</span></div>
 {% elif scan_status.startswith("error") %}
   <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Ophalen is mislukt.</span><details><summary>Technische toelichting</summary>{{ scan_status[7:] }}</details></div>
 {% elif scan_status == "done" and summary %}
