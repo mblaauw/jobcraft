@@ -74,6 +74,42 @@
     });
   });
 
+  // Live refresh for long-running tasks: instead of <meta http-equiv="refresh">
+  // we poll the current page and reload once the running banner disappears.
+  document.querySelectorAll("[data-auto-refresh]").forEach((banner) => {
+    const interval = parseInt(banner.dataset.autoRefresh, 10) || 4000;
+    const url = window.location.href;
+    async function check() {
+      try {
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) throw new Error("unavailable");
+        const next = new DOMParser().parseFromString(await response.text(), "text/html");
+        if (!next.querySelector("[data-auto-refresh]")) {
+          window.location.reload();
+          return;
+        }
+      } catch (_) {
+        // Keep trying; a transient failure should not stop the wait.
+      }
+      window.setTimeout(check, interval);
+    }
+    window.setTimeout(check, interval);
+  });
+
+  // Theme toggle on Account: persist the choice in a cookie and reload.
+  const themeSelect = document.getElementById("theme-select");
+  if (themeSelect) {
+    themeSelect.addEventListener("change", () => {
+      const value = themeSelect.value;
+      if (value === "system") {
+        document.cookie = "theme=; path=/; max-age=0; SameSite=Lax";
+      } else {
+        document.cookie = "theme=" + encodeURIComponent(value) + "; path=/; max-age=31536000; SameSite=Lax";
+      }
+      window.location.reload();
+    });
+  }
+
   // Close the mobile menu when tapping elsewhere or pressing Escape.
   const menu = document.querySelector(".topbar-menu");
   if (menu) {

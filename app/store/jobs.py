@@ -1,4 +1,5 @@
 """SQLite jobs operations."""
+
 from __future__ import annotations
 
 import json
@@ -15,7 +16,23 @@ from .sources import list_sources, list_user_sources, load_source_configs
 
 def _job_select(owner: str | None = None) -> str:
     owner = owner or tenancy.user_id()
-    public = ["id", "source_id", "url", "title", "company", "location", "hours", "description", "posted_at", "first_seen", "last_seen", "content_hash", "lat", "lon", "search_text"]
+    public = [
+        "id",
+        "source_id",
+        "url",
+        "title",
+        "company",
+        "location",
+        "hours",
+        "description",
+        "posted_at",
+        "first_seen",
+        "last_seen",
+        "content_hash",
+        "lat",
+        "lon",
+        "search_text",
+    ]
     defaults = {
         "status": "'new'",
         "vote": "0",
@@ -38,7 +55,6 @@ def _job_select(owner: str | None = None) -> str:
     )
 
 
-
 def parse_job_date(raw: str | None) -> datetime | None:
     if not raw or not str(raw).strip():
         return None
@@ -52,12 +68,10 @@ def parse_job_date(raw: str | None) -> datetime | None:
         return None
 
 
-
 def normalize_posted_at(raw: str | None) -> str | None:
     """Store one comparable ISO-8601 UTC form; absent or invalid becomes NULL."""
     parsed = parse_job_date(raw)
     return parsed.isoformat().replace("+00:00", "Z") if parsed else None
-
 
 
 def job_date(job: JobRow) -> datetime:
@@ -67,7 +81,6 @@ def job_date(job: JobRow) -> datetime:
         if parsed:
             return parsed
     return datetime.min.replace(tzinfo=UTC)
-
 
 
 def effective_user_sources() -> dict[str, dict]:
@@ -89,10 +102,8 @@ def effective_user_sources() -> dict[str, dict]:
     }
 
 
-
 def _disabled_user_sources() -> list[str]:
     return [key for key, value in effective_user_sources().items() if not value["selected"]]
-
 
 
 def list_jobs(
@@ -145,13 +156,11 @@ def list_jobs(
         return con.execute(sql, tuple(params)).fetchall()
 
 
-
 def get_job(job_id: int) -> sqlite3.Row | None:
     with connect() as con:
         return con.execute(
             "SELECT * FROM (" + _job_select() + ") WHERE id=?", (tenancy.user_id(), job_id)
         ).fetchone()
-
 
 
 def list_scored_jobs(owner: str | None = None) -> list:
@@ -164,7 +173,6 @@ def list_scored_jobs(owner: str | None = None) -> list:
             + ") WHERE match_score IS NOT NULL AND rank_score IS NOT NULL",
             (owner,),
         ).fetchall()
-
 
 
 def list_jobs_for_matching(limit: int = 2000) -> list:
@@ -187,7 +195,6 @@ def list_jobs_for_matching(limit: int = 2000) -> list:
             + " ORDER BY COALESCE(posted_at, first_seen) DESC, id DESC LIMIT ?",
             (*params, limit),
         ).fetchall()
-
 
 
 def count_jobs() -> dict:
@@ -214,6 +221,47 @@ def count_jobs() -> dict:
     }
 
 
+def status_counts(
+    source: str | None = None,
+    query_text: str | None = None,
+    include_stale: bool = False,
+) -> dict[str, int]:
+    """Grouped counts per status, respecting the same filters as ``list_jobs``."""
+    clauses: list[str] = []
+    params: list = [tenancy.user_id()]
+    if source:
+        clauses.append("source_id=?")
+        params.append(source)
+    if query_text:
+        like = f"%{query_text}%"
+        clauses.append("(title LIKE ? OR company LIKE ? OR description LIKE ?)")
+        params.extend([like, like, like])
+    disabled_sources = _disabled_user_sources()
+    if disabled_sources:
+        clauses.append(
+            "(source_id IS NULL OR source_id NOT IN ("
+            + ",".join("?" for _ in disabled_sources)
+            + "))"
+        )
+        params.extend(disabled_sources)
+    if not include_stale:
+        clauses.append(
+            "NOT (last_seen < ? AND status NOT IN ('saved','applied') "
+            "AND EXISTS (SELECT 1 FROM sources src WHERE src.id=source_id "
+            "AND src.last_status='ok' AND src.last_scan_at > last_seen))"
+        )
+        params.append(stale_cutoff())
+    view = "(" + _job_select() + ")"
+    sql = "SELECT status, COUNT(*) AS n FROM " + view
+    if clauses:
+        sql += " WHERE " + " AND ".join(clauses)
+    sql += " GROUP BY status"
+    result: dict[str, int] = {}
+    with connect() as con:
+        for row in con.execute(sql, tuple(params)).fetchall():
+            result[row["status"]] = row["n"]
+    return result
+
 
 def count_jobs_by_source() -> dict[str, int]:
     with connect() as con:
@@ -221,4 +269,3 @@ def count_jobs_by_source() -> dict[str, int]:
             "SELECT COALESCE(source_id, '?') AS source_id, COUNT(*) AS n FROM jobs GROUP BY source_id"
         ).fetchall()
     return {row["source_id"]: row["n"] for row in rows}
-

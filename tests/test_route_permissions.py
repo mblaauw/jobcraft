@@ -27,6 +27,7 @@ USER = {
     ("GET", "/api/sessions"),
     ("GET", "/api/sessions/{session_id}/messages"),
     ("POST", "/api/sessions/{session_id}/send"),
+    ("POST", "/api/sessions/{session_id}/send/stream"),
     ("GET", "/sources"),
     ("POST", "/sources/{source_id}/preference"),
     ("GET", "/jobs"),

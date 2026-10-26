@@ -6,6 +6,7 @@ import hashlib
 import logging
 import os
 import uuid
+from collections.abc import Iterator
 from contextlib import suppress
 
 from . import config, interview_state, profile, prompts, store, tenancy
@@ -151,6 +152,53 @@ class ServerManager:
             "error": None,
         }
         return {"messages": [assistant], "usage": completion.usage, "session": {}}
+
+    def run_turn_stream(self, session_id: str, text: str) -> Iterator[dict[str, object]]:
+        if self.client is None:
+            raise LLMError("LLM client is not configured")
+        if not hasattr(self.client, "stream_complete"):
+            raise LLMError("streaming is not supported")
+        open_topics = interview_state.open_topics()
+        topics_line = (
+            "Nog open onderwerpen: " + "; ".join(open_topics)
+            if open_topics
+            else "Alle interviewonderwerpen zijn besproken."
+        )
+        context = (
+            "[ACCOUNT_CONTEXT]\nUse only this user's supplied context, never files or other sessions.\n"
+            f"Name: {tenancy.display_name()}\nPublic profile:\n{profile.read_public_excerpt(16000)}\n"
+            f"{topics_line}\n[/ACCOUNT_CONTEXT]"
+        )
+        system = prompts.load("interviewer") or "You are a career interviewer."
+        history = [
+            {"role": row["role"], "content": row["text"]}
+            for row in store.list_messages(session_id)
+            if row["role"] in ("user", "assistant") and not row["hidden"]
+        ]
+        budget = int(os.environ.get("INTERVIEW_HISTORY_CHARS", "60000"))
+        while len(history) > 2 and sum(len(item["content"]) for item in history) > budget:
+            history.pop(0)
+        messages = [{"role": "system", "content": system + "\n\n" + context}]
+        messages.extend(history)
+        messages.append({"role": "user", "content": text})
+        assistant_id = uuid.uuid4().hex
+        model = config.role_model("interviewer")
+        full = ""
+        try:
+            for token in self.client.stream_complete(messages, model=model, session_key=session_id):
+                full += token
+                yield {"type": "token", "text": token}
+        except LLMError as exc:
+            yield {"type": "error", "detail": str(exc)}
+            return
+        assistant = {
+            "id": assistant_id,
+            "role": "assistant",
+            "text": full,
+            "model": model,
+            "error": None,
+        }
+        yield {"type": "done", "assistant": assistant, "usage": {}}
 
     def generate(
         self, prompt: str, *, agent: str, timeout_note: str = "", schema: dict | None = None

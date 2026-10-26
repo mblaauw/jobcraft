@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import os
 import random
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
 
@@ -85,6 +87,48 @@ class OpenAICompatClient:
     def close(self) -> None:
         self._client.close()
 
+    def stream_complete(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        model: str | None = None,
+        session_key: str | None = None,
+    ) -> Iterator[str]:
+        body: dict[str, Any] = {
+            "model": model or self.model,
+            "messages": messages,
+            "stream": True,
+        }
+        headers = {"x-opencode-session": session_key} if session_key else {}
+        with self._client.stream(
+            "POST", "/chat/completions", json=body, headers=headers
+        ) as response:
+            if response.status_code in (401, 403):
+                raise LLMAuthError("LLM-provider weigert de API-key")
+            if response.status_code == 429:
+                raise LLMRateLimited("LLM-provider rate limit")
+            if response.status_code >= 400:
+                raise LLMError(f"LLM-provider HTTP {response.status_code}")
+            for line in response.iter_lines():
+                if not line:
+                    continue
+                text = line.strip()
+                if not text.startswith("data:"):
+                    continue
+                payload_text = text[5:].strip()
+                if payload_text == "[DONE]":
+                    break
+                try:
+                    payload = json.loads(payload_text)
+                except json.JSONDecodeError:
+                    continue
+                choices = payload.get("choices") or []
+                if not choices:
+                    continue
+                delta = (choices[0].get("delta") or {}).get("content")
+                if delta:
+                    yield delta
+
     def complete(
         self,
         messages: list[dict[str, str]],
@@ -149,7 +193,14 @@ class FakeLLMClient:
     def close(self) -> None:
         pass
 
-    def complete(self, messages: list[dict[str, str]], *, model: str | None = None, schema: dict | None = None, session_key: str | None = None) -> Completion:
+    def complete(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        model: str | None = None,
+        schema: dict | None = None,
+        session_key: str | None = None,
+    ) -> Completion:
         self.calls.append(
             {"messages": messages, "model": model, "schema": schema, "session_key": session_key}
         )
@@ -157,3 +208,20 @@ class FakeLLMClient:
             raise LLMError("FakeLLMClient has no queued reply")
         text = self.replies.pop(0)
         return Completion(text=text, usage={}, model=model or "fake")
+
+    def stream_complete(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        model: str | None = None,
+        session_key: str | None = None,
+    ) -> Iterator[str]:
+        self.calls.append(
+            {"messages": messages, "model": model, "schema": None, "session_key": session_key}
+        )
+        if not self.replies:
+            raise LLMError("FakeLLMClient has no queued reply")
+        text = self.replies.pop(0)
+        # Yield in small chunks so streaming UI can be exercised.
+        for i in range(0, len(text), 12):
+            yield text[i : i + 12]

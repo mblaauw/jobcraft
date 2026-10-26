@@ -66,7 +66,7 @@
 
 <div class="jobs-bar">
   <nav class="status-tabs jobs-tabs" aria-label="Vacaturestatus">
-    {% for tab in status_links %}<a href="{{ tab.url }}" {% if status_filter == tab.value %}aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}
+    {% for tab in status_links %}<a href="{{ tab.url }}" {% if status_filter == tab.value %}aria-current="page"{% endif %}>{{ tab.label }}{% if tab.count is defined and tab.count is not none %} {{ tab.count }}{% endif %}</a>{% endfor %}
   </nav>
   <div class="jobs-results-head">
     <h2>{{ total_filtered }} {{ 'resultaat' if total_filtered == 1 else 'resultaten' }}</h2>

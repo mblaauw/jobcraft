@@ -34,9 +34,9 @@
 {{ {'new': 'Nieuw', 'saved': 'Bewaard', 'applied': 'Gereageerd', 'ignored': 'Genegeerd'}.get(value, value) }}
 {%- endmacro %}
 
-{# ISO timestamp -> "25-10-2026" (or with time: "25-10-2026 19:14"). #}
+{# ISO timestamp -> "25-10-2026" (or with time: "25-10-2026 19:14"). Stored UTC is shown in Europe/Amsterdam. #}
 {% macro nl_date(iso, time=False) -%}
-{%- if iso -%}{{ iso[8:10] }}-{{ iso[5:7] }}-{{ iso[0:4] }}{% if time and iso|length > 15 %} {{ iso[11:16] }}{% endif %}{%- endif -%}
+{%- if iso -%}{% set local = iso | amsterdam %}{{ local[8:10] }}-{{ local[5:7] }}-{{ local[0:4] }}{% if time and local|length > 15 %} {{ local[11:16] }}{% endif %}{%- endif -%}
 {%- endmacro %}
 
 {% macro num(value) -%}{{ '%g' | format(value) }}{%- endmacro %}

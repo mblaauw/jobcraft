@@ -63,21 +63,62 @@
     log.append(typing);
     scrollToEnd();
 
+    let assistantBubble = null;
+    let fullText = "";
+    let streamed = false;
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/send`, {
+      const response = await fetch(`/api/sessions/${sessionId}/send/stream`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-csrf-token": document.querySelector('meta[name="csrf-token"]')?.content || "" },
         body: JSON.stringify({ text })
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || "versturen mislukt");
-      render(data.messages);
+      if (!response.ok) {
+        let detail = "versturen mislukt";
+        try { detail = (await response.json()).detail || detail; } catch (_) {}
+        throw new Error(detail);
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const chunks = buffer.split("\n\n");
+        buffer = chunks.pop();
+        for (const chunk of chunks) {
+          const dataLine = chunk.split("\n").find((line) => line.startsWith("data:"));
+          if (!dataLine) continue;
+          let payload = null;
+          try { payload = JSON.parse(dataLine.slice(5).trim()); } catch (_) { continue; }
+          if (payload.type === "token") {
+            if (!assistantBubble) { typing.remove(); assistantBubble = bubble("assistant", ""); log.append(assistantBubble); }
+            fullText += payload.text;
+            assistantBubble.textContent = fullText;
+            scrollToEnd();
+            streamed = true;
+          } else if (payload.type === "error") {
+            throw new Error(payload.detail || "versturen mislukt");
+          } else if (payload.type === "done") {
+            if (payload.messages && payload.messages[0]) {
+              if (!assistantBubble) { typing.remove(); assistantBubble = bubble("assistant", ""); log.append(assistantBubble); }
+              assistantBubble.textContent = payload.messages[0].text || fullText;
+            }
+            streamed = true;
+          }
+        }
+      }
+      if (!streamed) {
+        typing.remove();
+      }
     } catch (error) {
+      if (assistantBubble) assistantBubble.remove();
       typing.remove();
       sent.remove();
       status.textContent = "Je antwoord is niet verstuurd: " + error.message + ". Je tekst staat weer in het invoerveld.";
       input.value = text;
       autosize();
+      return;
     } finally {
       form.dataset.busy = "0";
       input.disabled = false;
