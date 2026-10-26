@@ -136,7 +136,7 @@ def test_score_is_color_coded_and_shows_signal_confidence(client):
     assert "90% zeker" in score_box.get_text()
 
 
-def test_signal_tags_are_compact_and_above_the_filters(client, monkeypatch):
+def test_signal_tags_are_collapsed_below_the_results(client, monkeypatch):
     add_job()
     monkeypatch.setattr(
         main.feedback,
@@ -155,7 +155,9 @@ def test_signal_tags_are_compact_and_above_the_filters(client, monkeypatch):
     assert "1 minder passend" in card.get_text()
     assert card.select_one(".chip-ok").get_text() == "buiten"
     assert card.select_one(".chip-warn").get_text() == "sales"
-    assert response.text.index("jobs-signals") < response.text.index("jobs-filters")
+    # Learned keywords are secondary: collapsed, below the list, never pushing results down.
+    assert card.name == "details" and not card.has_attr("open")
+    assert response.text.index("vacancy-list") < response.text.index("jobs-signals")
     assert not html.select(".jobs-insights .feedback-card")
 
 

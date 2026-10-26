@@ -1,89 +1,98 @@
 {% extends "base.html" %}
-{% block title %}Interview · Jobcraft{% endblock %}
+{% import "_ui.html" as ui %}
+{% block title %}Gesprek · Jobcraft{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Interview</h1>
-  <p class="sub">Ontdek wat bij je past. Eén vraag per keer, op jouw tempo. Je antwoorden blijven bewaard.</p>
+  <div>
+    <h1>Gesprek</h1>
+    <p class="lede">Eén vraag tegelijk, in je eigen woorden. Je antwoorden worden bewaard en vormen samen je profiel.</p>
+  </div>
+  <form method="post" action="/interview/new" class="page-actions">
+    {% include '_csrf.html' %}
+    <button class="button" type="submit">{{ ui.icon('plus') }}Nieuw gesprek</button>
+  </form>
 </div>
 
 <div class="interview-layout">
-  <aside class="sidebar">
-    <div class="card">
-      <div class="sidebar-head">
-        <h2>Gesprekken</h2>
-        <form method="post" action="/interview/new">
-          {% include '_csrf.html' %}
-          <button class="button small primary" type="submit">Nieuw</button>
-        </form>
-      </div>
-      <ul class="list">
-        {% for s in sessions %}
-          <li class="{% if s.id == session_id %}active{% endif %}">
-            <a href="/interview?session={{ s.id }}">{{ s.title or s.id[:12] }}</a>
-          </li>
-        {% else %}
-          <li class="muted small">Nog geen gesprekken.</li>
-        {% endfor %}
-      </ul>
-    </div>
-
-    <div class="card coverage">
-      <div class="sidebar-head">
-        <h2>Jouw onderwerpen</h2>
-        <span class="muted small">{{ coverage.covered }}/{{ coverage.total }} · {{ coverage.question_count }} antwoorden</span>
-      </div>
-      <progress class="coverage-meter" value="{{ coverage.covered }}" max="{{ coverage.total or 1 }}" aria-label="Besproken onderwerpen">{{ coverage.covered }} van {{ coverage.total }}</progress>
-      <ul class="topics">
-        {% for topic in coverage.topics %}
-          <li class="topic {% if topic.status == 'covered' %}done{% endif %}">
-            <form method="post" action="/interview/toggle" class="inline-form">
-              {% include '_csrf.html' %}
-              <input type="hidden" name="topic_id" value="{{ topic.id }}">
-              <input type="hidden" name="status" value="{{ 'open' if topic.status == 'covered' else 'covered' }}">
-              <input type="hidden" name="session_id" value="{{ session_id or '' }}">
-              <button class="topic-toggle" type="submit" aria-label="{{ topic.label }}: markeer als {{ 'open' if topic.status == 'covered' else 'besproken' }}" title="Onderwerp handmatig bijstellen">{{ '✓' if topic.status == 'covered' else '○' }}</button>
-            </form>
-            <span>{{ topic.label }}</span>
-            {% if topic.mentions %}<span class="muted small">{{ topic.mentions }}</span>{% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-      <form method="post" action="/profile/consolidate">
-        {% include '_csrf.html' %}
-        <input type="hidden" name="full" value="0">
-        <button class="button small" type="submit">Afronden &amp; voorstel maken</button>
-      </form>
-      <p class="muted small">Automatisch bijgehouden op basis van je antwoorden; klik op een bolletje om handmatig bij te stellen.</p>
-    </div>
-  </aside>
-
-  <section class="chat card" {% if session_id %}data-session-id="{{ session_id }}"{% endif %}>
+  <section class="chat panel" {% if session_id %}data-session-id="{{ session_id }}"{% endif %} aria-label="Gesprek">
     {% if session_id %}
-      <div class="chat-heading"><span class="chat-avatar" aria-hidden="true">d.</span><div><h2>Jouw loopbaangesprek</h2><p class="muted small">Neem de tijd. Je hoeft niet alles al te weten.</p></div></div>
-      <div id="chat-log" class="chat-log" role="log" aria-label="Gesprek">
+      <div class="chat-heading">
+        <span class="chat-avatar" aria-hidden="true">j</span>
+        <div><h2>{% for s in sessions if s.id == session_id %}{{ s.title }}{% else %}Jouw loopbaangesprek{% endfor %}</h2><p class="small muted">Neem de tijd. Je hoeft niet alles al te weten.</p></div>
+      </div>
+      <div id="chat-log" class="chat-log" role="log" aria-label="Gesprek" aria-live="polite">
         {% for m in messages %}
           <div class="msg {{ m.role }}">{{ m.text }}</div>
         {% endfor %}
       </div>
       <div id="chat-status" class="chat-status" aria-live="polite"></div>
-      <label class="small muted" for="chat-input">Jouw antwoord</label>
-      <form id="chat-form" class="chat-form" data-busy="0">
-         <textarea id="chat-input" rows="2" placeholder="Vertel in je eigen woorden…" aria-describedby="chat-help" required></textarea>
-        <button class="button primary" type="submit">Stuur</button>
-      </form>
-      <p id="chat-help" class="muted small">Enter om te versturen · Shift + Enter voor een nieuwe regel</p>
+      <div class="chat-compose">
+        <label for="chat-input">Jouw antwoord</label>
+        <form id="chat-form" class="chat-form" data-busy="0">
+          <textarea id="chat-input" rows="1" placeholder="Vertel in je eigen woorden…" aria-describedby="chat-help" required></textarea>
+          <button class="button primary" type="submit" aria-label="Verstuur" title="Verstuur">{{ ui.icon('send') }}</button>
+        </form>
+        <p id="chat-help">Enter verstuurt, Shift + Enter maakt een nieuwe regel.</p>
+      </div>
       <noscript><p class="banner warn">Schakel JavaScript in om het gesprek te gebruiken.</p></noscript>
     {% else %}
-      <div class="empty">
-        <h2>Start een gesprek</h2>
-        <p class="muted">De interviewer stelt één vraag per keer en werkt profiel en antwoordlog bij.</p>
-        <form method="post" action="/interview/new">
-          {% include '_csrf.html' %}
-          <button class="button primary" type="submit">Nieuw gesprek</button>
-        </form>
+      <div class="chat-empty">
+        <span class="chat-avatar" aria-hidden="true">j</span>
+        <h2>{{ 'Verder praten?' if sessions else 'Start je eerste gesprek' }}</h2>
+        <p class="muted">De interviewer stelt korte, concrete vragen over werk dat je energie geeft, je uren, reistijd en wat je liever niet doet. Je kunt altijd stoppen en later verder.</p>
+        <div class="btn-row center">
+          {% if sessions %}<a class="button primary" href="/interview?session={{ sessions[0].id }}">{{ ui.icon('message-circle') }}Ga verder met je laatste gesprek</a>{% endif %}
+          <form method="post" action="/interview/new">
+            {% include '_csrf.html' %}
+            <button class="button {{ '' if sessions else 'primary' }}" type="submit">{{ ui.icon('plus') }}Nieuw gesprek</button>
+          </form>
+        </div>
       </div>
     {% endif %}
   </section>
+
+  <aside class="interview-aside" aria-label="Voortgang en eerdere gesprekken">
+    <section class="panel coverage">
+      <div class="coverage-head">
+        <h2>Onderwerpen</h2>
+        <span class="small muted">{{ coverage.covered }} van {{ coverage.total }} besproken</span>
+      </div>
+      <progress class="coverage-meter" value="{{ coverage.covered }}" max="{{ coverage.total or 1 }}" aria-label="Besproken onderwerpen">{{ coverage.covered }} van {{ coverage.total }}</progress>
+      <ul class="topics">
+        {% for topic in coverage.topics %}
+          {% set done = topic.status == 'covered' %}
+          <li class="topic {% if done %}done{% elif topic.mentions %}started{% endif %}">
+            <form method="post" action="/interview/toggle">
+              {% include '_csrf.html' %}
+              <input type="hidden" name="topic_id" value="{{ topic.id }}">
+              <input type="hidden" name="status" value="{{ 'open' if done else 'covered' }}">
+              <input type="hidden" name="session_id" value="{{ session_id or '' }}">
+              <button class="topic-toggle" type="submit" aria-label="{{ topic.label }}: markeer als {{ 'open' if done else 'besproken' }}" title="{{ 'Besproken; klik om weer open te zetten' if done else ('Al even genoemd; klik om als besproken te markeren' if topic.mentions else 'Nog open; klik om als besproken te markeren') }}">{{ ui.icon('circle-check' if done else ('circle-dot' if topic.mentions else 'circle')) }}</button>
+            </form>
+            <span>{{ topic.label }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="small subtle">We houden dit bij op basis van je antwoorden ({{ coverage.question_count }} tot nu toe). Klik op een rondje om het zelf aan te passen.</p>
+      <form method="post" action="/profile/consolidate" class="btn-row">
+        {% include '_csrf.html' %}
+        <input type="hidden" name="full" value="0">
+        <button class="button block" type="submit">{{ ui.icon('sparkles') }}Verwerk in mijn profiel</button>
+      </form>
+      <p class="small subtle">Je krijgt eerst een voorstel te zien; er verandert niets zonder jouw akkoord.</p>
+    </section>
+
+    <section class="panel">
+      <h2 class="aside-title">Eerdere gesprekken</h2>
+      <ul class="list session-list">
+        {% for s in sessions %}
+          <li class="{% if s.id == session_id %}active{% endif %}"><a href="/interview?session={{ s.id }}" {% if s.id == session_id %}aria-current="true"{% endif %}>{{ s.title or s.id[:12] }}</a></li>
+        {% else %}
+          <li class="muted small">Nog geen gesprekken.</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </aside>
 </div>
-<script src="/static/chat.js"></script>
 {% endblock %}
+{% block scripts %}<script src="/static/chat.js" defer></script>{% endblock %}

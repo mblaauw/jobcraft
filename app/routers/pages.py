@@ -41,6 +41,10 @@ def dashboard(request: Request):
         request,
         "dashboard.html",
         {
+            "top_jobs": _top_new_jobs(5),
+            "pipeline": {
+                status: len(store.list_jobs(None, status)) for status in ("saved", "applied")
+            },
             "sessions": sessions,
             "profile_state": profile_state,
             "seed": profile.seed_status(),
@@ -55,6 +59,23 @@ def dashboard(request: Request):
         },
     )
 
+
+
+def _top_new_jobs(limit: int) -> list[dict]:
+    """Best-ranked new vacancies the user has not voted on and can plausibly reach."""
+    picks: list[dict] = []
+    for row in store.list_jobs(limit * 8, "new"):
+        if row["vote"]:
+            continue
+        item = dict(row)
+        item["travel"] = ranking.travel_of(item)
+        if item["travel"]["in_range"] is False:
+            continue
+        item["signals"] = ranking.signals_of(row)
+        picks.append(item)
+        if len(picks) == limit:
+            break
+    return picks
 
 
 @router.get("/admin", response_class=HTMLResponse, dependencies=[Depends(auth.require_admin)])

@@ -1,96 +1,107 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block title %}Bronnen · Jobcraft{% endblock %}
+
+{% macro source_row(s, admin, kind_labels) -%}
+{% set selection = user_sources[s['id']] %}
+{% set mine = selection.selected %}
+{% set status = s["last_status"] %}
+<li class="source-row">
+  <div>
+    <h3><span class="dot {{ 'ok' if status == 'ok' else ('err' if status and status != 'ok' else '') }}" title="{{ 'Laatste ophaalronde gelukt' if status == 'ok' else ('Laatste ophaalronde mislukt' if status else 'Nog niet opgehaald') }}"></span>{{ s["name"] }}</h3>
+    <ul class="meta">
+      <li>{{ jobs_by_source.get(s["id"], 0) }} vacatures</li>
+      <li>{% if s["last_scan_at"] %}opgehaald {{ ui.nl_date(s["last_scan_at"], time=True) }}{% else %}nog niet opgehaald{% endif %}</li>
+      {% if status and status != 'ok' %}<li class="warn-text">laatste ronde mislukt</li>{% endif %}
+    </ul>
+    {% if selection.reason %}<p class="why">{{ selection.reason }}</p>{% endif %}
+  </div>
+  <div class="source-controls">
+    {% if s['enabled'] %}
+    <form method="post" action="/sources/{{ s['id'] }}/preference">
+      {% include '_csrf.html' %}
+      <input type="hidden" name="enabled" value="{{ '0' if mine else '1' }}">
+      <button class="toggle-button" type="submit" aria-pressed="{{ 'true' if mine else 'false' }}" aria-label="{{ s['name'] }} voor mij {{ 'uitschakelen' if mine else 'inschakelen' }}"><span class="track" aria-hidden="true"></span>{{ 'Voor mij aan' if mine else 'Voor mij uit' }}</button>
+    </form>
+    {% endif %}
+    {% if admin %}
+    <form method="post" action="/sources/{{ s['id'] }}/toggle">
+      {% include '_csrf.html' %}
+      <button class="button small" type="submit" aria-label="{{ s['name'] }} {{ 'voor iedereen uitzetten' if s['enabled'] else 'voor iedereen aanzetten' }}" aria-pressed="{{ 'true' if s['enabled'] else 'false' }}">{{ 'Voor iedereen uitzetten' if s['enabled'] else 'Voor iedereen aanzetten' }}</button>
+    </form>
+    {% endif %}
+  </div>
+  {% if admin and (s["notes"] or s["kind"]) %}
+  <details>
+    <summary>Technische notitie</summary>
+    <p>{{ kind_labels.get(s["kind"], s["kind"]) }}{% if s["notes"] %}: {{ s["notes"] }}{% endif %}</p>
+  </details>
+  {% endif %}
+</li>
+{%- endmacro %}
+
 {% block content %}
+{% set admin = request.state.user.role == 'admin' %}
+{% set kind_labels = {"wp-posts": "WordPress", "wp-job-listings": "WordPress", "html-fondsen": "HTML (fondsen)", "html-listing": "HTML-lijst", "sitemap-jsonld": "Sitemap + JSON-LD", "rss": "RSS-feed", "exenzo-json": "Exenzo-API", "defensie-cms": "Defensie feed + API", "hn-resource": "Overheid component-API", "local-json": "JSON-import", "manual": "Handmatig", "browser-import": "Browser-import", "getro-html": "Getro (gepland)"} %}
+{% set active = sources | selectattr('enabled') | list %}
+{% set inactive = sources | rejectattr('enabled') | list %}
 <div class="page-head">
-  <h1>Bronnen</h1>
-  <p class="sub">Meer mogelijkheden, op één plek. Kies je bronnen en haal de nieuwste vacatures op.</p>
+  <div>
+    <h1>Bronnen</h1>
+    <p class="lede">De vacaturesites waar Jobcraft vacatures ophaalt. Zet een bron uit als je er geen vacatures van wilt zien.</p>
+  </div>
+  {% if admin %}
+  <form method="post" action="/sources/scan" class="page-actions">
+    {% include '_csrf.html' %}
+    <button class="button primary" type="submit" {% if scan_status == "running" %}disabled{% endif %}>{{ ui.icon('refresh-cw') }}{{ 'Bezig met ophalen…' if scan_status == 'running' else 'Nu ophalen' }}</button>
+  </form>
+  {% endif %}
 </div>
 
 {% if scan_status == "running" %}
-  <div class="banner">Scan loopt… deze pagina ververst automatisch.<meta http-equiv="refresh" content="4"></div>
+  <div class="banner">{{ ui.icon('clock') }}<span>Vacatures worden opgehaald. Deze pagina ververst vanzelf.</span><meta http-equiv="refresh" content="4"></div>
 {% elif scan_status.startswith("error") %}
-  <div class="banner warn">Scan mislukt: {{ scan_status[7:] }}</div>
+  <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Ophalen is mislukt.</span><details><summary>Technische toelichting</summary>{{ scan_status[7:] }}</details></div>
 {% elif scan_status == "done" and summary %}
-  <div class="banner ok">
-    Laatste scan: {{ summary.finished_at[:19] | replace("T", " ") }} ·
-    {{ summary.new }} nieuw, {{ summary.updated }} bijgewerkt
-  </div>
+  <div class="banner ok">{{ ui.icon('circle-check') }}<span>Laatst opgehaald op {{ ui.nl_date(summary.finished_at, time=True) }}: {{ summary.new }} nieuw, {{ summary.updated }} bijgewerkt.</span></div>
 {% endif %}
 
-<section class="card">
-  <div class="sidebar-head">
-    <h2>Bronnen ({{ sources | length }})</h2>
-    {% if request.state.user.role == 'admin' %}<form method="post" action="/sources/scan">
-      {% include '_csrf.html' %}
-      <button class="button primary" type="submit" {% if scan_status == "running" %}disabled{% endif %}>Scan nu</button>
-    </form>{% else %}<span class="muted small">De beheerder onderhoudt de gedeelde bronnen.</span>{% endif %}
-  </div>
-  {% set kind_labels = {"wp-posts": "WordPress", "wp-job-listings": "WordPress", "html-fondsen": "HTML (fondsen)", "html-listing": "HTML-lijst", "sitemap-jsonld": "Sitemap + JSON-LD", "rss": "RSS-feed", "exenzo-json": "Exenzo-API", "defensie-cms": "Defensie feed+API", "hn-resource": "Overheid component-API", "local-json": "JSON-import", "manual": "handmatig", "browser-import": "browser-import", "getro-html": "Getro (gepland)"} %}
-  <div class="table-scroll" role="region" aria-label="Vacaturebronnen" tabindex="0">
-  <table class="table">
-    <thead><tr><th>Bron</th><th>Type</th><th>Vacatures</th><th>Laatste scan</th><th>Status</th><th>Aan</th></tr></thead>
-    <tbody>
-      {% for s in sources %}
-        <tr>
-          <td><strong>{{ s["name"] }}</strong><div class="muted small">{{ s["notes"] or "" }}</div></td>
-          <td class="small">{{ kind_labels.get(s["kind"], s["kind"]) }}</td>
-          <td>{{ jobs_by_source.get(s["id"], 0) }}</td>
-          <td class="muted small">{{ (s["last_scan_at"] or "—")[:19] | replace("T", " ") }}</td>
-          <td class="small">{{ s["last_status"] or "—" }}</td>
-          <td>
-            {% if request.state.user.role == 'admin' %}<form method="post" action="/sources/{{ s['id'] }}/toggle" class="inline-form">
-              {% include '_csrf.html' %}
-              <button class="button small" type="submit" aria-label="{{ s['name'] }} {{ 'uitzetten' if s['enabled'] else 'aanzetten' }}" aria-pressed="{{ 'true' if s['enabled'] else 'false' }}">{{ "✓ Actief" if s["enabled"] else "Inactief" }}</button>
-            </form>{% else %}<span class="chip">{{ 'Actief' if s['enabled'] else 'Inactief' }}</span>{% endif %}
-            {% set selection = user_sources[s['id']] %}{% set mine = selection.selected %}<form method="post" action="/sources/{{ s['id'] }}/preference" class="inline-form">
-              {% include '_csrf.html' %}
-              <input type="hidden" name="enabled" value="{{ '0' if mine else '1' }}">
-              <button class="button small" type="submit" aria-pressed="{{ 'true' if mine else 'false' }}" aria-label="{{ s['name'] }} voor mij {{ 'uitschakelen' if mine else 'inschakelen' }}">{{ 'Voor mij aan' if mine else 'Voor mij uit' }}</button>
-            </form>
-            <div class="small muted">{{ selection.reason }}</div>
-          </td>
-        </tr>
-      {% else %}
-        <tr><td colspan="6" class="muted">Nog geen bronnen.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<section class="section" aria-labelledby="active-title">
+  <div class="panel-head"><h2 id="active-title">Actieve bronnen</h2><span class="small subtle">{{ active | length }} bronnen, {{ counts.total }} vacatures</span></div>
+  <div class="panel panel-flush">
+    <ul class="source-list">
+      {% for s in active %}{{ source_row(s, admin, kind_labels) }}{% else %}<li class="source-row"><p class="muted">Er zijn nog geen actieve bronnen.{% if admin %} Zet hieronder een bron aan.{% endif %}</p></li>{% endfor %}
+    </ul>
   </div>
 </section>
 
-{% if summary %}
-<section class="card">
-  <h2>Scanresultaat</h2>
-  <div class="table-scroll" role="region" aria-label="Scanresultaten" tabindex="0">
-  <table class="table">
-    <thead><tr><th>Bron</th><th>Status</th><th>Items</th><th>Nieuw</th><th>Bijgewerkt</th><th>Reden</th></tr></thead>
-    <tbody>
-      {% for name, entry in summary.sources.items() %}
-        <tr>
-          <td>{{ name }}</td>
-          <td>{{ entry.status }}</td>
-          <td>{{ entry["items"] or 0 }}</td>
-          <td>{{ entry.new or 0 }}</td>
-          <td>{{ entry.updated or 0 }}</td>
-          <td class="muted small">{{ entry.reason or "" }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  </div>
-  {% if summary.errors %}
-    <p class="warn-text">Fouten: {{ summary.errors | length }}</p>
-  {% endif %}
+{% if inactive %}
+<section class="section" aria-labelledby="inactive-title">
+  <details class="disclosure" {% if admin %}open{% endif %}>
+    <summary><h2 id="inactive-title">Niet actief <span class="small subtle">({{ inactive | length }})</span></h2>{{ ui.icon('chevron-down', 'chev') }}</summary>
+    <p class="small muted">Deze bronnen staan voor iedereen uit, bijvoorbeeld omdat ze alleen met de hand of via een browser te lezen zijn.{% if not admin %} De beheerder kan ze aanzetten.{% endif %}</p>
+    <div class="panel panel-flush">
+      <ul class="source-list">{% for s in inactive %}{{ source_row(s, admin, kind_labels) }}{% endfor %}</ul>
+    </div>
+  </details>
 </section>
 {% endif %}
 
-<section class="card">
-  <h2>Vacaturestand</h2>
-  <dl class="stats">
-    <div><dt>Totaal</dt><dd>{{ counts.total }}</dd></div>
-    <div><dt>Nieuw</dt><dd>{{ counts.new }}</dd></div>
-    <div><dt>Gematched</dt><dd>{{ counts.matched }}</dd></div>
-  </dl>
-  <p class="muted small">Bronbestand: <code>data/sources.yaml</code></p>
+{% if admin and summary %}
+<section class="section">
+  <details class="panel disclosure">
+    <summary><h2>Resultaat van de laatste ophaalronde</h2>{{ ui.icon('chevron-down', 'chev') }}</summary>
+    <div class="table-scroll" role="region" aria-label="Resultaat per bron" tabindex="0">
+      <table class="table">
+        <thead><tr><th>Bron</th><th>Status</th><th>Items</th><th>Nieuw</th><th>Bijgewerkt</th><th>Reden</th></tr></thead>
+        <tbody>
+          {% for name, entry in summary.sources.items() %}
+          <tr><td>{{ name }}</td><td>{{ entry.status }}</td><td>{{ entry["items"] or 0 }}</td><td>{{ entry.new or 0 }}</td><td>{{ entry.updated or 0 }}</td><td class="subtle">{{ entry.reason or "" }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
 </section>
+{% endif %}
 {% endblock %}

@@ -133,7 +133,10 @@ def profile_home(
         "car_available": car_available == "1",
     }
     profile.write_preferences(preferences)
-    return RedirectResponse(url="/profile?saved=preferences", status_code=303)
+    if coords is None and label != "Nog niet ingesteld":
+        # Saved, but travel times stay unknown until coordinates are given.
+        return RedirectResponse(url="/profile?error=place#reisbereik", status_code=303)
+    return RedirectResponse(url="/profile?saved=home#reisbereik", status_code=303)
 
 
 

@@ -1,71 +1,60 @@
 {% extends "base.html" %}
-{% block title %}Mijn account · Jobcraft{% endblock %}
+{% import "_ui.html" as ui %}
+{% block title %}Account · Jobcraft{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Mijn account</h1>
-  <p class="sub">Je persoonlijke toegang tot deze werkruimte. Je wachtwoord wijzig je hieronder.</p>
+  <div>
+    <h1>Account</h1>
+    <p class="lede">Je inloggegevens en het basis-CV waarop Jobcraft je sollicitaties bouwt.</p>
+  </div>
 </div>
 
+{% if request.query_params.get('changed') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je wachtwoord is gewijzigd. Op je andere apparaten ben je uitgelogd.</span></p>{% endif %}
+{% if error %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ error }}</span></p>{% endif %}
+
 {% if account.id != 'legacy' %}
-<section class="card"><h2>Je eigen basis-CV</h2>
-{% if has_cv %}
-  {% if request.query_params.get('uploaded') %}<p class="banner ok" role="status">Je basis-CV is opgeslagen.</p>{% endif %}
-  <p class="muted">Je basis-CV is al toegevoegd. Bestaande documenten blijven behouden.</p>
-{% else %}
-  <p class="muted" id="cv-upload-help">Kies je eigen DOCX-bestand (maximaal 5 MB). We controleren eerst de profielsectie en 3–8 sterke punten. Je slaat het bestand pas op na je bevestiging. Koppen zoals ‘Over mij’ en ‘Kernkwaliteiten’ worden ook herkend. Gebruik een opsomming of genummerde lijst.</p>
-  <form method="post" action="/account/cv" enctype="multipart/form-data">{{ csrf_input(request) }}<label for="own-cv">Basis-CV (DOCX, maximaal 5 MB)</label><input id="own-cv" type="file" name="cv" accept=".docx" aria-describedby="cv-upload-help" required><button class="button" type="submit">CV controleren</button></form>
-{% endif %}
+<section class="panel" aria-labelledby="cv-title">
+  <h2 id="cv-title">Je basis-CV</h2>
+  {% if has_cv %}
+    {% if request.query_params.get('uploaded') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je basis-CV is opgeslagen.</span></p>{% endif %}
+    <p class="muted">{{ ui.icon('file-text') }} Je basis-CV staat klaar. Elke vacature krijgt een aangepaste versie; je origineel blijft ongewijzigd.</p>
+  {% else %}
+    <p class="muted" id="cv-upload-help">Upload je eigen CV als Word-bestand (.docx, maximaal 5 MB). Jobcraft zoekt een profielstuk (bijvoorbeeld “Profiel” of “Over mij”) en een lijst van 3 tot 8 sterke punten (bijvoorbeeld “Kernkwaliteiten”). Je ziet eerst wat er herkend is voordat er iets wordt opgeslagen.</p>
+    <form method="post" action="/account/cv" enctype="multipart/form-data" class="form-stack">
+      {{ csrf_input(request) }}
+      <div class="field"><label for="own-cv">Basis-CV</label><input id="own-cv" type="file" name="cv" accept=".docx" aria-describedby="cv-upload-help" required></div>
+      <div><button class="button primary" type="submit">{{ ui.icon('check') }}CV controleren</button></div>
+    </form>
+  {% endif %}
 </section>
 {% endif %}
 
-{% if request.query_params.get('changed') %}<p class="banner ok" role="status">Je wachtwoord is gewijzigd. Je andere sessies zijn afgemeld.</p>{% endif %}
-{% if error %}<p class="banner warn" role="alert">{{ error }}</p>{% endif %}
-
-<div class="grid two">
-  <section class="card">
-    <h2>Accountgegevens</h2>
+<div class="account-grid">
+  <section class="panel" aria-labelledby="details-title">
+    <h2 id="details-title">Gegevens</h2>
     <dl class="stats">
-      <div><dt>Gebruikersnaam</dt><dd>{{ account.username }}</dd></div>
       <div><dt>Naam</dt><dd>{{ account.display_name }}</dd></div>
+      <div><dt>Gebruikersnaam</dt><dd>{{ account.username }}</dd></div>
       <div><dt>Rol</dt><dd>{{ 'Beheerder' if account.role == 'admin' else 'Gebruiker' }}</dd></div>
-      <div><dt>Aangemaakt</dt><dd>{{ account.created_label }}</dd></div>
-      <div><dt>Laatste login</dt><dd>{{ account.last_login_label }}</dd></div>
+      <div><dt>Laatst ingelogd</dt><dd>{{ account.last_login_label }}</dd></div>
+      <div><dt>Account sinds</dt><dd>{{ account.created_label }}</dd></div>
     </dl>
-
-    {% if account.role == 'admin' %}<p class="small"><a href="/users">Gebruikers beheren →</a></p>{% endif %}
-
-    <form method="post" action="/logout" class="inline-form auth-inline-form">
-      {{ csrf_input(request) }}
-      <button class="button small" type="submit">Uitloggen</button>
-    </form>
+    <div class="btn-row">
+      {% if account.role == 'admin' %}<a class="button" href="/users">{{ ui.icon('users') }}Gebruikers beheren</a>{% endif %}
+      <form method="post" action="/logout" class="inline-form auth-inline-form">{{ csrf_input(request) }}<button class="button" type="submit">{{ ui.icon('log-out') }}Uitloggen</button></form>
+    </div>
   </section>
 
-  <section class="card">
-    <h2>Wachtwoord wijzigen</h2>
-    <form method="post" action="/account/password" class="account-form">
+  <section class="panel" aria-labelledby="password-title">
+    <h2 id="password-title">Wachtwoord wijzigen</h2>
+    <form method="post" action="/account/password" class="form-stack account-form">
       {{ csrf_input(request) }}
-      <label for="current_password">Huidig wachtwoord</label>
-      <input id="current_password" name="current_password" type="password" autocomplete="current-password" required>
-      <label for="new_password">Nieuw wachtwoord</label>
-      <input id="new_password" name="new_password" type="password" autocomplete="new-password" required>
-      <label for="confirm_password">Nieuw wachtwoord (herhalen)</label>
-      <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" required>
-      <button class="button primary" type="submit">Wachtwoord opslaan</button>
+      <div class="field"><label for="current_password">Huidig wachtwoord</label><input id="current_password" name="current_password" type="password" autocomplete="current-password" required></div>
+      <div class="field"><label for="new_password">Nieuw wachtwoord</label><input id="new_password" name="new_password" type="password" autocomplete="new-password" minlength="10" aria-describedby="password-help" required><span class="hint" id="password-help">Minstens 10 tekens.</span></div>
+      <div class="field"><label for="confirm_password">Herhaal nieuw wachtwoord</label><input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" required></div>
+      <div><button class="button primary" type="submit">Wachtwoord opslaan</button></div>
     </form>
-    <p class="small muted">Minstens 10 tekens. Na het opslaan worden al je andere sessies afgemeld.</p>
+    <p class="small subtle">Na het opslaan word je op je andere apparaten uitgelogd.</p>
   </section>
 </div>
-
-<style>
-  .account-form { display: grid; gap: 6px; max-width: 380px; }
-  .account-form label { display: block; font-size: 12px; font-weight: 600; }
-  .account-form input[type="password"] {
-    width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px;
-    border: 1px solid var(--line); border-radius: 8px; background: #f8faf8;
-    color: var(--ink); font: inherit; font-size: 14px;
-  }
-  .account-form input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; background: #fff; }
-  .account-form .button { margin-top: 14px; justify-self: start; }
-  .auth-inline-form { display: block; margin-top: 18px; }
-</style>
 {% endblock %}

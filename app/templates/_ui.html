@@ -1,0 +1,42 @@
+{# Shared UI macros. Import with: {% import "_ui.html" as ui %} #}
+
+{% macro icon(name, cls="") -%}
+<svg class="icon{% if cls %} {{ cls }}{% endif %}" aria-hidden="true" focusable="false"><use href="/static/icons.svg#i-{{ name }}"></use></svg>
+{%- endmacro %}
+
+{% macro score_level(score) -%}
+{{ 'high' if score >= 70 else ('mid' if score >= 50 else 'low') }}
+{%- endmacro %}
+
+{# The match stamp. rank_score is the blended ranking; match_score the full assessment.
+   "Voorlopig" = only the quick first-pass signals exist, no full assessment yet. #}
+{% macro stamp(job, href=None, id=None, big=False, link=False) -%}
+{% set score = job['rank_score'] if job['rank_score'] is not none else job['match_score'] %}
+{% set signals = job['signals'] if 'signals' in job.keys() else None %}
+{% set confidence = (signals['confidence'] * 100) if signals and signals.get('confidence') is not none else none %}
+{% set provisional = score is not none and job['match_score'] is none %}
+{% set tag = 'a' if href else 'div' %}
+<{{ tag }} class="vacancy-score{% if score is not none %} {{ score_level(score) }}{% endif %}{% if provisional %} is-provisional{% endif %}{% if big %} big{% endif %}"{% if href %} href="{{ href }}"{% if link %} data-job-link{% endif %}{% endif %}{% if id %} id="{{ id }}"{% endif %} title="{% if score is none %}Nog niet beoordeeld{% elif provisional %}Voorlopige match: alleen de snelle beoordeling{% else %}Match op basis van je profiel, voorkeuren en stemmen{% endif %}">
+  <span class="vacancy-score-label visually-hidden">{{ 'Matchscore' if job['rank_score'] is not none else 'Beoordeling' }}</span>
+  {% if score is not none %}<strong>{{ '%.0f' | format(score) }}<span class="visually-hidden">/100</span></strong>{% if confidence is not none %}<span class="vacancy-confidence visually-hidden">{{ '%.0f' | format(confidence) }}% zeker</span>{% endif %}{% else %}<span class="stamp-none" aria-hidden="true">–</span><span class="visually-hidden">Nog niet beoordeeld</span>{% endif %}
+</{{ tag }}>
+{%- endmacro %}
+
+{% macro travel(t) -%}
+{% set state = 'ok' if t.in_range is true else ('warn' if t.in_range is false else 'unknown') %}
+{# Without a home base every row would repeat the same hint; the page shows it once instead. #}
+{% if t.source != 'unknown' or t.label == 'locatie onbekend' %}
+<li class="travel {{ state }}">{{ icon('bike' if t.in_range is not false else 'triangle-alert') }}<span>{{ t.label }}</span></li>
+{% endif %}
+{%- endmacro %}
+
+{% macro status_label(value) -%}
+{{ {'new': 'Nieuw', 'saved': 'Bewaard', 'applied': 'Gereageerd', 'ignored': 'Genegeerd'}.get(value, value) }}
+{%- endmacro %}
+
+{# ISO timestamp -> "25-10-2026" (or with time: "25-10-2026 19:14"). #}
+{% macro nl_date(iso, time=False) -%}
+{%- if iso -%}{{ iso[8:10] }}-{{ iso[5:7] }}-{{ iso[0:4] }}{% if time and iso|length > 15 %} {{ iso[11:16] }}{% endif %}{%- endif -%}
+{%- endmacro %}
+
+{% macro num(value) -%}{{ '%g' | format(value) }}{%- endmacro %}

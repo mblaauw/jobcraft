@@ -106,49 +106,49 @@ def _workflow(
     if not profile_state["exists"]:
         if tenancy.user_id() != tenancy.LEGACY_ID:
             return {
-                "label": "Vertel wat je zoekt",
+                "label": "Vertel wat voor werk je zoekt",
                 "href": "/interview",
-                "detail": "Start een gesprek om je eigen profiel op te bouwen.",
+                "detail": "Een kort gesprek, één vraag tegelijk. Daaruit maken we je profiel.",
                 "step": 1,
             }
         return {
-            "label": "Profiel bootstrappen",
+            "label": "Maak je eerste profiel",
             "href": "/profile",
-            "detail": "Lees de bestaande materialen in en maak de canon.",
+            "detail": "We lezen je bestaande materiaal in en stellen een profiel voor dat je zelf controleert.",
             "step": 1,
         }
     if draft:
         return {
-            "label": "Consolidatievoorstel beoordelen",
-            "href": "/profile",
-            "detail": "Er wacht een profielvoorstel — vergelijk en accepteer of verwerp.",
+            "label": "Bekijk het voorstel voor je profiel",
+            "href": "/profile#bijwerken",
+            "detail": "Je ziet precies wat er verandert en kiest zelf of je het overneemt.",
             "step": 1,
         }
     if jobs["total"] == 0:
         return {
-            "label": "Vacaturebronnen scannen",
+            "label": "Haal de eerste vacatures op",
             "href": "/sources",
-            "detail": "Haal de nieuwste vacatures op bij de bronnen.",
+            "detail": "Kies bij Bronnen welke vacaturesites meedoen.",
             "step": 2,
         }
     if queue > 0:
         return {
-            "label": f"Vacatures matchen ({queue} in wachtrij)",
+            "label": f"{queue} kansrijke vacatures wachten op een beoordeling",
             "href": "/jobs",
-            "detail": "Alleen de kansrijke, onzekere vacatures gaan naar de matcher.",
+            "detail": "Werk de beoordelingen bij op de vacaturelijst. Je krijgt per vacature een toelichting.",
             "step": 3,
         }
     if documents == 0:
         return {
-            "label": "Open een vacature en maak een CV",
+            "label": "Kies een vacature en maak je CV",
             "href": "/jobs",
-            "detail": "Genereer een toegesneden CV of motivatiebrief.",
+            "detail": "Open een vacature die je aanspreekt; Jobcraft past je CV of brief erop aan.",
             "step": 4,
         }
     return {
-        "label": "Bekijk je vacatures",
+        "label": "Bekijk je nieuwste vacatures",
         "href": "/jobs",
-        "detail": "Je profiel, matches en documenten zijn bij.",
+        "detail": "Je profiel, beoordelingen en documenten zijn bijgewerkt.",
         "step": 4,
     }
 
@@ -171,6 +171,7 @@ def _profile_context(**extra) -> dict:
         )
     context = {
         "profile_md": current,
+        "profile_sections": profile.split_sections(current),
         "preferences": profile.read_preferences(),
         "editor_chars": len(current),
         "editor_lines": (current.count("\n") + 1) if current else 0,

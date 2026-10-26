@@ -1,24 +1,25 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block title %}Controleer je basis-CV · Jobcraft{% endblock %}
 {% block content %}
-<div class="page-head"><h1 tabindex="-1">Controleer je basis-CV</h1><p class="sub">Structuurcontrole zonder AI. Er is nog geen basis-CV opgeslagen.</p></div>
-<section class="card cv-preview">
+<div class="page-head"><div><h1 tabindex="-1">Controleer je basis-CV</h1><p class="lede">We hebben de opbouw van je CV gecontroleerd, zonder AI. Er is nog niets opgeslagen.</p></div></div>
+<section class="panel cv-preview">
   {% if error %}
-  <div class="banner warn" role="alert">{{ error }} Je bestaande documenten blijven behouden.</div>
-  <a class="button" href="/account">Aangepast bestand kiezen</a>
+  <div class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ error }} Je bestaande documenten blijven behouden.</span></div>
+  <a class="button" href="/account">Ander bestand kiezen</a>
   {% else %}
-  <p>Controleer wat is herkend. Deze controle is 15 minuten geldig, alleen in deze sessie.</p>
+  <p>Klopt dit? Bevestig binnen 15 minuten om je basis-CV op te slaan.</p>
   <dl class="stats">
     <div><dt>Bestand</dt><dd>{{ preview.filename }}</dd></div>
     <div><dt>Profielkop</dt><dd>{{ preview.inspection.profile_heading }}</dd></div>
-    <div><dt>Sterke-puntenkop</dt><dd>{{ preview.inspection.strong_heading }}</dd></div>
-    <div><dt>Sterke punten</dt><dd>{{ preview.inspection.strong_count }} herkend — toegestaan: 3–8</dd></div>
+    <div><dt>Kop sterke punten</dt><dd>{{ preview.inspection.strong_heading }}</dd></div>
+    <div><dt>Sterke punten</dt><dd>{{ preview.inspection.strong_count }} gevonden (3 tot 8 is goed)</dd></div>
   </dl>
-  <p class="small muted">Dit is een structuurcontrole, geen voorbeeld van de uiteindelijke pagina-indeling. Er worden geen gegevens naar een AI-provider gestuurd.</p>
+  <p class="small subtle">Dit controleert alleen de opbouw, niet hoe de pagina er straks uitziet. Er gaat niets naar een AI-dienst.</p>
   <div class="btn-row">
-    <form method="post" action="/account/cv/confirm">{{ csrf_input(request) }}<input type="hidden" name="token" value="{{ preview.token }}"><button class="button primary" type="submit">Bevestigen en basis-CV opslaan</button></form>
+    <form method="post" action="/account/cv/confirm">{{ csrf_input(request) }}<input type="hidden" name="token" value="{{ preview.token }}"><button class="button primary" type="submit">{{ ui.icon('check') }}Bevestigen en opslaan</button></form>
     <form method="post" action="/account/cv/cancel">{{ csrf_input(request) }}<input type="hidden" name="token" value="{{ preview.token }}"><button class="button" type="submit">Annuleren</button></form>
-    <a class="button" href="/account">Ander bestand kiezen</a>
+    <a class="button quiet" href="/account">Ander bestand kiezen</a>
   </div>
   {% endif %}
 </section>

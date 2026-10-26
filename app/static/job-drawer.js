@@ -37,6 +37,7 @@
     }
   }
 
+  // Mirror a change made in the drawer onto the list row, without reordering the list.
   function syncRow(detail, jobTitle, revision) {
     if (rowVersions.get(detail.dataset.jobId) !== revision) return;
     const row = document.getElementById("job-" + detail.dataset.jobId);
@@ -50,28 +51,48 @@
       button.value = selected ? "clear" : (direction === 1 ? "up" : "down");
       button.setAttribute("aria-label", (selected ? "Wis je stem voor: " : (direction === 1 ? "Interessant: " : "Minder passend: ")) + jobTitle);
     });
-    const status = row.querySelector('select[name="status"]');
-    if (status) status.value = detail.dataset.jobStatus;
-    const score = Number(detail.dataset.jobScore);
-    if (detail.dataset.jobScore !== "" && Number.isFinite(score)) {
-      const scoreBox = row.querySelector(".vacancy-score");
-      scoreBox.className = "vacancy-score " + (score >= 70 ? "high" : score >= 50 ? "mid" : "low");
-      const label = document.createElement("span");
-      label.className = "vacancy-score-label";
-      label.textContent = "Matchscore";
-      const value = document.createElement("strong");
-      value.textContent = String(Math.round(score));
-      const scale = document.createElement("span");
-      scale.textContent = "/100";
-      value.append(scale);
-      scoreBox.replaceChildren(label, value);
-      if (detail.dataset.jobConfidence !== "") {
-        const confidence = document.createElement("span");
-        confidence.className = "vacancy-confidence";
-        confidence.title = "Zekerheid van de snelle beoordeling";
-        confidence.textContent = detail.dataset.jobConfidence + "% zeker";
-        scoreBox.append(confidence);
+    const status = detail.dataset.jobStatus;
+    const [save, hide] = row.querySelectorAll(".vacancy-save button");
+    if (save && hide) {
+      const saved = status === "saved";
+      const hidden = status === "ignored";
+      save.value = saved ? "new" : "saved";
+      save.setAttribute("aria-pressed", String(saved));
+      save.title = saved ? "Bewaard" : "Bewaren";
+      save.setAttribute("aria-label", (saved ? "Haal uit je bewaarde vacatures: " : "Bewaar: ") + jobTitle);
+      const use = save.querySelector("use");
+      if (use) use.setAttribute("href", "/static/icons.svg#i-" + (saved ? "bookmark-check" : "bookmark"));
+      hide.value = hidden ? "new" : "ignored";
+      hide.setAttribute("aria-pressed", String(hidden));
+      hide.title = hidden ? "Terugzetten" : "Negeren";
+      hide.setAttribute("aria-label", (hidden ? "Zet terug: " : "Negeer: ") + jobTitle);
+      save.disabled = hide.disabled = status === "applied";
+      row.classList.toggle("is-dimmed", hidden);
+    }
+    const labels = { saved: "Bewaard", applied: "Gereageerd", ignored: "Genegeerd" };
+    const heading = row.querySelector(".vacancy-main h3");
+    let flags = row.querySelector(".vacancy-flags");
+    if (labels[status]) {
+      if (!flags) {
+        flags = document.createElement("span");
+        flags.className = "vacancy-flags";
+        heading.append(flags);
       }
+      const chip = document.createElement("span");
+      chip.className = "chip" + (status === "ignored" ? "" : " chip-lime");
+      chip.textContent = labels[status];
+      flags.replaceChildren(chip);
+    } else if (flags) {
+      flags.remove();
+    }
+    const score = Number(detail.dataset.jobScore);
+    const scoreBox = row.querySelector(".vacancy-score");
+    if (scoreBox && detail.dataset.jobScore !== "" && Number.isFinite(score)) {
+      scoreBox.classList.remove("high", "mid", "low");
+      scoreBox.classList.add(score >= 70 ? "high" : score >= 50 ? "mid" : "low");
+      scoreBox.classList.toggle("is-provisional", detail.dataset.jobProvisional === "true");
+      const strong = scoreBox.querySelector("strong");
+      if (strong && strong.firstChild) strong.firstChild.textContent = String(Math.round(score));
     }
   }
 
@@ -93,13 +114,6 @@
     title.textContent = jobTitle;
     title.title = jobTitle;
     document.title = page.title || jobTitle;
-    // Put reading before document generation in the drawer, reusing the same
-    // content nodes rather than maintaining a second detail template.
-    const documents = detail.querySelector('[data-detail-section="documents"]');
-    ["text", "assessment"].forEach((name) => {
-      const section = detail.querySelector('[data-detail-section="' + name + '"]');
-      if (section && documents) detail.insertBefore(section, documents);
-    });
     syncRow(detail, jobTitle, revision);
     body.replaceChildren(detail);
     dialog.querySelectorAll("[data-drawer-section]").forEach((button) => {

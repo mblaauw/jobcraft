@@ -1,128 +1,108 @@
 {% extends "base.html" %}
-{% block title %}Dashboard · Jobcraft{% endblock %}
+{% import "_ui.html" as ui %}
+{% block title %}Overzicht · Jobcraft{% endblock %}
 {% block content %}
-<div class="page-head">
-  <p class="eyebrow">Jouw loopbaan, in beweging</p>
-  <h1>Goed om je weer te zien{% if request.state is defined and request.state.user %}, {{ request.state.user.display_name or request.state.user.username }}{% endif %}.</h1>
-  <p class="sub">Van ontdekken wat bij je past tot een sterke sollicitatie. Hier houd je overzicht.</p>
+{% set pipeline = pipeline or {} %}
+{% set name =(request.state.user.display_name or request.state.user.username) if request.state is defined and request.state.user else '' %}
+<div class="page-head greeting">
+  <div>
+    <h1>Hallo{% if name %} {{ name }}{% endif %}</h1>
+    <p class="lede">{% if jobs.total %}{{ jobs.total }} vacatures in je overzicht, waarvan {{ jobs.matched }} uitgebreid beoordeeld.{% else %}Hier zie je straks je beste vacatures en wat je volgende stap is.{% endif %}</p>
+  </div>
 </div>
 
-<section class="card next-step">
+<section class="next-step" aria-labelledby="next-step-title">
   <div>
-    <p class="eyebrow">Aan de slag</p>
-    <h2>{{ next_step.label }}</h2>
-    <p class="muted">{{ next_step.detail }}</p>
+    <p class="kicker">Volgende stap</p>
+    <h2 id="next-step-title">{{ next_step.label }}</h2>
+    <p>{{ next_step.detail }}</p>
   </div>
-  <a class="button primary" href="{{ next_step.href }}">Doorgaan <span aria-hidden="true">↗</span></a>
+  <a class="button primary" href="{{ next_step.href }}">Ga verder</a>
 </section>
 
-<section class="metric-grid" aria-label="Jouw overzicht">
-  <a class="metric" href="/jobs"><span>Vacatures ontdekt</span><strong>{{ jobs.total }}</strong><span class="metric-foot">Verken jouw mogelijkheden ↗</span></a>
-  <a class="metric" href="/jobs"><span>Uitgebreid beoordeeld</span><strong>{{ jobs.matched }}</strong><span class="metric-foot">Met een persoonlijke toelichting</span></a>
-  <a class="metric" href="/jobs"><span>In de wachtrij</span><strong>{{ queue }}</strong><span class="metric-foot">Voor een uitgebreide beoordeling</span></a>
-  <a class="metric" href="/jobs"><span>Documenten gemaakt</span><strong>{{ documents }}</strong><span class="metric-foot">CV’s en motivatiebrieven</span></a>
+<section class="metric-grid" aria-label="In cijfers">
+  <a class="metric" href="/jobs"><span>vacatures</span><strong>{{ jobs.total }}</strong></a>
+  <a class="metric" href="/jobs"><span>uitgebreid beoordeeld</span><strong>{{ jobs.matched }}</strong></a>
+  <a class="metric" href="/jobs"><span>wachten op beoordeling</span><strong>{{ queue }}</strong></a>
+  <a class="metric" href="/jobs"><span>documenten gemaakt</span><strong>{{ documents }}</strong></a>
 </section>
 
-<section class="card steps">
-  <div class="step {% if profile_state.exists and not draft %}done{% elif not profile_state.exists or draft %}current{% endif %}"><span class="num">1</span>Profiel</div>
-  <div class="step {% if jobs.total > 0 %}done{% elif profile_state.exists and not draft %}current{% endif %}"><span class="num">2</span>Bronnen</div>
-  <div class="step {% if queue == 0 and jobs.matched > 0 %}done{% elif queue > 0 %}current{% endif %}"><span class="num">3</span>Matchen{% if queue %} · {{ queue }} in wachtrij{% endif %}</div>
-  <div class="step {% if documents > 0 %}done{% elif jobs.matched > 0 and documents == 0 %}current{% endif %}"><span class="num">4</span>Documenten{% if documents %} · {{ documents }}{% endif %}</div>
-</section>
-
-<div class="grid two dashboard-grid">
-  <section class="card">
-    <p class="eyebrow">De basis van je zoektocht</p>
-    <h2>Een profiel dat met je meegroeit</h2>
-    {% if profile_state.exists %}
-      <p class="ok">Profiel aanwezig.</p>
-      <p class="muted">Bijgewerkt: {{ profile_state.updated[:19] | replace("T", " ") }}</p>
-      <a class="button" href="/profile">Mijn profiel bekijken <span aria-hidden="true">→</span></a>
-      {% if bootstrap_status == "running" %}
-        <p class="muted">Consolidatie loopt…</p>
-      {% endif %}
-    {% else %}
-      <p class="muted">Nog geen geconsolideerd profiel.</p>
-      {% if seed.ready and request.state.user.id == 'legacy' %}
-        <form method="post" action="/profile/consolidate">
-          {% include '_csrf.html' %}
-          <input type="hidden" name="full" value="1">
-          <button class="button primary" type="submit">Bootstrap uit bestaande materialen</button>
-        </form>
-        <p class="muted">Leest het dossier, de profielschets en de zoekstrategie en bouwt profiel + voorkeuren.</p>
-      {% else %}
-        <p class="muted">Begin met een <a href="/interview">gesprek</a> om jouw eigen profiel op te bouwen.</p>
-      {% endif %}
-    {% endif %}
-  </section>
-
-  <section class="card">
-    <p class="eyebrow">Even bijpraten</p>
-    <h2>Vertel wat voor jou belangrijk is</h2>
-    <p class="muted">Het gesprek vult ontbrekende voorkeuren aan; elke sessie wordt bewaard.</p>
-    <form method="post" action="/interview/new">
-      {% include '_csrf.html' %}
-      <button class="button primary" type="submit">Start een gesprek <span aria-hidden="true">↗</span></button>
-    </form>
-    {% if sessions %}
-      <ul class="list">
-        {% for s in sessions %}
-          <li><a href="/interview?session={{ s.id }}">{{ s.title or s.id[:12] }}</a>
-            <span class="muted small">{{ s.updated_at[:16] | replace("T", " ") }}</span></li>
+<div class="dash-grid">
+  <section aria-labelledby="top-title">
+    <div class="panel-head"><h2 id="top-title">Beste nieuwe vacatures</h2><a class="small" href="/jobs?status=new">Alle nieuwe</a></div>
+    <div class="panel panel-flush">
+      {% if not profile_state.exists %}
+      <div class="empty-state">
+        <h3>Eerst je profiel</h3>
+        <p class="muted small">Jobcraft weet nog niet wat je zoekt. Na een kort gesprek zie je hier de vacatures die het best bij je passen.</p>
+        <a class="button primary" href="/interview">{{ ui.icon('message-circle') }}Start een gesprek</a>
+      </div>
+      {% elif top_jobs %}
+      <ul class="top-matches">
+        {% for job in top_jobs %}
+        {% set url = '/jobs/' ~ job['id'] ~ '?return_to=' ~ ('/jobs' | urlencode) %}
+        <li>
+          {{ ui.stamp(job) }}
+          <div>
+            <h3><a href="{{ url }}">{{ job['title'] or 'Zonder titel' }}</a></h3>
+            <ul class="meta small">
+              <li>{{ job['company'] or 'Onbekende organisatie' }}</li>
+              {{ ui.travel(job['travel']) }}
+            </ul>
+          </div>
+        </li>
         {% endfor %}
       </ul>
-    {% else %}
-      <p class="muted small">Nog geen gesprekken.</p>
-    {% endif %}
+      <div class="panel-foot"><a href="/jobs">Naar alle vacatures</a></div>
+      {% else %}
+      <div class="empty-state">
+        <h3>Nog geen nieuwe vacatures om te tonen</h3>
+        <p class="muted small">{% if jobs.total %}Je hebt alle nieuwe vacatures al beoordeeld of ze vallen buiten je reisbereik.{% else %}Zodra er vacatures zijn opgehaald, zie je hier de best passende.{% endif %}</p>
+        <a class="button" href="{{ '/jobs' if jobs.total else '/sources' }}">{{ 'Bekijk alle vacatures' if jobs.total else 'Naar bronnen' }}</a>
+      </div>
+      {% endif %}
+    </div>
   </section>
 
-  <section class="card">
-    <p class="eyebrow">Van zoeken naar vinden</p>
-    <h2>Ontdek je mogelijkheden</h2>
-    <dl class="stats">
-      <div><dt>Vacatures</dt><dd>{{ jobs.total }}</dd></div>
-      <div><dt>Gematched</dt><dd>{{ jobs.matched }}</dd></div>
-      <div><dt>Documenten</dt><dd>{{ documents }}</dd></div>
-      <div><dt>In wachtrij</dt><dd>{{ queue }}</dd></div>
-    </dl>
-    <p class="muted">Bekijk vacatures, geef aan wat je aanspreekt en maak documenten voor een passende functie.</p>
-    <a class="button" href="/jobs">Naar vacatures</a>
-  </section>
+  <div>
+    <section class="panel" aria-labelledby="journey-title">
+      <h2 id="journey-title">Zo werkt het</h2>
+      <ol class="journey">
+        {% set profile_done = profile_state.exists and not draft %}
+        <li class="{{ 'done' if profile_done else 'current' }}"><a href="/profile"><strong>Profiel</strong><span>{% if draft %}Een voorstel wacht op je akkoord{% elif profile_state.exists %}Bijgewerkt op {{ ui.nl_date(profile_state.updated) }}{% else %}Nog niet gemaakt{% endif %}</span></a></li>
+        <li class="{{ 'done' if jobs.total > 0 else ('current' if profile_done else '') }}"><a href="/sources"><strong>Vacatures ophalen</strong><span>{{ jobs.total }} gevonden</span></a></li>
+        <li class="{{ 'done' if queue == 0 and jobs.matched > 0 else ('current' if queue > 0 else '') }}"><a href="/jobs"><strong>Beoordelen</strong><span>{% if queue %}{{ queue }} in wachtrij{% else %}{{ jobs.matched }} met toelichting{% endif %}</span></a></li>
+        <li class="{{ 'done' if (pipeline.applied or 0) > 0 else ('current' if jobs.matched > 0 else '') }}"><a href="/jobs?status=saved"><strong>Solliciteren</strong><span>{{ pipeline.saved or 0 }} bewaard, {{ pipeline.applied or 0 }} gereageerd, {{ documents }} documenten</span></a></li>
+      </ol>
+    </section>
 
-  <section class="card">
-    <p class="eyebrow">Jij houdt de regie</p>
-    <h2>Van gesprek naar sollicitatie</h2>
-    <p class="muted">Vul je profiel aan in een gesprek. Beoordeel wijzigingen voordat je ze overneemt en maak daarna een CV of brief voor een vacature.</p>
-    <a class="button" href="/sources">Bekijk je vacaturebronnen <span aria-hidden="true">→</span></a>
-  </section>
+    <section class="panel" aria-labelledby="talk-title">
+      <div class="panel-head"><h2 id="talk-title">Gesprekken</h2>
+        <form method="post" action="/interview/new" class="inline-form">{% include '_csrf.html' %}<button class="button small" type="submit">{{ ui.icon('plus') }}Nieuw gesprek</button></form>
+      </div>
+      {% if sessions %}
+      <ul class="list session-list">
+        {% for s in sessions[:4] %}<li><a href="/interview?session={{ s.id }}">{{ s.title or s.id[:12] }}</a><span class="subtle small">{{ ui.nl_date(s.updated_at) }}</span></li>{% endfor %}
+      </ul>
+      {% else %}
+      <p class="small muted">Een gesprek helpt Jobcraft te begrijpen wat je zoekt. Elke sessie wordt bewaard.</p>
+      {% endif %}
+      {% if bootstrap_status == "running" %}<p class="small muted">Je profiel wordt bijgewerkt…</p>{% endif %}
+      {% if not profile_state.exists and seed.ready and request.state.user.id == 'legacy' %}
+      <form method="post" action="/profile/consolidate" class="btn-row">{% include '_csrf.html' %}<input type="hidden" name="full" value="1"><button class="button" type="submit">Profiel maken uit bestaand materiaal</button></form>
+      {% endif %}
+    </section>
+  </div>
 </div>
 
-<details class="card technical-details">
-  <summary>Gebruik &amp; bronmateriaal <span class="muted small">Technisch inzicht</span></summary>
-  <div class="grid two details-body">
-  <section>
-    <h2>Gebruik</h2>
-    <dl class="stats">
-      <div><dt>Aanroepen</dt><dd>{{ usage.calls }}</dd></div>
-      <div><dt>Tokens in</dt><dd>{{ "{:,}".format(usage.tin) }}</dd></div>
-      <div><dt>Tokens uit</dt><dd>{{ "{:,}".format(usage.tout) }}</dd></div>
-      <div><dt>Kosten</dt><dd>${{ "%.4f" | format(usage.cost) }}</dd></div>
-    </dl>
-    <p class="muted small">Model: {{ model }}</p>
-  </section>
-
-  <section>
-    <h2>Seed / bronmateriaal</h2>
-    {% if seed.ready %}
-      <p class="ok">Alle seed-documenten gevonden.</p>
-    {% else %}
-      <p class="warn-text">Ontbrekend:</p>
-      <ul class="list small">
-        {% for name in seed.missing %}<li>{{ name }}</li>{% endfor %}
-      </ul>
-    {% endif %}
-    <p class="muted small">Map: <code>{{ seed.dir }}</code></p>
-  </section>
-  </div>
+<details class="card disclosure technical-details">
+  <summary><span>Gebruik en kosten</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
+  <dl class="stats small">
+    <div><dt>AI-aanroepen</dt><dd>{{ usage.calls }}</dd></div>
+    <div><dt>Kosten tot nu toe</dt><dd>${{ "%.4f" | format(usage.cost) }}</dd></div>
+    <div><dt>Tokens in</dt><dd>{{ "{:,}".format(usage.tin) }}</dd></div>
+    <div><dt>Tokens uit</dt><dd>{{ "{:,}".format(usage.tout) }}</dd></div>
+  </dl>
+  <p class="small subtle">Model: {{ model }}{% if not seed.ready and seed.missing %}. Ontbrekend bronmateriaal: {{ seed.missing | join(', ') }}{% endif %}</p>
 </details>
 {% endblock %}
