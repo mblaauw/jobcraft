@@ -194,6 +194,7 @@ def jobs_page(
             "geo_home": geo_home,
             "queue": ranking.queue_depth(matching.current_digest()),
             "return_to": return_to,
+            "welcome": request.query_params.get("welkom") == "1",
         },
     )
 
@@ -201,7 +202,7 @@ def jobs_page(
 @router.post("/jobs/match")
 def jobs_match_route(url: str = Form("/jobs", alias="next")):
     if tenancy.user_id() != tenancy.LEGACY_ID and not profile.profile_exists():
-        return RedirectResponse(url="/interview", status_code=303)
+        return RedirectResponse(url="/start", status_code=303)
     get_manager()
     owner = tenancy.user_id()
     tasks.enqueue("match", owner=owner, dedupe_key=f"match:{owner}")
@@ -219,6 +220,7 @@ def job_detail(request: Request, job_id: int, return_to: str = ""):
             reason = json.loads(job["match_reason"])
         except ValueError:
             reason = {"why": job["match_reason"]}
+    store.count_event("jobs_opened")
     doc_status = _doc_status(job_id)
     doc_status_recent = False
     if doc_status.get("state") == "done" and doc_status.get("finished_at"):
@@ -287,6 +289,7 @@ def job_document(job_id: int, kind: str = Form(...), url: str = Form("", alias="
                 {"state": "running", "kind": kind, "started_at": datetime.now(UTC).isoformat()}
             ),
         )
+    store.count_event("documents_requested")
     owner = tenancy.user_id()
     tasks.enqueue(
         "document",
@@ -345,4 +348,6 @@ def job_status(job_id: int, status: str = Form(...), url: str = Form("/jobs", al
     if store.get_job(job_id) is None:
         raise HTTPException(status_code=404, detail="unknown job")
     store.update_job_status(job_id, status)
+    if status == "applied":
+        store.count_event("applications")
     return RedirectResponse(url=_jobs_return_target(url), status_code=303)

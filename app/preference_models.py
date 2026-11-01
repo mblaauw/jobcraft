@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 from .util import now_iso
@@ -47,6 +49,15 @@ class HomeBase(BaseModel):
     car_available: bool = False
 
 
+class Wishes(BaseModel):
+    """Handled only by the deterministic ranker: never in prompts or verdict digests."""
+
+    salary_min: int | None = Field(default=None, ge=0, le=50000)
+    remote: Literal["any", "remote", "hybrid", "onsite"] = "any"
+    contracts: list[Literal["vast", "tijdelijk", "freelance", "stage"]] = Field(default_factory=list)
+    seniority: list[Literal["junior", "medior", "senior"]] = Field(default_factory=list)
+
+
 class Preferences(BaseModel):
     updated_at: str = Field(default_factory=now_iso)
     tracks: list[Track] = Field(default_factory=list)
@@ -55,6 +66,7 @@ class Preferences(BaseModel):
     hard_filters: HardFilters = Field(default_factory=HardFilters)
     keywords: Keywords = Field(default_factory=Keywords)
     home: HomeBase = Field(default_factory=HomeBase)
+    wishes: Wishes = Field(default_factory=Wishes)
     notes: str = ""
 
     @field_validator("tracks")

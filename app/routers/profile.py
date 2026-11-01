@@ -56,7 +56,7 @@ def profile_consolidate(full: str = Form("0")):
     if tenancy.user_id() == tenancy.LEGACY_ID and not profile.seed_available():
         return RedirectResponse(url="/profile?error=seed", status_code=303)
     if tenancy.user_id() != tenancy.LEGACY_ID and not profile.read_answer_log().strip():
-        return RedirectResponse(url="/interview", status_code=303)
+        return RedirectResponse(url="/start", status_code=303)
     if profile.pending_draft():
         return RedirectResponse(url="/profile?error=draft", status_code=303)
     if store.meta_get("bootstrap_status") == "running":

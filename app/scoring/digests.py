@@ -25,7 +25,10 @@ def current_digest(
 
 def profile_hash(preferences: dict) -> str:
     # updated_at is volatile bookkeeping and must not invalidate cached verdicts.
-    stable = {key: value for key, value in preferences.items() if key != "updated_at"}
+    # wishes are applied by the ranker alone, so changing them must stay free.
+    stable = {
+        key: value for key, value in preferences.items() if key not in ("updated_at", "wishes")
+    }
     return hashlib.sha256(
         json.dumps(stable, sort_keys=True, ensure_ascii=False).encode()
     ).hexdigest()[:16]

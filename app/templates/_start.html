@@ -1,0 +1,7 @@
+{% macro steps(current) -%}
+<ol class="start-steps" aria-label="Stappen van de snelle start">
+  {% for label in ['Je cv', 'Je keuzes', 'Echte vacatures', 'Drie vragen'] %}
+  <li class="{{ 'is-done' if loop.index < current else ('is-current' if loop.index == current else '') }}"{% if loop.index == current %} aria-current="step"{% endif %}><span>{{ loop.index }}</span>{{ label }}</li>
+  {% endfor %}
+</ol>
+{%- endmacro %}

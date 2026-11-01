@@ -20,6 +20,7 @@ from .. import (
     ranking,
     sources,
     store,
+    tenancy,
 )
 from ..web import templates
 from ..web_helpers import _profile_meta, _workflow
@@ -33,6 +34,8 @@ router = APIRouter()
 def dashboard(request: Request):
     if auth.require_user(request)["role"] == auth.ROLE_ADMIN:
         return RedirectResponse(url="/admin", status_code=303)
+    if tenancy.user_id() != tenancy.LEGACY_ID and not profile.profile_exists():
+        return RedirectResponse(url="/start", status_code=303)
     sessions = store.list_sessions(8)
     profile_state = _profile_meta()
     jobs = store.count_jobs()

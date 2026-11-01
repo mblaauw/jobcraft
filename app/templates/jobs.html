@@ -12,6 +12,7 @@
   </div>
 </div>
 
+{% if welcome %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je profiel staat. Dit zijn je vacatures, de beste bovenaan. De beoordelingen worden nu vanzelf aangevuld.</span></p>{% endif %}
 <div id="jobs-progress" data-match-running="{{ 'true' if match_status == 'running' else 'false' }}" role="status" aria-live="polite">
 {% if match_status == "running" %}
   <div class="banner">{{ ui.icon('clock') }}<span>Je vacatures worden beoordeeld. Je kunt gewoon verder kijken; de volgorde wordt daarna bijgewerkt. <a href="{{ return_to }}">Nu vernieuwen</a></span></div>
