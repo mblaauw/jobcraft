@@ -19,7 +19,7 @@ def _scan_fondsen(client, source, entry, summary, limit_per_source=None) -> None
     links: list[str] = []
     for anchor in soup.select("a[href]"):
         href = anchor.get("href", "")
-        if re.fullmatch(r"/vacature/[A-Za-z0-9_-]+/?", href):
+        if re.fullmatch(r"/vacatures?/[A-Za-z0-9_-]+/?", href):
             absolute = source["base_url"].rstrip("/") + href.rstrip("/")
             if absolute not in links:
                 links.append(absolute)

@@ -8,7 +8,15 @@ import time
 from bs4 import BeautifulSoup
 
 from .. import store
-from .common import _skip_recent_detail, _tally, make_job, page_text, safe_detail_get, strip_html
+from .common import (
+    _skip_recent_detail,
+    _tally,
+    best_description,
+    make_job,
+    page_text,
+    safe_detail_get,
+    strip_html,
+)
 from .jsonld import jsonld_company, jsonld_jobs, jsonld_location
 
 
@@ -50,8 +58,10 @@ def _scan_html_listing(client, source, entry, summary, limit_per_source=None) ->
             data = items[0]
             title = str(data.get("title") or "").strip()
             company = jsonld_company(data)
+            if company.casefold() == str(source.get("site_name") or "").casefold():
+                company = ""  # The board named itself instead of the employer.
             location, _lat, _lon = jsonld_location(data)
-            description = strip_html(data.get("description")) or page_text(page.text)
+            description = best_description(strip_html(data.get("description")), page.text)
         else:
             soup = BeautifulSoup(page.text, "html.parser")
             heading = soup.find("h1")

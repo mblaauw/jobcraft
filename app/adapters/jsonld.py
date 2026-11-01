@@ -7,7 +7,14 @@ import time
 from html import unescape
 
 from .. import store
-from .common import _skip_recent_detail, _tally, make_job, page_text, safe_detail_get, strip_html
+from .common import (
+    _skip_recent_detail,
+    _tally,
+    best_description,
+    make_job,
+    safe_detail_get,
+    strip_html,
+)
 
 
 def jsonld_jobs(raw_html: str) -> list[dict]:
@@ -103,7 +110,7 @@ def _scan_sitemap_jsonld(client, source, entry, summary, limit_per_source=None) 
         if not title:
             continue
         location, lat, lon = jsonld_location(data)
-        description = strip_html(data.get("description")) or page_text(page.text)
+        description = best_description(strip_html(data.get("description")), page.text)
         job = make_job(
             source["id"],
             url,

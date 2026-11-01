@@ -29,6 +29,11 @@ from .users import _get_user_by_id, _get_user_by_username, _insert_user
 _bootstrap_credentials_lock = threading.Lock()
 
 
+def _test_account_wanted() -> bool:
+    """Production gets no automatic member account; existing ones are left alone."""
+    return os.environ.get("BOOTSTRAP_TEST_USER") == "1"
+
+
 def bootstrap_accounts_file() -> Path:
     return Path(config.RUNTIME_DIR) / BOOTSTRAP_FILE
 
@@ -111,6 +116,8 @@ def init_auth() -> None:
 
     for username, role, display_name in BOOTSTRAP_ACCOUNTS:
         existing = _get_user_by_username(username)
+        if existing is None and role == ROLE_USER and not _test_account_wanted():
+            continue
         if existing is None:
             password = secrets.token_urlsafe(18)
             user_id = str(uuid.uuid4())

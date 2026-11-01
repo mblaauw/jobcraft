@@ -55,13 +55,21 @@ def jobs_page(
     contract: str = "",
     salaris: str = "",
     dagen: str = "",
+    uren: str = "",
 ):
     sort = sort if sort in ("rank", "newest") else "rank"
     remote = "remote" if remote == "remote" else ""
     contract = contract if contract in ("vast", "tijdelijk", "freelance") else ""
     salaris = "salaris" if salaris == "salaris" else ""
     dagen = dagen if dagen in ("1", "7", "30") else ""
-    list_filters = {"remote": remote, "contract": contract, "salaris": salaris, "days": dagen}
+    uren = uren if uren in ("tot24", "24-32", "32-40") else ""
+    list_filters = {
+        "remote": remote,
+        "contract": contract,
+        "salaris": salaris,
+        "days": dagen,
+        "hours": uren,
+    }
     stale_active = stale == "1"
     raw = store.meta_get("match_summary")
     summary = None
@@ -131,6 +139,7 @@ def jobs_page(
         "contract": contract,
         "salaris": salaris,
         "dagen": dagen,
+        "uren": uren,
     }
     pager_base = "/jobs?" + urlencode(params)
     total_status = sum(status_totals.values())
@@ -164,6 +173,7 @@ def jobs_page(
         ("contract", f"Contract: {contract}"),
         ("salaris", "Salaris genoemd"),
         ("dagen", f"Laatste {dagen} dagen"),
+        ("uren", f"Uren: {uren}"),
     ):
         if params[key]:
             filter_chips.append({"label": label, "url": "/jobs?" + urlencode({**params, key: ""})})
