@@ -9,6 +9,7 @@
   </div>
   <div class="page-actions jobs-matching">
     <span>Beoordelen gaat vanzelf · {{ queue }} in wachtrij</span>
+    <span class="jobs-links"><a href="/jobs/doorlopen">Eén voor één bekijken</a><a href="/jobs/toevoegen">Vacature toevoegen</a></span>
   </div>
 </div>
 
@@ -82,14 +83,16 @@
   <article class="vacancy-row{% if job['status'] == 'ignored' %} is-dimmed{% endif %}" id="job-{{ job['id'] }}" data-job-status="{{ job['status'] }}" aria-labelledby="job-title-{{ job['id'] }}">
     {{ ui.stamp(job, href=detail_url, link=True) }}
     <div class="vacancy-main">
-      <h3 id="job-title-{{ job['id'] }}"><a href="{{ detail_url }}" data-job-link>{{ job['title'] or 'Zonder titel' }}</a>{% if job['status'] in ('applied', 'ignored', 'saved') %}<span class="vacancy-flags"><span class="chip {{ 'chip-lime' if job['status'] != 'ignored' else '' }}">{{ ui.status_label(job['status']) }}</span></span>{% endif %}</h3>
+      <h3 id="job-title-{{ job['id'] }}"><a href="{{ detail_url }}" data-job-link>{{ job['title'] or 'Zonder titel' }}</a>{% if job['status'] != 'new' %}<span class="vacancy-flags"><span class="chip {{ 'chip-lime' if job['status'] != 'ignored' else '' }}">{{ ui.status_label(job['status']) }}</span></span>{% endif %}</h3>
       <p class="vacancy-company">{{ job['company'] or 'Onbekende organisatie' }}</p>
       <ul class="meta">
         <li>{{ ui.icon('map-pin') }}<span>{{ job['location'] or 'Locatie onbekend' }}</span></li>
         {{ ui.travel(job['travel']) }}
         {% if job['hours'] %}<li>{{ ui.icon('clock') }}<span>{{ job['hours'] }}</span></li>{% endif %}
       </ul>
-      <p class="vacancy-origin">{{ job['source_name'] }}{% if job['display_date'] %}, <time datetime="{{ job['date_iso'] }}" title="Publicatiedatum, anders de dag dat we de vacature vonden">{{ job['display_date'] }}</time>{% endif %}</p>
+      {% if job['reason_line'] %}<p class="vacancy-reason">{{ job['reason_line'] }}</p>{% endif %}
+      {% if job['facts'] %}<p class="vacancy-facts">{% for fact in job['facts'] %}<span class="chip">{{ fact }}</span>{% endfor %}</p>{% endif %}
+      <p class="vacancy-origin">{{ job['source_name'] }}{% if job['dup_count'] and job['dup_count'] > 1 %} en {{ job['dup_count'] - 1 }} {{ 'andere plek' if job['dup_count'] == 2 else 'andere plekken' }}{% endif %}{% if job['display_date'] %}, <time datetime="{{ job['date_iso'] }}" title="Publicatiedatum, anders de dag dat we de vacature vonden">{{ job['display_date'] }}</time>{% endif %}</p>
     </div>
     <div class="vacancy-actions">
       <form method="post" action="/jobs/{{ job['id'] }}/vote" class="vacancy-votes" data-pending-form>

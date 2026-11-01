@@ -12,6 +12,7 @@ from fastapi.responses import (
 )
 
 from .. import (
+    applications,
     auth,
     config,
     feedback,
@@ -48,6 +49,7 @@ def dashboard(request: Request):
         "dashboard.html",
         {
             "top_jobs": _top_new_jobs(5),
+            "reminders": applications.reminders(),
             "pipeline": {
                 status: len(store.list_jobs(None, status)) for status in ("saved", "applied")
             },

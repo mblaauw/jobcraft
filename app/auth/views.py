@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import os
+import sqlite3
+
 from fastapi import Request
 
-from .. import config
+from .. import config, store
 from ..web import templates
 from .constants import ANONYMOUS_TTL_SECONDS, MIN_PASSWORD_LENGTH, ROLE_ADMIN
 from .credentials import verify_password
@@ -54,6 +57,20 @@ def _account_view(row) -> dict:
     }
 
 
+def _digest_view() -> dict:
+    view = {
+        "smtp": bool(os.environ.get("SMTP_HOST") and os.environ.get("SMTP_FROM")),
+        "email": "",
+        "enabled": False,
+    }
+    try:
+        view["email"] = store.meta_get("digest_email") or ""
+        view["enabled"] = store.meta_get("digest_enabled") == "1"
+    except sqlite3.OperationalError:  # Sign-in works before the rest of the schema exists.
+        pass
+    return view
+
+
 def _account_response(request: Request, *, user: dict, error: str = "", status_code: int = 200):
     row = _get_user_by_id(user["id"])
     return templates.TemplateResponse(
@@ -63,6 +80,7 @@ def _account_response(request: Request, *, user: dict, error: str = "", status_c
             "account": _account_view(row) if row is not None else user,
             "error": error,
             "has_cv": (config.seed_dir() / config.seed_files()["cv"]).is_file(),
+            "digest": _digest_view(),
         },
         status_code=status_code,
     )

@@ -23,6 +23,8 @@ from . import config
 
 USER_AGENT = "Jobcraft/1.0 (local-first vacancy research)"
 _guard = threading.Lock()
+# Set at shutdown: a running scan stops at its next request instead of holding the data lock.
+STOPPING = threading.Event()
 _host_locks: dict[tuple, threading.Lock] = {}
 _last_request: dict[tuple, float] = {}
 
@@ -58,6 +60,8 @@ class PoliteClient:
             self.client.close()
 
     def _wait(self, origin: str, delay: float) -> None:
+        if STOPPING.is_set():
+            raise RuntimeError("De server stopt; de scan is onderbroken.")
         key = self.clock, origin
         with _guard:
             lock = _host_locks.setdefault(key, threading.Lock())

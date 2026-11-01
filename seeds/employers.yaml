@@ -1,0 +1,17 @@
+# Employer registry: one line per employer. Only public job-board APIs, no login.
+# Verified 2026-11-01: the board answered and listed vacancies in the Netherlands.
+# Add an employer with: {name, system, slug}. Systems: greenhouse, recruitee.
+employers:
+  - {name: Adyen, system: greenhouse, slug: adyen}
+  - {name: Catawiki, system: greenhouse, slug: catawiki}
+  - {name: Databricks, system: greenhouse, slug: databricks}
+  - {name: Datadog, system: greenhouse, slug: datadog}
+  - {name: Elastic, system: greenhouse, slug: elastic}
+  - {name: Flow Traders, system: greenhouse, slug: flowtraders}
+  - {name: GitLab, system: greenhouse, slug: gitlab}
+  - {name: HelloFresh, system: greenhouse, slug: hellofresh}
+  - {name: IMC Trading, system: greenhouse, slug: imc}
+  - {name: MongoDB, system: greenhouse, slug: mongodb}
+  - {name: Stripe, system: greenhouse, slug: stripe}
+# Recruitee boards on their own domain (Greenchoice, Effectory) redirect robots.txt, and
+# the scanner fails closed on that, so they stay out. Use boards on *.recruitee.com only.

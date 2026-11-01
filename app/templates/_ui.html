@@ -31,7 +31,7 @@
 {%- endmacro %}
 
 {% macro status_label(value) -%}
-{{ {'new': 'Nieuw', 'saved': 'Bewaard', 'applied': 'Gereageerd', 'ignored': 'Genegeerd'}.get(value, value) }}
+{{ {'new': 'Nieuw', 'saved': 'Bewaard', 'applied': 'Gereageerd', 'ignored': 'Genegeerd', 'interview': 'Gesprek', 'offer': 'Aanbod', 'rejected': 'Afgewezen'}.get(value, value) }}
 {%- endmacro %}
 
 {# ISO timestamp -> "25-10-2026" (or with time: "25-10-2026 19:14"). Stored UTC is shown in Europe/Amsterdam. #}

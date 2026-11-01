@@ -60,6 +60,10 @@ def _usage(payload: dict, model: str) -> dict[str, Any]:
 
 
 class OpenAICompatClient:
+    def _session_headers(self, session_key: str | None) -> dict:
+        # Only the OpenCode gateway uses this; other providers need not see session keys.
+        return {"x-opencode-session": session_key} if session_key and "opencode" in self.base_url else {}
+
     def __init__(
         self,
         *,
@@ -100,7 +104,7 @@ class OpenAICompatClient:
             "stream": True,
             "stream_options": {"include_usage": True},
         }
-        headers = {"x-opencode-session": session_key} if session_key else {}
+        headers = self._session_headers(session_key)
         with self._client.stream(
             "POST", "/chat/completions", json=body, headers=headers
         ) as response:
@@ -149,7 +153,7 @@ class OpenAICompatClient:
                 "type": "json_schema",
                 "json_schema": {"name": "response", "schema": schema, "strict": True},
             }
-        headers = {"x-opencode-session": session_key} if session_key else {}
+        headers = self._session_headers(session_key)
         last_error: Exception | None = None
         for attempt in range(self.max_retries + 1):
             try:

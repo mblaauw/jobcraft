@@ -349,11 +349,11 @@ def _generate_job_document(mgr: llm.ServerManager, job, kind: str) -> dict:
     # Account for the paid call before parsing/rendering can fail.
     _record_generation_usage(kind, usage)
     if kind == "resume":
-        render_cv(
-            job, parse_cv_tailoring(text, strong_count), docx_path, template_bytes=template_bytes
-        )
+        content = parse_cv_tailoring(text, strong_count)
+        render_cv(job, content, docx_path, template_bytes=template_bytes)
     else:
-        render_letter(job, parse_letter(text), docx_path)
+        content = {"paragraphs": parse_letter(text)}
+        render_letter(job, content["paragraphs"], docx_path)
 
     pdf_path = None
     pdf_error = None
@@ -368,6 +368,7 @@ def _generate_job_document(mgr: llm.ServerManager, job, kind: str) -> dict:
         "job_id": job["id"],
         "created_at": now_iso(),
         "usage": usage,
+        "content": content,
         "pdf_error": pdf_error,
     }
     (directory / f"{stem}.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))

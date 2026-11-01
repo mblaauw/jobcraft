@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from . import (
     auth,
     config,
+    digest,
     docs,
     feedback,
     matching,
@@ -153,6 +154,11 @@ def _run_bootstrap() -> None:
         if "provider.auth" in message or "api_key_expired" in message:
             message = "API-key verlopen of ongeldig. Werk LLM_API_KEY bij en herstart de app."
         store.meta_set("bootstrap_status", f"error: {message}"[:500])
+
+
+@tasks.handler("digest")
+def _task_digest(task):
+    return {"result": digest.send_if_due()}
 
 
 @tasks.handler("rerank")

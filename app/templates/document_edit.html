@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Document bewerken · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <h1>{{ 'CV' if document.kind == 'resume' else 'Motivatiebrief' }} bewerken</h1>
+  <p class="lede">{{ job['title'] }}. Opslaan maakt een nieuwe versie; versie {{ document.version }} blijft bestaan.</p>
+</div></div>
+{% if error %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ error }}</span></p>{% endif %}
+<form method="post" class="panel form-stack" data-pending-form>
+  {% include '_csrf.html' %}
+  {% if document.kind == 'resume' %}
+  <div class="field"><label for="edit-profile">Profielstuk</label><textarea id="edit-profile" name="profile" rows="6">{{ content.profile }}</textarea></div>
+  <div class="field"><label for="edit-points">Sterke punten</label><textarea id="edit-points" name="strong_points" rows="7">{{ content.strong_points | join('\n') }}</textarea><span class="hint">Eén per regel, elk hoogstens 70 tekens.</span></div>
+  {% else %}
+  <div class="field"><label for="edit-text">Brief</label><textarea id="edit-text" name="text" rows="18">{{ content.paragraphs | join('\n\n') }}</textarea><span class="hint">Laat een lege regel tussen alinea's.</span></div>
+  {% endif %}
+  <div class="btn-row"><button class="button primary" type="submit">Opslaan als nieuwe versie</button><a class="button" href="/jobs/{{ job['id'] }}#documenten">Annuleren</a></div>
+</form>
+{% endblock %}

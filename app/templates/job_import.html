@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Vacature toevoegen · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <h1>Vacature toevoegen</h1>
+  <p class="lede">Iets gevonden op LinkedIn of een andere site? Zet het hier neer. Alleen jij ziet het.</p>
+</div></div>
+{% if error %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ error }}</span></p>{% endif %}
+<form method="post" action="/jobs/toevoegen" class="panel form-stack" data-pending-form>
+  {% include '_csrf.html' %}
+  <div class="field"><label for="import-url">Link naar de vacature</label><input id="import-url" type="url" name="url" value="{{ url or '' }}" placeholder="https://"><span class="hint">Lukt lezen niet, bijvoorbeeld omdat je moet inloggen? Plak dan hieronder de tekst.</span></div>
+  <details class="disclosure" {% if error %}open{% endif %}><summary><span>Tekst plakken</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
+    <div class="form-grid">
+      <div class="field"><label for="import-title">Functie</label><input id="import-title" name="title"></div>
+      <div class="field"><label for="import-company">Organisatie</label><input id="import-company" name="company"></div>
+      <div class="field"><label for="import-location">Plaats</label><input id="import-location" name="location"></div>
+    </div>
+    <div class="field"><label for="import-text">Vacaturetekst</label><textarea id="import-text" name="description" rows="10"></textarea></div>
+  </details>
+  <div class="btn-row"><button class="button primary" type="submit">Toevoegen</button><a class="button" href="/jobs">Annuleren</a></div>
+</form>
+{% endblock %}

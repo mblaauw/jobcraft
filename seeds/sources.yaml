@@ -254,3 +254,10 @@ sources:
     per_page: 100
     enabled: false
     notes: "Leest data/imports/<bestand>.json met [{url,title,company,location,hours,description}], gevuld door scripts/browser_import.py of met de hand. Bedoeld voor bronnen die alleen via een browser te lezen zijn (ATS-platform van OLVG/Staatsbosbeheer/Zaanstad, Politie)."
+
+  - id: ats-bedrijven
+    name: Werkgevers met een eigen vacaturesysteem
+    kind: ats-registry
+    revision: 2
+    enabled: true
+    notes: "Publieke Greenhouse- en Recruitee-boards uit seeds/employers.yaml; alleen vacatures in Nederland. Ashby staat er niet tussen: robots.txt van de API geeft 401, en de scanner behandelt dat als niet toegestaan."

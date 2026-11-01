@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Sollicitaties · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <h1>Sollicitaties</h1>
+  <p class="lede">Waar elke sollicitatie staat, met de deadline en je eigen notities.</p>
+</div></div>
+<div class="board">
+  {% for column in columns %}
+  <section class="board-column" aria-labelledby="col-{{ column.status }}">
+    <h2 id="col-{{ column.status }}">{{ column.label }} <span class="tab-count">{{ column.cards | length }}</span></h2>
+    {% for card in column.cards %}
+    <article class="panel board-card">
+      <h3><a href="/jobs/{{ card.job['id'] }}">{{ card.job['title'] or 'Zonder titel' }}</a></h3>
+      <p class="small muted">{{ card.job['company'] or 'Onbekende organisatie' }}</p>
+      <form method="post" action="/sollicitaties/{{ card.job['id'] }}" class="board-form" data-pending-form>
+        {% include '_csrf.html' %}
+        <div class="field"><label for="st-{{ card.job['id'] }}">Status</label><select id="st-{{ card.job['id'] }}" name="status">{% for value, label in statuses %}<option value="{{ value }}" {% if value == column.status %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="dl-{{ card.job['id'] }}">Deadline</label><input id="dl-{{ card.job['id'] }}" type="date" name="deadline" value="{{ card.deadline or '' }}"></div>
+        <div class="field"><label for="nt-{{ card.job['id'] }}">Notitie</label><textarea id="nt-{{ card.job['id'] }}" name="note" rows="2">{{ card.note or '' }}</textarea></div>
+        <button class="button small" type="submit">Opslaan</button>
+      </form>
+    </article>
+    {% else %}
+    <p class="small muted">Nog niets hier.</p>
+    {% endfor %}
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import UTC, datetime
-from email.utils import parsedate_to_datetime
 
 from .. import config, source_policy, tenancy
 from ..contracts import JobRow
 from .accounts import get_preferences
 from .connection import connect, stale_cutoff
+from .job_dates import job_date as job_date
+from .job_dates import normalize_posted_at as normalize_posted_at
+from .job_dates import parse_job_date as parse_job_date
 from .sources import list_sources, list_user_sources, load_source_configs
 
 # One key format for Python and SQL, so a whole list can be checked in one query.
@@ -82,34 +83,6 @@ def _job_select(owner: str | None = None) -> str:
     )
 
 
-def parse_job_date(raw: str | None) -> datetime | None:
-    if not raw or not str(raw).strip():
-        return None
-    try:
-        try:
-            parsed = datetime.fromisoformat(str(raw).strip())
-        except ValueError:
-            parsed = parsedate_to_datetime(str(raw).strip())
-        return parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed.astimezone(UTC)
-    except (ValueError, TypeError, OverflowError):
-        return None
-
-
-def normalize_posted_at(raw: str | None) -> str | None:
-    """Store one comparable ISO-8601 UTC form; absent or invalid becomes NULL."""
-    parsed = parse_job_date(raw)
-    return parsed.isoformat().replace("+00:00", "Z") if parsed else None
-
-
-def job_date(job: JobRow) -> datetime:
-    """Publication date, otherwise discovery date; feeds may use ISO or RFC dates."""
-    for raw in (job["posted_at"], job["first_seen"]):
-        parsed = parse_job_date(raw)
-        if parsed:
-            return parsed
-    return datetime.min.replace(tzinfo=UTC)
-
-
 def effective_user_sources() -> dict[str, dict]:
     """Same policy for lists, matching and UI; scanning activation is independent."""
     overrides = list_user_sources()
@@ -133,6 +106,29 @@ def _disabled_user_sources() -> list[str]:
     return [key for key, value in effective_user_sources().items() if not value["selected"]]
 
 
+def import_source(owner: str | None = None) -> str:
+    return f"import:{owner or tenancy.user_id()}"
+
+
+# The same vacancy on several sites counts once; the one you acted on stays visible.
+_UNIQUE_JOBS = """SELECT * FROM (
+  SELECT id, status, vote, rank_score, match_score, posted_at, first_seen, travel_json,
+    ROW_NUMBER() OVER (PARTITION BY dup_key ORDER BY status='new', vote=0,
+      COALESCE(rank_score,-1) DESC, id) AS dup_rank,
+    COUNT(*) OVER (PARTITION BY dup_key) AS dup_count
+  FROM (SELECT v.id, v.status, v.vote, v.rank_score, v.match_score, v.posted_at, v.first_seen,
+      v.travel_json, CASE WHEN TRIM(COALESCE(company,''))='' THEN 'id:'||id
+      ELSE LOWER(TRIM(title))||'|'||LOWER(TRIM(company))||'|'||
+        LOWER(COALESCE(json_extract(travel_json,'$.place'),COALESCE(location,'')))
+      END AS dup_key FROM ({select}) v {where})
+) WHERE dup_rank=1"""
+
+
+def _unique_jobs(clauses: list[str]) -> str:
+    where = "WHERE " + " AND ".join(clauses) if clauses else ""
+    return _UNIQUE_JOBS.format(select=_job_select(), where=where)
+
+
 def _job_filters(
     status: str | None = None,
     query_text: str | None = None,
@@ -154,6 +150,9 @@ def _job_filters(
         like = f"%{query_text}%"
         clauses.append("(title LIKE ? OR company LIKE ? OR description LIKE ?)")
         params.extend([like, like, like])
+    # Pasted vacancies are private: the jobs table itself is shared between accounts.
+    clauses.append("(source_id IS NULL OR source_id NOT LIKE 'import:%' OR source_id=?)")
+    params.append(import_source())
     disabled_sources = _disabled_user_sources()
     if disabled_sources:
         clauses.append(
@@ -164,7 +163,7 @@ def _job_filters(
         params.extend(disabled_sources)
     if not include_stale:
         clauses.append(
-            "NOT (last_seen < ? AND status NOT IN ('saved','applied') "
+            "NOT (last_seen < ? AND status NOT IN ('saved','applied','interview','offer','rejected') "
             "AND EXISTS (SELECT 1 FROM sources src WHERE src.id=source_id "
             "AND src.last_status='ok' AND src.last_scan_at > last_seen))"
         )
@@ -210,16 +209,15 @@ TRAVEL_OUT_OF_RANGE = "json_extract(travel_json,'$.in_range') IS 0"
 def job_status_counts(
     query_text: str | None = None, source: str | None = None, include_stale: bool = False
 ) -> dict[str, tuple[int, int]]:
-    """Per status: (all jobs, jobs known to be outside the account's travel range)."""
+    """Per status: (unique jobs, unique jobs known to be outside the travel range)."""
     clauses, filters = _job_filters(None, query_text, source, include_stale)
     sql = (
-        f"SELECT status, COUNT(*) AS n, COALESCE(SUM({TRAVEL_OUT_OF_RANGE}),0) AS far "
-        "FROM (" + _job_select() + ")"
+        f"SELECT status, COUNT(*) AS n, COALESCE(SUM({TRAVEL_OUT_OF_RANGE}),0) AS far FROM ("
+        + _unique_jobs(clauses)
+        + ") GROUP BY status"
     )
-    if clauses:
-        sql += " WHERE " + " AND ".join(clauses)
     with connect() as con:
-        rows = con.execute(sql + " GROUP BY status", (tenancy.user_id(), *filters)).fetchall()
+        rows = con.execute(sql, (tenancy.user_id(), *filters)).fetchall()
     return {row["status"]: (row["n"], row["far"]) for row in rows}
 
 
@@ -232,20 +230,26 @@ def list_jobs_page(
     sort: str = "rank",
     include_stale: bool = False,
     within_travel: bool = False,
+    only_unvoted: bool = False,
 ) -> list:
     """One page of full rows; ordering touches no descriptions, so it stays cheap at scale."""
-    clauses, filters = _job_filters(status, query_text, source, include_stale)
+    clauses, filters = _job_filters(None, query_text, source, include_stale, only_unvoted)
+    outer: list[str] = []
+    outer_params: list = []
+    if status:
+        outer.append("status=?")
+        outer_params.append(status)
     if within_travel:
-        clauses.append("NOT " + TRAVEL_OUT_OF_RANGE)
-    sql = "SELECT id FROM (" + _job_select() + ")"
-    if clauses:
-        sql += " WHERE " + " AND ".join(clauses)
+        outer.append("NOT " + TRAVEL_OUT_OF_RANGE)
+    sql = "SELECT id, dup_count FROM (" + _unique_jobs(clauses) + ")"
+    if outer:
+        sql += " WHERE " + " AND ".join(outer)
     sql += _job_order(sort) + " LIMIT ? OFFSET ?"
     with connect() as con:
-        ids = [
-            row["id"]
-            for row in con.execute(sql, (tenancy.user_id(), *filters, limit, offset)).fetchall()
-        ]
+        picked = con.execute(
+            sql, (tenancy.user_id(), *filters, *outer_params, limit, offset)
+        ).fetchall()
+        ids = [row["id"] for row in picked]
         if not ids:
             return []
         rows = con.execute(
@@ -256,7 +260,10 @@ def list_jobs_page(
             + ")",
             (tenancy.user_id(), *ids),
         ).fetchall()
-    by_id = {row["id"]: row for row in rows}
+    by_id = {row["id"]: {**dict(row), "dup_count": 1} for row in rows}
+    for row in picked:
+        if row["id"] in by_id:
+            by_id[row["id"]]["dup_count"] = row["dup_count"]
     return [by_id[job_id] for job_id in ids if job_id in by_id]
 
 
@@ -293,7 +300,10 @@ def jobs_missing_travel(home_key: str) -> list:
 def get_job(job_id: int) -> sqlite3.Row | None:
     with connect() as con:
         return con.execute(
-            "SELECT * FROM (" + _job_select() + ") WHERE id=?", (tenancy.user_id(), job_id)
+            "SELECT * FROM ("
+            + _job_select()
+            + ") WHERE id=? AND (source_id IS NULL OR source_id NOT LIKE 'import:%' OR source_id=?)",
+            (tenancy.user_id(), job_id, import_source()),
         ).fetchone()
 
 
@@ -315,7 +325,7 @@ MATCHING_LIMIT = 20000
 def list_jobs_for_matching(limit: int = MATCHING_LIMIT) -> list:
     disabled = _disabled_user_sources()
     source_sql = ""
-    params: list = [tenancy.user_id(), stale_cutoff()]
+    params: list = [tenancy.user_id(), stale_cutoff(), import_source()]
     if disabled:
         source_sql = (
             " AND (source_id IS NULL OR source_id NOT IN (" + ",".join("?" for _ in disabled) + "))"
@@ -325,9 +335,10 @@ def list_jobs_for_matching(limit: int = MATCHING_LIMIT) -> list:
         return con.execute(
             "SELECT * FROM ("
             + _job_select()
-            + ") WHERE NOT (last_seen < ? AND status NOT IN ('saved','applied') "
+            + ") WHERE NOT (last_seen < ? AND status NOT IN ('saved','applied','interview','offer','rejected') "
             "AND EXISTS (SELECT 1 FROM sources src WHERE src.id=source_id "
             "AND src.last_status='ok' AND src.last_scan_at > last_seen)) "
+            "AND (source_id IS NULL OR source_id NOT LIKE 'import:%' OR source_id=?)"
             + source_sql
             + " ORDER BY COALESCE(posted_at, first_seen) DESC, id DESC LIMIT ?",
             (*params, limit),

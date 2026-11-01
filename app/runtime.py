@@ -19,6 +19,7 @@ from . import (
     profile,
     runtime_lock,
     scheduler,
+    source_http,
     sources,
     store,
     tasks,
@@ -37,6 +38,7 @@ async def lifespan(_app: FastAPI):
     with runtime_lock.exclusive_data_dir(config.DATA_DIR):
         manager = None
         try:
+            source_http.STOPPING.clear()
             store.init_db()
             if store.load_token_df() is None:
                 feedback.refresh_document_frequency()
@@ -66,8 +68,10 @@ async def lifespan(_app: FastAPI):
             scheduler.start()
             yield
         finally:
+            source_http.STOPPING.set()
             scheduler.stop()
             tasks.stop_workers()
+            source_http.STOPPING.clear()
             if manager:
                 manager.stop()
 

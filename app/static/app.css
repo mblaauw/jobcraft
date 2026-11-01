@@ -761,7 +761,7 @@ html.job-drawer-open { overflow: hidden; scrollbar-gutter: stable; }
   .topbar-menu .who { padding: 8px 10px 10px; border-bottom: 1px solid var(--line); margin-bottom: 6px; font-size: var(--fs-sm); color: var(--ink-2); }
   .topbar-menu form { margin: 0; }
   .tabbar {
-    position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr);
+    position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr);
     padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--line);
   }
   .tabbar a { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 52px; padding: 6px 2px; border-radius: var(--r-sm); color: var(--ink-3); font-size: 12px; font-weight: 650; text-decoration: none; }
@@ -845,3 +845,18 @@ html.job-drawer-open { overflow: hidden; scrollbar-gutter: stable; }
 .swipe-actions .button { min-height: 48px; flex: 1 1 130px; justify-content: center; }
 .swipe-actions .link-button { flex-basis: 100%; }
 .start-question { font-size: 1.15rem; line-height: 1.5; margin: 0; }
+
+.vacancy-reason { margin: 4px 0; font-size: var(--fs-sm); color: var(--ink-2); }
+.vacancy-facts { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+
+/* Application board */
+.board { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 14px; overflow-x: auto; padding-bottom: 8px; }
+.board-column h2 { font-size: var(--fs-sm); margin: 0 0 10px; }
+.board-card { margin-bottom: 10px; padding: 14px; }
+.board-card h3 { margin: 0 0 2px; font-size: var(--fs-sm); }
+.board-form { display: grid; gap: 8px; }
+.jobs-links { display: flex; flex-wrap: wrap; gap: 10px; font-size: var(--fs-sm); }
+@media (max-width: 760px) {
+  .board { grid-template-columns: repeat(5, minmax(240px, 80vw)); scroll-snap-type: x proximity; }
+  .board-column { scroll-snap-align: start; }
+}
