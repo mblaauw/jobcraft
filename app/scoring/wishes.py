@@ -13,9 +13,9 @@ _FULL_REMOTE = re.compile(r"\b(?:volledig (?:remote|thuis)|100% (?:remote|thuis)
 _HYBRID = re.compile(r"\b(?:hybride?|deels thuis|thuiswerk\w*|gedeeltelijk thuis|remote)\b")
 _ONSITE = re.compile(r"\b(?:geen thuiswerk\w*|alleen op (?:kantoor|locatie)|volledig op (?:kantoor|locatie))\b")
 _CONTRACTS = {
-    "vast": re.compile(r"\b(?:vast (?:contract|dienstverband)|vaste (?:aanstelling|baan|contract))\b"),
-    "tijdelijk": re.compile(r"\b(?:tijdelijk\w*|jaarcontract|bepaalde tijd|detachering)\b"),
-    "freelance": re.compile(r"\b(?:freelance\w*|zzp\w*|interim\w*)\b"),
+    "vast": re.compile(r"\b(?:vast (?:contract|dienstverband)|vaste (?:aanstelling|baan|contract)|permanent (?:contract|position))\b"),
+    "tijdelijk": re.compile(r"\b(?:tijdelijk\w*|jaarcontract|bepaalde tijd|detachering|fixed[- ]term|temporary)\b"),
+    "freelance": re.compile(r"\b(?:freelance\w*|zzp\w*|interim\w*|contractor)\b"),
     "stage": re.compile(r"\b(?:stage\w*|bijbaan|traineeship)\b"),
 }
 _SENIORITY = {

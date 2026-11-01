@@ -12,6 +12,7 @@ from .connection import connect, stale_cutoff
 from .job_dates import job_date as job_date
 from .job_dates import normalize_posted_at as normalize_posted_at
 from .job_dates import parse_job_date as parse_job_date
+from .job_list_filters import list_filter_clauses
 from .sources import list_sources, list_user_sources, load_source_configs
 
 # One key format for Python and SQL, so a whole list can be checked in one query.
@@ -135,9 +136,9 @@ def _job_filters(
     source: str | None = None,
     include_stale: bool = False,
     only_unvoted: bool = False,
+    list_filters: dict | None = None,
 ) -> tuple[list[str], list]:
-    clauses: list[str] = []
-    params: list = []
+    clauses, params = list_filter_clauses(list_filters)
     if status:
         clauses.append("status=?")
         params.append(status)
@@ -207,10 +208,15 @@ TRAVEL_OUT_OF_RANGE = "json_extract(travel_json,'$.in_range') IS 0"
 
 
 def job_status_counts(
-    query_text: str | None = None, source: str | None = None, include_stale: bool = False
+    query_text: str | None = None,
+    source: str | None = None,
+    include_stale: bool = False,
+    list_filters: dict | None = None,
 ) -> dict[str, tuple[int, int]]:
     """Per status: (unique jobs, unique jobs known to be outside the travel range)."""
-    clauses, filters = _job_filters(None, query_text, source, include_stale)
+    clauses, filters = _job_filters(
+        None, query_text, source, include_stale, list_filters=list_filters
+    )
     sql = (
         f"SELECT status, COUNT(*) AS n, COALESCE(SUM({TRAVEL_OUT_OF_RANGE}),0) AS far FROM ("
         + _unique_jobs(clauses)
@@ -231,9 +237,12 @@ def list_jobs_page(
     include_stale: bool = False,
     within_travel: bool = False,
     only_unvoted: bool = False,
+    list_filters: dict | None = None,
 ) -> list:
     """One page of full rows; ordering touches no descriptions, so it stays cheap at scale."""
-    clauses, filters = _job_filters(None, query_text, source, include_stale, only_unvoted)
+    clauses, filters = _job_filters(
+        None, query_text, source, include_stale, only_unvoted, list_filters
+    )
     outer: list[str] = []
     outer_params: list = []
     if status:

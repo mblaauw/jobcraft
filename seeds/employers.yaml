@@ -3,6 +3,18 @@
 # Add an employer with: {name, system, slug}. Systems: greenhouse, recruitee.
 employers:
   - {name: Adyen, system: greenhouse, slug: adyen}
+  - {name: ChargePoint, system: greenhouse, slug: chargepoint}
+  - {name: DEPT, system: greenhouse, slug: dept}
+  - {name: GetYourGuide, system: greenhouse, slug: getyourguide}
+  - {name: Grafana Labs, system: greenhouse, slug: grafanalabs}
+  - {name: Lucid Motors, system: greenhouse, slug: lucidmotors}
+  - {name: Monks, system: greenhouse, slug: monks}
+  - {name: Ogilvy, system: greenhouse, slug: ogilvy}
+  - {name: Pinterest, system: greenhouse, slug: pinterest}
+  - {name: Reddit, system: greenhouse, slug: reddit}
+  - {name: Samsara, system: greenhouse, slug: samsara}
+  - {name: SumUp, system: greenhouse, slug: sumup}
+  - {name: Thoughtworks, system: greenhouse, slug: thoughtworks}
   - {name: Catawiki, system: greenhouse, slug: catawiki}
   - {name: Databricks, system: greenhouse, slug: databricks}
   - {name: Datadog, system: greenhouse, slug: datadog}

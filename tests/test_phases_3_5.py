@@ -135,6 +135,8 @@ def test_removed_board_is_not_a_failure(client, monkeypatch):  # noqa: F811
     "location,expected",
     [
         ("Amsterdam", True),
+        ("Amsterdam, NL", True),
+        ("NL-NH-Amsterdam-56E", True),
         ("Remote - Netherlands", True),
         ("Berlin, Germany", False),
         ("Dublin, Ireland", False),
