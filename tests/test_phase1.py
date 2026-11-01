@@ -72,7 +72,8 @@ def test_systemone_continues_after_one_job_error(monkeypatch):
             raise AssertionError("no LLM call expected")
 
     summary = matching.match_jobs(NoLLM(), limit=12)
-    assert len(calls) == 10
+    # One failed job, then shared facts plus personal fit for each of the other nine.
+    assert len(calls) == 19
     assert summary["signals"] == 9
     assert summary["errors"]
 

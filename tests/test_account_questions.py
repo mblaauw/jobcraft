@@ -108,8 +108,9 @@ def test_matching_stores_the_question_snapshot_that_was_actually_sent(monkeypatc
     )
 
     def decide(state, *, questions):
-        assert "old" in questions["category"]["criteria"]
-        profile.write_preferences({"tracks": [{"id": "new", "name": "New"}]})
+        if "category" in questions:  # Shared facts come first and carry no account context.
+            assert "old" in questions["category"]["criteria"]
+            profile.write_preferences({"tracks": [{"id": "new", "name": "New"}]})
         return {"answers": {}}, {"input_tokens": 1}, 1
 
     monkeypatch.setattr(systemone, "enabled", lambda: True)
@@ -122,7 +123,7 @@ def test_matching_stores_the_question_snapshot_that_was_actually_sent(monkeypatc
     assert row["signals_key"] == expected
     assert row["signals_key"] != systemone.signals_key(row, "")
     assert json.loads(row["typed_signals"])["version"] == systemone.question_version(questions)
-    assert store.usage_total()["calls"] == 1
+    assert store.usage_total()["calls"] == 2
 
 
 def test_consolidation_excludes_and_locally_preserves_private_fields():

@@ -80,6 +80,13 @@ def delete_account() -> None:
         for table, column in _owned_tables(con):
             if table not in _SHARED:
                 con.execute(f'DELETE FROM "{table}" WHERE "{column}"=?', (owner,))
+        private = [
+            row["id"]
+            for row in con.execute(
+                "SELECT id FROM jobs WHERE source_id=?", (store.import_source(owner),)
+            ).fetchall()
+        ]
+        con.executemany("DELETE FROM meta WHERE key=?", [(f"job_facts:{i}",) for i in private])
         con.execute(
             "DELETE FROM job_states WHERE job_id IN (SELECT id FROM jobs WHERE source_id=?)",
             (store.import_source(owner),),
