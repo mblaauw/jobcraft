@@ -125,6 +125,47 @@ def questions_for(preferences: dict) -> dict:
     return questions
 
 
+PERSONAL_IDS = ("fit", "category")
+FACTS_VERSION = "facts-v1"
+
+
+def facts_questions() -> dict:
+    """Questions about the vacancy itself: the answer is the same for everyone."""
+    return {key: value for key, value in QUESTIONS.items() if key not in PERSONAL_IDS}
+
+
+def personal_questions(questions: dict) -> dict:
+    return {key: questions[key] for key in PERSONAL_IDS}
+
+
+def facts_key(job) -> str:
+    raw = FACTS_VERSION + json.dumps(facts_questions(), sort_keys=True) + (job["content_hash"] or "")
+    return hashlib.sha256(raw.encode()).hexdigest()[:20]
+
+
+def compose_facts_state(job) -> str:
+    """Vacancy text only: no profile or preferences leave for a shared answer."""
+    return "\n".join(
+        [
+            "Vacature",
+            f"Titel: {job['title'] or ''}",
+            f"Organisatie: {job['company'] or 'onbekend'}",
+            f"Locatie: {job['location'] or 'onbekend'}",
+            f"Uren: {job['hours'] or 'onbekend'}",
+            "",
+            (job["description"] or "")[:DESCRIPTION_LIMIT],
+        ]
+    )
+
+
+def facts_from_signals(signals: dict | None) -> dict:
+    """Earlier combined answers are still valid facts, so they need not be bought again."""
+    noul = (signals or {}).get("noul") or {}
+    return {
+        key: {"type": "noul", "noul": noul[key]} for key in facts_questions() if key in noul
+    }
+
+
 def question_version(questions: dict) -> str:
     raw = QUESTION_VERSION + json.dumps(questions, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(raw.encode()).hexdigest()[:20]

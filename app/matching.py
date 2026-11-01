@@ -77,6 +77,101 @@ def current_digest(preferences: dict | None = None, profile_excerpt: str | None 
     return hashlib.sha256(raw.encode()).hexdigest()[:20]
 
 
+def _ask_system_one(job, state: str, questions: dict) -> dict:
+    data, usage, _latency = systemone.decide(state, questions=questions)
+    store.record_usage(
+        None,
+        "systemone",
+        int(usage.get("input_tokens") or 0),
+        int(usage.get("output_tokens") or 0),
+        0.0,
+        agent="jev",
+    )
+    return data.get("answers") or {}
+
+
+def _system_one_round(preferences, feedback_data, digest_base, summary) -> None:
+    """Spend the daily calls on the most promising jobs first.
+
+    Facts about a vacancy are asked once for all accounts and survive profile edits; the
+    personal fit is only asked for the jobs ranked highest for this account.
+    """
+    excerpt = profile.read_public_excerpt(4000)
+    questions = systemone.questions_for(preferences)
+    batch = int(os.environ.get("SYSTEMONE_BATCH", "40"))
+    # Jev calls are logged at $0, so the dollar budget cannot limit them.
+    daily_limit = int(os.environ.get("SYSTEMONE_DAILY_LIMIT", "80"))
+    calls_left = min(batch, max(0, daily_limit - store.daily_usage_calls("systemone")))
+    fit_top = int(os.environ.get("SYSTEMONE_FIT_TOP", "200"))
+
+    ranking.rerank_all(preferences, feedback_data, digest_base)
+    jobs = sorted(
+        store.list_jobs_for_matching(),
+        key=lambda job: job["rank_score"] if job["rank_score"] is not None else -1,
+        reverse=True,
+    )
+    shared = store.load_job_facts()
+    consecutive_failures = 0
+    position = 0
+    for job in jobs:
+        if ranking.excluded_from_matching(job):
+            continue
+        position += 1
+        key = systemone.signals_key(job, excerpt, preferences=preferences, questions=questions)
+        fact_key = systemone.facts_key(job)
+        known = shared.get(job["id"])
+        facts = known["answers"] if known and known.get("key") == fact_key else None
+        if job["signals_key"] == key:
+            if facts is None:  # A combined answer from before facts were shared.
+                old = systemone.facts_from_signals(ranking.signals_of(job))
+                if old:
+                    store.save_job_facts(job["id"], fact_key, old)
+            continue
+        wants_fit = position <= fit_top
+        if facts is not None and not wants_fit and job["signals_key"] == f"facts:{fact_key}":
+            continue
+        needed = (facts is None) + (wants_fit and bool(calls_left))
+        if facts is None and calls_left <= 0:
+            continue
+        try:
+            if facts is None:
+                facts = _ask_system_one(
+                    job, systemone.compose_facts_state(job), systemone.facts_questions()
+                )
+                calls_left -= 1
+                store.save_job_facts(job["id"], fact_key, facts)
+            answers = dict(facts)
+            new_key = f"facts:{fact_key}"
+            if wants_fit and calls_left > 0:
+                answers.update(
+                    _ask_system_one(
+                        job,
+                        systemone.compose_state(job, excerpt, preferences=preferences),
+                        systemone.personal_questions(questions),
+                    )
+                )
+                calls_left -= 1
+                new_key = key
+            signals = systemone.signals_from_answers(answers, questions)
+            rank, _ = ranking.rank_for(job, preferences, feedback_data, signals, digest_base)
+            store.update_job_signals(
+                job["id"],
+                rank,
+                json.dumps(signals, ensure_ascii=False),
+                new_key,
+                float(signals["confidence"]),
+            )
+            if needed:
+                summary["signals"] += 1
+            consecutive_failures = 0
+        except Exception as exc:
+            summary["errors"].append(f"job {job['id']} systemone: {type(exc).__name__}")
+            consecutive_failures += 1
+            if consecutive_failures >= 3:
+                summary["errors"].append("systemone gestopt na 3 opeenvolgende fouten")
+                return
+
+
 def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
     limit = limit or int(os.environ.get("MATCH_BATCH", "12"))
     preferences = profile.read_preferences()
@@ -92,56 +187,9 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
         "errors": [],
     }
 
-    # Stage 1 — System One gate: typed signals, cheap and cached per job.
+    # Stage 1 — System One gate: shared job facts once, personal fit only where it counts.
     if systemone.enabled():
-        excerpt = profile.read_public_excerpt(4000)
-        questions = systemone.questions_for(preferences)
-        batch = int(os.environ.get("SYSTEMONE_BATCH", "40"))
-        # Jev calls are logged at $0, so the dollar budget cannot limit them.
-        daily_limit = int(os.environ.get("SYSTEMONE_DAILY_LIMIT", "80"))
-        batch = min(batch, max(0, daily_limit - store.daily_usage_calls("systemone")))
-        pending = [
-            job
-            for job in store.list_jobs_for_matching()
-            if job["signals_key"]
-            != systemone.signals_key(job, excerpt, preferences=preferences, questions=questions)
-            and not ranking.excluded_from_matching(job)
-        ]
-        consecutive_failures = 0
-        for job in pending[:batch]:
-            try:
-                key = systemone.signals_key(
-                    job, excerpt, preferences=preferences, questions=questions
-                )
-                data, usage, _latency = systemone.decide(
-                    systemone.compose_state(job, excerpt, preferences=preferences),
-                    questions=questions,
-                )
-                store.record_usage(
-                    None,
-                    "systemone",
-                    int(usage.get("input_tokens") or 0),
-                    int(usage.get("output_tokens") or 0),
-                    0.0,
-                    agent="jev",
-                )
-                signals = systemone.signals_from_answers(data.get("answers") or {}, questions)
-                rank, _ = ranking.rank_for(job, preferences, feedback_data, signals, digest_base)
-                store.update_job_signals(
-                    job["id"],
-                    rank,
-                    json.dumps(signals, ensure_ascii=False),
-                    key,
-                    float(signals["confidence"]),
-                )
-                summary["signals"] += 1
-                consecutive_failures = 0
-            except Exception as exc:
-                summary["errors"].append(f"job {job['id']} systemone: {type(exc).__name__}")
-                consecutive_failures += 1
-                if consecutive_failures >= 3:
-                    summary["errors"].append("systemone gestopt na 3 opeenvolgende fouten")
-                    break
+        _system_one_round(preferences, feedback_data, digest_base, summary)
 
     # Stage 2 — free deterministic rerank: votes and fresh signals apply instantly.
     ranking.rerank_all(preferences, feedback_data, digest_base)
