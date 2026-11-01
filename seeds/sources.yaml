@@ -16,6 +16,8 @@
 # import-by-URL feature lands; scraping them is against their terms/anti-bot.
 #
 # Edits here are copied to data/sources.yaml once; edit the data copy afterwards.
+# Raising a source's `revision` re-applies its settings to existing installations
+# (its on/off state stays as it is).
 sources:
   - id: culturele-vacatures
     name: Culturele Vacatures
@@ -64,8 +66,9 @@ sources:
     regions: [Amsterdam]
     name: Banen in het Groen (Amsterdam)
     kind: html-listing
-    base_url: https://baneninhetgroen.nl
-    listing_url: "https://baneninhetgroen.nl/vacatures?filter-location=Amsterdam%2C+Nederland"
+    revision: 2
+    base_url: https://www.baneninhetgroen.nl
+    listing_url: "https://www.baneninhetgroen.nl/vacatures?filter-location=Amsterdam%2C+Nederland"
     link_pattern: "/vacatures/[a-z0-9-]{4,}$"
     location_from_slug: "-in-([a-z-]+?)(?:-[0-9]+)?$"
     per_page: 30
@@ -79,7 +82,8 @@ sources:
     sitemap_url: https://www.gemeentebanen.nl/sitemap.xml
     child_pattern: vacanc
     url_pattern: "/vacatures/[0-9]+/"
-    per_page: 40
+    per_page: 700
+    revision: 2
     enabled: true
     notes: "Vacatures bij gemeenten en publieke organisaties; detailpagina's hebben schema.org JobPosting met locatie."
 
@@ -183,7 +187,8 @@ sources:
     name: Defensie (burgerfuncties)
     kind: defensie-cms
     feed_url: https://werkenbijdefensie.nl/api/v1/feed/xml/nl_NL/dynamic-creatives-civilian
-    per_page: 20
+    per_page: 350
+    revision: 2
     enrich_details: true
     enabled: true
     notes: "Alleen niet-militaire functies (feed dynamic-creatives-civilian: 294 items op 18-10-2026). Inhoud via de publieke CMS-API: routing/route?href=<vacature> -> component/component -> VacancyJobDescriptionParagraph.body. De feed levert salaris, vakantiedagen, rijbewijs-via-Defensie en organisatieonderdeel; locatie alleen als de detailcomponenten die noemen."
@@ -192,9 +197,10 @@ sources:
     name: Waterschappen (landelijk)
     kind: html-listing
     base_url: https://www.waterschappen.nl
-    listing_url: https://www.waterschappen.nl/vacatures
-    link_pattern: "^https?://[a-z0-9.-]+/werken-bij/vacatures/[a-z0-9-]{4,}"
-    per_page: 25
+    listing_url: https://waterschappen.nl/vacatures/
+    link_pattern: "^https?://(?!(?:www\\.)?waterschappen\\.nl)[a-z0-9.-]+/(?:[a-z0-9-]+/)*vacatures/[a-z0-9-]{4,}"
+    per_page: 120
+    revision: 2
     company_from_host: true
     enabled: true
     notes: "Aggregator: links wijzen naar de vacaturepagina's van de individuele waterschappen (Amsterdamse regio: AGV, Waternet). Detailtekst komt van de lidpagina."
@@ -215,7 +221,8 @@ sources:
     base_url: https://www.werkenvoornederland.nl
     sitemap_url: https://www.werkenvoornederland.nl/sitemap-vacatures.xml
     url_pattern: "/vacatures/[A-Za-z0-9-]+$"
-    per_page: 40
+    per_page: 1600
+    revision: 2
     enabled: true
     notes: "Recon 2026-10-26: sitemap-vacatures.xml levert individuele vacature-URL's; detailpagina's bevatten schema.org JobPosting JSON-LD met titel, organisatie, locatie en beschrijving. Aanvulling op de rijksoverheid-bron; geen login nodig."
 

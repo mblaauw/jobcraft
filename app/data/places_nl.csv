@@ -1,101 +1,2568 @@
-name,lat,lon,rail,city
-aalsmeer,52.2594,4.7611,0
-abcoude,52.2717,4.9697,0
-alkmaar,52.6324,4.7539,1
-almere,52.3708,5.2144,1
-almere haven,52.34,5.22,1
-almere poort,52.355,5.15,1
-amersfoort,52.1561,5.3878,1
-amstelveen,52.3114,4.8701,0
-amsterdam,52.3676,4.9041,1
-apeldoorn,52.2114,5.9699,0
-baambrugge,52.2583,4.9556,0
-badhoevedorp,52.3403,4.7806,0
-beverwijk,52.4844,4.6594,0
-blaricum,52.2733,5.2333,0
-breukelen,52.1711,4.9964,1
-broek in waterland,52.4239,4.9958,0
-bussum,52.2733,5.1611,1
-castricum,52.5467,4.6708,0
-den haag,52.0705,4.3007,0
-diemen,52.3395,4.9625,1
-duivendrecht,52.3258,4.9394,1
-edam,52.5122,5.045,0
-eemnes,52.2539,5.2661,0
-eindhoven,51.4416,5.4697,0
-groningen,53.2194,6.5665,0
-haarlem,52.3874,4.6462,1
-heemskerk,52.5111,4.6714,0
-heemstede,52.35,4.62,0
-hilversum,52.2292,5.1667,1
-hoofddorp,52.3025,4.6889,1
-hoorn,52.6425,5.0597,1
-huizen,52.2961,5.2411,0
-ijmuiden,52.4604,4.6106,0
-ilpendam,52.4528,4.9528,0
-krommenie,52.4994,4.7656,0
-kudelstaart,52.2433,4.7536,0
-landsmeer,52.4311,4.9158,0
-laren,52.2564,5.2333,0
-leiden,52.1601,4.497,1
-loosdrecht,52.2014,5.0806,0
-maarssen,52.1408,5.0403,1
-marken,52.4592,5.1008,0
-mijdrecht,52.2064,4.8664,0
-monnickendam,52.4581,5.0361,0
-muiden,52.3306,5.0694,0
-naarden,52.2964,5.1617,1
-nieuw-vennep,52.2644,4.6292,0
-nieuwegein,52.03,5.08,1
-nijmegen,51.8426,5.8546,0
-oostzaan,52.4403,4.8767,0
-ouderkerk aan de amstel,52.2953,4.9077,0
-purmerend,52.505,4.9597,1
-rotterdam,51.9244,4.4777,0
-schiphol,52.3105,4.7683,1
-tilburg,51.5606,5.0913,0
-uitgeest,52.5306,4.71,0
-uithoorn,52.2325,4.8269,0
-utrecht,52.0907,5.1214,1
-vinkeveen,52.2133,4.9306,0
-volendam,52.4947,5.0706,0
-watergang,52.3958,4.9556,0
-weesp,52.3075,5.0417,1
-wilnis,52.1972,4.9036,0
-wormerveer,52.4922,4.7917,0
-zaandam,52.4389,4.8289,1
-zaandijk,52.4744,4.8064,0
-zandvoort,52.3714,4.5333,0
-zwolle,52.5168,6.083,0
-noord,,,,amsterdam
-zuid,,,,amsterdam
-oost,,,,amsterdam
-west,,,,amsterdam
-centrum,,,,amsterdam
-nieuw-west,,,,amsterdam
-zuidoost,,,,amsterdam
-ijburg,,,,amsterdam
-de pijp,,,,amsterdam
-pijp,,,,amsterdam
-watergraafsmeer,,,,amsterdam
-bos en lommer,,,,amsterdam
-westerpark,,,,amsterdam
-oud-west,,,,amsterdam
-de baarsjes,,,,amsterdam
-slotervaart,,,,amsterdam
-geuzenveld,,,,amsterdam
-osdorp,,,,amsterdam
-bijlmer,,,,amsterdam
-gaasperdam,,,,amsterdam
-sloterdijk,,,,amsterdam
-amstel,,,,amsterdam
-rivierenbuurt,,,,amsterdam
-indische buurt,,,,amsterdam
-jordaan,,,,amsterdam
-oude west,,,,amsterdam
-kinkerbuurt,,,,amsterdam
-staatsliedenbuurt,,,,amsterdam
-frederikspark,,,,amsterdam
-zuidas,,,,amsterdam
-buitenveldert,,,,amsterdam
-driemond,,,,amsterdam
+name,lat,lon,rail,city,label,origin
+'s gravenmoer,51.6637,4.9427,0,,'s Gravenmoer,pdok
+'s-graveland,52.2422,5.1302,0,,'s-Graveland,pdok
+'s-gravendeel,51.7706,4.6054,0,,'s-Gravendeel,pdok
+'s-gravenhage,52.0721,4.2930,0,,'s-Gravenhage,pdok
+'s-gravenpolder,51.4567,3.9035,0,,'s-Gravenpolder,pdok
+'s-gravenzande,51.9964,4.1626,0,,'s-Gravenzande,pdok
+'s-heer abtskerke,51.4731,3.8619,0,,'s-Heer Abtskerke,pdok
+'s-heer arendskerke,51.5001,3.7925,0,,'s-Heer Arendskerke,pdok
+'s-heer hendrikskinderen,51.5031,3.8582,0,,'s-Heer Hendrikskinderen,pdok
+'s-heerenberg,51.8789,6.2523,0,,'s-Heerenberg,pdok
+'s-heerenbroek,52.5359,6.0097,0,,'s-Heerenbroek,pdok
+'s-heerenhoek,51.4559,3.7735,0,,'s-Heerenhoek,pdok
+'s-hertogenbosch,51.7100,5.2957,0,,'s-Hertogenbosch,pdok
+'t goy,52.0034,5.2211,0,,'t Goy,pdok
+'t haantje,52.8102,6.8214,0,,'t Haantje,pdok
+'t harde,52.3987,5.8771,0,,'t Harde,pdok
+'t loo oldebroek,52.4318,5.9601,0,,'t Loo Oldebroek,pdok
+'t veld,52.7460,4.8549,0,,'t Veld,pdok
+'t waar,53.2254,6.9437,0,,'t Waar,pdok
+'t zand,52.8339,4.7546,0,,'t Zand,pdok
+'t zandt,53.3737,6.7724,0,,'t Zandt,pdok
+1e exloërmond,52.9328,6.9464,0,,1e Exloërmond,pdok
+2e exloërmond,52.9110,6.9551,0,,2e Exloërmond,pdok
+2e valthermond,52.8932,7.0172,0,,2e Valthermond,pdok
+aadorp,52.3759,6.6277,0,,Aadorp,pdok
+aagtekerke,51.5405,3.5069,0,,Aagtekerke,pdok
+aalden,52.7915,6.7034,0,,Aalden,pdok
+aalsmeer,52.2594,4.7611,0,,,
+aalsmeerderbrug,52.2730,4.7482,0,,Aalsmeerderbrug,pdok
+aalst,51.7846,5.1327,0,,Aalst,pdok
+aalsum,53.3415,6.0099,0,,Aalsum,pdok
+aalten,51.9276,6.5702,0,,Aalten,pdok
+aardenburg,51.2870,3.4489,0,,Aardenburg,pdok
+aarlanderveen,52.1326,4.7250,0,,Aarlanderveen,pdok
+aarle-rixtel,51.5139,5.6494,0,,Aarle-Rixtel,pdok
+aartswoud,52.7468,4.9606,0,,Aartswoud,pdok
+abbega,53.0186,5.5723,0,,Abbega,pdok
+abbekerk,52.7320,5.0178,0,,Abbekerk,pdok
+abbenbroek,51.8412,4.2275,0,,Abbenbroek,pdok
+abbenes,52.2291,4.5970,0,,Abbenes,pdok
+abcoude,52.2717,4.9697,0,,,
+achlum,53.1524,5.4980,0,,Achlum,pdok
+achterveld,52.1393,5.5193,0,,Achterveld,pdok
+achterveld (gd),52.1393,5.5193,0,,Achterveld (GD),pdok
+achterveld (ut),52.1407,5.4788,0,,Achterveld (UT),pdok
+achthuizen,51.6792,4.2779,0,,Achthuizen,pdok
+achtmaal,51.4548,4.5711,0,,Achtmaal,pdok
+acquoy,51.8994,5.1350,0,,Acquoy,pdok
+adorp,53.2758,6.5284,0,,Adorp,pdok
+aduard,53.2546,6.4709,0,,Aduard,pdok
+aerdenhout,52.3601,4.5895,0,,Aerdenhout,pdok
+aerdt,51.8986,6.0717,0,,Aerdt,pdok
+afferden,51.8808,5.6356,0,,Afferden,pdok
+afferden l,51.6407,6.0279,0,,Afferden L,pdok
+agelo,52.3877,6.8909,0,,Agelo,pdok
+akersloot,52.5632,4.7361,0,,Akersloot,pdok
+akkrum,53.0532,5.8272,0,,Akkrum,pdok
+akmarijp,53.0020,5.7968,0,,Akmarijp,pdok
+albergen,52.3623,6.7503,0,,Albergen,pdok
+alblasserdam,51.8647,4.6657,0,,Alblasserdam,pdok
+alde leie,53.2868,5.7332,0,,Alde Leie,pdok
+aldeboarn,53.0506,5.9021,0,,Aldeboarn,pdok
+aldtsjerk,53.2693,5.8750,0,,Aldtsjerk,pdok
+aldwâld,53.2943,6.1173,0,,Aldwâld,pdok
+alem,51.7860,5.3481,0,,Alem,pdok
+alkmaar,52.6324,4.7539,1,,,
+allingawier,53.0410,5.4518,0,,Allingawier,pdok
+almelo,52.3577,6.6599,0,,Almelo,pdok
+almen,52.1625,6.2901,0,,Almen,pdok
+almere,52.3708,5.2144,1,,,
+almere haven,52.34,5.22,1,,,
+almere poort,52.355,5.15,1,,,
+almkerk,51.7711,4.9698,0,,Almkerk,pdok
+alphen,51.8268,5.4637,0,,Alphen,pdok
+alphen (gd),51.8268,5.4637,0,,Alphen (GD),pdok
+alphen (nb),51.4870,4.9535,0,,Alphen (NB),pdok
+alphen aan den rijn,52.1302,4.6652,0,,Alphen aan den Rijn,pdok
+alteveer,53.1113,6.4339,0,,Alteveer,pdok
+alteveer (dr),53.1113,6.4339,0,,Alteveer (DR),pdok
+alteveer (gr),53.0420,7.0000,0,,Alteveer (GR),pdok
+alteveer gem hoogeveen,52.6831,6.5003,0,,Alteveer gem Hoogeveen,pdok
+altforst,51.8533,5.5604,0,,Altforst,pdok
+ambt delden,52.2649,6.6703,0,,Ambt Delden,pdok
+ameide,51.9478,4.9653,0,,Ameide,pdok
+amen,52.9318,6.6022,0,,Amen,pdok
+america,51.4430,5.9630,0,,America,pdok
+amerongen,51.9961,5.4495,0,,Amerongen,pdok
+amersfoort,52.1561,5.3878,1,,,
+ammerstol,51.9274,4.8070,0,,Ammerstol,pdok
+ammerzoden,51.7552,5.2217,0,,Ammerzoden,pdok
+amstelhoek,52.2339,4.8412,0,,Amstelhoek,pdok
+amstelveen,52.3114,4.8701,0,,,
+amstelvoorde,52.3182,4.9282,0,,Amstelvoorde,pdok
+amstenrade,50.9421,5.9265,0,,Amstenrade,pdok
+amsterdam,52.3676,4.9041,1,,,
+amsterdam-duivendrecht,52.3292,4.9240,0,,Amsterdam-Duivendrecht,pdok
+andel,51.7781,5.0576,0,,Andel,pdok
+andelst,51.9015,5.7222,0,,Andelst,pdok
+anderen,53.0018,6.6881,0,,Anderen,pdok
+andijk,52.7519,5.2125,0,,Andijk,pdok
+ane,52.6131,6.6350,0,,Ane,pdok
+anerveen,52.6323,6.6516,0,,Anerveen,pdok
+anevelde,52.5968,6.6402,0,,Anevelde,pdok
+angeren,51.9090,5.9594,0,,Angeren,pdok
+angerlo,51.9835,6.1185,0,,Angerlo,pdok
+ankeveen,52.2665,5.0968,0,,Ankeveen,pdok
+anloo,53.0426,6.7001,0,,Anloo,pdok
+anna paulowna,52.8603,4.8362,0,,Anna Paulowna,pdok
+annen,53.0594,6.7390,0,,Annen,pdok
+annerveenschekanaal,53.0760,6.7964,0,,Annerveenschekanaal,pdok
+ansen,52.7925,6.3609,0,,Ansen,pdok
+ansen (dr),52.7925,6.3609,0,,Ansen (DR),pdok
+apeldoorn,52.2114,5.9699,0,,,
+appelscha,52.9427,6.3409,0,,Appelscha,pdok
+appeltern,51.8353,5.5727,0,,Appeltern,pdok
+appingedam,53.3171,6.8495,0,,Appingedam,pdok
+arcen,51.4869,6.1928,0,,Arcen,pdok
+arkel,51.8657,4.9983,0,,Arkel,pdok
+arnemuiden,51.5132,3.6906,0,,Arnemuiden,pdok
+arnhem,52.0011,5.8926,0,,Arnhem,pdok
+arriën,52.5439,6.4567,0,,Arriën,pdok
+arum,53.1285,5.4875,0,,Arum,pdok
+asch,51.9295,5.3176,0,,Asch,pdok
+asperen,51.8810,5.1037,0,,Asperen,pdok
+assen,52.9879,6.5494,0,,Assen,pdok
+assendelft,52.4650,4.7299,0,,Assendelft,pdok
+asten,51.3974,5.7780,0,,Asten,pdok
+augsbuert-lytsewâld,53.2724,6.1868,0,,Augsbuert-Lytsewâld,pdok
+augustinusga,53.2197,6.1627,0,,Augustinusga,pdok
+austerlitz,52.0838,5.3124,0,,Austerlitz,pdok
+avenhorn,52.6183,4.9636,0,,Avenhorn,pdok
+axel,51.2751,3.9252,0,,Axel,pdok
+azewijn,51.8856,6.3034,0,,Azewijn,pdok
+baaiduinen,53.3819,5.2729,0,,Baaiduinen,pdok
+baaium,53.1646,5.6345,0,,Baaium,pdok
+baak,52.0717,6.2380,0,,Baak,pdok
+baambrugge,52.2583,4.9556,0,,,
+baard,53.1405,5.6737,0,,Baard,pdok
+baarland,51.3991,3.9003,0,,Baarland,pdok
+baarle-nassau,51.4358,4.9222,0,,Baarle-Nassau,pdok
+baarlo,51.3320,6.0854,0,,Baarlo,pdok
+baarlo (lb),51.3320,6.0854,0,,Baarlo (LB),pdok
+baarlo (ov),52.7391,5.9519,0,,Baarlo (OV),pdok
+baarn,52.2071,5.2713,0,,Baarn,pdok
+baars,52.8142,6.0976,0,,Baars,pdok
+babberich,51.9071,6.1249,0,,Babberich,pdok
+babyloniënbroek,51.7517,5.0256,0,,Babyloniënbroek,pdok
+bad nieuweschans,53.1681,7.1839,0,,Bad Nieuweschans,pdok
+badhoevedorp,52.3403,4.7806,0,,,
+baexem,51.2303,5.8763,0,,Baexem,pdok
+baflo,53.3574,6.5085,0,,Baflo,pdok
+bakel,51.5089,5.7276,0,,Bakel,pdok
+bakhuizen,52.8683,5.4504,0,,Bakhuizen,pdok
+bakkeveen,53.0777,6.2723,0,,Bakkeveen,pdok
+balgoij,51.7850,5.7160,0,,Balgoij,pdok
+balinge,52.8100,6.6248,0,,Balinge,pdok
+balk,52.9019,5.5905,0,,Balk,pdok
+balkbrug,52.6133,6.3651,0,,Balkbrug,pdok
+balloo,53.0014,6.6280,0,,Balloo,pdok
+balloërveld,53.0137,6.6482,0,,Balloërveld,pdok
+ballum,53.4198,5.6902,0,,Ballum,pdok
+baneheide,50.8181,5.9728,0,,Baneheide,pdok
+banholt,50.7923,5.8107,0,,Banholt,pdok
+bant,52.7713,5.7573,0,,Bant,pdok
+bantega,52.8352,5.7950,0,,Bantega,pdok
+barchem,52.1229,6.4419,0,,Barchem,pdok
+barendrecht,51.8511,4.5254,0,,Barendrecht,pdok
+barger-compascuum,52.7567,7.0407,0,,Barger-Compascuum,pdok
+barneveld,52.1412,5.5829,0,,Barneveld,pdok
+barsingerhorn,52.7896,4.8519,0,,Barsingerhorn,pdok
+basse,52.8014,6.0279,0,,Basse,pdok
+batenburg,51.8257,5.6358,0,,Batenburg,pdok
+bathmen,52.2485,6.3216,0,,Bathmen,pdok
+bavel,51.5664,4.8385,0,,Bavel,pdok
+bavel ac,51.5513,4.8516,0,,Bavel AC,pdok
+bears,53.1566,5.7410,0,,Bears,pdok
+bedum,53.2990,6.6052,0,,Bedum,pdok
+beegden,51.1967,5.9160,0,,Beegden,pdok
+beek,50.9331,5.8055,0,,Beek,pdok
+beek (gd),51.9048,6.1934,0,,Beek (GD),pdok
+beek (lb),50.9331,5.8055,0,,Beek (LB),pdok
+beek en donk,51.5425,5.6324,0,,Beek en Donk,pdok
+beekbergen,52.1441,5.9679,0,,Beekbergen,pdok
+beemte broekland,52.2571,6.0106,0,,Beemte Broekland,pdok
+beers nb,51.7217,5.8187,0,,Beers NB,pdok
+beerta,53.1658,7.1097,0,,Beerta,pdok
+beerze,52.5080,6.5347,0,,Beerze,pdok
+beerzerveld,52.4933,6.5683,0,,Beerzerveld,pdok
+beesd,51.9046,5.2022,0,,Beesd,pdok
+beesel,51.2609,6.0494,0,,Beesel,pdok
+beets,52.5910,4.9739,0,,Beets,pdok
+beetsterzwaag,53.0550,6.0709,0,,Beetsterzwaag,pdok
+beilen,52.8615,6.4980,0,,Beilen,pdok
+beinsdorp,52.2878,4.5997,0,,Beinsdorp,pdok
+belfeld,51.3058,6.1247,0,,Belfeld,pdok
+bellingwolde,53.1117,7.1606,0,,Bellingwolde,pdok
+belt-schutsloot,52.6696,6.0644,0,,Belt-Schutsloot,pdok
+beltrum,52.0620,6.5610,0,,Beltrum,pdok
+bemelen,50.8448,5.7793,0,,Bemelen,pdok
+bemmel,51.8984,5.8990,0,,Bemmel,pdok
+beneden-leeuwen,51.8732,5.5165,0,,Beneden-Leeuwen,pdok
+bennebroek,52.3212,4.5987,0,,Bennebroek,pdok
+bennekom,52.0074,5.6697,0,,Bennekom,pdok
+benneveld,52.7762,6.7516,0,,Benneveld,pdok
+benningbroek,52.7047,5.0354,0,,Benningbroek,pdok
+benschop,52.0059,4.9649,0,,Benschop,pdok
+bentelo,52.2179,6.6875,0,,Bentelo,pdok
+benthuizen,52.0807,4.5616,0,,Benthuizen,pdok
+bentveld,52.3673,4.5722,0,,Bentveld,pdok
+berg en dal,51.8152,5.9226,0,,Berg en Dal,pdok
+berg en terblijt,50.8599,5.7857,0,,Berg en Terblijt,pdok
+bergambacht,51.9380,4.7799,0,,Bergambacht,pdok
+bergeijk,51.3025,5.3263,0,,Bergeijk,pdok
+bergen (nh),52.6642,4.6933,0,,Bergen (NH),pdok
+bergen aan zee,52.6582,4.6276,0,,Bergen aan Zee,pdok
+bergen l,51.6053,6.0648,0,,Bergen L,pdok
+bergen op zoom,51.4896,4.2973,0,,Bergen op Zoom,pdok
+bergentheim,52.5196,6.6189,0,,Bergentheim,pdok
+bergharen,51.8525,5.6565,0,,Bergharen,pdok
+berghem,51.7684,5.5750,0,,Berghem,pdok
+bergschenhoek,51.9822,4.5112,0,,Bergschenhoek,pdok
+beringe,51.3329,5.9295,0,,Beringe,pdok
+berkel en rodenrijs,52.0005,4.4690,0,,Berkel en Rodenrijs,pdok
+berkel-enschot,51.5770,5.1389,0,,Berkel-Enschot,pdok
+berkenwoude,51.9529,4.6995,0,,Berkenwoude,pdok
+berkhout,52.6466,4.9970,0,,Berkhout,pdok
+berlicum,51.6785,5.4117,0,,Berlicum,pdok
+berltsum,53.2366,5.6413,0,,Berltsum,pdok
+bern,51.7506,5.1700,0,,Bern,pdok
+best,51.5141,5.3965,0,,Best,pdok
+beugen,51.6753,5.9337,0,,Beugen,pdok
+beuningen,52.3553,7.0144,0,,Beuningen,pdok
+beuningen gld,51.8562,5.7652,0,,Beuningen Gld,pdok
+beusichem,51.9484,5.2770,0,,Beusichem,pdok
+beutenaken,50.7821,5.8599,0,,Beutenaken,pdok
+beverwijk,52.4844,4.6594,0,,,
+biddinghuizen,52.4392,5.6849,0,,Biddinghuizen,pdok
+bierum,53.3893,6.8709,0,,Bierum,pdok
+biervliet,51.3372,3.6942,0,,Biervliet,pdok
+biervliet (zl),51.3372,3.6942,0,,Biervliet (ZL),pdok
+biest-houtakker,51.5072,5.1568,0,,Biest-Houtakker,pdok
+biezenmortel,51.6222,5.1809,0,,Biezenmortel,pdok
+biggekerke,51.4962,3.5265,0,,Biggekerke,pdok
+bilthoven,52.1405,5.2072,0,,Bilthoven,pdok
+bingelrade,50.9698,5.9327,0,,Bingelrade,pdok
+bitgum,53.2348,5.6856,0,,Bitgum,pdok
+bitgummole,53.2382,5.7158,0,,Bitgummole,pdok
+bladel,51.3560,5.2188,0,,Bladel,pdok
+blankenham,52.7673,5.9113,0,,Blankenham,pdok
+blaricum,52.2733,5.2333,0,,,
+blauwestad,53.1759,7.0498,0,,Blauwestad,pdok
+blauwhuis,53.0223,5.5383,0,,Blauwhuis,pdok
+bleiswijk,52.0225,4.5345,0,,Bleiswijk,pdok
+blesdijke,52.8348,6.0131,0,,Blesdijke,pdok
+bleskensgraaf ca,51.8687,4.7675,0,,Bleskensgraaf ca,pdok
+blessum,53.1814,5.7082,0,,Blessum,pdok
+blije,53.3555,5.8636,0,,Blije,pdok
+blijham,53.1184,7.0784,0,,Blijham,pdok
+blitterswijck,51.5268,6.1140,0,,Blitterswijck,pdok
+bloemendaal,52.4106,4.6168,0,,Bloemendaal,pdok
+blokker,52.6618,5.0894,0,,Blokker,pdok
+blokzijl,52.7219,5.9783,0,,Blokzijl,pdok
+boarnwert,53.3344,5.9652,0,,Boarnwert,pdok
+boazum,53.0919,5.6971,0,,Boazum,pdok
+bocholtz,50.8172,6.0008,0,,Bocholtz,pdok
+bodegraven,52.0910,4.7598,0,,Bodegraven,pdok
+boekel,51.6060,5.6761,0,,Boekel,pdok
+boelenslaan,53.1598,6.1341,0,,Boelenslaan,pdok
+boer,53.2134,5.5632,0,,Boer,pdok
+boerakker,53.1884,6.3288,0,,Boerakker,pdok
+boesingheliede,52.3528,4.7239,0,,Boesingheliede,pdok
+boijl,52.9147,6.1998,0,,Boijl,pdok
+boksum,53.1780,5.7296,0,,Boksum,pdok
+bolsward,53.0641,5.5246,0,,Bolsward,pdok
+bontebok,52.9613,6.0409,0,,Bontebok,pdok
+boornbergum,53.0828,6.0316,0,,Boornbergum,pdok
+boornzwaag,52.9757,5.7325,0,,Boornzwaag,pdok
+borculo,52.1061,6.5135,0,,Borculo,pdok
+borger,52.9261,6.7702,0,,Borger,pdok
+borgercompagnie,53.1087,6.8221,0,,Borgercompagnie,pdok
+borgercompagnie (gr),53.1087,6.8221,0,,Borgercompagnie (GR),pdok
+borgsweer,53.2901,7.0066,0,,Borgsweer,pdok
+born,51.0388,5.8174,0,,Born,pdok
+borne,52.3010,6.7483,0,,Borne,pdok
+bornerbroek,52.3122,6.6555,0,,Bornerbroek,pdok
+borssele,51.4198,3.7512,0,,Borssele,pdok
+bosch en duin,52.1205,5.2369,0,,Bosch en Duin,pdok
+boschoord,52.8966,6.2264,0,,Boschoord,pdok
+boskoop,52.0814,4.6707,0,,Boskoop,pdok
+bosschenhoofd,51.5610,4.5466,0,,Bosschenhoofd,pdok
+botlek rotterdam,51.8827,4.2775,0,,Botlek Rotterdam,pdok
+bourtange,53.0089,7.1853,0,,Bourtange,pdok
+boven-leeuwen,51.8772,5.5493,0,,Boven-Leeuwen,pdok
+bovenkarspel,52.6995,5.2471,0,,Bovenkarspel,pdok
+bovensmilde,52.9835,6.4631,0,,Bovensmilde,pdok
+boxmeer,51.6484,5.9376,0,,Boxmeer,pdok
+boxtel,51.5840,5.3083,0,,Boxtel,pdok
+braamt,51.9247,6.2623,0,,Braamt,pdok
+brakel,51.8114,5.0860,0,,Brakel,pdok
+brandwijk,51.8897,4.8122,0,,Brandwijk,pdok
+brantgum,53.3551,5.9356,0,,Brantgum,pdok
+breda,51.5804,4.7556,0,,Breda,pdok
+bredevoort,51.9438,6.6240,0,,Bredevoort,pdok
+breedenbroek,51.8837,6.4561,0,,Breedenbroek,pdok
+breezand,52.8906,4.8204,0,,Breezand,pdok
+breezanddijk,53.0174,5.2046,0,,Breezanddijk,pdok
+breskens,51.3926,3.5551,0,,Breskens,pdok
+breukelen,52.1711,4.9964,1,,,
+breukeleveen,52.1772,5.0697,0,,Breukeleveen,pdok
+brielle,51.9067,4.1668,0,,Brielle,pdok
+briltil,53.2330,6.3964,0,,Briltil,pdok
+britsum,53.2507,5.7979,0,,Britsum,pdok
+britswert,53.1161,5.6762,0,,Britswert,pdok
+broek,52.9856,5.7625,0,,Broek,pdok
+broek in waterland,52.4239,4.9958,0,,,
+broek op langedijk,52.6781,4.8036,0,,Broek op Langedijk,pdok
+broekhuizen,51.4789,6.1453,0,,Broekhuizen,pdok
+broekhuizen (dr),52.6975,6.2621,0,,Broekhuizen (DR),pdok
+broekhuizen (lb),51.4789,6.1453,0,,Broekhuizen (LB),pdok
+broekhuizenvorst,51.5026,6.1524,0,,Broekhuizenvorst,pdok
+broekland,52.3658,6.2184,0,,Broekland,pdok
+broeksterwâld,53.2700,5.9793,0,,Broeksterwâld,pdok
+bronkhorst,52.0831,6.1938,0,,Bronkhorst,pdok
+bronneger,52.9442,6.8103,0,,Bronneger,pdok
+bronnegerveen,52.9595,6.8381,0,,Bronnegerveen,pdok
+brouwershaven,51.7428,3.9554,0,,Brouwershaven,pdok
+bruchem,51.7843,5.2404,0,,Bruchem,pdok
+brucht,52.5466,6.6146,0,,Brucht,pdok
+bruchterveld,52.5364,6.6653,0,,Bruchterveld,pdok
+bruinehaar,52.4708,6.6934,0,,Bruinehaar,pdok
+bruinisse,51.6611,4.1162,0,,Bruinisse,pdok
+brummen,52.1064,6.1595,0,,Brummen,pdok
+brunssum,50.9429,5.9780,0,,Brunssum,pdok
+bruntinge,52.8178,6.5855,0,,Bruntinge,pdok
+buchten,51.0435,5.8129,0,,Buchten,pdok
+budel,51.2758,5.5952,0,,Budel,pdok
+budel-dorplein,51.2360,5.5896,0,,Budel-Dorplein,pdok
+budel-schoot,51.2513,5.5701,0,,Budel-Schoot,pdok
+buggenum,51.2363,5.9837,0,,Buggenum,pdok
+buinen,52.9228,6.8396,0,,Buinen,pdok
+buinerveen,52.9346,6.8731,0,,Buinerveen,pdok
+buitenkaag,52.2236,4.5597,0,,Buitenkaag,pdok
+buitenpost,53.2500,6.1575,0,,Buitenpost,pdok
+bunde,50.9016,5.7354,0,,Bunde,pdok
+bunne,53.1072,6.5143,0,,Bunne,pdok
+bunnik,52.0617,5.1856,0,,Bunnik,pdok
+bunschoten-spakenburg,52.2375,5.3640,0,,Bunschoten-Spakenburg,pdok
+burdaard,53.2931,5.8831,0,,Burdaard,pdok
+buren,51.9134,5.3303,0,,Buren,pdok
+buren (fr),53.4437,5.8824,0,,Buren (FR),pdok
+buren (gd),51.9134,5.3303,0,,Buren (GD),pdok
+burgerbrug,52.7531,4.6955,0,,Burgerbrug,pdok
+burgerveen,52.2416,4.6770,0,,Burgerveen,pdok
+burgh-haamstede,51.6885,3.7060,0,,Burgh-Haamstede,pdok
+burgum,53.1999,5.9962,0,,Burgum,pdok
+burgwerd,53.0891,5.5426,0,,Burgwerd,pdok
+burum,53.2752,6.2286,0,,Burum,pdok
+bussum,52.2733,5.1611,1,,,
+buurmalsen,51.9089,5.2967,0,,Buurmalsen,pdok
+buurmalsen (gd),51.9089,5.2967,0,,Buurmalsen (GD),pdok
+cadier en keer,50.8277,5.7687,0,,Cadier en Keer,pdok
+cadzand,51.3690,3.4124,0,,Cadzand,pdok
+callantsoog,52.8477,4.7104,0,,Callantsoog,pdok
+capelle aan den ijssel,51.9349,4.5801,0,,Capelle aan den IJssel,pdok
+castelre,51.4200,4.7941,0,,Castelre,pdok
+castenray,51.4907,6.0302,0,,Castenray,pdok
+casteren,51.4027,5.2386,0,,Casteren,pdok
+castricum,52.5467,4.6708,0,,,
+chaam,51.5052,4.8648,0,,Chaam,pdok
+clinge,51.2806,4.1026,0,,Clinge,pdok
+coevorden,52.6602,6.7426,0,,Coevorden,pdok
+colijnsplaat,51.5911,3.8275,0,,Colijnsplaat,pdok
+collendoorn,52.5966,6.5943,0,,Collendoorn,pdok
+colmschate,52.2500,6.2225,0,,Colmschate,pdok
+cornwerd,53.0844,5.3962,0,,Cornwerd,pdok
+cortelande,52.0044,4.6298,0,,Cortelande,pdok
+cothen,51.9938,5.2898,0,,Cothen,pdok
+creil,52.7684,5.5659,0,,Creil,pdok
+cromvoirt,51.6697,5.2344,0,,Cromvoirt,pdok
+cruquius,52.3341,4.6474,0,,Cruquius,pdok
+cuijk,51.7278,5.8693,0,,Cuijk,pdok
+culemborg,51.9458,5.2104,0,,Culemborg,pdok
+daarle,52.4277,6.5379,0,,Daarle,pdok
+daarlerveen,52.4404,6.5817,0,,Daarlerveen,pdok
+dalem,51.8241,5.0143,0,,Dalem,pdok
+dalen,52.6961,6.7435,0,,Dalen,pdok
+dalerpeel,52.6878,6.6660,0,,Dalerpeel,pdok
+dalerveen,52.6891,6.8120,0,,Dalerveen,pdok
+dalfsen,52.5126,6.2693,0,,Dalfsen,pdok
+dalmsholte,52.4702,6.3672,0,,Dalmsholte,pdok
+damwâld,53.2939,5.9924,0,,Damwâld,pdok
+darp,52.7767,6.2057,0,,Darp,pdok
+de bilt,52.1031,5.1928,0,,De Bilt,pdok
+de blesse,52.8459,6.0397,0,,De Blesse,pdok
+de bult,52.8073,6.1147,0,,De Bult,pdok
+de cocksdorp,53.1501,4.8745,0,,De Cocksdorp,pdok
+de falom,53.2642,6.0107,0,,De Falom,pdok
+de glind,52.1199,5.5152,0,,De Glind,pdok
+de goorn,52.6300,4.9530,0,,De Goorn,pdok
+de groeve,53.1132,6.7204,0,,De Groeve,pdok
+de heen,51.6111,4.2528,0,,De Heen,pdok
+de heurne,51.8918,6.5004,0,,De Heurne,pdok
+de hoef,52.2128,4.8147,0,,de Hoef,pdok
+de hoeve,52.8920,6.0938,0,,De Hoeve,pdok
+de kiel,52.8645,6.7352,0,,De Kiel,pdok
+de klomp,52.0419,5.5853,0,,De Klomp,pdok
+de knipe,52.9637,5.9893,0,,De Knipe,pdok
+de koog,53.0918,4.7549,0,,De Koog,pdok
+de krim,52.6527,6.6198,0,,De Krim,pdok
+de kwakel,52.2341,4.7748,0,,De Kwakel,pdok
+de lier,51.9747,4.2558,0,,De Lier,pdok
+de lutte,52.3144,6.9936,0,,de Lutte,pdok
+de meern,52.0777,5.0274,0,,De Meern,pdok
+de moer,51.6244,5.0176,0,,De Moer,pdok
+de mortel,51.5413,5.7242,0,,De Mortel,pdok
+de pol,52.8217,6.0840,0,,De Pol,pdok
+de punt,53.1116,6.6138,0,,De Punt,pdok
+de rijp,52.5568,4.8451,0,,De Rijp,pdok
+de rips,51.5442,5.8142,0,,De Rips,pdok
+de schiphorst,52.6791,6.2536,0,,De Schiphorst,pdok
+de steeg,52.0246,6.0662,0,,De Steeg,pdok
+de tike,53.1508,6.0280,0,,De Tike,pdok
+de trieme,53.2759,6.0896,0,,De Trieme,pdok
+de veenhoop,53.0905,5.9637,0,,De Veenhoop,pdok
+de waal,53.0768,4.8250,0,,De Waal,pdok
+de weere,52.7311,4.9882,0,,De Weere,pdok
+de westereen,53.2610,6.0356,0,,De Westereen,pdok
+de wijk,52.6704,6.3151,0,,de Wijk,pdok
+de wilgen,53.0970,6.0224,0,,De Wilgen,pdok
+de wilp,53.1181,6.2707,0,,De Wilp,pdok
+de woude,52.5478,4.7658,0,,de Woude,pdok
+de zilk,52.3002,4.5411,0,,De Zilk,pdok
+dearsum,53.0834,5.7180,0,,Dearsum,pdok
+dedemsvaart,52.5945,6.4752,0,,Dedemsvaart,pdok
+dedgum,53.0220,5.4960,0,,Dedgum,pdok
+deelen,52.0780,5.8930,0,,Deelen,pdok
+deest,51.8846,5.6653,0,,Deest,pdok
+deil,51.8759,5.2406,0,,Deil,pdok
+deinum,53.1927,5.7155,0,,Deinum,pdok
+delden,52.2587,6.7058,0,,Delden,pdok
+delfgauw,52.0032,4.4020,0,,Delfgauw,pdok
+delfstrahuizen,52.8853,5.8372,0,,Delfstrahuizen,pdok
+delft,51.9985,4.3631,0,,Delft,pdok
+delfzijl,53.3602,6.9524,0,,Delfzijl,pdok
+delwijnen,51.7774,5.1819,0,,Delwijnen,pdok
+demen,51.8119,5.6294,0,,Demen,pdok
+den andel,53.4038,6.5190,0,,Den Andel,pdok
+den bommel,51.7083,4.2929,0,,Den Bommel,pdok
+den burg,53.0545,4.7676,0,,Den Burg,pdok
+den dolder,52.1501,5.2407,0,,Den Dolder,pdok
+den dungen,51.6694,5.3755,0,,Den Dungen,pdok
+den haag,52.0705,4.3007,0,,,
+den ham,53.2705,6.4426,0,,Den Ham,pdok
+den ham (gr),53.2705,6.4426,0,,Den Ham (GR),pdok
+den ham (ov),52.4627,6.5032,0,,Den Ham (OV),pdok
+den helder,52.9446,4.7907,0,,Den Helder,pdok
+den hoorn,52.9999,4.7281,0,,Den Hoorn,pdok
+den hoorn (nh),52.9999,4.7281,0,,Den Hoorn (NH),pdok
+den hoorn (zh),52.0054,4.3174,0,,Den Hoorn (ZH),pdok
+den horn,53.2272,6.4537,0,,Den Horn,pdok
+den hout,51.6555,4.8078,0,,Den Hout,pdok
+den ilp,52.4578,4.9049,0,,Den Ilp,pdok
+den oever,52.9811,5.0054,0,,Den Oever,pdok
+den velde,52.5944,6.7020,0,,Den Velde,pdok
+denekamp,52.3890,7.0131,0,,Denekamp,pdok
+deurne,51.4657,5.8103,0,,Deurne,pdok
+deurningen,52.3012,6.8559,0,,Deurningen,pdok
+deurningen (ov),52.3012,6.8559,0,,Deurningen (OV),pdok
+deursen-dennenburg,51.7953,5.6143,0,,Deursen-Dennenburg,pdok
+deurze,52.9768,6.6031,0,,Deurze,pdok
+deventer,52.2501,6.1927,0,,Deventer,pdok
+didam,51.9444,6.1378,0,,Didam,pdok
+dieden,51.8179,5.6017,0,,Dieden,pdok
+diemen,52.3395,4.9625,1,,,
+diepenheim,52.1918,6.5766,0,,Diepenheim,pdok
+diepenveen,52.2941,6.1560,0,,Diepenveen,pdok
+dieren,52.0514,6.0853,0,,Dieren,pdok
+diessen,51.4686,5.1857,0,,Diessen,pdok
+diever,52.8628,6.3173,0,,Diever,pdok
+dieverbrug,52.8495,6.3387,0,,Dieverbrug,pdok
+diffelen,52.5353,6.5502,0,,Diffelen,pdok
+dijken,52.9542,5.7059,0,,Dijken,pdok
+dinteloord,51.6267,4.3470,0,,Dinteloord,pdok
+dinxperlo,51.8651,6.4862,0,,Dinxperlo,pdok
+diphoorn,52.7717,6.8229,0,,Diphoorn,pdok
+dirkshorn,52.7469,4.7919,0,,Dirkshorn,pdok
+dirksland,51.7562,4.0866,0,,Dirksland,pdok
+dodewaard,51.9112,5.6629,0,,Dodewaard,pdok
+doenrade,50.9668,5.9054,0,,Doenrade,pdok
+doesburg,52.0187,6.1469,0,,Doesburg,pdok
+doetinchem,51.9648,6.3151,0,,Doetinchem,pdok
+doeveren,51.7243,5.0949,0,,Doeveren,pdok
+doezum,53.2042,6.2431,0,,Doezum,pdok
+dokkum,53.3226,5.9971,0,,Dokkum,pdok
+doldersum,52.8931,6.2502,0,,Doldersum,pdok
+domburg,51.5606,3.4931,0,,Domburg,pdok
+donderen,53.0918,6.5398,0,,Donderen,pdok
+dongen,51.6299,4.9582,0,,Dongen,pdok
+dongjum,53.2091,5.5421,0,,Dongjum,pdok
+doniaga,52.9025,5.7455,0,,Doniaga,pdok
+donkerbroek,53.0183,6.2363,0,,Donkerbroek,pdok
+doorn,52.0373,5.3423,0,,Doorn,pdok
+doornenburg,51.8918,6.0041,0,,Doornenburg,pdok
+doornspijk,52.4095,5.8154,0,,Doornspijk,pdok
+doorwerth,51.9740,5.7864,0,,Doorwerth,pdok
+dordrecht,51.7815,4.7089,0,,Dordrecht,pdok
+dorst,51.5991,4.8787,0,,Dorst,pdok
+drachten,53.1066,6.0934,0,,Drachten,pdok
+drachten-azeven,53.0981,6.1333,0,,Drachten-Azeven,pdok
+drachtstercompagnie,53.1329,6.1510,0,,Drachtstercompagnie,pdok
+dreischor,51.6965,3.9969,0,,Dreischor,pdok
+drempt,52.0195,6.1863,0,,Drempt,pdok
+dreumel,51.8470,5.4391,0,,Dreumel,pdok
+driebergen-rijsenburg,52.0499,5.2862,0,,Driebergen-Rijsenburg,pdok
+drieborg,53.2674,7.1740,0,,Drieborg,pdok
+driebruggen,52.0451,4.7942,0,,Driebruggen,pdok
+driehuis nh,52.4460,4.6355,0,,Driehuis NH,pdok
+driehuizen,52.5843,4.8086,0,,Driehuizen,pdok
+driel,51.9569,5.8086,0,,Driel,pdok
+driewegen,51.4122,3.7947,0,,Driewegen,pdok
+driezum,53.3081,6.0553,0,,Driezum,pdok
+drijber,52.7856,6.5522,0,,Drijber,pdok
+drimmelen,51.7285,4.7900,0,,Drimmelen,pdok
+drogeham,53.2044,6.1159,0,,Drogeham,pdok
+drogteropslagen,52.6216,6.4996,0,,Drogteropslagen,pdok
+drongelen,51.7191,5.0436,0,,Drongelen,pdok
+dronryp,53.1863,5.6466,0,,Dronryp,pdok
+dronten,52.5291,5.7535,0,,Dronten,pdok
+drouwen,52.9515,6.7757,0,,Drouwen,pdok
+drouwenermond,52.9766,6.8992,0,,Drouwenermond,pdok
+drouwenerveen,52.9664,6.8596,0,,Drouwenerveen,pdok
+drunen,51.6682,5.1348,0,,Drunen,pdok
+druten,51.8909,5.5859,0,,Druten,pdok
+duiven,51.9588,6.0229,0,,Duiven,pdok
+duivendrecht,52.3258,4.9394,1,,,
+duizel,51.3734,5.2937,0,,Duizel,pdok
+dussen,51.7350,4.9649,0,,Dussen,pdok
+dwingeloo,52.8346,6.3879,0,,Dwingeloo,pdok
+eagum,53.1290,5.8229,0,,Eagum,pdok
+eanjum,53.3852,6.1437,0,,Eanjum,pdok
+earnewâld,53.1378,5.9429,0,,Earnewâld,pdok
+easterein,53.0987,5.6199,0,,Easterein,pdok
+easterlittens,53.1295,5.6562,0,,Easterlittens,pdok
+eastermar,53.1769,6.0711,0,,Eastermar,pdok
+easternijtsjerk,53.3786,6.0490,0,,Easternijtsjerk,pdok
+easterwierrum,53.1155,5.7351,0,,Easterwierrum,pdok
+eastrum,53.3316,6.0483,0,,Eastrum,pdok
+echt,51.0985,5.8830,0,,Echt,pdok
+echteld,51.9053,5.4886,0,,Echteld,pdok
+echten,52.8700,5.8001,0,,Echten,pdok
+echten (dr),52.7169,6.3887,0,,Echten (DR),pdok
+echten (fr),52.8700,5.8001,0,,Echten (FR),pdok
+echtenerbrug,52.8606,5.8238,0,,Echtenerbrug,pdok
+eck en wiel,51.9692,5.4560,0,,Eck en Wiel,pdok
+eckelrade,50.8094,5.7629,0,,Eckelrade,pdok
+edam,52.5122,5.045,0,,,
+ede,52.0460,5.6849,0,,Ede,pdok
+ederveen,52.0588,5.5834,0,,Ederveen,pdok
+eede,51.2520,3.4630,0,,Eede,pdok
+eefde,52.1710,6.2299,0,,Eefde,pdok
+eelde,53.1306,6.5742,0,,Eelde,pdok
+eelderwolde,53.1789,6.5356,0,,Eelderwolde,pdok
+eemdijk,52.2621,5.3339,0,,Eemdijk,pdok
+eemnes,52.2539,5.2661,0,,,
+eemshaven,53.4465,6.8510,0,,Eemshaven,pdok
+een,53.0836,6.3789,0,,Een,pdok
+een-west,53.0826,6.3318,0,,Een-West,pdok
+eenrum,53.3703,6.4541,0,,Eenrum,pdok
+eenum,53.3366,6.7835,0,,Eenum,pdok
+eerbeek,52.0950,6.0513,0,,Eerbeek,pdok
+eersel,51.3484,5.3132,0,,Eersel,pdok
+ees,52.8989,6.8113,0,,Ees,pdok
+eesergroen,52.8903,6.7803,0,,Eesergroen,pdok
+eeserveen,52.8766,6.7647,0,,Eeserveen,pdok
+eesterga,52.8678,5.7135,0,,Eesterga,pdok
+eesveen,52.8290,6.1253,0,,Eesveen,pdok
+eethen,51.7357,5.0487,0,,Eethen,pdok
+eext,53.0159,6.7312,0,,Eext,pdok
+eexterveen,53.0517,6.8028,0,,Eexterveen,pdok
+eexterveenschekanaal,53.0592,6.8217,0,,Eexterveenschekanaal,pdok
+eexterzandvoort,53.0378,6.7807,0,,Eexterzandvoort,pdok
+egchel,51.3080,5.9652,0,,Egchel,pdok
+egmond aan den hoef,52.6284,4.6625,0,,Egmond aan den Hoef,pdok
+egmond aan zee,52.6188,4.6193,0,,Egmond aan Zee,pdok
+egmond-binnen,52.5947,4.6329,0,,Egmond-Binnen,pdok
+eibergen,52.0920,6.6487,0,,Eibergen,pdok
+eijsden,50.7790,5.7159,0,,Eijsden,pdok
+eindhoven,51.4416,5.4697,0,,,
+einighausen,51.0002,5.8272,0,,Einighausen,pdok
+ekehaar,52.9497,6.5933,0,,Ekehaar,pdok
+elahuizen,52.9278,5.5480,0,,Elahuizen,pdok
+elburg,52.4489,5.8423,0,,Elburg,pdok
+eldersloo,52.9628,6.6153,0,,Eldersloo,pdok
+eleveld,52.9589,6.5815,0,,Eleveld,pdok
+elim,52.6814,6.5730,0,,Elim,pdok
+elkenrade,50.8401,5.9156,0,,Elkenrade,pdok
+ell,51.2130,5.7887,0,,Ell,pdok
+ellecom,52.0270,6.1004,0,,Ellecom,pdok
+ellemeet,51.7190,3.8227,0,,Ellemeet,pdok
+ellertshaar,52.8955,6.7414,0,,Ellertshaar,pdok
+ellewoutsdijk,51.3829,3.8181,0,,Ellewoutsdijk,pdok
+elp,52.8889,6.6491,0,,Elp,pdok
+elsendorp,51.5743,5.7703,0,,Elsendorp,pdok
+elshout,51.7035,5.1325,0,,Elshout,pdok
+elsloo,52.9414,6.2431,0,,Elsloo,pdok
+elsloo (fr),52.9414,6.2431,0,,Elsloo (FR),pdok
+elsloo (lb),50.9491,5.7587,0,,Elsloo (LB),pdok
+elspeet,52.2971,5.7865,0,,Elspeet,pdok
+elst,51.9211,5.8418,0,,Elst,pdok
+elst ut,51.9925,5.5119,0,,Elst Ut,pdok
+emmeloord,52.7133,5.7578,0,,Emmeloord,pdok
+emmen,52.7783,6.9011,0,,Emmen,pdok
+emmer-compascuum,52.8026,7.0215,0,,Emmer-Compascuum,pdok
+empe,52.1484,6.1226,0,,Empe,pdok
+emst,52.3176,5.9462,0,,Emst,pdok
+enkhuizen,52.7552,5.3034,0,,Enkhuizen,pdok
+ens,52.6402,5.8213,0,,Ens,pdok
+enschede,52.2208,6.8778,0,,Enschede,pdok
+enspijk,51.8688,5.2117,0,,Enspijk,pdok
+enter,52.2997,6.5880,0,,Enter,pdok
+enumatil,53.2146,6.4109,0,,Enumatil,pdok
+epe,52.3574,5.9584,0,,Epe,pdok
+epen,50.7661,5.9082,0,,Epen,pdok
+eppenhuizen,53.3768,6.6933,0,,Eppenhuizen,pdok
+epse,52.2224,6.2146,0,,Epse,pdok
+erica,52.7082,6.9267,0,,Erica,pdok
+erichem,51.8950,5.3444,0,,Erichem,pdok
+erlecom,51.8466,5.9595,0,,Erlecom,pdok
+erm,52.7470,6.8128,0,,Erm,pdok
+ermelo,52.2882,5.6662,0,,Ermelo,pdok
+erp,51.5896,5.6098,0,,Erp,pdok
+esbeek,51.4510,5.1295,0,,Esbeek,pdok
+esch,51.6155,5.2939,0,,Esch,pdok
+escharen,51.7345,5.7451,0,,Escharen,pdok
+espel,52.7267,5.5804,0,,Espel,pdok
+est,51.8468,5.3166,0,,Est,pdok
+etten,51.9111,6.3266,0,,Etten,pdok
+etten-leur,51.5783,4.6450,0,,Etten-Leur,pdok
+europoort rotterdam,51.9423,4.1489,0,,Europoort Rotterdam,pdok
+eursinge,52.8368,6.5915,0,,Eursinge,pdok
+eursinge (dr),52.8368,6.5915,0,,Eursinge (DR),pdok
+everdingen,51.9571,5.1518,0,,Everdingen,pdok
+evertsoord,51.4019,5.9419,0,,Evertsoord,pdok
+ewijk,51.8617,5.7263,0,,Ewijk,pdok
+exloo,52.8844,6.8656,0,,Exloo,pdok
+exloërveen,52.8970,6.8994,0,,Exloërveen,pdok
+exmorra,53.0584,5.4670,0,,Exmorra,pdok
+eygelshoven,50.8963,6.0635,0,,Eygelshoven,pdok
+eys,50.8284,5.9415,0,,Eys,pdok
+ezinge,53.3022,6.4432,0,,Ezinge,pdok
+farmsum,53.3009,6.9658,0,,Farmsum,pdok
+feankleaster,53.2658,6.1135,0,,Feankleaster,pdok
+feanwâlden,53.2463,5.9755,0,,Feanwâlden,pdok
+feerwerd,53.2958,6.4700,0,,Feerwerd,pdok
+feinsum,53.2811,5.7606,0,,Feinsum,pdok
+ferwert,53.3612,5.7908,0,,Ferwert,pdok
+ferwoude,53.0054,5.4385,0,,Ferwoude,pdok
+fijnaart,51.6379,4.4728,0,,Fijnaart,pdok
+finsterwolde,53.2351,7.1121,0,,Finsterwolde,pdok
+firdgum,53.2477,5.5622,0,,Firdgum,pdok
+fleringen,52.3774,6.8037,0,,Fleringen,pdok
+fluitenberg,52.7387,6.4455,0,,Fluitenberg,pdok
+fochteloo,52.9938,6.3556,0,,Fochteloo,pdok
+follega,52.8840,5.7208,0,,Follega,pdok
+folsgare,53.0341,5.6022,0,,Folsgare,pdok
+formerum,53.3118,5.3767,0,,Formerum,pdok
+foudgum,53.3448,5.9478,0,,Foudgum,pdok
+foxhol,53.1689,6.7138,0,,Foxhol,pdok
+foxwolde,53.1578,6.4588,0,,Foxwolde,pdok
+franeker,53.1834,5.5466,0,,Franeker,pdok
+frederiksoord,52.8465,6.1846,0,,Frederiksoord,pdok
+friens,53.0983,5.8000,0,,Friens,pdok
+frieschepalen,53.1071,6.2054,0,,Frieschepalen,pdok
+froombosch,53.1964,6.7723,0,,Froombosch,pdok
+gaanderen,51.9376,6.3601,0,,Gaanderen,pdok
+gaast,53.0216,5.4282,0,,Gaast,pdok
+gaastmeer,52.9682,5.5267,0,,Gaastmeer,pdok
+galder,51.5148,4.7696,0,,Galder,pdok
+gameren,51.7991,5.1952,0,,Gameren,pdok
+gapinge,51.5436,3.6275,0,,Gapinge,pdok
+garderen,52.2240,5.7017,0,,Garderen,pdok
+garmerwolde,53.2510,6.6600,0,,Garmerwolde,pdok
+garminge,52.8212,6.6237,0,,Garminge,pdok
+garnwerd,53.2933,6.4899,0,,Garnwerd,pdok
+garrelsweer,53.3053,6.7708,0,,Garrelsweer,pdok
+garsthuizen,53.3721,6.7303,0,,Garsthuizen,pdok
+garyp,53.1617,5.9649,0,,Garyp,pdok
+gassel,51.7355,5.7808,0,,Gassel,pdok
+gasselte,52.9737,6.7707,0,,Gasselte,pdok
+gasselternijveen,52.9916,6.8430,0,,Gasselternijveen,pdok
+gasselternijveenschemond,53.0005,6.8921,0,,Gasselternijveenschemond,pdok
+gastel,51.2913,5.5436,0,,Gastel,pdok
+gasteren,53.0346,6.6668,0,,Gasteren,pdok
+gauw,53.0556,5.7184,0,,Gauw,pdok
+geelbroek,52.9503,6.5687,0,,Geelbroek,pdok
+geerdijk,52.4797,6.5633,0,,Geerdijk,pdok
+geersdijk,51.5630,3.7586,0,,Geersdijk,pdok
+geertruidenberg,51.6999,4.8458,0,,Geertruidenberg,pdok
+geervliet,51.8544,4.2657,0,,Geervliet,pdok
+gees,52.7456,6.6806,0,,Gees,pdok
+geesbrug,52.7369,6.6202,0,,Geesbrug,pdok
+geesteren,52.4232,6.7201,0,,Geesteren,pdok
+geesteren (gd),52.1398,6.5178,0,,Geesteren (GD),pdok
+geesteren (ov),52.4232,6.7201,0,,Geesteren (OV),pdok
+geeuwenbrug,52.8749,6.3633,0,,Geeuwenbrug,pdok
+geffen,51.7470,5.4673,0,,Geffen,pdok
+geijsteren,51.5474,6.0507,0,,Geijsteren,pdok
+geldermalsen,51.8768,5.2985,0,,Geldermalsen,pdok
+gelderswoude,52.0912,4.5267,0,,Gelderswoude,pdok
+geldrop,51.4205,5.5564,0,,Geldrop,pdok
+geleen,50.9783,5.8109,0,,Geleen,pdok
+gellicum,51.8649,5.1562,0,,Gellicum,pdok
+gelselaar,52.1680,6.5242,0,,Gelselaar,pdok
+gemert,51.5601,5.6908,0,,Gemert,pdok
+gemonde,51.6153,5.3645,0,,Gemonde,pdok
+genderen,51.7369,5.0874,0,,Genderen,pdok
+gendringen,51.8700,6.3577,0,,Gendringen,pdok
+gendt,51.8777,5.9639,0,,Gendt,pdok
+genemuiden,52.6110,6.0231,0,,Genemuiden,pdok
+gennep,51.6995,5.9736,0,,Gennep,pdok
+gerkesklooster,53.2469,6.2067,0,,Gerkesklooster,pdok
+gersloot,53.0208,5.9585,0,,Gersloot,pdok
+geulle,50.9231,5.7468,0,,Geulle,pdok
+giesbeek,51.9926,6.0731,0,,Giesbeek,pdok
+giessen,51.7835,5.0290,0,,Giessen,pdok
+giessenburg,51.8567,4.8829,0,,Giessenburg,pdok
+gieten,53.0039,6.7752,0,,Gieten,pdok
+gieterveen,53.0240,6.8425,0,,Gieterveen,pdok
+giethmen,52.4910,6.3960,0,,Giethmen,pdok
+giethoorn,52.7353,6.0592,0,,Giethoorn,pdok
+gilze,51.5365,4.9185,0,,Gilze,pdok
+ginnum,53.3232,5.8767,0,,Ginnum,pdok
+glane,52.2329,6.9861,0,,Glane,pdok
+glimmen,53.1359,6.6285,0,,Glimmen,pdok
+godlinze,53.3792,6.8082,0,,Godlinze,pdok
+goedereede,51.8184,3.9897,0,,Goedereede,pdok
+goes,51.5019,3.8908,0,,Goes,pdok
+goingarijp,53.0201,5.7573,0,,Goingarijp,pdok
+goirle,51.5089,5.0529,0,,Goirle,pdok
+goor,52.2378,6.5896,0,,Goor,pdok
+gorinchem,51.8395,4.9744,0,,Gorinchem,pdok
+gorredijk,52.9949,6.0647,0,,Gorredijk,pdok
+gorssel,52.1956,6.1970,0,,Gorssel,pdok
+gouda,52.0153,4.7062,0,,Gouda,pdok
+gouderak,51.9823,4.6899,0,,Gouderak,pdok
+goudriaan,51.9036,4.9053,0,,Goudriaan,pdok
+goudswaard,51.7712,4.2764,0,,Goudswaard,pdok
+goutum,53.1786,5.8040,0,,Goutum,pdok
+goënga,53.0535,5.7011,0,,Goënga,pdok
+goëngahuizen,53.0870,5.9034,0,,Goëngahuizen,pdok
+graauw,51.3271,4.0982,0,,Graauw,pdok
+grafhorst,52.5884,5.9469,0,,Grafhorst,pdok
+graft,52.5602,4.8224,0,,Graft,pdok
+gramsbergen,52.6085,6.6722,0,,Gramsbergen,pdok
+grashoek,51.3644,5.9387,0,,Grashoek,pdok
+grathem,51.1996,5.8566,0,,Grathem,pdok
+grave,51.7615,5.7288,0,,Grave,pdok
+greonterp,53.0095,5.5161,0,,Greonterp,pdok
+grevenbicht,51.0466,5.7751,0,,Grevenbicht,pdok
+griendtsveen,51.4364,5.9056,0,,Griendtsveen,pdok
+grijpskerk,53.2663,6.3026,0,,Grijpskerk,pdok
+grijpskerke,51.5276,3.5639,0,,Grijpskerke,pdok
+groede,51.3762,3.5114,0,,Groede,pdok
+groenekan,52.1298,5.1579,0,,Groenekan,pdok
+groeningen,51.6119,5.9966,0,,Groeningen,pdok
+groenlo,52.0381,6.6388,0,,Groenlo,pdok
+groesbeek,51.7790,5.9372,0,,Groesbeek,pdok
+groessen,51.9283,6.0263,0,,Groessen,pdok
+groet,52.7221,4.6704,0,,Groet,pdok
+grolloo,52.9305,6.6699,0,,Grolloo,pdok
+groningen,53.2194,6.5665,0,,,
+gronsveld,50.8067,5.7313,0,,Gronsveld,pdok
+groot-ammers,51.9193,4.8509,0,,Groot-Ammers,pdok
+grootebroek,52.7006,5.2219,0,,Grootebroek,pdok
+grootegast,53.2060,6.2801,0,,Grootegast,pdok
+grootschermer,52.5862,4.8527,0,,Grootschermer,pdok
+grou,53.1002,5.8492,0,,Grou,pdok
+grubbenvorst,51.4253,6.1214,0,,Grubbenvorst,pdok
+gulpen,50.8012,5.8814,0,,Gulpen,pdok
+guttecoven,51.0121,5.8161,0,,Guttecoven,pdok
+gytsjerk,53.2401,5.8838,0,,Gytsjerk,pdok
+haaften,51.8252,5.2051,0,,Haaften,pdok
+haaksbergen,52.1555,6.7559,0,,Haaksbergen,pdok
+haalderen,51.8872,5.9270,0,,Haalderen,pdok
+haaren,51.6038,5.2322,0,,Haaren,pdok
+haarle,52.3530,6.3862,0,,Haarle,pdok
+haarle (ov),52.3530,6.3862,0,,Haarle (OV),pdok
+haarlem,52.3874,4.6462,1,,,
+haarlemmerliede,52.3883,4.6925,0,,Haarlemmerliede,pdok
+haarlo,52.1077,6.5706,0,,Haarlo,pdok
+haarsteeg,51.7146,5.1996,0,,Haarsteeg,pdok
+haarzuilens,52.1246,4.9922,0,,Haarzuilens,pdok
+haastrecht,52.0036,4.7914,0,,Haastrecht,pdok
+haelen,51.2340,5.9412,0,,Haelen,pdok
+hagestein,51.9783,5.1282,0,,Hagestein,pdok
+haghorst,51.5009,5.2112,0,,Haghorst,pdok
+haler,51.1909,5.7768,0,,Haler,pdok
+halfweg,52.3942,4.7298,0,,Halfweg,pdok
+hall,52.1115,6.0953,0,,Hall,pdok
+halle,51.9999,6.4293,0,,Halle,pdok
+hallum,53.3004,5.7878,0,,Hallum,pdok
+halsteren,51.5256,4.2692,0,,Halsteren,pdok
+handel,51.5785,5.7137,0,,Handel,pdok
+hank,51.7378,4.8916,0,,Hank,pdok
+hansweert,51.4455,3.9852,0,,Hansweert,pdok
+hantum,53.3640,5.9640,0,,Hantum,pdok
+hantumerútbuorren,53.3568,6.0055,0,,Hantumerútbuorren,pdok
+hantumhuzen,53.3726,5.9987,0,,Hantumhuzen,pdok
+hapert,51.3464,5.2566,0,,Hapert,pdok
+haps,51.6923,5.8614,0,,Haps,pdok
+harbrinkhoek,52.3849,6.7185,0,,Harbrinkhoek,pdok
+hardenberg,52.5717,6.6213,0,,Hardenberg,pdok
+harderwijk,52.3375,5.6359,0,,Harderwijk,pdok
+hardinxveld-giessendam,51.8326,4.8524,0,,Hardinxveld-Giessendam,pdok
+haren,51.8016,5.5816,0,,Haren,pdok
+haren gn,53.1704,6.6010,0,,Haren Gn,pdok
+harfsen,52.1957,6.2908,0,,Harfsen,pdok
+harich,52.8972,5.5505,0,,Harich,pdok
+haringhuizen,52.7684,4.8304,0,,Haringhuizen,pdok
+harkema,53.1856,6.1300,0,,Harkema,pdok
+harkstede,53.2158,6.7041,0,,Harkstede,pdok
+harkstede gn,53.2193,6.6812,0,,Harkstede GN,pdok
+harlingen,53.1421,5.2637,0,,Harlingen,pdok
+harmelen,52.0948,4.9639,0,,Harmelen,pdok
+harreveld,51.9816,6.5087,0,,Harreveld,pdok
+harskamp,52.1339,5.7770,0,,Harskamp,pdok
+hartwerd,53.0725,5.5716,0,,Hartwerd,pdok
+haskerdijken,53.0151,5.8687,0,,Haskerdijken,pdok
+haskerhorne,52.9591,5.8336,0,,Haskerhorne,pdok
+hasselt,52.5802,6.1059,0,,Hasselt,pdok
+hattem,52.4748,6.0533,0,,Hattem,pdok
+hattemerbroek,52.4798,6.0118,0,,Hattemerbroek,pdok
+haule,53.0396,6.3083,0,,Haule,pdok
+haulerwijk,53.0582,6.3395,0,,Haulerwijk,pdok
+hauwert,52.7083,5.1007,0,,Hauwert,pdok
+havelte,52.7650,6.2353,0,,Havelte,pdok
+havelterberg,52.7705,6.1817,0,,Havelterberg,pdok
+hazerswoude-dorp,52.0999,4.5918,0,,Hazerswoude-Dorp,pdok
+hazerswoude-rijndijk,52.1254,4.5941,0,,Hazerswoude-Rijndijk,pdok
+hedel,51.7538,5.2581,0,,Hedel,pdok
+hedikhuizen,51.7326,5.1883,0,,Hedikhuizen,pdok
+hee,53.3784,5.2601,0,,Hee,pdok
+heeg,52.9721,5.5922,0,,Heeg,pdok
+heel,51.1854,5.8865,0,,Heel,pdok
+heelsum,51.9820,5.7625,0,,Heelsum,pdok
+heelweg,51.9611,6.4869,0,,Heelweg,pdok
+heemserveen,52.5875,6.5642,0,,Heemserveen,pdok
+heemskerk,52.5111,4.6714,0,,,
+heemstede,52.35,4.62,0,,,
+heenvliet,51.8600,4.2246,0,,Heenvliet,pdok
+heerde,52.3960,6.0252,0,,Heerde,pdok
+heerenveen,52.9624,5.9260,0,,Heerenveen,pdok
+heerewaarden,51.8144,5.3835,0,,Heerewaarden,pdok
+heerhugowaard,52.6760,4.8446,0,,Heerhugowaard,pdok
+heerjansdam,51.8304,4.5734,0,,Heerjansdam,pdok
+heerle,51.5168,4.3651,0,,Heerle,pdok
+heerlen,50.8880,5.9786,0,,Heerlen,pdok
+heesbeen,51.7304,5.1151,0,,Heesbeen,pdok
+heesch,51.7179,5.5161,0,,Heesch,pdok
+heesselt,51.8166,5.3438,0,,Heesselt,pdok
+heeswijk-dinther,51.6579,5.4879,0,,Heeswijk-Dinther,pdok
+heeten,52.3322,6.2801,0,,Heeten,pdok
+heeze,51.3888,5.5777,0,,Heeze,pdok
+hegebeintum,53.3298,5.8573,0,,Hegebeintum,pdok
+hegelsom,51.4317,6.0375,0,,Hegelsom,pdok
+hei- en boeicop,51.9404,5.0712,0,,Hei- en Boeicop,pdok
+heibloem,51.2993,5.9066,0,,Heibloem,pdok
+heide,51.5028,5.9428,0,,Heide,pdok
+heijen,51.6678,5.9921,0,,Heijen,pdok
+heijenrath,50.7764,5.8736,0,,Heijenrath,pdok
+heijningen,51.6595,4.4096,0,,Heijningen,pdok
+heikant,51.2517,4.0105,0,,Heikant,pdok
+heilig landstichting,51.8128,5.8944,0,,Heilig Landstichting,pdok
+heiligerlee,53.1575,7.0078,0,,Heiligerlee,pdok
+heiloo,52.5999,4.7086,0,,Heiloo,pdok
+heinenoord,51.8227,4.5046,0,,Heinenoord,pdok
+heinkenszand,51.4654,3.8087,0,,Heinkenszand,pdok
+heino,52.4431,6.2457,0,,Heino,pdok
+hekelingen,51.8223,4.3411,0,,Hekelingen,pdok
+hekendorp,52.0228,4.8286,0,,Hekendorp,pdok
+helden,51.3191,6.0097,0,,Helden,pdok
+helenaveen,51.4023,5.8941,0,,Helenaveen,pdok
+hellendoorn,52.4139,6.4503,0,,Hellendoorn,pdok
+hellevoetsluis,51.8396,4.1255,0,,Hellevoetsluis,pdok
+hellouw,51.8342,5.1735,0,,Hellouw,pdok
+hellum,53.2494,6.8319,0,,Hellum,pdok
+helmond,51.4762,5.6570,0,,Helmond,pdok
+helvoirt,51.6442,5.2064,0,,Helvoirt,pdok
+hem,52.6597,5.1841,0,,Hem,pdok
+hemelum,52.8837,5.4610,0,,Hemelum,pdok
+hemmen,51.9276,5.6915,0,,Hemmen,pdok
+hempens,53.1763,5.8421,0,,Hempens,pdok
+hemrik,53.0348,6.1367,0,,Hemrik,pdok
+hendrik-ido-ambacht,51.8418,4.6388,0,,Hendrik-Ido-Ambacht,pdok
+hengelo,52.2549,6.7782,0,,Hengelo,pdok
+hengelo (gld),52.0540,6.3343,0,,Hengelo (Gld),pdok
+hengevelde,52.2034,6.6363,0,,Hengevelde,pdok
+hengstdijk,51.3415,3.9977,0,,Hengstdijk,pdok
+hensbroek,52.6534,4.8959,0,,Hensbroek,pdok
+herbaijum,53.1858,5.4954,0,,Herbaijum,pdok
+herkenbosch,51.1680,6.0995,0,,Herkenbosch,pdok
+herkingen,51.7098,4.0796,0,,Herkingen,pdok
+hernen,51.8344,5.6776,0,,Hernen,pdok
+herpen,51.7664,5.6236,0,,Herpen,pdok
+herpt,51.7230,5.1621,0,,Herpt,pdok
+herten,51.1753,5.9492,0,,Herten,pdok
+hertme,52.3179,6.7675,0,,Hertme,pdok
+herveld,51.9142,5.7499,0,,Herveld,pdok
+herwen,51.8796,6.1179,0,,Herwen,pdok
+herwijnen,51.8436,5.1246,0,,Herwijnen,pdok
+heteren,51.9518,5.7546,0,,Heteren,pdok
+heukelom,51.5665,5.1535,0,,Heukelom,pdok
+heukelum,51.8680,5.0716,0,,Heukelum,pdok
+heumen,51.7693,5.8406,0,,Heumen,pdok
+heusden,51.7356,5.1412,0,,Heusden,pdok
+heusden (nb),51.3655,5.7937,0,,Heusden (NB),pdok
+heveadorp,51.9737,5.8126,0,,Heveadorp,pdok
+heythuysen,51.2725,5.8734,0,,Heythuysen,pdok
+hezingen,52.4387,6.8830,0,,Hezingen,pdok
+hiaure,53.3502,5.9734,0,,Hiaure,pdok
+hichtum,53.0841,5.5210,0,,Hichtum,pdok
+hidaard,53.0780,5.6024,0,,Hidaard,pdok
+hierden,52.3564,5.6765,0,,Hierden,pdok
+hieslum,53.0041,5.4905,0,,Hieslum,pdok
+hijken,52.9015,6.4831,0,,Hijken,pdok
+hijum,53.2845,5.7801,0,,Hijum,pdok
+hilaard,53.1690,5.6995,0,,Hilaard,pdok
+hillegom,52.2968,4.5770,0,,Hillegom,pdok
+hilvarenbeek,51.4973,5.1090,0,,Hilvarenbeek,pdok
+hilversum,52.2292,5.1667,1,,,
+hindeloopen,52.9349,5.3379,0,,Hindeloopen,pdok
+hinnaard,53.1175,5.6370,0,,Hinnaard,pdok
+hippolytushoef,52.9117,4.9818,0,,Hippolytushoef,pdok
+hitzum,53.1640,5.5182,0,,Hitzum,pdok
+hobrede,52.5454,4.9855,0,,Hobrede,pdok
+hoedekenskerke,51.4261,3.9249,0,,Hoedekenskerke,pdok
+hoef en haag,51.9890,5.1196,0,,Hoef en Haag,pdok
+hoek,51.3201,3.7746,0,,Hoek,pdok
+hoek van holland,51.9798,4.1235,0,,Hoek van Holland,pdok
+hoenderloo,52.1255,5.9086,0,,Hoenderloo,pdok
+hoenderloo (gd),52.1255,5.9086,0,,Hoenderloo (GD),pdok
+hoensbroek,50.9189,5.9253,0,,Hoensbroek,pdok
+hoenzadriel,51.7498,5.3184,0,,Hoenzadriel,pdok
+hoevelaken,52.1784,5.4600,0,,Hoevelaken,pdok
+hoeven,51.5970,4.5769,0,,Hoeven,pdok
+hoge hexel,52.3963,6.5526,0,,Hoge Hexel,pdok
+hollandsche rading,52.1770,5.1723,0,,Hollandsche Rading,pdok
+hollandscheveld,52.6967,6.5424,0,,Hollandscheveld,pdok
+hollum,53.4196,5.6285,0,,Hollum,pdok
+holsloot,52.7193,6.8063,0,,Holsloot,pdok
+holten,52.2871,6.4040,0,,Holten,pdok
+holthees,51.5780,6.0051,0,,Holthees,pdok
+holtheme,52.6129,6.7088,0,,Holtheme,pdok
+holthone,52.6361,6.6824,0,,Holthone,pdok
+holtum,51.0473,5.8225,0,,Holtum,pdok
+holwert,53.3789,5.8883,0,,Holwert,pdok
+holwierde,53.3637,6.8765,0,,Holwierde,pdok
+hommerts,52.9779,5.6584,0,,Hommerts,pdok
+homoet,51.9336,5.7814,0,,Homoet,pdok
+honselersdijk,52.0055,4.2358,0,,Honselersdijk,pdok
+hoofddorp,52.3025,4.6889,1,,,
+hoofdplaat,51.3803,3.6475,0,,Hoofdplaat,pdok
+hoog soeren,52.2122,5.8624,0,,Hoog Soeren,pdok
+hoog-keppel,52.0039,6.2003,0,,Hoog-Keppel,pdok
+hoogblokland,51.8813,4.9763,0,,Hoogblokland,pdok
+hooge mierde,51.3900,5.1133,0,,Hooge Mierde,pdok
+hooge zwaluwe,51.6888,4.7469,0,,Hooge Zwaluwe,pdok
+hoogeloon,51.3996,5.2720,0,,Hoogeloon,pdok
+hoogenweg,52.5684,6.6598,0,,Hoogenweg,pdok
+hoogerheide,51.4393,4.3309,0,,Hoogerheide,pdok
+hoogersmilde,52.9025,6.3937,0,,Hoogersmilde,pdok
+hoogersmilde (dr),52.9025,6.3937,0,,Hoogersmilde (DR),pdok
+hoogeveen,52.7182,6.4741,0,,Hoogeveen,pdok
+hoogezand,53.1437,6.7666,0,,Hoogezand,pdok
+hooghalen,52.9211,6.5377,0,,Hooghalen,pdok
+hoogkarspel,52.6897,5.1769,0,,Hoogkarspel,pdok
+hoogland,52.1922,5.3498,0,,Hoogland,pdok
+hooglanderveen,52.1872,5.4298,0,,Hooglanderveen,pdok
+hoogmade,52.1650,4.5839,0,,Hoogmade,pdok
+hoogvliet rotterdam,51.8622,4.3634,0,,Hoogvliet Rotterdam,pdok
+hoogwoud,52.7233,4.9419,0,,Hoogwoud,pdok
+hoorn,52.6425,5.0597,1,,,
+hoorn (fr),53.4084,5.3450,0,,Hoorn (FR),pdok
+hoorn (nh),52.6227,5.0717,0,,Hoorn (NH),pdok
+hoornaar,51.8733,4.9388,0,,Hoornaar,pdok
+hoornsterzwaag,53.0026,6.1725,0,,Hoornsterzwaag,pdok
+horn,51.2144,5.9326,0,,Horn,pdok
+hornhuizen,53.3969,6.3414,0,,Hornhuizen,pdok
+horssen,51.8538,5.6094,0,,Horssen,pdok
+horst,51.4603,6.0583,0,,Horst,pdok
+houten,52.0304,5.1624,0,,Houten,pdok
+houtigehage,53.1482,6.1446,0,,Houtigehage,pdok
+houwerzijl,53.3332,6.3384,0,,Houwerzijl,pdok
+huijbergen,51.4350,4.3753,0,,Huijbergen,pdok
+huis ter heide,53.0176,6.4772,0,,Huis ter Heide,pdok
+huis ter heide (dr),53.0176,6.4772,0,,Huis ter Heide (DR),pdok
+huis ter heide (ut),52.1181,5.2618,0,,Huis ter Heide (UT),pdok
+huisduinen,52.9471,4.7249,0,,Huisduinen,pdok
+huisseling,51.7846,5.6383,0,,Huisseling,pdok
+huissen,51.9341,5.9367,0,,Huissen,pdok
+huizen,52.2961,5.2411,0,,,
+huizinge,53.3482,6.6700,0,,Huizinge,pdok
+hulsberg,50.8921,5.8565,0,,Hulsberg,pdok
+hulsel,51.3881,5.1782,0,,Hulsel,pdok
+hulshorst,52.3574,5.7286,0,,Hulshorst,pdok
+hulst,51.2861,4.0333,0,,Hulst,pdok
+hulten,51.5807,4.9596,0,,Hulten,pdok
+hummelo,52.0057,6.2476,0,,Hummelo,pdok
+hunsel,51.1878,5.8118,0,,Hunsel,pdok
+hurdegaryp,53.2146,5.9522,0,,Hurdegaryp,pdok
+hurwenen,51.8123,5.3030,0,,Hurwenen,pdok
+húns,53.1639,5.6694,0,,Húns,pdok
+idaerd,53.1176,5.8173,0,,Idaerd,pdok
+idsegahuizum,53.0440,5.4218,0,,Idsegahuizum,pdok
+idskenhuizen,52.9264,5.7074,0,,Idskenhuizen,pdok
+idzega,52.9776,5.5611,0,,Idzega,pdok
+ie,53.3388,6.1044,0,,Ie,pdok
+iens,53.1260,5.6125,0,,Iens,pdok
+ijhorst,52.6503,6.2996,0,,IJhorst,pdok
+ijlst,53.0087,5.6275,0,,IJlst,pdok
+ijmuiden,52.4604,4.6106,0,,,
+ijsselham,52.8067,5.9627,0,,IJsselham,pdok
+ijsselmuiden,52.5660,5.9484,0,,IJsselmuiden,pdok
+ijsselstein,52.0277,5.0288,0,,IJsselstein,pdok
+ijzendijke,51.3210,3.6218,0,,IJzendijke,pdok
+ijzendoorn,51.9081,5.5302,0,,IJzendoorn,pdok
+ilpendam,52.4528,4.9528,0,,,
+indijk,52.9489,5.6034,0,,Indijk,pdok
+ingber,50.8185,5.8650,0,,Ingber,pdok
+ingelum,53.2259,5.7188,0,,Ingelum,pdok
+ingen,51.9624,5.4812,0,,Ingen,pdok
+ingwierrum,53.3264,6.1481,0,,Ingwierrum,pdok
+it heidenskip,52.9487,5.4983,0,,It Heidenskip,pdok
+itens,53.1041,5.6461,0,,Itens,pdok
+ittervoort,51.1760,5.8264,0,,Ittervoort,pdok
+jaarsveld,51.9711,4.9757,0,,Jaarsveld,pdok
+jabeek,50.9785,5.9500,0,,Jabeek,pdok
+jannum,53.3135,5.9096,0,,Jannum,pdok
+jellum,53.1661,5.7442,0,,Jellum,pdok
+jelsum,53.2330,5.7963,0,,Jelsum,pdok
+jirnsum,53.0709,5.7838,0,,Jirnsum,pdok
+jislum,53.3094,5.8747,0,,Jislum,pdok
+jisp,52.5109,4.8548,0,,Jisp,pdok
+jistrum,53.2113,6.0535,0,,Jistrum,pdok
+jonkerslân,52.9749,6.0362,0,,Jonkerslân,pdok
+jonkersvaart,53.1317,6.3132,0,,Jonkersvaart,pdok
+joppe,52.2055,6.2439,0,,Joppe,pdok
+jorwert,53.1468,5.7046,0,,Jorwert,pdok
+joure,52.9755,5.8035,0,,Joure,pdok
+jouswier,53.3465,6.0732,0,,Jouswier,pdok
+jubbega,52.9793,6.1194,0,,Jubbega,pdok
+julianadorp,52.8983,4.7447,0,,Julianadorp,pdok
+jutrijp,52.9966,5.6545,0,,Jutrijp,pdok
+kaag,52.2141,4.5732,0,,Kaag,pdok
+kaard,53.3779,5.2679,0,,Kaard,pdok
+kaatsheuvel,51.6570,5.0432,0,,Kaatsheuvel,pdok
+kalenberg,52.7813,5.9595,0,,Kalenberg,pdok
+kallenkote,52.7959,6.1721,0,,Kallenkote,pdok
+kamerik,52.1264,4.8970,0,,Kamerik,pdok
+kampen,52.5819,5.8854,0,,Kampen,pdok
+kamperland,51.5716,3.7008,0,,Kamperland,pdok
+kamperveen,52.5061,5.9292,0,,Kamperveen,pdok
+kantens,53.3666,6.6369,0,,Kantens,pdok
+kapel avezaath,51.8833,5.3817,0,,Kapel Avezaath,pdok
+kapel-avezaath,51.8856,5.3530,0,,Kapel-Avezaath,pdok
+kapelle,51.4787,3.9591,0,,Kapelle,pdok
+kapellebrug,51.2516,4.0611,0,,Kapellebrug,pdok
+katlijk,52.9391,6.0263,0,,Katlijk,pdok
+kats,51.5696,3.8970,0,,Kats,pdok
+kattendijke,51.5189,3.9482,0,,Kattendijke,pdok
+katwijk,52.1978,4.4021,0,,Katwijk,pdok
+katwijk nb,51.7510,5.8610,0,,Katwijk NB,pdok
+katwoude,52.4763,5.0455,0,,Katwoude,pdok
+kedichem,51.8739,5.0451,0,,Kedichem,pdok
+keent,51.7719,5.6903,0,,Keent,pdok
+keijenborg,52.0298,6.2931,0,,Keijenborg,pdok
+kekerdom,51.8601,6.0066,0,,Kekerdom,pdok
+kelpen-oler,51.2233,5.8304,0,,Kelpen-Oler,pdok
+kerk avezaath,51.8905,5.3933,0,,Kerk Avezaath,pdok
+kerk-avezaath,51.9018,5.3768,0,,Kerk-Avezaath,pdok
+kerkdriel,51.7734,5.3306,0,,Kerkdriel,pdok
+kerkenveld,52.6613,6.4967,0,,Kerkenveld,pdok
+kerkrade,50.8678,6.0489,0,,Kerkrade,pdok
+kerkwerve,51.6695,3.8500,0,,Kerkwerve,pdok
+kerkwijk,51.7798,5.2099,0,,Kerkwijk,pdok
+kessel,51.2962,6.0421,0,,Kessel,pdok
+kesteren,51.9341,5.5734,0,,Kesteren,pdok
+kiel-windeweer,53.1120,6.7743,0,,Kiel-Windeweer,pdok
+kilder,51.9330,6.2358,0,,Kilder,pdok
+kimswerd,53.1410,5.4314,0,,Kimswerd,pdok
+kinderdijk,51.8836,4.6418,0,,Kinderdijk,pdok
+kinnum,53.3748,5.2760,0,,Kinnum,pdok
+klaaswaal,51.7683,4.4548,0,,Klaaswaal,pdok
+klarenbeek,52.1711,6.0326,0,,Klarenbeek,pdok
+klarenbeek (gd),52.1711,6.0326,0,,Klarenbeek (GD),pdok
+klazienaveen,52.7124,6.9945,0,,Klazienaveen,pdok
+klazienaveen-noord,52.7601,6.9925,0,,Klazienaveen-Noord,pdok
+klein zundert,51.4915,4.6317,0,,Klein Zundert,pdok
+klijndijk,52.8305,6.8549,0,,Klijndijk,pdok
+klimmen,50.8803,5.8912,0,,Klimmen,pdok
+kloetinge,51.4771,3.9202,0,,Kloetinge,pdok
+kloetinge (zl),51.4771,3.9202,0,,Kloetinge (ZL),pdok
+klooster lidlum,53.2251,5.5256,0,,Klooster Lidlum,pdok
+kloosterburen,53.4017,6.3981,0,,Kloosterburen,pdok
+kloosterhaar,52.5076,6.6832,0,,Kloosterhaar,pdok
+kloosterhaar (ov),52.5076,6.6832,0,,Kloosterhaar (OV),pdok
+kloosterzande,51.3686,4.0600,0,,Kloosterzande,pdok
+klundert,51.6678,4.5338,0,,Klundert,pdok
+knegsel,51.3949,5.3379,0,,Knegsel,pdok
+koarnjum,53.2434,5.7818,0,,Koarnjum,pdok
+kockengen,52.1524,4.9500,0,,Kockengen,pdok
+koedijk,52.6868,4.7537,0,,Koedijk,pdok
+koedijk (nh),52.6868,4.7537,0,,Koedijk (NH),pdok
+koekange,52.7017,6.3284,0,,Koekange,pdok
+koewacht,51.2389,3.9560,0,,Koewacht,pdok
+kolderwolde,52.8957,5.4978,0,,Kolderwolde,pdok
+kolham,53.1844,6.7442,0,,Kolham,pdok
+kolhorn,52.7929,4.8941,0,,Kolhorn,pdok
+kollum,53.2856,6.1544,0,,Kollum,pdok
+kollumerpomp,53.3204,6.1912,0,,Kollumerpomp,pdok
+kollumersweach,53.2660,6.0707,0,,Kollumersweach,pdok
+kommerzijl,53.2945,6.3129,0,,Kommerzijl,pdok
+koningsbosch,51.0605,5.9462,0,,Koningsbosch,pdok
+koningslust,51.3581,5.9928,0,,Koningslust,pdok
+koog aan de zaan,52.4619,4.7999,0,,Koog aan de Zaan,pdok
+kootstertille,53.2209,6.0931,0,,Kootstertille,pdok
+kootwijk,52.1725,5.7597,0,,Kootwijk,pdok
+kootwijkerbroek,52.1537,5.6764,0,,Kootwijkerbroek,pdok
+kornhorn,53.1795,6.2442,0,,Kornhorn,pdok
+kornwerderzand,53.0681,5.3285,0,,Kornwerderzand,pdok
+kortehemmen,53.0788,6.0760,0,,Kortehemmen,pdok
+kortenhoef,52.2302,5.0897,0,,Kortenhoef,pdok
+kortgene,51.5617,3.8109,0,,Kortgene,pdok
+koudekerk aan den rijn,52.1421,4.5954,0,,Koudekerk aan den Rijn,pdok
+koudekerke,51.4816,3.5515,0,,Koudekerke,pdok
+koudum,52.9183,5.4560,0,,Koudum,pdok
+koufurderrige,52.9508,5.6675,0,,Koufurderrige,pdok
+krabbendijke,51.4495,4.1170,0,,Krabbendijke,pdok
+kraggenburg,52.6493,5.9222,0,,Kraggenburg,pdok
+kreileroord,52.8422,5.0826,0,,Kreileroord,pdok
+krewerd,53.3520,6.8431,0,,Krewerd,pdok
+krimpen aan de lek,51.8999,4.6181,0,,Krimpen aan de Lek,pdok
+krimpen aan den ijssel,51.9147,4.6021,0,,Krimpen aan den IJssel,pdok
+kring van dorth,52.2274,6.3225,0,,Kring van Dorth,pdok
+krommenie,52.4994,4.7656,0,,,
+kronenberg,51.4148,5.9861,0,,Kronenberg,pdok
+kropswolde,53.1414,6.7136,0,,Kropswolde,pdok
+kruiningen,51.4464,4.0389,0,,Kruiningen,pdok
+kruisland,51.5721,4.4022,0,,Kruisland,pdok
+kudelstaart,52.2433,4.7536,0,,,
+kuinre,52.7981,5.8379,0,,Kuinre,pdok
+kuitaart,51.3290,4.0439,0,,Kuitaart,pdok
+kwadendamme,51.4350,3.8769,0,,Kwadendamme,pdok
+kwadijk,52.5322,4.9853,0,,Kwadijk,pdok
+kwintsheul,52.0138,4.2616,0,,Kwintsheul,pdok
+kûbaard,53.1220,5.5670,0,,Kûbaard,pdok
+laag zuthem,52.4592,6.1818,0,,Laag Zuthem,pdok
+laag-keppel,51.9891,6.1966,0,,Laag-Keppel,pdok
+laag-soeren,52.0706,6.0541,0,,Laag-Soeren,pdok
+lage mierde,51.4143,5.1508,0,,Lage Mierde,pdok
+lage vuursche,52.1860,5.2252,0,,Lage Vuursche,pdok
+lage zwaluwe,51.7031,4.6973,0,,Lage Zwaluwe,pdok
+lageland,53.2444,6.7176,0,,Lageland,pdok
+lageland gn,53.2428,6.6873,0,,Lageland GN,pdok
+lambertschaag,52.7464,5.0167,0,,Lambertschaag,pdok
+lamswaarde,51.3422,4.0533,0,,Lamswaarde,pdok
+landerum,53.3828,5.3017,0,,Landerum,pdok
+landgraaf,50.9064,6.0330,0,,Landgraaf,pdok
+landhorst,51.6198,5.7812,0,,Landhorst,pdok
+landsmeer,52.4311,4.9158,0,,,
+langbroek,52.0033,5.3501,0,,Langbroek,pdok
+langedijke,52.9629,6.2760,0,,Langedijke,pdok
+langelille,52.8408,5.8438,0,,Langelille,pdok
+langelo,53.0952,6.4506,0,,Langelo,pdok
+langenboom,51.7051,5.7313,0,,Langenboom,pdok
+langerak,51.9303,4.9056,0,,Langerak,pdok
+langeveen,52.4588,6.7254,0,,Langeveen,pdok
+langeweg,51.6448,4.6606,0,,Langeweg,pdok
+langezwaag,52.9871,6.0075,0,,Langezwaag,pdok
+langweer,52.9654,5.7143,0,,Langweer,pdok
+laren,52.2564,5.2333,0,,,
+laren (gd),52.2026,6.3821,0,,Laren (GD),pdok
+laren (nh),52.2472,5.2171,0,,Laren (NH),pdok
+lathum,51.9905,6.0353,0,,Lathum,pdok
+lattrop-breklenkamp,52.4344,6.9864,0,,Lattrop-Breklenkamp,pdok
+lauwersoog,53.3893,6.2359,0,,Lauwersoog,pdok
+lauwerzijl,53.3180,6.3100,0,,Lauwerzijl,pdok
+ledeacker,51.6354,5.8630,0,,Ledeacker,pdok
+leek,53.1636,6.3778,0,,Leek,pdok
+leende,51.3336,5.5327,0,,Leende,pdok
+leens,53.3639,6.3863,0,,Leens,pdok
+leerbroek,51.9175,5.0405,0,,Leerbroek,pdok
+leerdam,51.9054,5.0910,0,,Leerdam,pdok
+leermens,53.3533,6.8026,0,,Leermens,pdok
+leersum,52.0229,5.4323,0,,Leersum,pdok
+leeuwarden,53.2007,5.8031,0,,Leeuwarden,pdok
+legemeer,52.9379,5.7314,0,,Legemeer,pdok
+leiden,52.1601,4.497,1,,,
+leiderdorp,52.1567,4.5420,0,,Leiderdorp,pdok
+leidschendam,52.0934,4.4349,0,,Leidschendam,pdok
+leimuiden,52.2187,4.6901,0,,Leimuiden,pdok
+leimuiderbrug,52.2353,4.6640,0,,Leimuiderbrug,pdok
+lekkerkerk,51.9107,4.6950,0,,Lekkerkerk,pdok
+lekkum,53.2249,5.8309,0,,Lekkum,pdok
+lellens,53.2991,6.7073,0,,Lellens,pdok
+lelystad,52.5427,5.3748,0,,Lelystad,pdok
+lemele,52.4577,6.4137,0,,Lemele,pdok
+lemelerveld,52.4454,6.3344,0,,Lemelerveld,pdok
+lemiers,50.7833,5.9834,0,,Lemiers,pdok
+lemmer,52.8389,5.6477,0,,Lemmer,pdok
+lengel,51.8876,6.2671,0,,Lengel,pdok
+lent,51.8645,5.8620,0,,Lent,pdok
+leons,53.1516,5.6796,0,,Leons,pdok
+lepelstraat,51.5522,4.2639,0,,Lepelstraat,pdok
+lettelbert,53.1936,6.4180,0,,Lettelbert,pdok
+lettele,52.2775,6.2767,0,,Lettele,pdok
+leunen,51.5004,5.9841,0,,Leunen,pdok
+leur,51.8229,5.6908,0,,Leur,pdok
+leusden,52.1169,5.4048,0,,Leusden,pdok
+leuth,51.8438,5.9894,0,,Leuth,pdok
+leutingewolde,53.1601,6.4276,0,,Leutingewolde,pdok
+leuvenheim,52.0751,6.1306,0,,Leuvenheim,pdok
+leveroy,51.2552,5.8265,0,,Leveroy,pdok
+lewedorp,51.4883,3.7450,0,,Lewedorp,pdok
+lexmond,51.9534,5.0193,0,,Lexmond,pdok
+lichtaard,53.3256,5.9189,0,,Lichtaard,pdok
+lichtenvoorde,51.9898,6.5653,0,,Lichtenvoorde,pdok
+liempde,51.5644,5.3711,0,,Liempde,pdok
+lienden,51.9440,5.5285,0,,Lienden,pdok
+lierderholthuis,52.4387,6.1870,0,,Lierderholthuis,pdok
+lieren,52.1556,6.0089,0,,Lieren,pdok
+lierop,51.4228,5.6670,0,,Lierop,pdok
+lies,53.4055,5.3272,0,,Lies,pdok
+lieshout,51.5170,5.5894,0,,Lieshout,pdok
+liessel,51.4142,5.8360,0,,Liessel,pdok
+lievelde,52.0155,6.5934,0,,Lievelde,pdok
+lieveren,53.1123,6.4657,0,,Lieveren,pdok
+lijnden,52.3444,4.7437,0,,Lijnden,pdok
+limbricht,51.0182,5.8402,0,,Limbricht,pdok
+limmen,52.5656,4.6976,0,,Limmen,pdok
+linde,52.6346,6.4693,0,,Linde,pdok
+linden,51.7479,5.8174,0,,Linden,pdok
+linne,51.1577,5.9315,0,,Linne,pdok
+linschoten,52.0620,4.9160,0,,Linschoten,pdok
+lippenhuizen,53.0209,6.0994,0,,Lippenhuizen,pdok
+lisse,52.2556,4.5458,0,,Lisse,pdok
+lisserbroek,52.2535,4.5776,0,,Lisserbroek,pdok
+lith,51.7978,5.4233,0,,Lith,pdok
+lithoijen,51.7903,5.4642,0,,Lithoijen,pdok
+ljussens,53.3896,6.1020,0,,Ljussens,pdok
+lobith,51.8656,6.1251,0,,Lobith,pdok
+lochem,52.1599,6.4128,0,,Lochem,pdok
+loenen,52.1097,6.0075,0,,Loenen,pdok
+loenen aan de vecht,52.2231,5.0187,0,,Loenen aan de Vecht,pdok
+loenersloot,52.2231,4.9965,0,,Loenersloot,pdok
+loerbeek,51.9254,6.2056,0,,Loerbeek,pdok
+lollum,53.1275,5.5254,0,,Lollum,pdok
+lomm,51.4543,6.1928,0,,Lomm,pdok
+longerhouw,53.0695,5.4764,0,,Longerhouw,pdok
+loo gld,51.9301,5.9861,0,,Loo Gld,pdok
+loo gld (gd),51.9301,5.9861,0,,Loo Gld (GD),pdok
+loon,53.0188,6.6141,0,,Loon,pdok
+loon op zand,51.6286,5.0698,0,,Loon op Zand,pdok
+loosbroek,51.6749,5.5105,0,,Loosbroek,pdok
+loosdrecht,52.2014,5.0806,0,,,
+loozen,52.5886,6.6716,0,,Loozen,pdok
+lopik,51.9715,4.9356,0,,Lopik,pdok
+lopikerkapel,51.9877,5.0327,0,,Lopikerkapel,pdok
+loppersum,53.3301,6.7391,0,,Loppersum,pdok
+losdorp,53.3734,6.8366,0,,Losdorp,pdok
+losser,52.2653,6.9966,0,,Losser,pdok
+lottum,51.4552,6.1392,0,,Lottum,pdok
+loënga,53.0530,5.6688,0,,Loënga,pdok
+lucaswolde,53.1832,6.2969,0,,Lucaswolde,pdok
+luddeweer,53.2497,6.7388,0,,Luddeweer,pdok
+luinjeberd,53.0077,5.9182,0,,Luinjeberd,pdok
+lunteren,52.1010,5.6184,0,,Lunteren,pdok
+lutjebroek,52.7003,5.2019,0,,Lutjebroek,pdok
+lutjegast,53.2384,6.2573,0,,Lutjegast,pdok
+lutjewinkel,52.7737,4.8887,0,,Lutjewinkel,pdok
+luttelgeest,52.7532,5.8511,0,,Luttelgeest,pdok
+lutten,52.6190,6.5851,0,,Lutten,pdok
+luttenberg,52.4057,6.3652,0,,Luttenberg,pdok
+luxwoude,52.9963,5.9824,0,,Luxwoude,pdok
+luyksgestel,51.2800,5.3045,0,,Luyksgestel,pdok
+lytsewierrum,53.0821,5.6645,0,,Lytsewierrum,pdok
+maarheeze,51.3198,5.6332,0,,Maarheeze,pdok
+maarn,52.0656,5.3649,0,,Maarn,pdok
+maarsbergen,52.0529,5.4087,0,,Maarsbergen,pdok
+maarssen,52.1408,5.0403,1,,,
+maartensdijk,52.1574,5.1763,0,,Maartensdijk,pdok
+maasbommel,51.8355,5.5251,0,,Maasbommel,pdok
+maasbracht,51.1477,5.8987,0,,Maasbracht,pdok
+maasbree,51.3652,6.0463,0,,Maasbree,pdok
+maasdam,51.7871,4.5483,0,,Maasdam,pdok
+maasdijk,51.9570,4.2125,0,,Maasdijk,pdok
+maashees,51.5715,6.0288,0,,Maashees,pdok
+maasland,51.9449,4.2802,0,,Maasland,pdok
+maassluis,51.9252,4.2489,0,,Maassluis,pdok
+maastricht,50.8530,5.6995,0,,Maastricht,pdok
+maastricht-airport,50.9157,5.7775,0,,Maastricht-Airport,pdok
+maasvlakte rotterdam,51.9563,4.0138,0,,Maasvlakte Rotterdam,pdok
+macharen,51.8005,5.5389,0,,Macharen,pdok
+made,51.6826,4.8017,0,,Made,pdok
+makkinga,52.9771,6.2258,0,,Makkinga,pdok
+makkum,53.0053,5.2940,0,,Makkum,pdok
+malden,51.7914,5.8573,0,,Malden,pdok
+mander,52.4445,6.8234,0,,Mander,pdok
+manderveen,52.4492,6.7823,0,,Manderveen,pdok
+mantgum,53.1278,5.7197,0,,Mantgum,pdok
+mantinge,52.7942,6.6059,0,,Mantinge,pdok
+maren-kessel,51.7776,5.3908,0,,Maren-Kessel,pdok
+margraten,50.8225,5.8163,0,,Margraten,pdok
+maria hoop,51.0973,5.9760,0,,Maria Hoop,pdok
+mariahout,51.5441,5.5701,0,,Mariahout,pdok
+mariaparochie,52.3803,6.7068,0,,Mariaparochie,pdok
+marijenkampen,52.8154,6.0571,0,,Marijenkampen,pdok
+mariënberg,52.5102,6.5819,0,,Mariënberg,pdok
+mariënheem,52.3801,6.3216,0,,Mariënheem,pdok
+mariënvelde,52.0104,6.4786,0,,Mariënvelde,pdok
+markelo,52.2354,6.5134,0,,Markelo,pdok
+marken,52.4592,5.1008,0,,,
+markenbinnen,52.5285,4.7874,0,,Markenbinnen,pdok
+marknesse,52.7045,5.8904,0,,Marknesse,pdok
+marle,52.4147,6.1235,0,,Marle,pdok
+marrum,53.3403,5.7576,0,,Marrum,pdok
+marsum,53.2086,5.7153,0,,Marsum,pdok
+marum,53.1383,6.2407,0,,Marum,pdok
+marwijksoord,52.9599,6.6463,0,,Marwijksoord,pdok
+mastenbroek,52.5779,6.0454,0,,Mastenbroek,pdok
+mastenbroek (ov),52.5779,6.0454,0,,Mastenbroek (OV),pdok
+matsloot,53.1925,6.4723,0,,Matsloot,pdok
+maurik,51.9572,5.4154,0,,Maurik,pdok
+mechelen,50.7895,5.9207,0,,Mechelen,pdok
+medemblik,52.8282,5.1784,0,,Medemblik,pdok
+meeden,53.1442,6.9269,0,,Meeden,pdok
+meedhuizen,53.2924,6.9213,0,,Meedhuizen,pdok
+meerkerk,51.9220,4.9835,0,,Meerkerk,pdok
+meerlo,51.5113,6.0876,0,,Meerlo,pdok
+meerssen,50.8839,5.7612,0,,Meerssen,pdok
+meerstad,53.2274,6.6601,0,,Meerstad,pdok
+meeuwen,51.7269,5.0096,0,,Meeuwen,pdok
+megchelen,51.8460,6.3829,0,,Megchelen,pdok
+megen,51.8173,5.5637,0,,Megen,pdok
+meijel,51.3364,5.8781,0,,Meijel,pdok
+melderslo,51.4638,6.0899,0,,Melderslo,pdok
+melick,51.1559,6.0201,0,,Melick,pdok
+meliskerke,51.5205,3.5207,0,,Meliskerke,pdok
+melissant,51.7716,4.0622,0,,Melissant,pdok
+menaam,53.2157,5.6665,0,,Menaam,pdok
+mensingeweer,53.3455,6.4611,0,,Mensingeweer,pdok
+meppel,52.7047,6.2017,0,,Meppel,pdok
+meppen,52.7769,6.6667,0,,Meppen,pdok
+merkelbeek,50.9573,5.9408,0,,Merkelbeek,pdok
+merselo,51.5316,5.9212,0,,Merselo,pdok
+meteren,51.8629,5.2872,0,,Meteren,pdok
+meterik,51.4597,6.0126,0,,Meterik,pdok
+mheer,50.7810,5.7913,0,,Mheer,pdok
+middelaar,51.7303,5.9012,0,,Middelaar,pdok
+middelburg,51.5026,3.6159,0,,Middelburg,pdok
+middelharnis,51.7595,4.1977,0,,Middelharnis,pdok
+middelie,52.5387,5.0185,0,,Middelie,pdok
+middelstum,53.3386,6.6383,0,,Middelstum,pdok
+middenbeemster,52.5504,4.9232,0,,Middenbeemster,pdok
+middenmeer,52.7882,4.9938,0,,Middenmeer,pdok
+midlaren,53.1083,6.6740,0,,Midlaren,pdok
+midlum,53.1849,5.4510,0,,Midlum,pdok
+midsland,53.4009,5.2786,0,,Midsland,pdok
+midwolda,53.1993,7.0002,0,,Midwolda,pdok
+midwolde,53.1940,6.3873,0,,Midwolde,pdok
+midwoud,52.7150,5.0616,0,,Midwoud,pdok
+miedum,53.2361,5.8404,0,,Miedum,pdok
+mierlo,51.4392,5.6107,0,,Mierlo,pdok
+mijdrecht,52.2064,4.8664,0,,,
+mijnsheerenland,51.8035,4.4872,0,,Mijnsheerenland,pdok
+mildam,52.9385,5.9956,0,,Mildam,pdok
+milheeze,51.5139,5.7931,0,,Milheeze,pdok
+mill,51.6926,5.7755,0,,Mill,pdok
+millingen aan de rijn,51.8622,6.0288,0,,Millingen aan de Rijn,pdok
+milsbeek,51.7274,5.9500,0,,Milsbeek,pdok
+minnertsga,53.2481,5.5919,0,,Minnertsga,pdok
+mirns,52.8110,5.4174,0,,Mirns,pdok
+mitselwier,53.3612,6.0691,0,,Mitselwier,pdok
+moarre,53.3658,6.0935,0,,Moarre,pdok
+moddergat,53.4015,6.0697,0,,Moddergat,pdok
+moerdijk,51.6887,4.6055,0,,Moerdijk,pdok
+moergestel,51.5337,5.1865,0,,Moergestel,pdok
+moerkapelle,52.0492,4.5862,0,,Moerkapelle,pdok
+moerstraten,51.5387,4.3420,0,,Moerstraten,pdok
+molenaarsgraaf,51.8675,4.8268,0,,Molenaarsgraaf,pdok
+molenhoek,51.7698,5.8803,0,,Molenhoek,pdok
+molenschot,51.5636,4.8851,0,,Molenschot,pdok
+molkwerum,52.9023,5.3961,0,,Molkwerum,pdok
+monnickendam,52.4581,5.0361,0,,,
+monster,52.0340,4.1795,0,,Monster,pdok
+montfoort,52.0404,4.9584,0,,Montfoort,pdok
+montfort,51.1285,5.9465,0,,Montfort,pdok
+mook,51.7559,5.8943,0,,Mook,pdok
+mookhoek,51.7524,4.5960,0,,Mookhoek,pdok
+moordrecht,51.9951,4.6595,0,,Moordrecht,pdok
+moorveld,50.9152,5.7623,0,,Moorveld,pdok
+muiden,52.3306,5.0694,0,,,
+muiderberg,52.3190,5.1080,0,,Muiderberg,pdok
+munnekeburen,52.8484,5.8772,0,,Munnekeburen,pdok
+munnekezijl,53.3213,6.2586,0,,Munnekezijl,pdok
+munstergeleen,50.9728,5.8642,0,,Munstergeleen,pdok
+muntendam,53.1415,6.8693,0,,Muntendam,pdok
+mussel,52.9576,7.0472,0,,Mussel,pdok
+musselkanaal,52.9503,7.0041,0,,Musselkanaal,pdok
+mûnein,53.2475,5.9272,0,,Mûnein,pdok
+naaldwijk,51.9935,4.2093,0,,Naaldwijk,pdok
+naarden,52.2964,5.1617,1,,,
+nagele,52.6387,5.7152,0,,Nagele,pdok
+nederasselt,51.7680,5.7532,0,,Nederasselt,pdok
+nederhemert,51.7587,5.1514,0,,Nederhemert,pdok
+nederhorst den berg,52.2581,5.0607,0,,Nederhorst den Berg,pdok
+nederland,52.7518,5.9678,0,,Nederland,pdok
+nederweert,51.2956,5.7225,0,,Nederweert,pdok
+nederweert-eind,51.2781,5.8077,0,,Nederweert-Eind,pdok
+neede,52.1476,6.5922,0,,Neede,pdok
+neer,51.2726,5.9754,0,,Neer,pdok
+neerijnen,51.8435,5.2829,0,,Neerijnen,pdok
+neeritter,51.1646,5.7911,0,,Neeritter,pdok
+neerkant,51.3726,5.8697,0,,Neerkant,pdok
+neerlangel,51.8066,5.6444,0,,Neerlangel,pdok
+neerloon,51.7866,5.6743,0,,Neerloon,pdok
+nes,53.4286,5.7591,0,,Nes,pdok
+nes (fr),53.4286,5.7591,0,,Nes (FR),pdok
+netersel,51.4134,5.2083,0,,Netersel,pdok
+netterden,51.8588,6.3224,0,,Netterden,pdok
+nibbixwoud,52.6915,5.0627,0,,Nibbixwoud,pdok
+niebert,53.1566,6.3257,0,,Niebert,pdok
+niehove,53.2861,6.3541,0,,Niehove,pdok
+niekerk,53.2262,6.3681,0,,Niekerk,pdok
+niekerk (gr),53.2262,6.3681,0,,Niekerk (GR),pdok
+nietap,53.1636,6.4119,0,,Nietap,pdok
+nieuw annerveen,53.0694,6.7805,0,,Nieuw Annerveen,pdok
+nieuw beerta,53.1872,7.1648,0,,Nieuw Beerta,pdok
+nieuw heeten,52.3220,6.3282,0,,Nieuw Heeten,pdok
+nieuw namen,51.3394,4.1679,0,,Nieuw Namen,pdok
+nieuw scheemda,53.2139,6.9371,0,,Nieuw Scheemda,pdok
+nieuw- en sint joosland,51.4830,3.6695,0,,Nieuw- en Sint Joosland,pdok
+nieuw-amsterdam,52.7158,6.8737,0,,Nieuw-Amsterdam,pdok
+nieuw-balinge,52.7716,6.5991,0,,Nieuw-Balinge,pdok
+nieuw-beijerland,51.7995,4.3671,0,,Nieuw-Beijerland,pdok
+nieuw-buinen,52.9532,6.9255,0,,Nieuw-Buinen,pdok
+nieuw-dordrecht,52.7433,6.9621,0,,Nieuw-Dordrecht,pdok
+nieuw-lekkerland,51.8860,4.6974,0,,Nieuw-Lekkerland,pdok
+nieuw-roden,53.1245,6.3836,0,,Nieuw-Roden,pdok
+nieuw-schoonebeek,52.6481,6.9923,0,,Nieuw-Schoonebeek,pdok
+nieuw-vennep,52.2644,4.6292,0,,,
+nieuw-vossemeer,51.5868,4.2264,0,,Nieuw-Vossemeer,pdok
+nieuw-weerdinge,52.8456,6.9756,0,,Nieuw-Weerdinge,pdok
+nieuwaal,51.8087,5.1706,0,,Nieuwaal,pdok
+nieuwdorp,51.4590,3.7289,0,,Nieuwdorp,pdok
+nieuwe niedorp,52.7362,4.8964,0,,Nieuwe Niedorp,pdok
+nieuwe pekela,53.0546,6.9557,0,,Nieuwe Pekela,pdok
+nieuwe wetering,52.2074,4.6126,0,,Nieuwe Wetering,pdok
+nieuwe-tonge,51.7078,4.1490,0,,Nieuwe-Tonge,pdok
+nieuwebrug,52.9900,5.8833,0,,Nieuwebrug,pdok
+nieuwediep,53.0341,6.8654,0,,Nieuwediep,pdok
+nieuwegein,52.03,5.08,1,,,
+nieuwehorne,52.9430,6.0613,0,,Nieuwehorne,pdok
+nieuwendijk,51.7741,4.9167,0,,Nieuwendijk,pdok
+nieuwer ter aa,52.2010,4.9751,0,,Nieuwer Ter Aa,pdok
+nieuwerbrug aan den rijn,52.0831,4.8062,0,,Nieuwerbrug aan den Rijn,pdok
+nieuwerkerk,51.6564,3.9926,0,,Nieuwerkerk,pdok
+nieuwerkerk aan den ijssel,51.9656,4.6183,0,,Nieuwerkerk aan den IJssel,pdok
+nieuweroord,52.7267,6.5698,0,,Nieuweroord,pdok
+nieuweroord (dr),52.7267,6.5698,0,,Nieuweroord (DR),pdok
+nieuwersluis,52.1963,5.0091,0,,Nieuwersluis,pdok
+nieuweschoot,52.9242,5.9340,0,,Nieuweschoot,pdok
+nieuwkoop,52.1461,4.7883,0,,Nieuwkoop,pdok
+nieuwkuijk,51.6933,5.1784,0,,Nieuwkuijk,pdok
+nieuwland,51.8918,5.0236,0,,Nieuwland,pdok
+nieuwlande,52.6922,6.6177,0,,Nieuwlande,pdok
+nieuwlande coevorden,52.7025,6.6380,0,,Nieuwlande Coevorden,pdok
+nieuwleusen,52.5769,6.2631,0,,Nieuwleusen,pdok
+nieuwolda,53.2426,6.9996,0,,Nieuwolda,pdok
+nieuwpoort,51.9325,4.8705,0,,Nieuwpoort,pdok
+nieuwstadt,51.0401,5.8613,0,,Nieuwstadt,pdok
+nieuwveen,52.2050,4.7653,0,,Nieuwveen,pdok
+nieuwvliet,51.3737,3.4642,0,,Nieuwvliet,pdok
+niezijl,53.2655,6.3374,0,,Niezijl,pdok
+niftrik,51.8008,5.6776,0,,Niftrik,pdok
+nigtevecht,52.2722,5.0323,0,,Nigtevecht,pdok
+nij altoenae,53.2965,5.6532,0,,Nij Altoenae,pdok
+nij beets,53.0664,5.9884,0,,Nij Beets,pdok
+nijbroek,52.2956,6.0605,0,,Nijbroek,pdok
+nijeberkoop,52.9588,6.1811,0,,Nijeberkoop,pdok
+nijega,53.1279,6.0276,0,,Nijega,pdok
+nijehaske,52.9584,5.8981,0,,Nijehaske,pdok
+nijeholtpade,52.9172,6.0808,0,,Nijeholtpade,pdok
+nijeholtwolde,52.9023,5.9697,0,,Nijeholtwolde,pdok
+nijelamer,52.8916,5.9439,0,,Nijelamer,pdok
+nijemirdum,52.8485,5.5842,0,,Nijemirdum,pdok
+nijensleek,52.8412,6.1568,0,,Nijensleek,pdok
+nijetrijne,52.8371,5.9115,0,,Nijetrijne,pdok
+nijeveen,52.7365,6.1615,0,,Nijeveen,pdok
+nijewier,53.3605,6.0437,0,,Nijewier,pdok
+nijhuizum,52.9860,5.4905,0,,Nijhuizum,pdok
+nijkerk,52.2180,5.4889,0,,Nijkerk,pdok
+nijkerkerveen,52.1945,5.4682,0,,Nijkerkerveen,pdok
+nijland,53.0535,5.5850,0,,Nijland,pdok
+nijlande,52.9724,6.6237,0,,Nijlande,pdok
+nijmegen,51.8426,5.8546,0,,,
+nijverdal,52.3593,6.4686,0,,Nijverdal,pdok
+nispen,51.4875,4.4620,0,,Nispen,pdok
+nisse,51.4484,3.8513,0,,Nisse,pdok
+nistelrode,51.7012,5.5611,0,,Nistelrode,pdok
+noardburgum,53.2231,6.0035,0,,Noardburgum,pdok
+nooitgedacht,52.9701,6.6824,0,,Nooitgedacht,pdok
+noorbeek,50.7708,5.8219,0,,Noorbeek,pdok
+noord-scharwoude,52.6986,4.7951,0,,Noord-Scharwoude,pdok
+noord-sleen,52.7969,6.8015,0,,Noord-Sleen,pdok
+noordbeemster,52.5880,4.9401,0,,Noordbeemster,pdok
+noordbroek,53.2015,6.8770,0,,Noordbroek,pdok
+noordeinde,52.5715,4.8331,0,,Noordeinde,pdok
+noordeinde gld,52.5074,5.8745,0,,Noordeinde Gld,pdok
+noordeloos,51.9020,4.9434,0,,Noordeloos,pdok
+noorden,52.1690,4.8356,0,,Noorden,pdok
+noordgouwe,51.6856,3.9403,0,,Noordgouwe,pdok
+noordhoek,51.6419,4.5300,0,,Noordhoek,pdok
+noordhorn,53.2640,6.3829,0,,Noordhorn,pdok
+noordlaren,53.1267,6.6651,0,,Noordlaren,pdok
+noordscheschut,52.7247,6.5334,0,,Noordscheschut,pdok
+noordwelle,51.7216,3.7932,0,,Noordwelle,pdok
+noordwijk,52.2710,4.4627,0,,Noordwijk,pdok
+noordwijk (gr),53.1667,6.2578,0,,Noordwijk (GR),pdok
+noordwijk (zh),52.2710,4.4627,0,,Noordwijk (ZH),pdok
+noordwijkerhout,52.2633,4.4960,0,,Noordwijkerhout,pdok
+noordwolde,52.8899,6.1389,0,,Noordwolde,pdok
+noordwolde (fr),52.8899,6.1389,0,,Noordwolde (FR),pdok
+noordwolde (gr),53.2784,6.5785,0,,Noordwolde (GR),pdok
+nootdorp,52.0430,4.4073,0,,Nootdorp,pdok
+norg,53.0739,6.4614,0,,Norg,pdok
+notter,52.3391,6.5205,0,,Notter,pdok
+nuenen,51.4786,5.5495,0,,Nuenen,pdok
+nuis,53.1531,6.3006,0,,Nuis,pdok
+nuland,51.7376,5.4314,0,,Nuland,pdok
+numansdorp,51.7274,4.4548,0,,Numansdorp,pdok
+nunhem,51.2483,5.9582,0,,Nunhem,pdok
+nunspeet,52.3760,5.7912,0,,Nunspeet,pdok
+nuth,50.9197,5.8754,0,,Nuth,pdok
+nutter,52.4204,6.8711,0,,Nutter,pdok
+obbicht,51.0267,5.7792,0,,Obbicht,pdok
+obdam,52.6781,4.9028,0,,Obdam,pdok
+ochten,51.9107,5.5856,0,,Ochten,pdok
+odijk,52.0462,5.2211,0,,Odijk,pdok
+odiliapeel,51.6411,5.7188,0,,Odiliapeel,pdok
+odoorn,52.8614,6.8310,0,,Odoorn,pdok
+odoornerveen,52.8420,6.8078,0,,Odoornerveen,pdok
+oeffelt,51.6980,5.9331,0,,Oeffelt,pdok
+oegstgeest,52.1856,4.4712,0,,Oegstgeest,pdok
+oene,52.3451,6.0554,0,,Oene,pdok
+oentsjerk,53.2526,5.8896,0,,Oentsjerk,pdok
+offingawier,53.0361,5.7223,0,,Offingawier,pdok
+ohé en laak,51.1135,5.8265,0,,Ohé en Laak,pdok
+oijen,51.8142,5.5050,0,,Oijen,pdok
+oirlo,51.5092,6.0369,0,,Oirlo,pdok
+oirsbeek,50.9516,5.9101,0,,Oirsbeek,pdok
+oirschot,51.5105,5.3146,0,,Oirschot,pdok
+oisterwijk,51.5665,5.2163,0,,Oisterwijk,pdok
+okkenbroek,52.2874,6.3154,0,,Okkenbroek,pdok
+olburgen,52.0439,6.1308,0,,Olburgen,pdok
+oldeberkoop,52.9395,6.1317,0,,Oldeberkoop,pdok
+oldebroek,52.4295,5.9223,0,,Oldebroek,pdok
+oldeholtpade,52.8880,6.0501,0,,Oldeholtpade,pdok
+oldeholtwolde,52.9161,5.9871,0,,Oldeholtwolde,pdok
+oldehove,53.3013,6.3922,0,,Oldehove,pdok
+oldekerk,53.2291,6.3317,0,,Oldekerk,pdok
+oldelamer,52.8749,5.9049,0,,Oldelamer,pdok
+oldemarkt,52.8254,5.9572,0,,Oldemarkt,pdok
+oldenzaal,52.3093,6.9163,0,,Oldenzaal,pdok
+oldenzijl,53.3914,6.7206,0,,Oldenzijl,pdok
+oldeouwer,52.9079,5.7926,0,,Oldeouwer,pdok
+oldetrijne,52.8527,5.9464,0,,Oldetrijne,pdok
+olst,52.3373,6.1330,0,,Olst,pdok
+olterterp,53.0680,6.1133,0,,Olterterp,pdok
+ommel,51.4278,5.7337,0,,Ommel,pdok
+ommen,52.5163,6.4348,0,,Ommen,pdok
+ommeren,51.9358,5.4771,0,,Ommeren,pdok
+onderdendam,53.3303,6.5827,0,,Onderdendam,pdok
+onna,52.7732,6.1564,0,,Onna,pdok
+onnen,53.1573,6.6553,0,,Onnen,pdok
+onstwedde,53.0220,7.0430,0,,Onstwedde,pdok
+ooij,51.8585,5.9141,0,,Ooij,pdok
+ooltgensplaat,51.6757,4.3277,0,,Ooltgensplaat,pdok
+oost west en middelbeers,51.4672,5.2545,0,,Oost West en Middelbeers,pdok
+oost-graftdijk,52.5468,4.8228,0,,Oost-Graftdijk,pdok
+oost-souburg,51.4682,3.6057,0,,Oost-Souburg,pdok
+oostburg,51.3245,3.4783,0,,Oostburg,pdok
+oostdijk,51.4495,4.0755,0,,Oostdijk,pdok
+oosteind,51.6535,4.9048,0,,Oosteind,pdok
+oosterbeek,51.9856,5.8381,0,,Oosterbeek,pdok
+oosterbierum,53.2373,5.5096,0,,Oosterbierum,pdok
+oosterblokker,52.6640,5.1251,0,,Oosterblokker,pdok
+oosterend,53.3814,5.4931,0,,Oosterend,pdok
+oosterend (fr),53.3814,5.4931,0,,Oosterend (FR),pdok
+oosterend (nh),53.0825,4.9963,0,,Oosterend (NH),pdok
+oosterhesselen,52.7532,6.7300,0,,Oosterhesselen,pdok
+oosterhout,51.6420,4.8551,0,,Oosterhout,pdok
+oosterhout (gd),51.8823,5.8195,0,,Oosterhout (GD),pdok
+oosterhout (nb),51.6420,4.8551,0,,Oosterhout (NB),pdok
+oosterland,51.6421,4.0418,0,,Oosterland,pdok
+oosterleek,52.6359,5.2004,0,,Oosterleek,pdok
+oosternieland,53.4040,6.7535,0,,Oosternieland,pdok
+oosterstreek,52.8950,6.1668,0,,Oosterstreek,pdok
+oosterwijk,51.8790,5.0696,0,,Oosterwijk,pdok
+oosterwijtwerd,53.3370,6.8200,0,,Oosterwijtwerd,pdok
+oosterwolde,53.0019,6.3055,0,,Oosterwolde,pdok
+oosterwolde gld,52.4756,5.8941,0,,Oosterwolde Gld,pdok
+oosterzee,52.8701,5.7651,0,,Oosterzee,pdok
+oosthem,53.0132,5.6003,0,,Oosthem,pdok
+oosthuizen,52.5790,5.0158,0,,Oosthuizen,pdok
+oostkapelle,51.5736,3.5500,0,,Oostkapelle,pdok
+oostknollendam,52.5167,4.8016,0,,Oostknollendam,pdok
+oostrum,51.5303,6.0231,0,,Oostrum,pdok
+oostvoorne,51.9175,4.0985,0,,Oostvoorne,pdok
+oostwold,53.2116,7.0414,0,,Oostwold,pdok
+oostwold (gr),53.2116,7.0414,0,,Oostwold (GR),pdok
+oostwoud,52.7278,5.0886,0,,Oostwoud,pdok
+oostzaan,52.4403,4.8767,0,,,
+ootmarsum,52.4090,6.8997,0,,Ootmarsum,pdok
+opeinde,53.1354,6.0599,0,,Opeinde,pdok
+opende,53.1681,6.2049,0,,Opende,pdok
+ophemert,51.8464,5.3656,0,,Ophemert,pdok
+opheusden,51.9342,5.6299,0,,Opheusden,pdok
+opijnen,51.8304,5.3078,0,,Opijnen,pdok
+oploo,51.5949,5.8414,0,,Oploo,pdok
+opmeer,52.7053,4.9448,0,,Opmeer,pdok
+oppenhuizen,53.0082,5.6969,0,,Oppenhuizen,pdok
+opperdoes,52.7573,5.0762,0,,Opperdoes,pdok
+oranje,52.9131,6.4446,0,,Oranje,pdok
+oranjewoud,52.9489,5.9716,0,,Oranjewoud,pdok
+orvelte,52.8514,6.6819,0,,Orvelte,pdok
+ospel,51.3157,5.8067,0,,Ospel,pdok
+oss,51.7649,5.5217,0,,Oss,pdok
+ossendrecht,51.3951,4.3353,0,,Ossendrecht,pdok
+ossenisse,51.3840,3.9662,0,,Ossenisse,pdok
+ossenwaard,51.9923,5.1376,0,,Ossenwaard,pdok
+ossenzijl,52.7976,5.9202,0,,Ossenzijl,pdok
+oterleek,52.6286,4.8357,0,,Oterleek,pdok
+otterlo,52.0792,5.7943,0,,Otterlo,pdok
+ottersum,51.7104,5.9964,0,,Ottersum,pdok
+ottoland,51.8876,4.8663,0,,Ottoland,pdok
+oud ade,52.1862,4.5601,0,,Oud Ade,pdok
+oud annerveen,53.0855,6.7659,0,,Oud Annerveen,pdok
+oud gastel,51.5875,4.4783,0,,Oud Gastel,pdok
+oud ootmarsum,52.4236,6.9163,0,,Oud Ootmarsum,pdok
+oud zuilen,52.1317,5.0714,0,,Oud Zuilen,pdok
+oud-alblas,51.8602,4.7115,0,,Oud-Alblas,pdok
+oud-beijerland,51.8097,4.4134,0,,Oud-Beijerland,pdok
+oud-vossemeer,51.5791,4.1839,0,,Oud-Vossemeer,pdok
+ouddorp,51.7983,3.8889,0,,Ouddorp,pdok
+oude meer,52.2897,4.7835,0,,Oude Meer,pdok
+oude niedorp,52.7190,4.8812,0,,Oude Niedorp,pdok
+oude pekela,53.0966,7.0012,0,,Oude Pekela,pdok
+oude wetering,52.2109,4.6423,0,,Oude Wetering,pdok
+oude willem,52.8943,6.3270,0,,Oude Willem,pdok
+oude-tonge,51.6878,4.2104,0,,Oude-Tonge,pdok
+oudebildtzijl,53.3095,5.7084,0,,Oudebildtzijl,pdok
+oudega,52.9095,5.5156,0,,Oudega,pdok
+oudega (fr),52.9095,5.5156,0,,Oudega (FR),pdok
+oudehaske,52.9599,5.8657,0,,Oudehaske,pdok
+oudehorne,52.9582,6.0846,0,,Oudehorne,pdok
+oudelande,51.3970,3.8547,0,,Oudelande,pdok
+oudemirdum,52.8269,5.5291,0,,Oudemirdum,pdok
+oudemolen,51.6638,4.4624,0,,Oudemolen,pdok
+oudemolen (dr),53.0509,6.6351,0,,Oudemolen (DR),pdok
+oudemolen (nb),51.6638,4.4624,0,,Oudemolen (NB),pdok
+oudenbosch,51.5910,4.5358,0,,Oudenbosch,pdok
+oudendijk,52.6046,4.9808,0,,Oudendijk,pdok
+oudenhoorn,51.8158,4.1843,0,,Oudenhoorn,pdok
+ouderkerk aan de amstel,52.2953,4.9077,0,,,
+ouderkerk aan den ijssel,51.9410,4.6550,0,,Ouderkerk aan den IJssel,pdok
+oudeschans,53.1458,7.1391,0,,Oudeschans,pdok
+oudeschild,53.0429,4.8724,0,,Oudeschild,pdok
+oudeschip,53.4261,6.8057,0,,Oudeschip,pdok
+oudeschoot,52.9349,5.9685,0,,Oudeschoot,pdok
+oudesluis,52.8217,4.8037,0,,Oudesluis,pdok
+oudewater,52.0179,4.8602,0,,Oudewater,pdok
+oudezijl,53.1866,7.1992,0,,Oudezijl,pdok
+oudheusden,51.7205,5.1263,0,,Oudheusden,pdok
+oudkarspel,52.7099,4.7860,0,,Oudkarspel,pdok
+oudkarspel (nh),52.7099,4.7860,0,,Oudkarspel (NH),pdok
+oudorp,52.6341,4.7753,0,,Oudorp,pdok
+ouwerkerk,51.6250,3.9880,0,,Ouwerkerk,pdok
+ouwster-nijega,52.9309,5.8071,0,,Ouwster-Nijega,pdok
+ouwsterhaule,52.9396,5.8126,0,,Ouwsterhaule,pdok
+overasselt,51.7721,5.7970,0,,Overasselt,pdok
+overberg,52.0347,5.5028,0,,Overberg,pdok
+overdinkel,52.2410,7.0335,0,,Overdinkel,pdok
+overlangel,51.7751,5.6718,0,,Overlangel,pdok
+overloon,51.5744,5.9319,0,,Overloon,pdok
+overschild,53.2724,6.7811,0,,Overschild,pdok
+overslag,51.2163,3.9070,0,,Overslag,pdok
+overveen,52.4113,4.5757,0,,Overveen,pdok
+ovezande,51.4346,3.8046,0,,Ovezande,pdok
+paasloo,52.8103,6.0023,0,,Paasloo,pdok
+pannerden,51.8945,6.0342,0,,Pannerden,pdok
+panningen,51.3305,5.9666,0,,Panningen,pdok
+papekop,52.0500,4.8601,0,,Papekop,pdok
+papendrecht,51.8332,4.7033,0,,Papendrecht,pdok
+papenhoven,51.0431,5.7874,0,,Papenhoven,pdok
+papenvoort,52.9507,6.7114,0,,Papenvoort,pdok
+parrega,53.0136,5.4690,0,,Parrega,pdok
+paterswolde,53.1531,6.5591,0,,Paterswolde,pdok
+peazens,53.4022,6.0968,0,,Peazens,pdok
+peest,53.0549,6.4974,0,,Peest,pdok
+peins,53.2067,5.5988,0,,Peins,pdok
+peize,53.1517,6.5010,0,,Peize,pdok
+peperga,52.8540,6.0456,0,,Peperga,pdok
+pernis rotterdam,51.8840,4.3939,0,,Pernis Rotterdam,pdok
+persingen,51.8420,5.9343,0,,Persingen,pdok
+pesse,52.7721,6.4595,0,,Pesse,pdok
+pesse (dr),52.7721,6.4595,0,,Pesse (DR),pdok
+petten,52.7762,4.6623,0,,Petten,pdok
+philippine,51.2866,3.7388,0,,Philippine,pdok
+piaam,53.0329,5.4150,0,,Piaam,pdok
+piershil,51.7960,4.3306,0,,Piershil,pdok
+pieterburen,53.4115,6.4488,0,,Pieterburen,pdok
+pietersbierum,53.2132,5.4600,0,,Pietersbierum,pdok
+pieterzijl,53.2845,6.2721,0,,Pieterzijl,pdok
+pijnacker,52.0151,4.4364,0,,Pijnacker,pdok
+pingjum,53.1157,5.4323,0,,Pingjum,pdok
+plasmolen,51.7401,5.9198,0,,Plasmolen,pdok
+poederoijen,51.8009,5.0538,0,,Poederoijen,pdok
+poeldijk,52.0263,4.2234,0,,Poeldijk,pdok
+polsbroek,51.9862,4.8744,0,,Polsbroek,pdok
+poortugaal,51.8555,4.4004,0,,Poortugaal,pdok
+poortvliet,51.5440,4.1351,0,,Poortvliet,pdok
+poppenwier,53.0777,5.7551,0,,Poppenwier,pdok
+posterholt,51.1207,6.0344,0,,Posterholt,pdok
+prinsenbeek,51.6117,4.6931,0,,Prinsenbeek,pdok
+puiflijk,51.8727,5.5804,0,,Puiflijk,pdok
+punthorst,52.6110,6.2711,0,,Punthorst,pdok
+purmer,52.5029,5.0221,0,,Purmer,pdok
+purmer (nh),52.5029,5.0221,0,,Purmer (NH),pdok
+purmerend,52.505,4.9597,1,,,
+purmerland,52.4801,4.9178,0,,Purmerland,pdok
+puth,50.9585,5.8731,0,,Puth,pdok
+putte,51.3734,4.3882,0,,Putte,pdok
+putten,52.2439,5.5827,0,,Putten,pdok
+puttershoek,51.8038,4.5705,0,,Puttershoek,pdok
+raalte,52.3957,6.2696,0,,Raalte,pdok
+raamsdonk,51.6927,4.9097,0,,Raamsdonk,pdok
+raamsdonksveer,51.6993,4.8784,0,,Raamsdonksveer,pdok
+raard,53.3276,5.9384,0,,Raard,pdok
+radewijk,52.5693,6.7147,0,,Radewijk,pdok
+radio kootwijk,52.1747,5.8342,0,,Radio Kootwijk,pdok
+raerd,53.0981,5.7570,0,,Raerd,pdok
+randwijk,51.9472,5.6944,0,,Randwijk,pdok
+ransdaal,50.8622,5.8923,0,,Ransdaal,pdok
+rasquert,53.3711,6.5289,0,,Rasquert,pdok
+ravenstein,51.7918,5.6509,0,,Ravenstein,pdok
+ravenswaaij,51.9451,5.3286,0,,Ravenswaaij,pdok
+ravenswoud,52.9734,6.3903,0,,Ravenswoud,pdok
+readtsjerk,53.2671,5.9200,0,,Readtsjerk,pdok
+reahûs,53.0779,5.6368,0,,Reahûs,pdok
+reduzum,53.1147,5.7835,0,,Reduzum,pdok
+reek,51.7408,5.6858,0,,Reek,pdok
+reeuwijk,52.0460,4.7369,0,,Reeuwijk,pdok
+reeve,52.5297,5.8849,0,,Reeve,pdok
+reijmerstok,50.7993,5.8405,0,,Reijmerstok,pdok
+reitsum,53.3251,5.8971,0,,Reitsum,pdok
+rekken,52.0960,6.7219,0,,Rekken,pdok
+renesse,51.7481,3.7696,0,,Renesse,pdok
+renkum,51.9915,5.7412,0,,Renkum,pdok
+renswoude,52.0689,5.5342,0,,Renswoude,pdok
+ressen,51.8915,5.8689,0,,Ressen,pdok
+retranchement,51.3423,3.3955,0,,Retranchement,pdok
+reusel,51.3452,5.1624,0,,Reusel,pdok
+reutum,52.3828,6.8442,0,,Reutum,pdok
+reuver,51.2777,6.0892,0,,Reuver,pdok
+rha,52.0529,6.1514,0,,Rha,pdok
+rheden,52.0270,6.0157,0,,Rheden,pdok
+rhee,53.0348,6.5647,0,,Rhee,pdok
+rheeze,52.5494,6.5759,0,,Rheeze,pdok
+rheezerveen,52.5711,6.5395,0,,Rheezerveen,pdok
+rhenen,51.9772,5.5752,0,,Rhenen,pdok
+rhenoy,51.8982,5.1497,0,,Rhenoy,pdok
+rhoon,51.8500,4.4510,0,,Rhoon,pdok
+ridderkerk,51.8688,4.5961,0,,Ridderkerk,pdok
+ried,53.2206,5.5891,0,,Ried,pdok
+riel,51.5179,5.0003,0,,Riel,pdok
+rien,53.0962,5.6602,0,,Rien,pdok
+riethoven,51.3589,5.3863,0,,Riethoven,pdok
+rietmolen,52.1531,6.6498,0,,Rietmolen,pdok
+rijen,51.5871,4.9302,0,,Rijen,pdok
+rijkevoort,51.6622,5.8895,0,,Rijkevoort,pdok
+rijkevoort-de walsert,51.6508,5.8603,0,,Rijkevoort-De Walsert,pdok
+rijnsaterwoude,52.1986,4.6718,0,,Rijnsaterwoude,pdok
+rijnsburg,52.1960,4.4483,0,,Rijnsburg,pdok
+rijpwetering,52.1947,4.5906,0,,Rijpwetering,pdok
+rijs,52.8205,5.4767,0,,Rijs,pdok
+rijsbergen,51.5149,4.6985,0,,Rijsbergen,pdok
+rijsenhout,52.2594,4.7026,0,,Rijsenhout,pdok
+rijssen,52.3016,6.5049,0,,Rijssen,pdok
+rijswijk,52.0362,4.3260,0,,Rijswijk,pdok
+rijswijk (gld),51.9509,5.3600,0,,Rijswijk (GLD),pdok
+rijswijk (nb),51.8005,5.0109,0,,Rijswijk (NB),pdok
+rilland,51.4231,4.1980,0,,Rilland,pdok
+rinsumageast,53.2909,5.9335,0,,Rinsumageast,pdok
+ritthem,51.4368,3.6704,0,,Ritthem,pdok
+rockanje,51.8821,4.0397,0,,Rockanje,pdok
+roden,53.1349,6.4288,0,,Roden,pdok
+roderesch,53.1151,6.4186,0,,Roderesch,pdok
+roderwolde,53.1749,6.4710,0,,Roderwolde,pdok
+roelofarendsveen,52.1927,4.6235,0,,Roelofarendsveen,pdok
+roermond,51.1904,6.0102,0,,Roermond,pdok
+rogat,52.6873,6.2589,0,,Rogat,pdok
+roggel,51.2732,5.9233,0,,Roggel,pdok
+rohel,52.9112,5.8305,0,,Rohel,pdok
+rolde,52.9868,6.6457,0,,Rolde,pdok
+roodeschool,53.4153,6.7817,0,,Roodeschool,pdok
+roosendaal,51.5293,4.4587,0,,Roosendaal,pdok
+roosteren,51.0811,5.8140,0,,Roosteren,pdok
+rosmalen,51.7245,5.3796,0,,Rosmalen,pdok
+rossum,52.3604,6.9299,0,,Rossum,pdok
+rossum (gd),51.7964,5.3113,0,,Rossum (GD),pdok
+rossum (ov),52.3604,6.9299,0,,Rossum (OV),pdok
+roswinkel,52.8389,7.0252,0,,Roswinkel,pdok
+rotstergaast,52.9088,5.9042,0,,Rotstergaast,pdok
+rotsterhaule,52.9190,5.8554,0,,Rotsterhaule,pdok
+rotterdam,51.9244,4.4777,0,,,
+rotterdam-albrandswaard,51.8695,4.4193,0,,Rotterdam-Albrandswaard,pdok
+rottevalle,53.1449,6.0963,0,,Rottevalle,pdok
+rottum,52.9393,5.8978,0,,Rottum,pdok
+rottum (fr),52.9393,5.8978,0,,Rottum (FR),pdok
+rottum (gr),53.3833,6.6231,0,,Rottum (GR),pdok
+rouveen,52.6142,6.1588,0,,Rouveen,pdok
+rozenburg,52.2793,4.7325,0,,Rozenburg,pdok
+rozenburg (nh),52.2793,4.7325,0,,Rozenburg (NH),pdok
+rozenburg (zh),51.9156,4.2318,0,,Rozenburg (ZH),pdok
+rozendaal,52.0425,5.9679,0,,Rozendaal,pdok
+rucphen,51.5306,4.5445,0,,Rucphen,pdok
+ruigahuizen,52.8799,5.5705,0,,Ruigahuizen,pdok
+ruinen,52.7874,6.3813,0,,Ruinen,pdok
+ruinen (dr),52.7874,6.3813,0,,Ruinen (DR),pdok
+ruinerwold,52.7324,6.2706,0,,Ruinerwold,pdok
+rumpt,51.8704,5.1782,0,,Rumpt,pdok
+rutten,52.8117,5.7104,0,,Rutten,pdok
+ruurlo,52.0656,6.4649,0,,Ruurlo,pdok
+ryptsjerk,53.2290,5.9151,0,,Ryptsjerk,pdok
+saaksum,53.3186,6.4241,0,,Saaksum,pdok
+saasveld,52.3364,6.8032,0,,Saasveld,pdok
+saaxumhuizen,53.3796,6.4869,0,,Saaxumhuizen,pdok
+sambeek,51.6304,5.9594,0,,Sambeek,pdok
+sandfirden,52.9866,5.5181,0,,Sandfirden,pdok
+santpoort-noord,52.4361,4.6236,0,,Santpoort-Noord,pdok
+santpoort-zuid,52.4211,4.6326,0,,Santpoort-Zuid,pdok
+sappemeer,53.1641,6.7966,0,,Sappemeer,pdok
+sas van gent,51.2568,3.8042,0,,Sas van Gent,pdok
+sassenheim,52.2189,4.5175,0,,Sassenheim,pdok
+sauwerd,53.2952,6.5367,0,,Sauwerd,pdok
+schagen,52.7870,4.7955,0,,Schagen,pdok
+schagerbrug,52.8077,4.7495,0,,Schagerbrug,pdok
+schaijk,51.7323,5.6274,0,,Schaijk,pdok
+schalkhaar,52.2896,6.2167,0,,Schalkhaar,pdok
+schalkwijk,51.9856,5.1954,0,,Schalkwijk,pdok
+schalsum,53.1991,5.5760,0,,Schalsum,pdok
+schardam,52.6002,5.0200,0,,Schardam,pdok
+scharendijke,51.7329,3.8535,0,,Scharendijke,pdok
+scharmer,53.1995,6.7165,0,,Scharmer,pdok
+scharnegoutum,53.0658,5.6729,0,,Scharnegoutum,pdok
+scharsterbrug,52.9425,5.7808,0,,Scharsterbrug,pdok
+scharwoude,52.6200,5.0151,0,,Scharwoude,pdok
+scheemda,53.1764,6.9569,0,,Scheemda,pdok
+scheerwolde,52.7714,6.0176,0,,Scheerwolde,pdok
+schellinkhout,52.6304,5.1255,0,,Schellinkhout,pdok
+schelluinen,51.8500,4.9289,0,,Schelluinen,pdok
+schermerhorn,52.6057,4.8821,0,,Schermerhorn,pdok
+scherpenisse,51.5282,4.0991,0,,Scherpenisse,pdok
+scherpenzeel,52.0893,5.5005,0,,Scherpenzeel,pdok
+scherpenzeel (fr),52.8283,5.8622,0,,Scherpenzeel (FR),pdok
+scherpenzeel (gd),52.0893,5.5005,0,,Scherpenzeel (GD),pdok
+schettens,53.0830,5.4843,0,,Schettens,pdok
+scheulder,50.8274,5.8502,0,,Scheulder,pdok
+schiedam,51.9268,4.3853,0,,Schiedam,pdok
+schiermonnikoog,53.4744,6.2223,0,,Schiermonnikoog,pdok
+schijf,51.4966,4.5388,0,,Schijf,pdok
+schijndel,51.6221,5.4365,0,,Schijndel,pdok
+schildwolde,53.2372,6.8062,0,,Schildwolde,pdok
+schimmert,50.9023,5.8198,0,,Schimmert,pdok
+schin op geul,50.8475,5.8602,0,,Schin op Geul,pdok
+schinnen,50.9388,5.8806,0,,Schinnen,pdok
+schinveld,50.9710,5.9925,0,,Schinveld,pdok
+schipborg,53.0662,6.6760,0,,Schipborg,pdok
+schiphol,52.3105,4.7683,1,,,
+schiphol-rijk,52.2819,4.7604,0,,Schiphol-Rijk,pdok
+schipluiden,51.9737,4.3253,0,,Schipluiden,pdok
+schokland,52.6400,5.7735,0,,Schokland,pdok
+schoondijke,51.3532,3.5578,0,,Schoondijke,pdok
+schoonebeek,52.6688,6.9012,0,,Schoonebeek,pdok
+schoonhoven,51.9512,4.8498,0,,Schoonhoven,pdok
+schoonloo,52.8948,6.7072,0,,Schoonloo,pdok
+schoonoord,52.8334,6.7768,0,,Schoonoord,pdok
+schoonrewoerd,51.9299,5.1183,0,,Schoonrewoerd,pdok
+schoorl,52.7102,4.6622,0,,Schoorl,pdok
+schore,51.4678,3.9932,0,,Schore,pdok
+schouwerzijl,53.3273,6.4444,0,,Schouwerzijl,pdok
+schraard,53.0773,5.4521,0,,Schraard,pdok
+schuinesloot,52.6529,6.5606,0,,Schuinesloot,pdok
+sebaldeburen,53.2245,6.3038,0,,Sebaldeburen,pdok
+sellingen,52.9477,7.1284,0,,Sellingen,pdok
+serooskerke,51.6520,3.7743,0,,Serooskerke,pdok
+serooskerke (zl),51.6520,3.7743,0,,Serooskerke (ZL),pdok
+sevenum,51.4017,6.0234,0,,Sevenum,pdok
+sexbierum,53.2191,5.4910,0,,Sexbierum,pdok
+sibculo,52.4871,6.6267,0,,Sibculo,pdok
+sibculo (ov),52.4871,6.6267,0,,Sibculo (OV),pdok
+sibrandabuorren,53.0591,5.7352,0,,Sibrandabuorren,pdok
+sibrandahûs,53.3144,5.9540,0,,Sibrandahûs,pdok
+siddeburen,53.2452,6.8775,0,,Siddeburen,pdok
+siebengewald,51.6513,6.0764,0,,Siebengewald,pdok
+siegerswoude,53.0969,6.2365,0,,Siegerswoude,pdok
+sijbekarspel,52.7099,4.9999,0,,Sijbekarspel,pdok
+silvolde,51.9060,6.4021,0,,Silvolde,pdok
+simonshaven,51.8263,4.2879,0,,Simonshaven,pdok
+simpelveld,50.8381,5.9758,0,,Simpelveld,pdok
+sinderen,51.9173,6.4485,0,,Sinderen,pdok
+sint agatha,51.7088,5.9044,0,,Sint Agatha,pdok
+sint annen,53.2969,6.6681,0,,Sint Annen,pdok
+sint anthonis,51.6215,5.8691,0,,Sint Anthonis,pdok
+sint geertruid,50.7943,5.7717,0,,Sint Geertruid,pdok
+sint hubert,51.6756,5.8119,0,,Sint Hubert,pdok
+sint jansklooster,52.6813,6.0131,0,,Sint Jansklooster,pdok
+sint jansteen,51.2591,4.0431,0,,Sint Jansteen,pdok
+sint joost,51.1148,5.9109,0,,Sint Joost,pdok
+sint kruis,51.2798,3.5027,0,,Sint Kruis,pdok
+sint maarten,52.7580,4.7491,0,,Sint Maarten,pdok
+sint maartensbrug,52.7811,4.7239,0,,Sint Maartensbrug,pdok
+sint maartensvlotbrug,52.7901,4.6979,0,,Sint Maartensvlotbrug,pdok
+sint nicolaasga,52.9232,5.7543,0,,Sint Nicolaasga,pdok
+sint odiliënberg,51.1461,5.9884,0,,Sint Odiliënberg,pdok
+sint pancras,52.6624,4.7861,0,,Sint Pancras,pdok
+sint philipsland,51.6319,4.1578,0,,Sint Philipsland,pdok
+sint-annaland,51.6011,4.0935,0,,Sint-Annaland,pdok
+sint-maartensdijk,51.5595,4.0558,0,,Sint-Maartensdijk,pdok
+sint-michielsgestel,51.6495,5.3441,0,,Sint-Michielsgestel,pdok
+sint-oedenrode,51.5637,5.4689,0,,Sint-Oedenrode,pdok
+sintjohannesga,52.9327,5.8699,0,,Sintjohannesga,pdok
+sirjansland,51.6791,4.0445,0,,Sirjansland,pdok
+sittard,51.0004,5.8697,0,,Sittard,pdok
+skingen,53.2039,5.6221,0,,Skingen,pdok
+slagharen,52.6295,6.5431,0,,Slagharen,pdok
+slappeterp,53.2188,5.6221,0,,Slappeterp,pdok
+sleen,52.7697,6.7893,0,,Sleen,pdok
+sleeuwijk,51.8149,4.9410,0,,Sleeuwijk,pdok
+slenaken,50.7713,5.8545,0,,Slenaken,pdok
+sliedrecht,51.8307,4.7729,0,,Sliedrecht,pdok
+slijk-ewijk,51.8881,5.7790,0,,Slijk-Ewijk,pdok
+slijkenburg,52.8063,5.8455,0,,Slijkenburg,pdok
+slochteren,53.2136,6.7916,0,,Slochteren,pdok
+slootdorp,52.8597,4.9593,0,,Slootdorp,pdok
+sloten,52.9042,5.6422,0,,Sloten,pdok
+sluis,51.2941,3.3981,0,,Sluis,pdok
+sluiskil,51.2863,3.8368,0,,Sluiskil,pdok
+smakt,51.5561,6.0061,0,,Smakt,pdok
+smalle ee,53.1028,6.0037,0,,Smalle Ee,pdok
+smallebrugge,52.9596,5.6377,0,,Smallebrugge,pdok
+smilde,52.9436,6.4431,0,,Smilde,pdok
+snakkerburen,53.2219,5.8110,0,,Snakkerburen,pdok
+sneek,53.0292,5.6651,0,,Sneek,pdok
+snelrewaard,52.0379,4.8943,0,,Snelrewaard,pdok
+snikzwaag,52.9872,5.7920,0,,Snikzwaag,pdok
+soerendonk,51.3057,5.5719,0,,Soerendonk,pdok
+soest,52.1609,5.2951,0,,Soest,pdok
+soesterberg,52.1222,5.3049,0,,Soesterberg,pdok
+someren,51.3612,5.7011,0,,Someren,pdok
+sommelsdijk,51.7647,4.1402,0,,Sommelsdijk,pdok
+son en breugel,51.5164,5.4825,0,,Son en Breugel,pdok
+sondel,52.8643,5.6125,0,,Sondel,pdok
+sonnega,52.8645,5.9734,0,,Sonnega,pdok
+spaarndam,52.4118,4.7039,0,,Spaarndam,pdok
+spaarndam gem. haarlem,52.4148,4.6741,0,,Spaarndam gem. Haarlem,pdok
+spanbroek,52.6889,4.9499,0,,Spanbroek,pdok
+spanga,52.8148,5.8721,0,,Spanga,pdok
+spankeren,52.0651,6.1103,0,,Spankeren,pdok
+spannum,53.1387,5.6046,0,,Spannum,pdok
+spaubeek,50.9362,5.8390,0,,Spaubeek,pdok
+spier,52.8146,6.4762,0,,Spier,pdok
+spier (dr),52.8146,6.4762,0,,Spier (DR),pdok
+spierdijk,52.6561,4.9409,0,,Spierdijk,pdok
+spijk,51.8524,5.0164,0,,Spijk,pdok
+spijk (gd),51.8524,5.0164,0,,Spijk (GD),pdok
+spijk (gr),53.4011,6.8353,0,,Spijk (GR),pdok
+spijkenisse,51.8427,4.3430,0,,Spijkenisse,pdok
+spijkerboor,53.0786,6.7691,0,,Spijkerboor,pdok
+spijkerboor (dr),53.0786,6.7691,0,,Spijkerboor (DR),pdok
+spijkerboor (nh),52.5254,4.8397,0,,Spijkerboor (NH),pdok
+sprang-capelle,51.6887,5.0014,0,,Sprang-Capelle,pdok
+sprundel,51.5295,4.6078,0,,Sprundel,pdok
+spui,51.2968,3.8728,0,,Spui,pdok
+st. willebrord,51.5510,4.5879,0,,St. Willebrord,pdok
+st.-annaparochie,53.3034,5.6540,0,,St.-Annaparochie,pdok
+st.-jacobiparochie,53.2796,5.6088,0,,St.-Jacobiparochie,pdok
+stad aan 't haringvliet,51.7350,4.2293,0,,Stad aan 't Haringvliet,pdok
+stadskanaal,53.0053,6.9401,0,,Stadskanaal,pdok
+stampersgat,51.6078,4.4425,0,,Stampersgat,pdok
+standdaarbuiten,51.6249,4.5264,0,,Standdaarbuiten,pdok
+staphorst,52.6524,6.2019,0,,Staphorst,pdok
+starnmeer,52.5398,4.7978,0,,Starnmeer,pdok
+startenhuizen,53.3644,6.7030,0,,Startenhuizen,pdok
+startenhuizen (gr),53.3644,6.7030,0,,Startenhuizen (GR),pdok
+stavenisse,51.5843,3.9844,0,,Stavenisse,pdok
+stavoren,52.8914,5.2999,0,,Stavoren,pdok
+stedum,53.3178,6.6913,0,,Stedum,pdok
+steenbergen,51.5765,4.3252,0,,Steenbergen,pdok
+steenbergen (dr),53.1051,6.4026,0,,Steenbergen (DR),pdok
+steenbergen (nb),51.5765,4.3252,0,,Steenbergen (NB),pdok
+steendam,53.2776,6.8465,0,,Steendam,pdok
+steenderen,52.0589,6.1797,0,,Steenderen,pdok
+steenenkamer,52.2442,6.1479,0,,Steenenkamer,pdok
+steensel,51.3770,5.3618,0,,Steensel,pdok
+steenwijk,52.7890,6.1263,0,,Steenwijk,pdok
+steenwijkerwold,52.7885,6.0618,0,,Steenwijkerwold,pdok
+stegeren,52.5460,6.5041,0,,Stegeren,pdok
+steggerda,52.8602,6.0817,0,,Steggerda,pdok
+stein,50.9726,5.7632,0,,Stein,pdok
+stellendam,51.8006,4.0346,0,,Stellendam,pdok
+sterksel,51.3546,5.6233,0,,Sterksel,pdok
+stevensbeek,51.6055,5.9181,0,,Stevensbeek,pdok
+stevensweert,51.1279,5.8498,0,,Stevensweert,pdok
+steyl,51.3345,6.1246,0,,Steyl,pdok
+stieltjeskanaal,52.6737,6.8103,0,,Stieltjeskanaal,pdok
+stiens,53.2650,5.7772,0,,Stiens,pdok
+stitswerd,53.3601,6.5945,0,,Stitswerd,pdok
+stokkum,51.8794,6.2126,0,,Stokkum,pdok
+stolwijk,51.9690,4.7546,0,,Stolwijk,pdok
+stompetoren,52.6134,4.8170,0,,Stompetoren,pdok
+stoutenburg,52.1523,5.4359,0,,Stoutenburg,pdok
+stoutenburg noord,52.1593,5.4656,0,,Stoutenburg Noord,pdok
+stramproy,51.1936,5.7079,0,,Stramproy,pdok
+streefkerk,51.9031,4.7753,0,,Streefkerk,pdok
+striep,53.3753,5.2902,0,,Striep,pdok
+strijbeek,51.5099,4.8036,0,,Strijbeek,pdok
+strijen,51.7496,4.5441,0,,Strijen,pdok
+strijensas,51.7132,4.5720,0,,Strijensas,pdok
+stroe,52.1929,5.6979,0,,Stroe,pdok
+stroobos,53.2324,6.2039,0,,Stroobos,pdok
+stuifzand,52.7528,6.5016,0,,Stuifzand,pdok
+stuifzand (dr),52.7528,6.5016,0,,Stuifzand (DR),pdok
+sumar,53.1716,6.0163,0,,Sumar,pdok
+surhuisterveen,53.1745,6.1608,0,,Surhuisterveen,pdok
+surhuizum,53.2064,6.1900,0,,Surhuizum,pdok
+susteren,51.0672,5.8592,0,,Susteren,pdok
+suwâld,53.1810,5.9123,0,,Suwâld,pdok
+swalmen,51.2278,6.0370,0,,Swalmen,pdok
+sweagerbosk,53.2479,6.0497,0,,Sweagerbosk,pdok
+sweikhuizen,50.9541,5.8500,0,,Sweikhuizen,pdok
+swichum,53.1523,5.8212,0,,Swichum,pdok
+swifterbant,52.5877,5.6276,0,,Swifterbant,pdok
+swolgen,51.4935,6.1200,0,,Swolgen,pdok
+taarlo,53.0361,6.6259,0,,Taarlo,pdok
+teeffelen,51.7960,5.4986,0,,Teeffelen,pdok
+teerns,53.1805,5.8341,0,,Teerns,pdok
+tegelen,51.3367,6.1507,0,,Tegelen,pdok
+ten boer,53.2730,6.6949,0,,Ten Boer,pdok
+ten post,53.2905,6.7406,0,,Ten Post,pdok
+ter aar,52.1777,4.7201,0,,Ter Aar,pdok
+ter aard,53.0277,6.5460,0,,Ter Aard,pdok
+ter apel,52.8829,7.0785,0,,Ter Apel,pdok
+ter apelkanaal,52.9201,7.0649,0,,Ter Apelkanaal,pdok
+ter heijde,52.0300,4.1684,0,,Ter Heijde,pdok
+ter idzard,52.9113,6.0309,0,,Ter Idzard,pdok
+terband,52.9975,5.9031,0,,Terband,pdok
+terborg,51.9255,6.3587,0,,Terborg,pdok
+terheijden,51.6476,4.7469,0,,Terheijden,pdok
+terherne,53.0385,5.7878,0,,Terherne,pdok
+terhole,51.3117,4.0460,0,,Terhole,pdok
+terkaple,53.0164,5.7896,0,,Terkaple,pdok
+termunten,53.2908,7.0816,0,,Termunten,pdok
+termunterzijl,53.3018,7.0488,0,,Termunterzijl,pdok
+ternaard,53.3930,5.9531,0,,Ternaard,pdok
+terneuzen,51.3518,3.8089,0,,Terneuzen,pdok
+teroele,52.9378,5.7028,0,,Teroele,pdok
+terschuur,52.1603,5.5196,0,,Terschuur,pdok
+tersoal,53.0680,5.7417,0,,Tersoal,pdok
+terwispel,53.0276,6.0337,0,,Terwispel,pdok
+terwolde,52.2716,6.0812,0,,Terwolde,pdok
+teteringen,51.6166,4.8127,0,,Teteringen,pdok
+teuge,52.2369,6.0498,0,,Teuge,pdok
+thesinge,53.2741,6.6529,0,,Thesinge,pdok
+tholen,51.5219,4.1859,0,,Tholen,pdok
+thorn,51.1628,5.8490,0,,Thorn,pdok
+tiel,51.8942,5.4280,0,,Tiel,pdok
+tiendeveen,52.7508,6.5408,0,,Tiendeveen,pdok
+tiendeveen (dr),52.7508,6.5408,0,,Tiendeveen (DR),pdok
+tienhoven,52.1585,5.0863,0,,Tienhoven,pdok
+tienhoven aan de lek,51.9503,4.9426,0,,Tienhoven aan de Lek,pdok
+tienray,51.4921,6.0872,0,,Tienray,pdok
+tijnje,53.0368,5.9833,0,,Tijnje,pdok
+tilburg,51.5606,5.0913,0,,,
+tilligte,52.4055,6.9476,0,,Tilligte,pdok
+tinallinge,53.3517,6.5484,0,,Tinallinge,pdok
+tinte,51.8909,4.1349,0,,Tinte,pdok
+tirns,53.0616,5.6264,0,,Tirns,pdok
+tjalhuizum,53.0474,5.6121,0,,Tjalhuizum,pdok
+tjalleberd,53.0070,5.9419,0,,Tjalleberd,pdok
+tjerkgaast,52.9127,5.6790,0,,Tjerkgaast,pdok
+tjerkwerd,53.0404,5.5052,0,,Tjerkwerd,pdok
+tjuchem,53.2773,6.8799,0,,Tjuchem,pdok
+tolbert,53.1803,6.3548,0,,Tolbert,pdok
+toldijk,52.0422,6.2273,0,,Toldijk,pdok
+tolkamer,51.8655,6.0892,0,,Tolkamer,pdok
+tollebeek,52.6829,5.6472,0,,Tollebeek,pdok
+tonden,52.1354,6.1276,0,,Tonden,pdok
+toornwerd,53.3573,6.6402,0,,Toornwerd,pdok
+tricht,51.9077,5.2591,0,,Tricht,pdok
+tripscompagnie,53.1405,6.8288,0,,Tripscompagnie,pdok
+tubbergen,52.4058,6.7816,0,,Tubbergen,pdok
+tuil,51.8295,5.2299,0,,Tuil,pdok
+tuitjenhorn,52.7378,4.7556,0,,Tuitjenhorn,pdok
+tuk,52.7970,6.0894,0,,Tuk,pdok
+tull en 't waal,51.9992,5.1436,0,,Tull en 't Waal,pdok
+twello,52.2396,6.1004,0,,Twello,pdok
+twijzel,53.2385,6.0991,0,,Twijzel,pdok
+twijzelerheide,53.2372,6.0499,0,,Twijzelerheide,pdok
+twisk,52.7398,5.0491,0,,Twisk,pdok
+tynaarlo,53.0790,6.6188,0,,Tynaarlo,pdok
+tytsjerk,53.1994,5.8943,0,,Tytsjerk,pdok
+tzum,53.1500,5.5645,0,,Tzum,pdok
+tzummarum,53.2395,5.5453,0,,Tzummarum,pdok
+ubbena,53.0497,6.5779,0,,Ubbena,pdok
+ubbergen,51.8352,5.9028,0,,Ubbergen,pdok
+uddel,52.2355,5.7950,0,,Uddel,pdok
+uden,51.6646,5.6158,0,,Uden,pdok
+udenhout,51.6184,5.1366,0,,Udenhout,pdok
+uffelte,52.7955,6.2743,0,,Uffelte,pdok
+ugchelen,52.1705,5.9011,0,,Ugchelen,pdok
+uitdam,52.4261,5.0656,0,,Uitdam,pdok
+uitgeest,52.5306,4.71,0,,,
+uithoorn,52.2325,4.8269,0,,,
+uithuizen,53.4392,6.6819,0,,Uithuizen,pdok
+uithuizermeeden,53.4390,6.7465,0,,Uithuizermeeden,pdok
+uitwellingerga,53.0012,5.7158,0,,Uitwellingerga,pdok
+uitwijk,51.7882,4.9990,0,,Uitwijk,pdok
+ulestraten,50.9014,5.7797,0,,Ulestraten,pdok
+ulft,51.8952,6.3743,0,,Ulft,pdok
+ulicoten,51.4522,4.8584,0,,Ulicoten,pdok
+ulrum,53.3605,6.3385,0,,Ulrum,pdok
+ulvenhout,51.5458,4.7996,0,,Ulvenhout,pdok
+ulvenhout ac,51.5329,4.8216,0,,Ulvenhout AC,pdok
+ureterp,53.0919,6.1615,0,,Ureterp,pdok
+urk,52.6931,5.4816,0,,Urk,pdok
+urmond,51.0009,5.7747,0,,Urmond,pdok
+ursem,52.6287,4.9068,0,,Ursem,pdok
+ursem (nh),52.6287,4.9068,0,,Ursem (NH),pdok
+usquert,53.4241,6.6066,0,,Usquert,pdok
+utrecht,52.0907,5.1214,1,,,
+vaals,50.7664,6.0000,0,,Vaals,pdok
+vaassen,52.2869,5.9322,0,,Vaassen,pdok
+valburg,51.9135,5.7872,0,,Valburg,pdok
+valkenburg,52.1699,4.4302,0,,Valkenburg,pdok
+valkenburg (lb),50.8650,5.8243,0,,Valkenburg (LB),pdok
+valkenburg (zh),52.1699,4.4302,0,,Valkenburg (ZH),pdok
+valkenswaard,51.3238,5.4492,0,,Valkenswaard,pdok
+valthe,52.8427,6.8869,0,,Valthe,pdok
+valthermond,52.8800,6.9624,0,,Valthermond,pdok
+varik,51.8278,5.3648,0,,Varik,pdok
+varsselder,51.8882,6.3519,0,,Varsselder,pdok
+varsseveld,51.9427,6.4675,0,,Varsseveld,pdok
+vasse,52.4244,6.8305,0,,Vasse,pdok
+veelerveen,53.0547,7.1428,0,,Veelerveen,pdok
+veen,51.7778,5.0969,0,,Veen,pdok
+veendam,53.0977,6.9027,0,,Veendam,pdok
+veenendaal,52.0237,5.5557,0,,Veenendaal,pdok
+veenhuizen,53.0256,6.4081,0,,Veenhuizen,pdok
+veeningen,52.6663,6.3722,0,,Veeningen,pdok
+veenoord,52.7175,6.8420,0,,Veenoord,pdok
+veere,51.5442,3.6625,0,,Veere,pdok
+veessen,52.3780,6.0866,0,,Veessen,pdok
+vegelinsoord,53.0056,5.8432,0,,Vegelinsoord,pdok
+veghel,51.6085,5.5445,0,,Veghel,pdok
+velddriel,51.7682,5.2966,0,,Velddriel,pdok
+velden,51.4200,6.1825,0,,Velden,pdok
+veldhoven,51.4119,5.3832,0,,Veldhoven,pdok
+velp,51.9971,5.9856,0,,Velp,pdok
+velp (gd),51.9971,5.9856,0,,Velp (GD),pdok
+velp (nb),51.7484,5.7138,0,,Velp (NB),pdok
+velsen-noord,52.4755,4.5970,0,,Velsen-Noord,pdok
+velsen-zuid,52.4427,4.6757,0,,Velsen-Zuid,pdok
+velserbroek,52.4334,4.6634,0,,Velserbroek,pdok
+ven-zelderheide,51.7122,6.0200,0,,Ven-Zelderheide,pdok
+venebrugge,52.5576,6.6762,0,,Venebrugge,pdok
+venhorst,51.6081,5.7316,0,,Venhorst,pdok
+venhuizen,52.6622,5.2299,0,,Venhuizen,pdok
+venlo,51.3791,6.1488,0,,Venlo,pdok
+venray,51.5347,5.9716,0,,Venray,pdok
+vessem,51.4271,5.2810,0,,Vessem,pdok
+vethuizen,51.9125,6.2962,0,,Vethuizen,pdok
+veulen,51.4787,5.9561,0,,Veulen,pdok
+vianen,51.9752,5.0854,0,,Vianen,pdok
+vianen nb,51.7176,5.8540,0,,Vianen NB,pdok
+vierakker,52.1021,6.2465,0,,Vierakker,pdok
+vierhouten,52.3309,5.8278,0,,Vierhouten,pdok
+vierhuizen,53.3671,6.2932,0,,Vierhuizen,pdok
+vierlingsbeek,51.5928,5.9933,0,,Vierlingsbeek,pdok
+vierpolders,51.8848,4.1812,0,,Vierpolders,pdok
+vijfhuizen,52.3581,4.6899,0,,Vijfhuizen,pdok
+vijlen,50.7775,5.9552,0,,Vijlen,pdok
+vilsteren,52.5028,6.3572,0,,Vilsteren,pdok
+vinkega,52.8722,6.1202,0,,Vinkega,pdok
+vinkel,51.7043,5.4880,0,,Vinkel,pdok
+vinkel (nb),51.7043,5.4880,0,,Vinkel (NB),pdok
+vinkenbuurt,52.5821,6.3631,0,,Vinkenbuurt,pdok
+vinkeveen,52.2133,4.9306,0,,,
+visvliet,53.2628,6.2586,0,,Visvliet,pdok
+vlaardingen,51.9174,4.3279,0,,Vlaardingen,pdok
+vlagtwedde,53.0163,7.1233,0,,Vlagtwedde,pdok
+vledder,52.8609,6.2074,0,,Vledder,pdok
+vledderveen,52.9825,7.0138,0,,Vledderveen,pdok
+vledderveen (dr),52.8766,6.1869,0,,Vledderveen (DR),pdok
+vledderveen (gr),52.9825,7.0138,0,,Vledderveen (GR),pdok
+vleuten,52.1020,5.0083,0,,Vleuten,pdok
+vlieland,53.2197,5.0346,0,,Vlieland,pdok
+vlierden,51.4423,5.7544,0,,Vlierden,pdok
+vlijmen,51.6899,5.2098,0,,Vlijmen,pdok
+vlissingen,51.4708,3.4433,0,,Vlissingen,pdok
+vlist,51.9773,4.8242,0,,Vlist,pdok
+vlodrop,51.1453,6.1042,0,,Vlodrop,pdok
+voerendaal,50.8662,5.9278,0,,Voerendaal,pdok
+vogelenzang,52.3306,4.5725,0,,Vogelenzang,pdok
+vogelwaarde,51.3182,3.9848,0,,Vogelwaarde,pdok
+volendam,52.4947,5.0706,0,,,
+volkel,51.6474,5.6753,0,,Volkel,pdok
+vollenhove,52.6755,5.9701,0,,Vollenhove,pdok
+vondelingenplaat rotterdam,51.8864,4.3524,0,,Vondelingenplaat Rotterdam,pdok
+voorburg,52.0762,4.3635,0,,Voorburg,pdok
+voorhout,52.2281,4.4938,0,,Voorhout,pdok
+voorschoten,52.1248,4.4386,0,,Voorschoten,pdok
+voorst,52.1780,6.1380,0,,Voorst,pdok
+voorst (gd),51.8737,6.4197,0,,Voorst (GD),pdok
+voorthuizen,52.1879,5.6208,0,,Voorthuizen,pdok
+vorchten,52.3987,6.1105,0,,Vorchten,pdok
+vorden,52.1015,6.3408,0,,Vorden,pdok
+vorstenbosch,51.6628,5.5530,0,,Vorstenbosch,pdok
+vortum-mullem,51.6164,5.9722,0,,Vortum-Mullem,pdok
+vragender,51.9846,6.6220,0,,Vragender,pdok
+vredenheim,52.9459,6.6435,0,,Vredenheim,pdok
+vredepeel,51.5428,5.8705,0,,Vredepeel,pdok
+vreeland,52.2380,5.0360,0,,Vreeland,pdok
+vries,53.0767,6.5761,0,,Vries,pdok
+vriescheloo,53.0777,7.1402,0,,Vriescheloo,pdok
+vriezenveen,52.4265,6.6400,0,,Vriezenveen,pdok
+vroomshoop,52.4649,6.5759,0,,Vroomshoop,pdok
+vrouwenakker,52.2260,4.7890,0,,Vrouwenakker,pdok
+vrouwenparochie,53.2669,5.7079,0,,Vrouwenparochie,pdok
+vrouwenpolder,51.6151,3.6477,0,,Vrouwenpolder,pdok
+vught,51.6501,5.2795,0,,Vught,pdok
+vuren,51.8410,5.0613,0,,Vuren,pdok
+waaksens,53.1096,5.5396,0,,Waaksens,pdok
+waal,51.9382,4.8996,0,,Waal,pdok
+waalre,51.3873,5.4649,0,,Waalre,pdok
+waalwijk,51.6943,5.0689,0,,Waalwijk,pdok
+waarde,51.4102,4.0734,0,,Waarde,pdok
+waardenburg,51.8389,5.2486,0,,Waardenburg,pdok
+waarder,52.0560,4.8281,0,,Waarder,pdok
+waardhuizen,51.7747,4.9998,0,,Waardhuizen,pdok
+waarland,52.7305,4.8192,0,,Waarland,pdok
+waaxens,53.3561,5.9186,0,,Waaxens,pdok
+wachtum,52.7275,6.7473,0,,Wachtum,pdok
+waddinxveen,52.0424,4.6407,0,,Waddinxveen,pdok
+wadenoijen,51.8675,5.3571,0,,Wadenoijen,pdok
+wagenberg,51.6636,4.7510,0,,Wagenberg,pdok
+wagenborgen,53.2595,6.9410,0,,Wagenborgen,pdok
+wageningen,51.9735,5.6635,0,,Wageningen,pdok
+walem,50.8648,5.8672,0,,Walem,pdok
+walsoorden,51.4005,4.0082,0,,Walsoorden,pdok
+wamel,51.8715,5.4752,0,,Wamel,pdok
+wanneperveen,52.6984,6.1043,0,,Wanneperveen,pdok
+wanroij,51.6518,5.8236,0,,Wanroij,pdok
+wanssum,51.5361,6.0787,0,,Wanssum,pdok
+wapenveld,52.4305,6.0684,0,,Wapenveld,pdok
+wapse,52.8623,6.2626,0,,Wapse,pdok
+wapserveen,52.8216,6.2219,0,,Wapserveen,pdok
+warder,52.5536,5.0441,0,,Warder,pdok
+warffum,53.4938,6.5429,0,,Warffum,pdok
+warfhuizen,53.3371,6.4188,0,,Warfhuizen,pdok
+warfstermolen,53.3206,6.2240,0,,Warfstermolen,pdok
+warmenhuizen,52.7162,4.7382,0,,Warmenhuizen,pdok
+warmond,52.1995,4.5252,0,,Warmond,pdok
+warns,52.8467,5.3516,0,,Warns,pdok
+warnsveld,52.1378,6.2740,0,,Warnsveld,pdok
+warstiens,53.1635,5.8707,0,,Warstiens,pdok
+warten,53.1383,5.9037,0,,Warten,pdok
+waskemeer,53.0511,6.2779,0,,Waskemeer,pdok
+waspik,51.6944,4.9504,0,,Waspik,pdok
+wassenaar,52.1411,4.3671,0,,Wassenaar,pdok
+wateren,52.9152,6.2895,0,,Wateren,pdok
+watergang,52.3958,4.9556,0,,,
+waterhuizen,53.1855,6.6487,0,,Waterhuizen,pdok
+wateringen,52.0191,4.2796,0,,Wateringen,pdok
+waterlandkerkje,51.3126,3.5508,0,,Waterlandkerkje,pdok
+waverveen,52.2378,4.8943,0,,Waverveen,pdok
+wedde,53.0782,7.0625,0,,Wedde,pdok
+weerselo,52.3444,6.8666,0,,Weerselo,pdok
+weert,51.2388,5.6896,0,,Weert,pdok
+weesp,52.3075,5.0417,1,,,
+wehe-den hoorn,53.3562,6.4189,0,,Wehe-den Hoorn,pdok
+wehl,51.9617,6.2017,0,,Wehl,pdok
+weidum,53.1442,5.7454,0,,Weidum,pdok
+weiteveen,52.6679,7.0052,0,,Weiteveen,pdok
+wekerom,52.1026,5.7053,0,,Wekerom,pdok
+well,51.7557,5.1959,0,,Well,pdok
+well l,51.5671,6.0982,0,,Well L,pdok
+wellerlooi,51.5293,6.1638,0,,Wellerlooi,pdok
+welsum,52.3288,6.0876,0,,Welsum,pdok
+wemeldinge,51.5259,3.9839,0,,Wemeldinge,pdok
+wenum wiesel,52.2542,5.9271,0,,Wenum Wiesel,pdok
+wergea,53.1460,5.8484,0,,Wergea,pdok
+werkendam,51.7774,4.8273,0,,Werkendam,pdok
+werkhoven,52.0206,5.2415,0,,Werkhoven,pdok
+wernhout,51.4420,4.6385,0,,Wernhout,pdok
+wervershoof,52.7359,5.1469,0,,Wervershoof,pdok
+wesepe,52.3331,6.2041,0,,Wesepe,pdok
+wessem,51.1614,5.8784,0,,Wessem,pdok
+west-graftdijk,52.5630,4.8039,0,,West-Graftdijk,pdok
+west-terschelling,53.3046,5.2412,0,,West-Terschelling,pdok
+westbeemster,52.5550,4.8752,0,,Westbeemster,pdok
+westbroek,52.1544,5.1307,0,,Westbroek,pdok
+westdorp,52.9065,6.7567,0,,Westdorp,pdok
+westdorpe,51.2380,3.8428,0,,Westdorpe,pdok
+westendorp,51.9507,6.4191,0,,Westendorp,pdok
+westerbeek,51.5777,5.8602,0,,Westerbeek,pdok
+westerbork,52.8534,6.6051,0,,Westerbork,pdok
+westerbroek,53.1832,6.6783,0,,Westerbroek,pdok
+westeremden,53.3474,6.7054,0,,Westeremden,pdok
+westergeast,53.3040,6.0891,0,,Westergeast,pdok
+westerhaar-vriezenveensewijk,52.4531,6.6267,0,,Westerhaar-Vriezenveensewijk,pdok
+westerhoven,51.3318,5.4053,0,,Westerhoven,pdok
+westerland,52.8930,4.9246,0,,Westerland,pdok
+westerlee,53.1389,6.9786,0,,Westerlee,pdok
+westernieland,53.4199,6.5031,0,,Westernieland,pdok
+westervelde,53.0516,6.4301,0,,Westervelde,pdok
+westervoort,51.9575,5.9707,0,,Westervoort,pdok
+westerwijtwerd,53.3289,6.6524,0,,Westerwijtwerd,pdok
+westhem,53.0147,5.5472,0,,Westhem,pdok
+westhoek,53.2766,5.5745,0,,Westhoek,pdok
+westkapelle,51.5313,3.4553,0,,Westkapelle,pdok
+westknollendam,52.5160,4.7833,0,,Westknollendam,pdok
+westmaas,51.7881,4.4657,0,,Westmaas,pdok
+westwoud,52.6795,5.1339,0,,Westwoud,pdok
+westzaan,52.4512,4.7733,0,,Westzaan,pdok
+wetering,52.7607,5.9801,0,,Wetering,pdok
+weteringbrug,52.2255,4.6437,0,,Weteringbrug,pdok
+wetsens,53.3476,6.0362,0,,Wetsens,pdok
+wetsinge,53.3046,6.5325,0,,Wetsinge,pdok
+weurt,51.8572,5.8061,0,,Weurt,pdok
+wezep,52.4568,5.9897,0,,Wezep,pdok
+wezup,52.8189,6.7161,0,,Wezup,pdok
+wezuperbrug,52.8395,6.7229,0,,Wezuperbrug,pdok
+wichmond,52.0852,6.2592,0,,Wichmond,pdok
+wier,53.2479,5.6272,0,,Wier,pdok
+wierden,52.3561,6.5609,0,,Wierden,pdok
+wieringerwaard,52.8216,4.8658,0,,Wieringerwaard,pdok
+wieringerwerf,52.8870,5.1055,0,,Wieringerwerf,pdok
+wierum,53.4185,5.9944,0,,Wierum,pdok
+wijchen,51.8077,5.7431,0,,Wijchen,pdok
+wijckel,52.8913,5.6217,0,,Wijckel,pdok
+wijdenes,52.6363,5.1611,0,,Wijdenes,pdok
+wijdewormer,52.4934,4.8860,0,,Wijdewormer,pdok
+wijhe,52.4017,6.1704,0,,Wijhe,pdok
+wijk aan zee,52.4916,4.6023,0,,Wijk aan Zee,pdok
+wijk bij duurstede,51.9743,5.3242,0,,Wijk bij Duurstede,pdok
+wijk en aalburg,51.7581,5.0987,0,,Wijk en Aalburg,pdok
+wijlre,50.8329,5.8890,0,,Wijlre,pdok
+wijnaldum,53.1964,5.4604,0,,Wijnaldum,pdok
+wijnandsrade,50.9022,5.8900,0,,Wijnandsrade,pdok
+wijnbergen,51.9344,6.2856,0,,Wijnbergen,pdok
+wijngaarden,51.8506,4.7718,0,,Wijngaarden,pdok
+wijnjewoude,53.0521,6.1943,0,,Wijnjewoude,pdok
+wijster,52.8076,6.5215,0,,Wijster,pdok
+wilbertoord,51.6545,5.7648,0,,Wilbertoord,pdok
+wildervank,53.0668,6.8607,0,,Wildervank,pdok
+wilhelminadorp,51.5345,3.8924,0,,Wilhelminadorp,pdok
+wilhelminaoord,52.8627,6.1605,0,,Wilhelminaoord,pdok
+willemsoord,52.8305,6.0710,0,,Willemsoord,pdok
+willemstad,51.6877,4.4470,0,,Willemstad,pdok
+wilnis,52.1972,4.9036,0,,,
+wilp,52.2138,6.1171,0,,Wilp,pdok
+wilsum,52.5322,5.9667,0,,Wilsum,pdok
+winde,53.1255,6.5226,0,,Winde,pdok
+windraak,50.9742,5.8852,0,,Windraak,pdok
+winkel,52.7585,4.9184,0,,Winkel,pdok
+winneweer,53.3085,6.7381,0,,Winneweer,pdok
+winschoten,53.1406,7.0350,0,,Winschoten,pdok
+winssen,51.8736,5.6991,0,,Winssen,pdok
+winsum,53.1489,5.6345,0,,Winsum,pdok
+winsum (fr),53.1489,5.6345,0,,Winsum (FR),pdok
+winsum (gr),53.3300,6.5132,0,,Winsum (GR),pdok
+wintelre,51.4466,5.3287,0,,Wintelre,pdok
+winterswijk,51.9719,6.7117,0,,Winterswijk,pdok
+winterswijk brinkheurne,51.9536,6.7504,0,,Winterswijk Brinkheurne,pdok
+winterswijk corle,51.9663,6.6585,0,,Winterswijk Corle,pdok
+winterswijk henxel,51.9817,6.7597,0,,Winterswijk Henxel,pdok
+winterswijk huppel,52.0028,6.7619,0,,Winterswijk Huppel,pdok
+winterswijk kotten,51.9388,6.7716,0,,Winterswijk Kotten,pdok
+winterswijk meddo,52.0135,6.7034,0,,Winterswijk Meddo,pdok
+winterswijk miste,51.9410,6.6654,0,,Winterswijk Miste,pdok
+winterswijk ratum,51.9791,6.8043,0,,Winterswijk Ratum,pdok
+winterswijk woold,51.9261,6.7149,0,,Winterswijk Woold,pdok
+wirdum,53.3159,6.7943,0,,Wirdum,pdok
+wirdum (fr),53.1494,5.7995,0,,Wirdum (FR),pdok
+wirdum (gr),53.3159,6.7943,0,,Wirdum (GR),pdok
+wissenkerke,51.5850,3.7655,0,,Wissenkerke,pdok
+witharen,52.5626,6.3812,0,,Witharen,pdok
+witmarsum,53.0998,5.4774,0,,Witmarsum,pdok
+witte paarden,52.8087,6.0770,0,,Witte Paarden,pdok
+wittelte,52.8283,6.2974,0,,Wittelte,pdok
+wittem,50.8110,5.9435,0,,Wittem,pdok
+witteveen,52.8172,6.6579,0,,Witteveen,pdok
+wiuwert,53.1095,5.6966,0,,Wiuwert,pdok
+wjelsryp,53.1673,5.6008,0,,Wjelsryp,pdok
+woensdrecht,51.4191,4.2859,0,,Woensdrecht,pdok
+woerden,52.0863,4.8790,0,,Woerden,pdok
+woerdense verlaat,52.1527,4.8612,0,,Woerdense Verlaat,pdok
+wognum,52.6833,5.0145,0,,Wognum,pdok
+woldendorp,53.2689,7.0590,0,,Woldendorp,pdok
+wolfheze,52.0071,5.7849,0,,Wolfheze,pdok
+wolphaartsdijk,51.5285,3.7970,0,,Wolphaartsdijk,pdok
+wolsum,53.0404,5.5505,0,,Wolsum,pdok
+woltersum,53.2736,6.7284,0,,Woltersum,pdok
+wolvega,52.8723,6.0069,0,,Wolvega,pdok
+wommels,53.1017,5.5828,0,,Wommels,pdok
+wons,53.0828,5.4224,0,,Wons,pdok
+workum,52.9748,5.4009,0,,Workum,pdok
+wormer,52.4998,4.8263,0,,Wormer,pdok
+wormerveer,52.4922,4.7917,0,,,
+woubrugge,52.1732,4.6482,0,,Woubrugge,pdok
+woudbloem,53.2221,6.7414,0,,Woudbloem,pdok
+woudenberg,52.0812,5.4266,0,,Woudenberg,pdok
+woudrichem,51.8094,4.9829,0,,Woudrichem,pdok
+woudsend,52.9390,5.6370,0,,Woudsend,pdok
+wouw,51.5281,4.3940,0,,Wouw,pdok
+wouwse plantage,51.4793,4.3978,0,,Wouwse Plantage,pdok
+wyns,53.2605,5.8482,0,,Wyns,pdok
+wytgaard,53.1361,5.7793,0,,Wytgaard,pdok
+wâlterswâld,53.2976,6.0302,0,,Wâlterswâld,pdok
+wânswert,53.2992,5.8478,0,,Wânswert,pdok
+yde,53.1081,6.5829,0,,Yde,pdok
+yerseke,51.4969,4.0576,0,,Yerseke,pdok
+ypecolsga,52.9291,5.6103,0,,Ypecolsga,pdok
+ysbrechtum,53.0450,5.6325,0,,Ysbrechtum,pdok
+ysselsteyn,51.4851,5.8943,0,,Ysselsteyn,pdok
+zaamslag,51.3279,3.9209,0,,Zaamslag,pdok
+zaandam,52.4389,4.8289,1,,,
+zaandijk,52.4744,4.8064,0,,,
+zalk,52.5088,5.9892,0,,Zalk,pdok
+zaltbommel,51.8053,5.2552,0,,Zaltbommel,pdok
+zandberg,52.9145,7.0351,0,,Zandberg,pdok
+zandeweer,53.3869,6.6764,0,,Zandeweer,pdok
+zandhuizen,52.9166,6.1533,0,,Zandhuizen,pdok
+zandpol,52.6915,6.8626,0,,Zandpol,pdok
+zandvoort,52.3714,4.5333,0,,,
+zeddam,51.9053,6.2530,0,,Zeddam,pdok
+zeegse,53.0660,6.6484,0,,Zeegse,pdok
+zeeland,51.6922,5.6820,0,,Zeeland,pdok
+zeerijp,53.3533,6.7543,0,,Zeerijp,pdok
+zeewolde,52.3444,5.4552,0,,Zeewolde,pdok
+zegge,51.5563,4.5150,0,,Zegge,pdok
+zegveld,52.1217,4.8361,0,,Zegveld,pdok
+zeijen,53.0592,6.5354,0,,Zeijen,pdok
+zeijerveen,53.0174,6.5270,0,,Zeijerveen,pdok
+zeijerveld,53.0325,6.5157,0,,Zeijerveld,pdok
+zeist,52.0884,5.2517,0,,Zeist,pdok
+zelhem,52.0087,6.3490,0,,Zelhem,pdok
+zenderen,52.3232,6.7246,0,,Zenderen,pdok
+zennewijnen,51.8599,5.4017,0,,Zennewijnen,pdok
+zennewijnen (gd),51.8599,5.4017,0,,Zennewijnen (GD),pdok
+zetten,51.9279,5.7183,0,,Zetten,pdok
+zevenaar,51.9354,6.0785,0,,Zevenaar,pdok
+zevenbergen,51.6484,4.6053,0,,Zevenbergen,pdok
+zevenbergschen hoek,51.6734,4.6742,0,,Zevenbergschen Hoek,pdok
+zevenbergschen hoek (nb),51.6734,4.6742,0,,Zevenbergschen Hoek (NB),pdok
+zevenhoven,52.1861,4.8012,0,,Zevenhoven,pdok
+zevenhuizen,52.0064,4.5774,0,,Zevenhuizen,pdok
+zevenhuizen (gr),53.1170,6.3342,0,,Zevenhuizen (GR),pdok
+zevenhuizen (zh),52.0064,4.5774,0,,Zevenhuizen (ZH),pdok
+zierikzee,51.6341,3.8890,0,,Zierikzee,pdok
+zieuwent,52.0149,6.5195,0,,Zieuwent,pdok
+zijderveld,51.9454,5.1261,0,,Zijderveld,pdok
+zijdewind,52.7460,4.8356,0,,Zijdewind,pdok
+zijldijk,53.3955,6.7670,0,,Zijldijk,pdok
+zoelen,51.9236,5.4034,0,,Zoelen,pdok
+zoelmond,51.9380,5.2996,0,,Zoelmond,pdok
+zoetermeer,52.0609,4.4898,0,,Zoetermeer,pdok
+zoeterwoude,52.1179,4.5121,0,,Zoeterwoude,pdok
+zonnemaire,51.7181,3.9495,0,,Zonnemaire,pdok
+zorgvlied,52.9196,6.2519,0,,Zorgvlied,pdok
+zoutelande,51.5097,3.4857,0,,Zoutelande,pdok
+zoutkamp,53.3436,6.2962,0,,Zoutkamp,pdok
+zuid-beijerland,51.7474,4.3500,0,,Zuid-Beijerland,pdok
+zuid-scharwoude,52.6898,4.8004,0,,Zuid-Scharwoude,pdok
+zuidbroek,53.1703,6.8624,0,,Zuidbroek,pdok
+zuiddorpe,51.2355,3.8922,0,,Zuiddorpe,pdok
+zuidermeer,52.6667,4.9750,0,,Zuidermeer,pdok
+zuiderwoude,52.4319,5.0412,0,,Zuiderwoude,pdok
+zuidhorn,53.2436,6.4055,0,,Zuidhorn,pdok
+zuidlaarderveen,53.0998,6.7478,0,,Zuidlaarderveen,pdok
+zuidland,51.8080,4.2385,0,,Zuidland,pdok
+zuidlaren,53.0876,6.6981,0,,Zuidlaren,pdok
+zuidoostbeemster,52.5315,4.9337,0,,Zuidoostbeemster,pdok
+zuidschermer,52.5862,4.7784,0,,Zuidschermer,pdok
+zuidveen,52.7640,6.1164,0,,Zuidveen,pdok
+zuidveld,52.8661,6.6367,0,,Zuidveld,pdok
+zuidvelde,53.0379,6.4627,0,,Zuidvelde,pdok
+zuidwolde,53.2623,6.6008,0,,Zuidwolde,pdok
+zuidwolde (dr),52.6625,6.4193,0,,Zuidwolde (DR),pdok
+zuidwolde (gr),53.2623,6.6008,0,,Zuidwolde (GR),pdok
+zuidzande,51.3427,3.4428,0,,Zuidzande,pdok
+zuilichem,51.8026,5.1359,0,,Zuilichem,pdok
+zuna,52.3315,6.4952,0,,Zuna,pdok
+zundert,51.4681,4.6706,0,,Zundert,pdok
+zurich,53.1061,5.3895,0,,Zurich,pdok
+zutphen,52.1354,6.2080,0,,Zutphen,pdok
+zuurdijk,53.3330,6.3762,0,,Zuurdijk,pdok
+zwaag,52.6702,5.0675,0,,Zwaag,pdok
+zwaagdijk-oost,52.6983,5.1234,0,,Zwaagdijk-Oost,pdok
+zwaagdijk-west,52.6780,5.0610,0,,Zwaagdijk-West,pdok
+zwaanshoek,52.3154,4.6226,0,,Zwaanshoek,pdok
+zwammerdam,52.1056,4.7245,0,,Zwammerdam,pdok
+zwanenburg,52.3740,4.7340,0,,Zwanenburg,pdok
+zwartebroek,52.1794,5.5124,0,,Zwartebroek,pdok
+zwartemeer,52.7012,7.0399,0,,Zwartemeer,pdok
+zwartewaal,51.8728,4.2079,0,,Zwartewaal,pdok
+zwartsluis,52.6390,6.0762,0,,Zwartsluis,pdok
+zweeloo,52.8091,6.7470,0,,Zweeloo,pdok
+zweins,53.1906,5.6029,0,,Zweins,pdok
+zwiggelte,52.8899,6.5890,0,,Zwiggelte,pdok
+zwijndrecht,51.8185,4.6184,0,,Zwijndrecht,pdok
+zwinderen,52.7182,6.6727,0,,Zwinderen,pdok
+zwolle,52.5168,6.083,0,,,
+amstel,,,,amsterdam,,
+bijlmer,,,,amsterdam,,
+bos en lommer,,,,amsterdam,,
+buitenveldert,,,,amsterdam,,
+centrum,,,,amsterdam,,
+de baarsjes,,,,amsterdam,,
+de pijp,,,,amsterdam,,
+driemond,,,,amsterdam,,
+frederikspark,,,,amsterdam,,
+gaasperdam,,,,amsterdam,,
+geuzenveld,,,,amsterdam,,
+ijburg,,,,amsterdam,,
+indische buurt,,,,amsterdam,,
+jordaan,,,,amsterdam,,
+kinkerbuurt,,,,amsterdam,,
+nieuw-west,,,,amsterdam,,
+noord,,,,amsterdam,,
+oost,,,,amsterdam,,
+osdorp,,,,amsterdam,,
+oud-west,,,,amsterdam,,
+oude west,,,,amsterdam,,
+pijp,,,,amsterdam,,
+rivierenbuurt,,,,amsterdam,,
+sloterdijk,,,,amsterdam,,
+slotervaart,,,,amsterdam,,
+staatsliedenbuurt,,,,amsterdam,,
+watergraafsmeer,,,,amsterdam,,
+west,,,,amsterdam,,
+westerpark,,,,amsterdam,,
+zuid,,,,amsterdam,,
+zuidas,,,,amsterdam,,
+zuidoost,,,,amsterdam,,

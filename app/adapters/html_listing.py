@@ -8,7 +8,7 @@ import time
 from bs4 import BeautifulSoup
 
 from .. import store
-from .common import _skip_recent_detail, _tally, detail_get, make_job, page_text, strip_html
+from .common import _skip_recent_detail, _tally, make_job, page_text, safe_detail_get, strip_html
 from .jsonld import jsonld_company, jsonld_jobs, jsonld_location
 
 
@@ -41,8 +41,8 @@ def _scan_html_listing(client, source, entry, summary, limit_per_source=None) ->
     for link in links[:limit]:
         if _skip_recent_detail(link, entry, summary):
             continue
-        page = detail_get(client, link)
-        if page.status_code >= 400:
+        page = safe_detail_get(client, link, entry)
+        if page is None or page.status_code >= 400:
             continue
         items = jsonld_jobs(page.text)
         title = company = location = ""
@@ -65,7 +65,7 @@ def _scan_html_listing(client, source, entry, summary, limit_per_source=None) ->
             location = source["default_location"]
         if not company and source.get("company_from_host"):
             host = re.sub(r"^https?://", "", link).split("/")[0]
-            host = re.sub(r"^(www|werkenbij)\.", "", host)
+            host = re.sub(r"^(?:www\.)?(?:werkenbij\.?)?", "", host)
             label = host.split(".")[0].replace("-", " ").strip()
             if label and label not in {"vacatures", "www"}:
                 company = label.title()

@@ -46,12 +46,34 @@ def _run_scan() -> dict:
         raise
 
 
+def _budget_reached() -> bool:
+    budget = float(os.environ.get("MATCH_DAILY_BUDGET_USD", "0.50") or 0)
+    return budget > 0 and store.daily_usage_cost() >= budget
+
+
 def _run_match() -> None:
+    """Work through the queue in a few rounds, stopping at the budget or without progress."""
+    store.meta_set("match_status", "running")
     try:
-        summary = matching.match_jobs(runtime.manager)
-        summary["finished_at"] = datetime.now(UTC).isoformat()
-        store.meta_set("match_summary", json.dumps(summary, ensure_ascii=False))
-        store.meta_set("match_status", "done")
+        summary: dict = {}
+        status = "done"
+        for _ in range(max(1, int(os.environ.get("MATCH_AUTO_ROUNDS", "3")))):
+            if _budget_reached():
+                status = "budget"
+                break
+            current = matching.match_jobs(runtime.manager)
+            for key in ("matched", "failed", "signals", "escalated", "cost_usd"):
+                summary[key] = summary.get(key, 0) + current.get(key, 0)
+            summary["errors"] = [*summary.get("errors", []), *current.get("errors", [])]
+            summary["remaining"] = current.get("remaining", 0)
+            if not (current.get("matched") or current.get("signals")):
+                break
+        if summary:
+            summary["finished_at"] = datetime.now(UTC).isoformat()
+            store.meta_set("match_summary", json.dumps(summary, ensure_ascii=False))
+            if summary.get("failed") and not summary.get("matched"):
+                status = f"error: {summary['failed']} beoordelingen mislukt"
+        store.meta_set("match_status", status)
     except Exception as exc:
         log.exception("matching failed")
         store.meta_set("match_status", f"error: {exc}"[:400])
@@ -88,10 +110,10 @@ def _run_document(job_id: int, kind: str) -> None:
         )
     except Exception as exc:
         log.exception("document generation failed")
-        message = str(exc)
-        if "provider.auth" in message or "api_key_expired" in message:
-            message = "API-key verlopen of ongeldig. Werk LLM_API_KEY bij en herstart de app."
-        store.meta_set(key, json.dumps({"state": "error", "kind": kind, "error": message[:300]}))
+        message = "Er ging iets mis bij het schrijven. Probeer het opnieuw."
+        if "provider.auth" in str(exc) or "api_key_expired" in str(exc):
+            message = "De AI-dienst is nu niet bereikbaar. Probeer het later opnieuw."
+        store.meta_set(key, json.dumps({"state": "error", "kind": kind, "error": message}))
 
 
 def _run_bootstrap() -> None:
@@ -162,10 +184,6 @@ def _task_match(task):
             "role": user["role"],
         }
     ):
-        budget = float(os.environ.get("MATCH_DAILY_BUDGET_USD", "0.50") or 0)
-        if budget > 0 and store.daily_usage_cost() >= budget:
-            store.meta_set("match_status", "error: dagbudget bereikt")
-            return
         _run_match()
 
 

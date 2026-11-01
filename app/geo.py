@@ -18,17 +18,17 @@ BIKE_MINUTES = 30
 TRANSIT_MINUTES = 35
 BIKE_KMH = 18.0
 IN_CITY_KM = 4.0
-TRAVEL_VERSION = "account-home-v2"
+TRAVEL_VERSION = "account-home-v3"
 GAZETTEER_FILE = Path(__file__).with_name("data") / "places_nl.csv"
 
 
-def load_gazetteer(path: Path) -> tuple[dict, set, dict]:
+def load_gazetteer(path: Path) -> tuple[dict, set, dict, dict]:
     """Load completely before publishing; missing data leaves manual coordinates usable."""
-    places, rail, districts = {}, set(), {}
+    places, rail, districts, labels = {}, set(), {}, {}
     try:
         handle = path.open(newline="", encoding="utf-8")
     except FileNotFoundError:
-        return places, rail, districts
+        return places, rail, districts, labels
     with handle:
         for row in csv.DictReader(handle):
             name = (row.get("name") or "").strip().lower()
@@ -42,18 +42,26 @@ def load_gazetteer(path: Path) -> tuple[dict, set, dict]:
             if not valid_coordinates(lat, lon) or name in places:
                 raise ValueError(f"Invalid or duplicate gazetteer place: {name}")
             places[name] = (lat, lon)
+            labels[name] = (row.get("label") or "").strip() or name.title()
             if row.get("rail") == "1":
                 rail.add(name)
     if not set(districts) <= set(places):
         raise ValueError("Gazetteer district refers to an unknown city")
-    return places, rail, districts
+    return places, rail, districts, labels
 
 
 def valid_coordinates(lat: float, lon: float) -> bool:
     return math.isfinite(lat) and math.isfinite(lon) and -90 <= lat <= 90 and -180 <= lon <= 180
 
 
-PLACES, RAIL_PLACES, DISTRICTS = load_gazetteer(GAZETTEER_FILE)
+PLACES, RAIL_PLACES, DISTRICTS, PLACE_LABELS = load_gazetteer(GAZETTEER_FILE)
+# Two-letter villages ("Ee") would match stray words in free-form location text.
+_MATCHABLE = sorted((place for place in PLACES if len(place) > 2), key=len, reverse=True)
+PLACE_PATTERN = (
+    re.compile(r"(?<!\w)(?:" + "|".join(re.escape(place) for place in _MATCHABLE) + r")(?!\w)")
+    if _MATCHABLE
+    else None
+)
 AUTO_PATTERN = re.compile(
     r"\b(?:bedrijfsauto|dienstauto|auto van de zaak)\b",
     re.I,
@@ -131,15 +139,15 @@ def _contains_place(text: str, place: str) -> bool:
     return bool(re.search(rf"(?<!\w){re.escape(place)}(?!\w)", text))
 
 
+@lru_cache(maxsize=8192)
 def _find_place(text: str) -> str | None:
     text = _norm(text)
     for city, districts in DISTRICTS.items():
         if _contains_place(text, city) and any(_contains_place(text, item) for item in districts):
             return city
-    return next(
-        (place for place in sorted(PLACES, key=len, reverse=True) if _contains_place(text, place)),
-        None,
-    )
+    if PLACE_PATTERN is None:
+        return None
+    return max((match.group(0) for match in PLACE_PATTERN.finditer(text)), key=len, default=None)
 
 
 def assess(
@@ -180,7 +188,8 @@ def assess(
         distance = haversine_km(settings["lat"], settings["lon"], *PLACES[place])
         source = "place"
     if distance is None:
-        return result
+        # A named place we cannot map is still a location; only the travel time is unknown.
+        return result | {"label": "reistijd onbekend"} if (location or "").strip() else result
     in_city = source == "place" and distance < 1 and place == _find_place(settings["label"])
     if in_city:
         distance = IN_CITY_KM
@@ -194,7 +203,7 @@ def assess(
     else:
         label = f"te ver · ~{bike_min} min fiets / ~{transit_min} min OV"
     return result | {
-        "place": (place or location or "onbekend").title(),
+        "place": PLACE_LABELS.get(place, "") or (location or "onbekend").title(),
         "distance_km": round(distance, 1),
         "bike_min": bike_min,
         "transit_min": transit_min,

@@ -819,3 +819,5 @@ html.job-drawer-open { overflow: hidden; scrollbar-gutter: stable; }
   .shell { display: block; }
   body { background: #fff; }
 }
+
+.banner .banner-action { margin-left: auto; }

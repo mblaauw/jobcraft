@@ -63,8 +63,24 @@ def ensure_sources_file() -> None:
         shutil.copy2(SEED_FILE, DATA_FILE)
 
 
+def _apply_seed_revisions(configured: list[dict]) -> list[dict]:
+    """Deliver deliberate catalogue changes to installations that already copied the seed."""
+    if not SEED_FILE.exists():
+        return configured
+    payload = yaml.safe_load(SEED_FILE.read_text()) or {}
+    seeds = {item["id"]: item for item in payload.get("sources") or [] if item.get("id")}
+    merged = []
+    for current in configured:
+        seed = seeds.get(current["id"])
+        if seed and int(seed.get("revision", 0)) > int(current.get("revision", 0)):
+            current = {**current, **seed, "enabled": current.get("enabled", True)}
+            store.save_source_config(current)
+        merged.append(current)
+    return merged
+
+
 def load_sources() -> list[dict]:
-    configured = store.load_source_configs()
+    configured = _apply_seed_revisions(store.load_source_configs())
     if configured:
         return [source_policy.effective_metadata(source) for source in configured]
     ensure_sources_file()

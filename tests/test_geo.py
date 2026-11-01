@@ -117,8 +117,9 @@ def test_missing_home_is_neutral_and_car_does_not_bypass_budget():
 
 
 def test_gazetteer_is_authoritative_and_district_requires_city(tmp_path):
-    assert len(geo.PLACES) == 68
-    assert geo.load_gazetteer(tmp_path / "missing.csv") == ({}, set(), {})
+    assert len(geo.PLACES) > 2500
+    assert geo.PLACE_LABELS["nijkerk"] == "Nijkerk"
+    assert geo.load_gazetteer(tmp_path / "missing.csv") == ({}, set(), {}, {})
     assert geo._find_place("centrum") is None
     assert geo._find_place("Amsterdam centrum") == "amsterdam"
     invalid = tmp_path / "bad.csv"

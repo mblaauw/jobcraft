@@ -71,9 +71,9 @@
       <ul class="assess-list">{% for item in reason.questions_for_employer %}<li class="q">{{ ui.icon('message-circle') }}<span>{{ item }}</span></li>{% endfor %}</ul>
       {% endif %}
     {% elif signals %}
-      <p class="muted">Deze vacature heeft alleen een snelle eerste beoordeling. De kansrijkste vacatures krijgen een uitgebreide toelichting zodra je de beoordelingen bijwerkt.</p>
+      <p class="muted">Deze vacature heeft alleen een snelle eerste beoordeling. De kansrijkste vacatures krijgen vanzelf een uitgebreide toelichting.</p>
     {% else %}
-      <p class="muted">Nog niet beoordeeld. Gebruik “Beoordelingen bijwerken” op de vacaturelijst.</p>
+      <p class="muted">Nog niet beoordeeld. Dat gebeurt vanzelf.</p>
     {% endif %}
     {% if signals %}
     <h3>In het kort</h3>
@@ -123,7 +123,7 @@
       </form>
     </div>
     <p id="doc-status" class="small muted" aria-live="polite"></p>
-    <p class="cost-note">Duurt 10 tot 20 seconden en kost ongeveer $0,003. Je krijgt een PDF en een Word-bestand.</p>
+    <p class="cost-note">Duurt 10 tot 20 seconden. Je krijgt een PDF en een Word-bestand.</p>
     <h3 id="detail-document-versions-title" class="visually-hidden">Gemaakte documenten</h3>
     {% if documents %}
     <ul class="doc-list" id="detail-document-table" aria-labelledby="detail-document-versions-title">

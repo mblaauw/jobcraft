@@ -319,11 +319,16 @@ def test_running_does_not_reload_the_page_and_errors_offer_recovery(client):
     html = soup(client.get("/jobs"))
     assert html.select_one('#jobs-progress[data-match-running="true"]')
     assert not html.select('meta[http-equiv="refresh"]')
-    assert html.select_one(".jobs-matching button").has_attr("disabled")
+    assert not html.select(".jobs-matching button")
     store.meta_set("match_status", "error: provider unavailable")
     html = soup(client.get("/jobs"))
-    assert "Probeer het opnieuw" in html.select_one("#jobs-progress").get_text()
-    assert not html.select_one(".jobs-matching button").has_attr("disabled")
+    progress = html.select_one("#jobs-progress")
+    assert "Opnieuw proberen" in progress.get_text()
+    assert "provider unavailable" not in html.get_text()
+    store.meta_set("match_status", "budget")
+    html = soup(client.get("/jobs"))
+    assert "morgen" in html.select_one("#jobs-progress").get_text()
+    assert not html.select("#jobs-progress button")
 
 
 def test_match_action_preserves_view_and_starts_only_once(client, monkeypatch):

@@ -11,6 +11,7 @@ from urllib.parse import urlsplit
 
 from . import (
     config,
+    geo,
     profile,
     store,
     tenancy,
@@ -191,6 +192,7 @@ def _profile_context(**extra) -> dict:
         "private_note": "De privésectie wordt nooit naar documenten of matching gestuurd.",
     }
     context.update(extra)
+    context["place_labels"] = sorted(geo.PLACE_LABELS.values(), key=str.casefold)
     return context
 
 

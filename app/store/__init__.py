@@ -29,6 +29,7 @@ from .job_state import (  # noqa: F401
     get_job_travel,
     list_votes,
     set_job_travel,
+    set_job_travels,
     set_job_vote,
     set_rank_scores,
     update_job_match,
@@ -36,6 +37,8 @@ from .job_state import (  # noqa: F401
     update_job_status,
 )
 from .jobs import (  # noqa: F401
+    MATCHING_LIMIT,
+    TRAVEL_FIELDS,
     _disabled_user_sources,
     _job_select,
     count_jobs,
@@ -43,11 +46,15 @@ from .jobs import (  # noqa: F401
     effective_user_sources,
     get_job,
     job_date,
+    job_status_counts,
+    jobs_missing_travel,
     list_jobs,
     list_jobs_for_matching,
+    list_jobs_page,
     list_scored_jobs,
     normalize_posted_at,
     parse_job_date,
+    travel_key,
 )
 from .meta import load_token_df, meta_get, meta_set, save_token_df  # noqa: F401
 from .recovery import recover_interrupted_work  # noqa: F401
@@ -82,4 +89,4 @@ from .sources import (  # noqa: F401
     sync_sources,
     update_source_status,
 )
-from .usage import daily_usage_cost, record_usage, usage_total  # noqa: F401
+from .usage import daily_usage_calls, daily_usage_cost, record_usage, usage_total  # noqa: F401

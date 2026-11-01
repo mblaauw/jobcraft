@@ -69,6 +69,15 @@ def set_job_travel(job_id: int, key: str, payload: str) -> None:
             _set_job_state(con, job_id, travel_key=key, travel_json=payload)
 
 
+def set_job_travels(entries: dict[int, tuple[str, str]]) -> None:
+    """Persist many travel estimates (job id -> key, payload) in one transaction."""
+    if not entries:
+        return
+    with connect() as con:
+        for job_id, (key, payload) in entries.items():
+            _set_job_state(con, job_id, travel_key=key, travel_json=payload)
+
+
 def set_rank_scores(scores: dict[int, float]) -> None:
     """Persist deterministic rank scores for many jobs in one transaction."""
     if not scores:

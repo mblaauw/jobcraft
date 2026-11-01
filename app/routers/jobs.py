@@ -58,13 +58,34 @@ def jobs_page(
             summary = json.loads(raw)
         except ValueError:
             summary = None
-    rows = store.list_jobs(
-        None, None, q or None, source or None, sort=sort, include_stale=stale_active
-    )
+    ranking.refresh_travel()
     source_rows = store.list_sources()
     source_names = {row["id"]: row["name"] for row in source_rows}
-    all_items = []
-    for row in rows:
+    within_active = within != "0"  # reisbereik-filter staat standaard aan
+    per_status = store.job_status_counts(q or None, source or None, include_stale=stale_active)
+    status_totals = {
+        key: all_jobs - far if within_active else all_jobs
+        for key, (all_jobs, far) in per_status.items()
+    }
+    excluded_by_status = (
+        {key: far for key, (_, far) in per_status.items() if far} if within_active else {}
+    )
+    excluded = excluded_by_status.get(status, 0) if status else sum(excluded_by_status.values())
+    total_filtered = status_totals.get(status, 0) if status else sum(status_totals.values())
+    per_page = max(10, min(200, per_page))
+    pages = max(1, (total_filtered + per_page - 1) // per_page)
+    page = max(1, min(pages, page))
+    page_items = []
+    for row in store.list_jobs_page(
+        per_page,
+        (page - 1) * per_page,
+        status or None,
+        q or None,
+        source or None,
+        sort=sort,
+        include_stale=stale_active,
+        within_travel=within_active,
+    ):
         item = dict(row)
         date = store.job_date(row)
         item["display_date"] = (
@@ -76,32 +97,7 @@ def jobs_page(
         )
         item["travel"] = ranking.travel_of(item)
         item["signals"] = ranking.signals_of(row)
-        all_items.append(item)
-    within_active = within != "0"  # reisbereik-filter staat standaard aan
-    excluded_by_status: dict[str, int] = {}
-    if within_active:
-        kept = []
-        for item in all_items:
-            if item["travel"]["in_range"] is False:
-                key = item["status"]
-                excluded_by_status[key] = excluded_by_status.get(key, 0) + 1
-            else:
-                kept.append(item)
-        all_items = kept
-    status_totals: dict[str, int] = {}
-    for item in all_items:
-        key = item["status"]
-        status_totals[key] = status_totals.get(key, 0) + 1
-    jobs_view = (
-        all_items if not status else [item for item in all_items if item["status"] == status]
-    )
-    excluded = excluded_by_status.get(status, 0) if status else sum(excluded_by_status.values())
-    total_filtered = len(jobs_view)
-    per_page = max(10, min(200, per_page))
-    pages = max(1, (total_filtered + per_page - 1) // per_page)
-    page = max(1, min(pages, page))
-    start = (page - 1) * per_page
-    page_items = jobs_view[start : start + per_page]
+        page_items.append(item)
 
     params = {
         "status": status,

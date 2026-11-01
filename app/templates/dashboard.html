@@ -94,15 +94,4 @@
     </section>
   </div>
 </div>
-
-<details class="card disclosure technical-details">
-  <summary><span>Gebruik en kosten</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
-  <dl class="stats small">
-    <div><dt>AI-aanroepen</dt><dd>{{ usage.calls }}</dd></div>
-    <div><dt>Kosten tot nu toe</dt><dd>${{ "%.4f" | format(usage.cost) }}</dd></div>
-    <div><dt>Tokens in</dt><dd>{{ "{:,}".format(usage.tin) }}</dd></div>
-    <div><dt>Tokens uit</dt><dd>{{ "{:,}".format(usage.tout) }}</dd></div>
-  </dl>
-  <p class="small subtle">Model: {{ model }}{% if not seed.ready and seed.missing %}. Ontbrekend bronmateriaal: {{ seed.missing | join(', ') }}{% endif %}</p>
-</details>
 {% endblock %}
