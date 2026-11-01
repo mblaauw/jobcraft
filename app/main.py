@@ -1,6 +1,7 @@
 """Application composition: runtime, middleware and route groups."""
 
 from fastapi import FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from . import (  # noqa: F401
@@ -88,6 +89,7 @@ app = FastAPI(title="Jobcraft", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=str(config.STATIC_DIR)), name="static")
 app.middleware("http")(auth.middleware)
 errors.install(app)
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.middleware("http")(errors.security_headers)
 app.include_router(auth.router)
 for group in (pages, interview, source_routes, workspace, jobs, profile_routes, account, task_routes, start):

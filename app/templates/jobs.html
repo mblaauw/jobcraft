@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui %}
 {% block title %}Vacatures · Jobcraft{% endblock %}
 {% block content %}
+{% set list_filters = list_filters or {} %}
 <div class="page-head">
   <div>
     <h1>Vacatures</h1>
@@ -41,6 +42,22 @@
   <div class="field">
     <label for="job-sort">Volgorde</label>
     <select name="sort" id="job-sort"><option value="rank" {% if sort == 'rank' %}selected{% endif %}>Best passend</option><option value="newest" {% if sort == 'newest' %}selected{% endif %}>Nieuwste eerst</option></select>
+  </div>
+  <div class="field">
+    <label for="job-remote">Thuiswerken</label>
+    <select id="job-remote" name="remote"><option value="">Alle</option><option value="remote" {% if list_filters.remote %}selected{% endif %}>Genoemd in de vacature</option></select>
+  </div>
+  <div class="field">
+    <label for="job-contract">Contract</label>
+    <select id="job-contract" name="contract"><option value="">Alle</option>{% for value, label in [('vast','Vast'),('tijdelijk','Tijdelijk'),('freelance','Freelance')] %}<option value="{{ value }}" {% if list_filters.contract == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  </div>
+  <div class="field">
+    <label for="job-salary">Salaris</label>
+    <select id="job-salary" name="salaris"><option value="">Alle</option><option value="salaris" {% if list_filters.salaris %}selected{% endif %}>Bedrag genoemd</option></select>
+  </div>
+  <div class="field">
+    <label for="job-days">Geplaatst</label>
+    <select id="job-days" name="dagen"><option value="">Altijd</option>{% for value, label in [('1','Laatste dag'),('7','Laatste week'),('30','Laatste maand')] %}<option value="{{ value }}" {% if list_filters.dagen == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
   </div>
   {# A hidden zero followed by the checked value makes both states explicit. #}
   <input type="hidden" name="within" value="0">
@@ -155,5 +172,6 @@
 {% endblock %}
 {% block scripts %}
 <script src="/static/jobs.js" defer></script>
+<script src="/static/votes.js" defer></script>
 <script src="/static/job-drawer.js" defer></script>
 {% endblock %}

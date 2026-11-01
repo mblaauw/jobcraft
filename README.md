@@ -1,6 +1,22 @@
 # Jobcraft
 
-## Phase 6 code boundaries
+Jobcraft finds Dutch vacancies that fit you and helps you win them. Upload a CV, tap a
+few choices and react to ten real vacancies; three minutes later you have a ranked list.
+From there it tracks your applications and writes tailored CVs and letters. It runs on
+your own machine or server, and everything personal stays in `data/`.
+
+```bash
+LLM_BASE_URL=... LLM_API_KEY=... APP_USER=owner APP_PASSWORD=dev-local \
+  uv run uvicorn app.main:app --port 8080
+```
+
+Without an LLM key, ranking, the board and adding vacancies still work; AI assessments,
+the three questions and documents wait. Optional settings are in `.env.example`.
+
+**Adding an employer** takes one line in `seeds/employers.yaml`. **Adding another
+source** is configuration in `seeds/sources.yaml`; see the `vacaturebron-recon` skill.
+
+## Code boundaries
 
 `app/main.py` composes the application; `routers/`, `runtime.py`, `workflows.py`
 and `web_helpers.py` own HTTP, lifecycle, queued work and presentation respectively.
@@ -26,7 +42,7 @@ Public scans use cookie-free HTTP with robots checks, host pacing, bounded retri
 and conditional caching. Robots 404 permits fetching; denied, redirected or
 unavailable policies fail closed. Authenticated clients/requests are unsupported.
 Only public responses are cached (64 files, at most 2 MiB each) under the runtime
-directory. Known rich job details are skipped for 24 hours from the last real
+directory. Known rich job details are skipped for 3 days from the last real
 detail fetch; empty updates cannot erase existing fields.
 
 Ruff includes `B`, `SIM`, `RUF`. Public scoring/store/LLM/task interfaces are hinted;

@@ -51,8 +51,17 @@ def jobs_page(
     page: int = 1,
     per_page: int = 50,
     sort: str = "rank",
+    remote: str = "",
+    contract: str = "",
+    salaris: str = "",
+    dagen: str = "",
 ):
     sort = sort if sort in ("rank", "newest") else "rank"
+    remote = "remote" if remote == "remote" else ""
+    contract = contract if contract in ("vast", "tijdelijk", "freelance") else ""
+    salaris = "salaris" if salaris == "salaris" else ""
+    dagen = dagen if dagen in ("1", "7", "30") else ""
+    list_filters = {"remote": remote, "contract": contract, "salaris": salaris, "days": dagen}
     stale_active = stale == "1"
     raw = store.meta_get("match_summary")
     summary = None
@@ -65,7 +74,9 @@ def jobs_page(
     source_rows = store.list_sources()
     source_names = {row["id"]: row["name"] for row in source_rows}
     within_active = within != "0"  # reisbereik-filter staat standaard aan
-    per_status = store.job_status_counts(q or None, source or None, include_stale=stale_active)
+    per_status = store.job_status_counts(
+        q or None, source or None, include_stale=stale_active, list_filters=list_filters
+    )
     status_totals = {
         key: all_jobs - far if within_active else all_jobs
         for key, (all_jobs, far) in per_status.items()
@@ -89,6 +100,7 @@ def jobs_page(
         sort=sort,
         include_stale=stale_active,
         within_travel=within_active,
+        list_filters=list_filters,
     ):
         item = dict(row)
         date = store.job_date(item)
@@ -115,6 +127,10 @@ def jobs_page(
         "stale": "1" if stale_active else "",
         "sort": sort,
         "per_page": per_page,
+        "remote": remote,
+        "contract": contract,
+        "salaris": salaris,
+        "dagen": dagen,
     }
     pager_base = "/jobs?" + urlencode(params)
     total_status = sum(status_totals.values())
@@ -144,6 +160,10 @@ def jobs_page(
     for key, label in (
         ("q", f"Zoekterm: {q}"),
         ("source", f"Bron: {source_names.get(source, source)}"),
+        ("remote", "Thuiswerken genoemd"),
+        ("contract", f"Contract: {contract}"),
+        ("salaris", "Salaris genoemd"),
+        ("dagen", f"Laatste {dagen} dagen"),
     ):
         if params[key]:
             filter_chips.append({"label": label, "url": "/jobs?" + urlencode({**params, key: ""})})
@@ -188,6 +208,7 @@ def jobs_page(
             "reset_url": "/jobs?"
             + urlencode({"status": status, "sort": sort, "per_page": per_page}),
             "sort": sort,
+            "list_filters": params,
             "excluded": excluded,
             "page": page,
             "pages": pages,

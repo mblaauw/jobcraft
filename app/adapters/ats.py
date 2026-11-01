@@ -18,7 +18,7 @@ from .. import geo, store
 from .common import _tally, make_job, strip_html
 
 EMPLOYERS_FILE = Path(__file__).resolve().parents[2] / "seeds" / "employers.yaml"
-_NETHERLANDS = re.compile(r"\b(?:netherlands|nederland|the hague)\b", re.I)
+_NETHERLANDS = re.compile(r"\b(?:netherlands|nederland|the hague)\b|, ?NL\b|\bNL-", re.I)
 _ELSEWHERE = re.compile(
     r"\b(?:germany|deutschland|belgium|france|spain|italy|ireland|poland|portugal|sweden|denmark|"
     r"austria|switzerland|united kingdom|usa|united states|canada|india|singapore|australia)\b",
