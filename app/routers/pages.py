@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import os
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import (
@@ -27,6 +29,8 @@ from ..web import templates
 from ..web_helpers import _profile_meta, _workflow
 
 log = logging.getLogger("jobcraft")
+
+WORKER_STALE_SECONDS = 180
 
 router = APIRouter()
 
@@ -83,6 +87,19 @@ def _top_new_jobs(limit: int) -> list[dict]:
     return picks
 
 
+def _worker_state() -> dict:
+    """In the combined role the worker runs inside this process, without its own heartbeat."""
+    if os.environ.get("APP_ROLE", "all") != "web":
+        return {"separate": False}
+    raw = store.meta_get("worker_heartbeat")
+    try:
+        seen = datetime.fromisoformat(raw) if raw else None
+    except ValueError:
+        seen = None
+    alive = bool(seen and (datetime.now(UTC) - seen).total_seconds() < WORKER_STALE_SECONDS)
+    return {"separate": True, "alive": alive, "seen": raw}
+
+
 @router.get("/admin", response_class=HTMLResponse, dependencies=[Depends(auth.require_admin)])
 def admin_page(request: Request):
     auth.require_admin(request)
@@ -108,6 +125,7 @@ def admin_page(request: Request):
             "enabled_count": sum(1 for source in source_rows if source.get("enabled", True)),
             "answer_log_offset": store.meta_get("answer_log_offset", "0"),
             "bootstrap_status": store.meta_get("bootstrap_status", "idle"),
+            "worker": _worker_state(),
             "paths": {
                 "data": str(config.DATA_DIR),
                 "profile.md": str(config.user_path(profile.PROFILE_FILE)),

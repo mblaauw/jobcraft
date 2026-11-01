@@ -5,7 +5,8 @@ from __future__ import annotations
 import logging
 import os
 import threading
-from contextlib import asynccontextmanager
+from collections.abc import Iterator
+from contextlib import asynccontextmanager, contextmanager
 
 from fastapi import FastAPI, HTTPException
 
@@ -32,49 +33,67 @@ _session_locks: dict[str, threading.Lock] = {}
 _session_locks_guard = threading.Lock()
 
 
-@asynccontextmanager
-async def lifespan(_app: FastAPI):
+def app_role() -> str:
+    role = os.environ.get("APP_ROLE", "all").strip() or "all"
+    if role not in runtime_lock.ROLES:
+        raise RuntimeError("APP_ROLE must be all, web or worker.")
+    return role
+
+
+@contextmanager
+def services(role: str) -> Iterator[None]:
+    """Start what this role owns. Only a role with the worker runs or resets background work."""
     global manager
-    with runtime_lock.exclusive_data_dir(config.DATA_DIR):
+    background = role != "web"
+    with runtime_lock.exclusive_data_dir(config.DATA_DIR, role):
         manager = None
         try:
             source_http.STOPPING.clear()
-            store.init_db()
-            if store.load_token_df() is None:
-                feedback.refresh_document_frequency()
-            auth.init_auth()
-            profile.ensure_dirs()
-            interview_state.ensure_state()
-            sources.ensure_sources_file()
-            store.sync_sources(sources.load_sources())
-            try:
-                if not docs.CV_TEMPLATE.exists():
-                    docs.ensure_templates()
-            except Exception as exc:
-                log.warning("document templates unavailable: %s", exc)
+            with runtime_lock.initialization(config.DATA_DIR):
+                store.init_db()
+                if store.load_token_df() is None:
+                    feedback.refresh_document_frequency()
+                auth.init_auth()
+                profile.ensure_dirs()
+                interview_state.ensure_state()
+                sources.ensure_sources_file()
+                store.sync_sources(sources.load_sources())
+                try:
+                    if not docs.CV_TEMPLATE.exists():
+                        docs.ensure_templates()
+                except Exception as exc:
+                    log.warning("document templates unavailable: %s", exc)
             logging.getLogger("httpx").setLevel(logging.WARNING)
-            store.recover_interrupted_work()
-            tasks.recover_interrupted()
+            if background:
+                store.recover_interrupted_work()
+                tasks.recover_interrupted()
             if not config.APP_SKIP_LLM:
                 manager = llm.ServerManager()
                 manager.start()
                 if manager.client is None:
-                    log.warning("LLM features disabled: set LLM_BASE_URL and LLM_API_KEY")
+                    log.warning("LLM features disabled: set LLM_BASE_URL and LLM_API_KEY.")
                 else:
                     log.info("LLM client ready for %s", manager.base_url)
-            tasks.start_workers(
-                int(os.environ.get("TASK_WORKERS", "2")), resolve_owner=_resolve_task_owner
-            )
-            scheduler.start()
+            if background:
+                tasks.start_workers(
+                    int(os.environ.get("TASK_WORKERS", "2")), resolve_owner=_resolve_task_owner
+                )
+                scheduler.start()
             yield
         finally:
             source_http.STOPPING.set()
-            scheduler.stop()
-            tasks.stop_workers()
+            if background:
+                scheduler.stop()
+                tasks.stop_workers()
             source_http.STOPPING.clear()
             if manager:
                 manager.stop()
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    with services(app_role()):
+        yield
 
 
 def _resolve_task_owner(owner: str) -> dict | None:

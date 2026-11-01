@@ -13,6 +13,11 @@ LLM_BASE_URL=... LLM_API_KEY=... APP_USER=owner APP_PASSWORD=dev-local \
 Without an LLM key, ranking, the board and adding vacancies still work; AI assessments,
 the three questions and documents wait. Optional settings are in `.env.example`.
 
+`docker compose up -d` runs two containers on the same data: `app` serves the site and
+only queues work; `worker` does scans, assessments, documents and digests. Either can
+restart without disturbing the other, and queued work waits. **Systeem** shows whether
+the worker is alive. The command above runs both inside one process for local use.
+
 **Adding an employer** takes one line in `seeds/employers.yaml`. **Adding another
 source** is configuration in `seeds/sources.yaml`; see the `vacaturebron-recon` skill.
 

@@ -47,7 +47,7 @@ from .adapters.rijksoverheid import (  # noqa: F401
 )
 from .adapters.rss import _scan_rss  # noqa: F401
 from .adapters.wordpress import normalize_wp_item  # noqa: F401
-from .source_http import PoliteClient
+from .source_http import STOPPING, PoliteClient
 from .util import now_iso
 
 USER_AGENT = (
@@ -260,5 +260,7 @@ def scan(limit_per_source: int | None = None) -> dict:
             summary["sources"][source["id"]] = entry
             time.sleep(0.5)
     summary["finished_at"] = now_iso()
+    if STOPPING.is_set():  # Sources that were cut off by a restart have not failed.
+        raise RuntimeError("De scan is onderbroken door een herstart.")
     _record_health(summary)
     return summary
