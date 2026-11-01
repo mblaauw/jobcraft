@@ -15,6 +15,7 @@ from .preference_models import (  # noqa: F401
     PreferenceItem,
     Preferences,
     Track,
+    Wishes,
     _neutral_preferences,
     _validate_preferences,
     public_preferences,
@@ -126,6 +127,24 @@ def write_profile(markdown: str, note: str) -> Path:
     path.write_text(markdown.rstrip() + "\n")
     store.set_profile(markdown.rstrip() + "\n")
     return path
+
+
+def merge_sections(updates: dict[str, str]) -> None:
+    """Replace or add named profile sections, leaving every other section as it is."""
+    sections = split_sections(read_profile())
+    for heading, text in updates.items():
+        existing = next((item for item in sections if item["heading"] == heading), None)
+        if existing:
+            existing["text"] = text
+        else:
+            sections.append({"heading": heading, "text": text})
+    write_profile(
+        "\n\n".join(
+            (f"## {item['heading']}\n" if item["heading"] else "") + item["text"]
+            for item in sections
+        ),
+        note="snelle start",
+    )
 
 
 def append_answer(question: str, answer: str) -> None:
@@ -261,7 +280,12 @@ def save_draft(profile_md: str, preferences: dict, meta: dict | None = None) -> 
     stamp = now_local().strftime("%Y%m%dT%H%M%S")
     path = config.user_path(DRAFTS_DIR) / f"consolidation-{stamp}.json"
     existing = read_preferences()
-    preferences = {**preferences, "home": existing["home"], "notes": existing["notes"]}
+    preferences = {
+        **preferences,
+        "home": existing["home"],
+        "notes": existing["notes"],
+        "wishes": existing["wishes"],
+    }
     preferences["hard_filters"] = {
         **(preferences.get("hard_filters") or {}),
         "location": existing["hard_filters"]["location"],

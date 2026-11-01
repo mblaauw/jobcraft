@@ -41,6 +41,7 @@ from .jobs import (  # noqa: F401
     TRAVEL_FIELDS,
     _disabled_user_sources,
     _job_select,
+    count_catalogue,
     count_jobs,
     count_jobs_by_source,
     effective_user_sources,
@@ -56,7 +57,7 @@ from .jobs import (  # noqa: F401
     parse_job_date,
     travel_key,
 )
-from .meta import load_token_df, meta_get, meta_set, save_token_df  # noqa: F401
+from .meta import count_event, load_token_df, meta_get, meta_set, save_token_df  # noqa: F401
 from .recovery import recover_interrupted_work  # noqa: F401
 from .schema import (  # noqa: F401
     SCHEMA,

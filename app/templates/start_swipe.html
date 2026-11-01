@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% import "_start.html" as start %}
+{% block title %}Echte vacatures · Jobcraft{% endblock %}
+{% block content %}
+{{ start.steps(step) }}
+<div class="page-head"><div>
+  <h1>Zou je hierop reageren?</h1>
+  <p class="lede">Vacature {{ position }} van {{ total }}. Zo leert Jobcraft wat je zoekt.</p>
+</div></div>
+<article class="panel swipe-card">
+  <h2>{{ job['title'] or 'Zonder titel' }}</h2>
+  <p class="vacancy-company">{{ job['company'] or 'Onbekende organisatie' }}{% if job['location'] %} · {{ job['location'] }}{% endif %}</p>
+  <p class="muted">{{ excerpt }}{% if excerpt|length >= 320 %}…{% endif %}</p>
+  <form method="post" action="/start/vacatures/{{ job['id'] }}" class="swipe-actions" data-pending-form>
+    {% include '_csrf.html' %}
+    <button class="button" type="submit" name="answer" value="nee">{{ ui.icon('thumbs-down') }}Nee</button>
+    <button class="button primary" type="submit" name="answer" value="ja">{{ ui.icon('thumbs-up') }}Ja, leuk</button>
+    <button class="button link-button" type="submit" name="answer" value="overslaan">Weet ik niet</button>
+  </form>
+</article>
+{% endblock %}

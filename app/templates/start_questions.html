@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% import "_start.html" as start %}
+{% block title %}Drie vragen · Jobcraft{% endblock %}
+{% block content %}
+{{ start.steps(step) }}
+<div class="page-head"><div>
+  {% if pending %}<h1>Vraag {{ number }} van {{ total }}</h1>{% else %}<h1>Nog drie vragen die een formulier niet kan stellen</h1>{% endif %}
+  <p class="lede">Overslaan mag altijd. Je antwoorden komen in je profiel en helpen vacatures te beoordelen, ook met AI. Je kunt ze daar aanpassen.</p>
+</div></div>
+{% if unavailable %}<p class="banner" role="status">{{ ui.icon('clock') }}<span>De vragen zijn nu niet beschikbaar. Je kunt gewoon verder; dit gesprek kan later ook.</span></p>{% endif %}
+<section class="panel form-stack">
+  {% if pending %}
+  <p class="start-question">{{ pending.question }}</p>
+  <form method="post" action="/start/vragen/antwoord" class="form-stack" data-pending-form>
+    {% include '_csrf.html' %}
+    <div class="field"><label for="start-answer">Je antwoord</label><textarea id="start-answer" name="answer" rows="4" required autofocus></textarea></div>
+    <div class="btn-row"><button class="button primary" type="submit">Verstuur</button></div>
+  </form>
+  {% elif not unavailable %}
+  <form method="post" action="/start/vragen/volgende" data-pending-form>
+    {% include '_csrf.html' %}
+    <button class="button primary" type="submit">{{ ui.icon('message-circle') }}Stel de eerste vraag</button>
+  </form>
+  {% endif %}
+  <form method="post" action="/start/klaar" data-pending-form>
+    {% include '_csrf.html' %}
+    <button class="button" type="submit">{{ 'Naar mijn vacatures' if unavailable else 'Overslaan, toon mijn vacatures' }}</button>
+  </form>
+</section>
+{% endblock %}

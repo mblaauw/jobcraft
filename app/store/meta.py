@@ -5,6 +5,12 @@ from .. import tenancy
 from .connection import connect
 
 
+def count_event(name: str) -> None:
+    """Simple per-account counters, so progress need not be queried by hand."""
+    key = f"counter:{name}"
+    meta_set(key, str(int(meta_get(key) or 0) + 1))
+
+
 def load_token_df() -> tuple[dict[str, int], int] | None:
     with connect() as con:
         rows = con.execute("SELECT token, n FROM token_df").fetchall()

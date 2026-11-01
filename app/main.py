@@ -23,7 +23,7 @@ from . import (  # noqa: F401
     tasks,
     tenancy,
 )
-from .routers import account, interview, jobs, pages
+from .routers import account, interview, jobs, pages, start
 from .routers import profile as profile_routes
 from .routers import sources as source_routes
 from .routers import tasks as task_routes
@@ -89,5 +89,5 @@ app.mount("/static", StaticFiles(directory=str(config.STATIC_DIR)), name="static
 app.middleware("http")(auth.middleware)
 errors.install(app)
 app.include_router(auth.router)
-for group in (pages, interview, source_routes, jobs, profile_routes, account, task_routes):
+for group in (pages, interview, source_routes, jobs, profile_routes, account, task_routes, start):
     app.include_router(group.router)

@@ -260,6 +260,24 @@ def list_jobs_page(
     return [by_id[job_id] for job_id in ids if job_id in by_id]
 
 
+def count_catalogue(include: list[str], exclude: list[str], exclude_titles: list[str]) -> int:
+    """How many reachable jobs could fit; instant enough to follow each tap."""
+    clauses, filters = _job_filters()
+    clauses.append("NOT " + TRAVEL_OUT_OF_RANGE)
+    if include:
+        clauses.append("(" + " OR ".join("search_text LIKE ?" for _ in include) + ")")
+        filters.extend(f"%{term.lower()}%" for term in include)
+    for term in exclude:
+        clauses.append("search_text NOT LIKE ?")
+        filters.append(f"%{term.lower()}%")
+    for term in exclude_titles:
+        clauses.append("LOWER(title) NOT LIKE ?")
+        filters.append(f"%{term.lower()}%")
+    sql = "SELECT COUNT(*) AS n FROM (" + _job_select() + ") WHERE " + " AND ".join(clauses)
+    with connect() as con:
+        return con.execute(sql, (tenancy.user_id(), *filters)).fetchone()["n"]
+
+
 def jobs_missing_travel(home_key: str) -> list:
     """Jobs whose stored travel estimate belongs to another home or vacancy version."""
     with connect() as con:

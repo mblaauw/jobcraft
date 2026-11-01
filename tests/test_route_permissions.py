@@ -3,7 +3,7 @@
 from fastapi.routing import APIRoute
 
 from app import auth
-from app.routers import account, interview, jobs, pages, profile, sources, tasks
+from app.routers import account, interview, jobs, pages, profile, sources, start, tasks
 
 PUBLIC = {("GET", "/login"), ("POST", "/login"), ("GET", "/healthz")}
 ADMIN = {
@@ -31,6 +31,19 @@ USER = {
     ("POST", "/api/sessions/{session_id}/send/stream"),
     ("GET", "/sources"),
     ("POST", "/sources/{source_id}/preference"),
+    ("GET", "/start"),
+    ("GET", "/start/cv"),
+    ("POST", "/start/cv"),
+    ("POST", "/start/cv/confirm"),
+    ("GET", "/start/keuzes"),
+    ("POST", "/start/keuzes"),
+    ("POST", "/start/keuzes/teller"),
+    ("GET", "/start/vacatures"),
+    ("POST", "/start/vacatures/{job_id}"),
+    ("GET", "/start/vragen"),
+    ("POST", "/start/vragen/volgende"),
+    ("POST", "/start/vragen/antwoord"),
+    ("POST", "/start/klaar"),
     ("GET", "/jobs"),
     ("POST", "/jobs/match"),
     ("GET", "/jobs/{job_id}"),
@@ -55,7 +68,7 @@ USER = {
 
 
 def test_every_endpoint_has_reviewed_permission_dependency():
-    groups = (auth, account, interview, jobs, pages, profile, sources, tasks)
+    groups = (auth, account, interview, jobs, pages, profile, sources, start, tasks)
     routes = [
         route for group in groups for route in group.router.routes if isinstance(route, APIRoute)
     ]

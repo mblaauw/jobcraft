@@ -107,9 +107,9 @@ def _workflow(
     if not profile_state["exists"]:
         if tenancy.user_id() != tenancy.LEGACY_ID:
             return {
-                "label": "Vertel wat voor werk je zoekt",
-                "href": "/interview",
-                "detail": "Een kort gesprek, één vraag tegelijk. Daaruit maken we je profiel.",
+                "label": "Vind in drie minuten je vacatures",
+                "href": "/start",
+                "detail": "Je cv, een paar keuzes en tien echte vacatures. Daaruit maken we je profiel.",
                 "step": 1,
             }
         return {

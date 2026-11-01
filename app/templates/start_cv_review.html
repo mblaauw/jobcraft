@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% import "_start.html" as start %}
+{% block title %}Controleer je cv · Jobcraft{% endblock %}
+{% block content %}
+{{ start.steps(step) }}
+<div class="page-head"><div>
+  <h1>Klopt dit?</h1>
+  <p class="lede">Haal weg wat niet past en vul aan wat ontbreekt. Je naam en contactgegevens hebben we weggelaten.</p>
+</div></div>
+<form method="post" action="/start/cv/confirm" class="panel form-stack" data-pending-form>
+  {% include '_csrf.html' %}
+  <input type="hidden" name="cv_token" value="{{ cv_token }}">
+  <fieldset class="choice-group"><legend>Functies die je zoekt</legend>
+    <div class="choice-grid">{% for role in found.roles %}<label class="choice"><input type="checkbox" name="role" value="{{ role }}" checked><span>{{ role }}</span></label>{% else %}<p class="small muted">We vonden geen functienamen in je cv.</p>{% endfor %}</div>
+    <div class="field"><label for="more-roles">Andere functies</label><input id="more-roles" name="more_roles" placeholder="Gescheiden door komma's"></div>
+  </fieldset>
+  <fieldset class="choice-group"><legend>Waar je goed in bent</legend>
+    <div class="choice-grid">{% for skill in found.skills %}<label class="choice"><input type="checkbox" name="skill" value="{{ skill }}" checked><span>{{ skill }}</span></label>{% else %}<p class="small muted">We vonden geen vaardigheden in je cv.</p>{% endfor %}</div>
+    <div class="field"><label for="more-skills">Nog meer</label><input id="more-skills" name="more_skills" placeholder="Gescheiden door komma's"></div>
+  </fieldset>
+  <div class="form-grid">
+    <div class="field"><label for="review-level">Niveau</label><select id="review-level" name="seniority"><option value="">Weet ik niet</option>{% for value, label in [('junior','Starter of junior'),('medior','Medior'),('senior','Senior')] %}<option value="{{ value }}" {% if found.seniority == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="review-place">Woonplaats</label><input id="review-place" name="place" value="{{ found.place }}"></div>
+  </div>
+  <details class="disclosure"><summary><span>Bekijk de tekst die in je profiel komt</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
+    <p class="small muted">Deze tekst gebruiken we om vacatures te beoordelen en sollicitaties te schrijven, ook met AI. Controleer of er niets in staat dat je niet wilt delen.</p>
+    {% for key, title in titles.items() %}<div class="field"><label for="section-{{ key }}">{{ title }}</label><textarea id="section-{{ key }}" name="section_{{ key }}" rows="5">{{ found.sections.get(key, '') }}</textarea></div>{% endfor %}
+  </details>
+  {% if not cv_token %}<p class="small muted">Voor cv's en brieven per vacature is een Word-versie van je cv nodig. Die kun je later toevoegen bij Account.</p>{% endif %}
+  <div class="btn-row"><button class="button primary" type="submit">Klopt, volgende</button></div>
+</form>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% import "_start.html" as start %}
+{% block title %}Je keuzes · Jobcraft{% endblock %}
+{% block content %}
+{{ start.steps(step) }}
+<div class="page-head"><div>
+  <h1>Wat moet je werk je geven?</h1>
+  <p class="lede">Tik aan wat telt. Je kunt dit altijd aanpassen, en dat kost niets.</p>
+</div></div>
+<p class="start-count" role="status" aria-live="polite"><strong id="start-count">{{ count }}</strong> vacatures kunnen passen</p>
+<form method="post" action="/start/keuzes" class="panel form-stack" id="start-choices" data-pending-form>
+  {% include '_csrf.html' %}
+  <div class="field"><label for="choice-roles">Functies die je zoekt</label><input id="choice-roles" name="roles" value="{{ roles }}" placeholder="Bijvoorbeeld projectleider, beleidsmedewerker"><span class="hint">Gescheiden door komma's. Leeg laten mag.</span></div>
+  <div class="form-grid">
+    <div class="field"><label for="choice-place">Woonplaats</label><input id="choice-place" name="place" list="start-places" autocomplete="off" value="{{ preferences.home.label if preferences.home.label != 'Nog niet ingesteld' else '' }}" placeholder="Begin te typen"><datalist id="start-places">{% for place in place_labels %}<option value="{{ place }}"></option>{% endfor %}</datalist><span class="hint" id="choice-place-note"></span></div>
+    <div class="field"><label for="choice-car">Auto beschikbaar</label><select id="choice-car" name="car"><option value="0">Nee</option><option value="1" {% if preferences.home.car_available %}selected{% endif %}>Ja</option></select></div>
+  </div>
+  {% macro radios(legend, name, options, current) %}<fieldset class="choice-group"><legend>{{ legend }}</legend><div class="choice-grid">{% for value, label in options %}<label class="choice"><input type="radio" name="{{ name }}" value="{{ value }}" {% if value|string == current|string %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}</div></fieldset>{% endmacro %}
+  {% macro checks(legend, name, options, current) %}<fieldset class="choice-group"><legend>{{ legend }}</legend><div class="choice-grid">{% for value, label in options %}<label class="choice"><input type="checkbox" name="{{ name }}" value="{{ value }}" {% if value in current %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}</div></fieldset>{% endmacro %}
+  {% set travel_options = [] %}{% for minutes in travel_choices %}{% set _ = travel_options.append((minutes, minutes ~ ' min')) %}{% endfor %}
+  {{ radios('Maximale reistijd, enkele reis', 'minutes', travel_options, travel_current) }}
+  {{ radios('Uren per week', 'hours', [('any','Maakt niet uit'),('tot24','Tot 24'),('24-32','24 tot 32'),('32-40','32 tot 40')], hours_choice) }}
+  {{ radios('Thuiswerken', 'remote', [('any','Maakt niet uit'),('hybrid','Deels thuis'),('remote','Vooral thuis'),('onsite','Op locatie')], preferences.wishes.remote) }}
+  {% set salary_options = [('', 'Geen wens')] %}{% for amount in salary_choices %}{% set _ = salary_options.append((amount, '€ ' ~ '{:,}'.format(amount).replace(',', '.'))) %}{% endfor %}
+  {{ radios('Salaris per maand, bruto, minimaal', 'salary', salary_options, preferences.wishes.salary_min or '') }}
+  {{ checks('Soort contract', 'contract', [('vast','Vast'),('tijdelijk','Tijdelijk'),('freelance','Freelance'),('stage','Stage of bijbaan')], preferences.wishes.contracts) }}
+  {{ checks('Niveau', 'seniority', [('junior','Starter of junior'),('medior','Medior'),('senior','Senior')], preferences.wishes.seniority) }}
+  <fieldset class="choice-group"><legend>Liever niet</legend><div class="choice-grid">{% for key, label in dealbreakers %}<label class="choice"><input type="checkbox" name="{{ key }}" value="1" {% if preferences.hard_filters[key] %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}</div>
+    <div class="field"><label for="choice-veto">Andere woorden die je liever niet ziet</label><input id="choice-veto" name="veto" value="{{ veto }}" placeholder="Gescheiden door komma's"></div>
+  </fieldset>
+  <p class="small muted">Vacatures die iets niet noemen, blijven gewoon meedoen.</p>
+  <div class="btn-row"><button class="button primary" type="submit">Volgende</button></div>
+</form>
+{% endblock %}
+{% block scripts %}<script src="/static/start.js" defer></script>{% endblock %}

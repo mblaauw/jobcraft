@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% import "_start.html" as start %}
+{% block title %}Snelle start · Jobcraft{% endblock %}
+{% block content %}
+{{ start.steps(step) }}
+<div class="page-head"><div>
+  <h1>In drie minuten de vacatures die bij je passen</h1>
+  <p class="lede">Begin met je cv, dan hoef je veel minder in te vullen.</p>
+</div></div>
+{% if error %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ error }}</span></p>{% endif %}
+<section class="panel">
+  <form method="post" action="/start/cv" enctype="multipart/form-data" class="form-stack" data-pending-form>
+    {% include '_csrf.html' %}
+    <div class="field"><label for="start-cv">Je cv</label><input id="start-cv" type="file" name="cv" accept=".pdf,.docx" required><span class="hint">PDF of Word, maximaal 5 MB. Je cv wordt hier gelezen, zonder AI. Je ziet zo wat we hebben gevonden.</span></div>
+    <div class="btn-row"><button class="button primary" type="submit">{{ ui.icon('file-text') }}Lees mijn cv</button><a class="button" href="/start/keuzes">Verder zonder cv</a></div>
+  </form>
+</section>
+{% endblock %}

@@ -10,6 +10,7 @@ import yaml
 from .. import feedback
 from ..contracts import JobRow
 from . import signals as ranking
+from . import wishes as wish_rules
 
 
 def _norm(value: str | None) -> str:
@@ -107,6 +108,12 @@ def rule_score(
             score -= 10.0
     if filters.get("wants_guidance") and (probability("guidance") or 0) >= 0.75:
         score += 4.0
+
+    wish_delta, wish_notes = wish_rules.adjust(
+        text, _row_get(job, "title") or "", preferences.get("wishes")
+    )
+    score += wish_delta
+    notes.extend(wish_notes)
 
     travel = ranking.travel_of(job)
     if travel.get("in_range") is False and not travel.get("auto"):
