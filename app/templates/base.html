@@ -17,6 +17,7 @@
 {% set is_admin = user and user.role == 'admin' %}
 {% set primary = [] if is_admin else [('/', 'Overzicht', 'house'), ('/jobs', 'Vacatures', 'briefcase-business'), ('/sollicitaties', 'Sollicitaties', 'list-checks'), ('/interview', 'Gesprek', 'message-circle'), ('/profile', 'Profiel', 'user-round')] %}
 {% set secondary = [('/sources', 'Bronnen', 'rss'), ('/account', 'Account', 'settings-2')] %}
+{% set new_matches = new_match_count() if (primary and new_match_count is defined) else 0 %}
 {% if is_admin %}{% set secondary = secondary + [('/users', 'Gebruikers', 'users'), ('/admin', 'Systeem', 'activity')] %}{% endif %}
 {% set home_href = '/admin' if is_admin else '/' %}
 {% macro is_active(href) -%}{{ 'yes' if path == href or (href != '/' and path.startswith(href + '/')) else '' }}{%- endmacro %}
@@ -29,7 +30,7 @@
         {% if primary %}
         <div class="rail-nav">
           {% for href, label, icon in primary %}
-          <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}{{ label }}</a>
+          <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}{{ label }}{% if href == '/jobs' and new_matches %}<span class="nav-badge" title="Nieuwe sterke matches">{{ new_matches }}<span class="visually-hidden"> nieuwe matches</span></span>{% endif %}</a>
           {% endfor %}
         </div>
         {% endif %}
@@ -76,7 +77,7 @@
   {% if primary %}
   <nav class="tabbar" aria-label="Snelnavigatie">
     {% for href, label, icon in primary %}
-    <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}<span>{{ label }}</span></a>
+    <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}<span>{{ label }}{% if href == '/jobs' and new_matches %} ({{ new_matches }})<span class="visually-hidden"> nieuwe matches</span>{% endif %}</span></a>
     {% endfor %}
   </nav>
   {% endif %}

@@ -14,6 +14,7 @@
   </div>
 </div>
 
+{% if new_match_total %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span><a href="/jobs/nieuw">{{ new_match_total }} {{ 'nieuwe sterke match' if new_match_total == 1 else 'nieuwe sterke matches' }}</a> sinds je laatste bezoek.</span></p>{% endif %}
 {% if welcome %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je profiel staat. Dit zijn je vacatures, de beste bovenaan. De beoordelingen worden nu vanzelf aangevuld.</span></p>{% endif %}
 <div id="jobs-progress" data-match-running="{{ 'true' if match_status == 'running' else 'false' }}" role="status" aria-live="polite">
 {% if match_status == "running" %}

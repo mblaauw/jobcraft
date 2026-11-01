@@ -15,6 +15,7 @@ from . import (
     docs,
     feedback,
     matching,
+    notifications,
     profile,
     ranking,
     runtime,
@@ -47,6 +48,14 @@ def _run_scan() -> dict:
         raise
 
 
+def _refresh_notifications() -> None:
+    """Assessments are already saved here, so a notification problem must not fail them."""
+    try:
+        notifications.refresh()
+    except Exception:
+        log.exception("match notifications failed")
+
+
 def _budget_reached() -> bool:
     budget = float(os.environ.get("MATCH_DAILY_BUDGET_USD", "0.50") or 0)
     return budget > 0 and store.daily_usage_cost() >= budget
@@ -75,6 +84,7 @@ def _run_match() -> None:
             if summary.get("failed") and not summary.get("matched"):
                 status = f"error: {summary['failed']} beoordelingen mislukt"
         store.meta_set("match_status", status)
+        _refresh_notifications()
     except Exception as exc:
         log.exception("matching failed")
         store.meta_set("match_status", f"error: {exc}"[:400])

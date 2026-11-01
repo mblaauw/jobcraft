@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Nieuwe matches · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <h1>Nieuwe sterke matches</h1>
+  <p class="lede">Sinds je laatste bezoek gevonden en beoordeeld.</p>
+</div></div>
+{% if jobs %}
+<section class="vacancy-list">
+  {% for job in jobs %}
+  <article class="panel board-card">
+    <h3><a href="/jobs/{{ job['id'] }}">{{ job['title'] or 'Zonder titel' }}</a></h3>
+    <p class="small muted">{{ job['company'] or 'Onbekende organisatie' }}{% if job['location'] %} · {{ job['location'] }}{% endif %} · matchscore {{ '%.0f' | format(job['rank_score'] or 0) }}</p>
+  </article>
+  {% endfor %}
+</section>
+{% else %}
+<div class="empty-state"><h2>Je bent bij</h2><p class="muted">Er zijn nu geen nieuwe sterke matches. Zodra er iets binnenkomt, zie je dat hier.</p></div>
+{% endif %}
+<div class="btn-row"><a class="button" href="/jobs">Naar alle vacatures</a></div>
+{% endblock %}
