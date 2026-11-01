@@ -21,6 +21,7 @@ from .. import (
     geo,
     insights,
     matching,
+    notifications,
     profile,
     ranking,
     store,
@@ -234,6 +235,7 @@ def jobs_page(
             "queue": ranking.queue_depth(matching.current_digest()),
             "return_to": return_to,
             "welcome": request.query_params.get("welkom") == "1",
+            "new_match_total": notifications.badge_count(),
         },
     )
 

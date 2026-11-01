@@ -16,6 +16,7 @@ from .. import (
     document_edits,
     insights,
     job_import,
+    notifications,
     store,
     tenancy,
 )
@@ -81,6 +82,13 @@ def jobs_swipe(request: Request, overslaan: int = 0):
             "here": f"/jobs/doorlopen?{urlencode({'overslaan': skip})}",
         },
     )
+
+
+@router.get("/jobs/nieuw", response_class=HTMLResponse)
+def jobs_new(request: Request):
+    jobs = notifications.pending()
+    notifications.mark_seen()
+    return templates.TemplateResponse(request, "jobs_new.html", {"jobs": jobs})
 
 
 # ---------------------------------------------------------------- add a vacancy

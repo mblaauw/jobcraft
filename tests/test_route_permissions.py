@@ -47,6 +47,7 @@ USER = {
     ("GET", "/sollicitaties"),
     ("POST", "/sollicitaties/{job_id}"),
     ("GET", "/jobs/doorlopen"),
+    ("GET", "/jobs/nieuw"),
     ("GET", "/jobs/toevoegen"),
     ("POST", "/jobs/toevoegen"),
     ("POST", "/jobs/{job_id}/inzicht/{kind}"),

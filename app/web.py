@@ -30,5 +30,12 @@ def _csrf_input(request):
     return csrf_input(request)
 
 
+def _new_match_count() -> int:
+    from . import notifications
+
+    return notifications.badge_count()
+
+
 templates.env.globals["csrf_input"] = _csrf_input
+templates.env.globals["new_match_count"] = _new_match_count
 templates.env.filters["amsterdam"] = _amsterdam

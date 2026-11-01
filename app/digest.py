@@ -54,6 +54,15 @@ def compose(jobs: list[dict], to_address: str) -> EmailMessage:
     return message
 
 
+def deliver(message: EmailMessage) -> None:
+    host, port = os.environ["SMTP_HOST"], int(os.environ.get("SMTP_PORT", "587"))
+    with smtplib.SMTP(host, port, timeout=30) as smtp:
+        smtp.starttls()
+        if os.environ.get("SMTP_USER"):
+            smtp.login(os.environ["SMTP_USER"], os.environ.get("SMTP_PASSWORD", ""))
+        smtp.send_message(message)
+
+
 def send_if_due() -> str:
     """Runs inside the owner's scope; never sends twice a day or an empty message."""
     today = now_local().date().isoformat()
@@ -67,12 +76,7 @@ def send_if_due() -> str:
     store.meta_set("digest_last_date", today)
     if not jobs:
         return "empty"
-    host, port = os.environ["SMTP_HOST"], int(os.environ.get("SMTP_PORT", "587"))
-    with smtplib.SMTP(host, port, timeout=30) as smtp:
-        smtp.starttls()
-        if os.environ.get("SMTP_USER"):
-            smtp.login(os.environ["SMTP_USER"], os.environ.get("SMTP_PASSWORD", ""))
-        smtp.send_message(compose(jobs, config["email"]))
+    deliver(compose(jobs, config["email"]))
     store.meta_set("digest_last_sent", max(job["first_seen"] or "" for job in jobs))
     store.count_event("digests_sent")
     return f"sent:{tenancy.user_id()}"

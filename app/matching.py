@@ -195,7 +195,13 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
     ranking.rerank_all(preferences, feedback_data, digest_base)
 
     # Stage 3 — LLM only where it adds value: promising and uncertain jobs.
-    candidates = ranking.escalation_candidates(digest_base, limit, preferences, feedback_data)
+    # Without a configured model the verdicts simply wait; nothing has failed.
+    available = mgr is not None and getattr(mgr, "client", True) is not None
+    candidates = (
+        ranking.escalation_candidates(digest_base, limit, preferences, feedback_data)
+        if available
+        else []
+    )
     summary["escalated"] = len(candidates)
     for job in candidates:
         digest = job_match_digest(digest_base, job)
