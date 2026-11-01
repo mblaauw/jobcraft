@@ -97,9 +97,12 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
         excerpt = profile.read_public_excerpt(4000)
         questions = systemone.questions_for(preferences)
         batch = int(os.environ.get("SYSTEMONE_BATCH", "40"))
+        # Jev calls are logged at $0, so the dollar budget cannot limit them.
+        daily_limit = int(os.environ.get("SYSTEMONE_DAILY_LIMIT", "80"))
+        batch = min(batch, max(0, daily_limit - store.daily_usage_calls("systemone")))
         pending = [
             job
-            for job in store.list_jobs_for_matching(2000)
+            for job in store.list_jobs_for_matching()
             if job["signals_key"]
             != systemone.signals_key(job, excerpt, preferences=preferences, questions=questions)
             and not ranking.excluded_from_matching(job)

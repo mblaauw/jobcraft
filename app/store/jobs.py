@@ -13,6 +13,32 @@ from .accounts import get_preferences
 from .connection import connect, stale_cutoff
 from .sources import list_sources, list_user_sources, load_source_configs
 
+# One key format for Python and SQL, so a whole list can be checked in one query.
+TRAVEL_KEY_SQL = (
+    "(? || ':' || COALESCE(j.content_hash,'') || ':' || COALESCE(j.location,'') "
+    "|| ':' || CASE WHEN j.lat IS NULL THEN '' ELSE printf('%.6f',j.lat) END "
+    "|| ':' || CASE WHEN j.lon IS NULL THEN '' ELSE printf('%.6f',j.lon) END)"
+)
+
+
+TRAVEL_FIELDS = ("content_hash", "location", "lat", "lon")
+
+
+def travel_key(home_key: str, job: JobRow | dict) -> str:
+    """Python twin of TRAVEL_KEY_SQL."""
+    def coordinate(value: float | None) -> str:
+        return "" if value is None else f"{float(value):.6f}"
+
+    return ":".join(
+        [
+            home_key,
+            job["content_hash"] or "",
+            job["location"] or "",
+            coordinate(job["lat"]),
+            coordinate(job["lon"]),
+        ]
+    )
+
 
 def _job_select(owner: str | None = None) -> str:
     owner = owner or tenancy.user_id()
@@ -48,6 +74,7 @@ def _job_select(owner: str | None = None) -> str:
     for name, default in defaults.items():
         fallback = "j." + name if owner == tenancy.LEGACY_ID else default
         fields.append(f"COALESCE(s.{name},{fallback}) AS {name}")
+    fields.extend(["s.travel_key AS travel_key", "s.travel_json AS travel_json"])
     return (
         "SELECT "
         + ",".join(fields)
@@ -106,17 +133,15 @@ def _disabled_user_sources() -> list[str]:
     return [key for key, value in effective_user_sources().items() if not value["selected"]]
 
 
-def list_jobs(
-    limit: int | None = 200,
+def _job_filters(
     status: str | None = None,
     query_text: str | None = None,
     source: str | None = None,
-    sort: str = "rank",
     include_stale: bool = False,
     only_unvoted: bool = False,
-) -> list:
+) -> tuple[list[str], list]:
     clauses: list[str] = []
-    params: list = [tenancy.user_id()]
+    params: list = []
     if status:
         clauses.append("status=?")
         params.append(status)
@@ -144,19 +169,107 @@ def list_jobs(
             "AND src.last_status='ok' AND src.last_scan_at > last_seen))"
         )
         params.append(stale_cutoff())
+    return clauses, params
+
+
+def _job_order(sort: str) -> str:
+    # Only internal SQL fragments, never user-supplied column names.
+    if sort == "newest":
+        return " ORDER BY COALESCE(posted_at, first_seen) DESC, id DESC"
+    return (
+        " ORDER BY COALESCE(rank_score, match_score, -1) DESC, "
+        "COALESCE(posted_at, first_seen) DESC, id DESC"
+    )
+
+
+def list_jobs(
+    limit: int | None = 200,
+    status: str | None = None,
+    query_text: str | None = None,
+    source: str | None = None,
+    sort: str = "rank",
+    include_stale: bool = False,
+    only_unvoted: bool = False,
+) -> list:
+    clauses, filters = _job_filters(status, query_text, source, include_stale, only_unvoted)
+    params: list = [tenancy.user_id(), *filters]
     sql = "SELECT * FROM (" + _job_select() + ")"
     if clauses:
         sql += " WHERE " + " AND ".join(clauses)
-    # Only internal SQL fragments, never user-supplied column names.
-    if sort == "newest":
-        sql += " ORDER BY COALESCE(posted_at, first_seen) DESC, id DESC"
-    else:
-        sql += " ORDER BY COALESCE(rank_score, match_score, -1) DESC, COALESCE(posted_at, first_seen) DESC, id DESC"
+    sql += _job_order(sort)
     if limit is not None:
         sql += " LIMIT ?"
         params.append(limit)
     with connect() as con:
         return con.execute(sql, tuple(params)).fetchall()
+
+
+TRAVEL_OUT_OF_RANGE = "json_extract(travel_json,'$.in_range') IS 0"
+
+
+def job_status_counts(
+    query_text: str | None = None, source: str | None = None, include_stale: bool = False
+) -> dict[str, tuple[int, int]]:
+    """Per status: (all jobs, jobs known to be outside the account's travel range)."""
+    clauses, filters = _job_filters(None, query_text, source, include_stale)
+    sql = (
+        f"SELECT status, COUNT(*) AS n, COALESCE(SUM({TRAVEL_OUT_OF_RANGE}),0) AS far "
+        "FROM (" + _job_select() + ")"
+    )
+    if clauses:
+        sql += " WHERE " + " AND ".join(clauses)
+    with connect() as con:
+        rows = con.execute(sql + " GROUP BY status", (tenancy.user_id(), *filters)).fetchall()
+    return {row["status"]: (row["n"], row["far"]) for row in rows}
+
+
+def list_jobs_page(
+    limit: int,
+    offset: int = 0,
+    status: str | None = None,
+    query_text: str | None = None,
+    source: str | None = None,
+    sort: str = "rank",
+    include_stale: bool = False,
+    within_travel: bool = False,
+) -> list:
+    """One page of full rows; ordering touches no descriptions, so it stays cheap at scale."""
+    clauses, filters = _job_filters(status, query_text, source, include_stale)
+    if within_travel:
+        clauses.append("NOT " + TRAVEL_OUT_OF_RANGE)
+    sql = "SELECT id FROM (" + _job_select() + ")"
+    if clauses:
+        sql += " WHERE " + " AND ".join(clauses)
+    sql += _job_order(sort) + " LIMIT ? OFFSET ?"
+    with connect() as con:
+        ids = [
+            row["id"]
+            for row in con.execute(sql, (tenancy.user_id(), *filters, limit, offset)).fetchall()
+        ]
+        if not ids:
+            return []
+        rows = con.execute(
+            "SELECT * FROM ("
+            + _job_select()
+            + ") WHERE id IN ("
+            + ",".join("?" for _ in ids)
+            + ")",
+            (tenancy.user_id(), *ids),
+        ).fetchall()
+    by_id = {row["id"]: row for row in rows}
+    return [by_id[job_id] for job_id in ids if job_id in by_id]
+
+
+def jobs_missing_travel(home_key: str) -> list:
+    """Jobs whose stored travel estimate belongs to another home or vacancy version."""
+    with connect() as con:
+        return con.execute(
+            "SELECT j.id,j.location,j.lat,j.lon,j.description,j.title,j.content_hash FROM jobs j "
+            "LEFT JOIN job_states s ON s.job_id=j.id AND s.owner=? "
+            "WHERE s.travel_key IS NULL OR s.travel_key <> "
+            f"{TRAVEL_KEY_SQL}",
+            (tenancy.user_id(), home_key),
+        ).fetchall()
 
 
 def get_job(job_id: int) -> sqlite3.Row | None:
@@ -178,7 +291,10 @@ def list_scored_jobs(owner: str | None = None) -> list:
         ).fetchall()
 
 
-def list_jobs_for_matching(limit: int = 2000) -> list:
+MATCHING_LIMIT = 20000
+
+
+def list_jobs_for_matching(limit: int = MATCHING_LIMIT) -> list:
     disabled = _disabled_user_sources()
     source_sql = ""
     params: list = [tenancy.user_id(), stale_cutoff()]

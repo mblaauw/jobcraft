@@ -16,6 +16,7 @@ from .scoring.digests import current_digest as _current_digest
 from .scoring.digests import job_match_digest
 from .scoring.rules import rule_score
 from .scoring.signals import excluded_from_matching, signals_of
+from .scoring.signals import refresh_travel as refresh_travel
 from .scoring.signals import travel_of as travel_of
 from .scoring.weights import read_weights
 
@@ -128,7 +129,8 @@ def rerank_all(
     prefs = preferences if preferences is not None else profile.read_preferences()
     data = feedback_data if feedback_data is not None else feedback.load()
     digest = digest or _current_digest(prefs)
-    jobs = store.list_jobs_for_matching(2000)
+    refresh_travel()  # Spare the next list view this work.
+    jobs = store.list_jobs_for_matching()
     calibration = fit_calibration(jobs, digest)
     store.meta_set(
         "fit_calibration",
@@ -156,7 +158,7 @@ def escalation_candidates(
     prefs = preferences if preferences is not None else profile.read_preferences()
     data = feedback_data if feedback_data is not None else feedback.load()
     candidates: list[tuple[float, object]] = []
-    for job in store.list_jobs_for_matching(2000):
+    for job in store.list_jobs_for_matching():
         if excluded_from_matching(job):
             continue
         if verdict_is_fresh(job, digest):

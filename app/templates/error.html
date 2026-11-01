@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}{{ heading }} · Jobcraft{% endblock %}
+{% block content %}
+<div class="empty-state">
+  <h1>{{ heading }}</h1>
+  <p class="muted">{{ message }}</p>
+  <div class="btn-row">
+    {% if action_url %}<a class="button primary" href="{{ action_url }}">{{ action_label }}</a>{% endif %}
+    <a class="button" href="/">Naar het overzicht</a>
+  </div>
+</div>
+{% endblock %}

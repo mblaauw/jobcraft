@@ -8,12 +8,7 @@
     <p class="lede">Gesorteerd op hoe goed ze bij je profiel passen. Geef met duim omhoog of omlaag aan wat je aanspreekt; de volgorde past zich meteen aan.</p>
   </div>
   <div class="page-actions jobs-matching">
-    <span>{{ queue }} in wachtrij voor een uitgebreide beoordeling</span>
-    <form method="post" action="/jobs/match" data-pending-form>
-      {% include '_csrf.html' %}
-      <input type="hidden" name="next" value="{{ return_to }}">
-      <button class="button" type="submit" {% if match_status == "running" %}disabled{% endif %}>{{ ui.icon('refresh-cw') }}{{ "Beoordeling loopt…" if match_status == "running" else "Beoordelingen bijwerken" }}</button>
-    </form>
+    <span>Beoordelen gaat vanzelf · {{ queue }} in wachtrij</span>
   </div>
 </div>
 
@@ -21,9 +16,11 @@
 {% if match_status == "running" %}
   <div class="banner">{{ ui.icon('clock') }}<span>Je vacatures worden beoordeeld. Je kunt gewoon verder kijken; de volgorde wordt daarna bijgewerkt. <a href="{{ return_to }}">Nu vernieuwen</a></span></div>
 {% elif match_status.startswith("error") %}
-  <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Beoordelen is niet gelukt. Probeer het opnieuw met “Beoordelingen bijwerken”.</span><details><summary>Technische toelichting</summary>{{ match_status[7:] }}</details></div>
+  <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Beoordelen is niet gelukt. We proberen het na de volgende scan weer vanzelf.</span><form method="post" action="/jobs/match" data-pending-form class="banner-action">{% include '_csrf.html' %}<input type="hidden" name="next" value="{{ return_to }}"><button class="button" type="submit">{{ ui.icon('refresh-cw') }}Opnieuw proberen</button></form></div>
 {% elif match_status == "interrupted" %}
-  <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>De beoordeling is onderbroken. Start opnieuw met “Beoordelingen bijwerken”.</span></div>
+  <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>De beoordeling is onderbroken.</span><form method="post" action="/jobs/match" data-pending-form class="banner-action">{% include '_csrf.html' %}<input type="hidden" name="next" value="{{ return_to }}"><button class="button" type="submit">{{ ui.icon('refresh-cw') }}Opnieuw proberen</button></form></div>
+{% elif match_status == "budget" %}
+  <div class="banner">{{ ui.icon('clock') }}<span>De rest van de vacatures beoordelen we morgen. De volgorde is alvast bijgewerkt.</span></div>
 {% endif %}
 </div>
 {% if scan_status and scan_status.startswith("error") %}
@@ -124,7 +121,7 @@
 
 <div class="jobs-insights">
   <details class="card disclosure"><summary>Hoe komt de matchscore tot stand?{{ ui.icon('chevron-down', 'chev') }}</summary>
-    <p>De matchscore is een rangschikking op basis van je voorkeuren, de beoordelingen en je stemmen. Het is geen kans op succes. Een stippelrand om de score betekent dat er alleen een snelle eerste beoordeling is; met “Beoordelingen bijwerken” krijgen de kansrijkste vacatures een uitgebreide beoordeling met toelichting.</p>
+    <p>De matchscore is een rangschikking op basis van je voorkeuren, de beoordelingen en je stemmen. Het is geen kans op succes. Een stippelrand om de score betekent dat er alleen een snelle eerste beoordeling is; de kansrijkste vacatures krijgen vanzelf een uitgebreide beoordeling met toelichting.</p>
     <p>Reistijden zijn schattingen. Vacatures met een onbekende reistijd blijven zichtbaar. Je stemmen tellen direct mee; klik nog eens op een gekozen duim om je stem te wissen.</p>
   </details>
   {% if feedback.counts.up or feedback.counts.down %}
@@ -136,7 +133,7 @@
     <p class="small muted">Automatisch gevonden woorden uit vacatures die je hebt beoordeeld. Ze zijn niet hetzelfde als je voorkeuren in je profiel.</p>
   </details>
   {% endif %}
-  {% if match_summary %}<details class="card disclosure"><summary><span>Laatste beoordelingsronde</span>{{ ui.icon('chevron-down', 'chev') }}</summary><p class="small">{% if match_summary.finished_at %}Afgerond op {{ ui.nl_date(match_summary.finished_at, time=True) }}.{% else %}Bij deze ronde is geen tijdstip opgeslagen.{% endif %} {{ match_summary.matched }} uitgebreide en {{ match_summary.signals or 0 }} snelle beoordelingen. Kosten ${{ '%.4f' | format(match_summary.cost_usd) }}.</p></details>{% endif %}
+  {% if match_summary %}<details class="card disclosure"><summary><span>Laatste beoordelingsronde</span>{{ ui.icon('chevron-down', 'chev') }}</summary><p class="small">{% if match_summary.finished_at %}Afgerond op {{ ui.nl_date(match_summary.finished_at, time=True) }}.{% else %}Bij deze ronde is geen tijdstip opgeslagen.{% endif %} {{ match_summary.matched }} uitgebreide en {{ match_summary.signals or 0 }} snelle beoordelingen.</p></details>{% endif %}
 </div>
 
 <dialog class="job-drawer" id="job-drawer" aria-labelledby="job-drawer-title">

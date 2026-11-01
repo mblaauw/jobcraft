@@ -30,6 +30,13 @@ log = logging.getLogger("jobcraft")
 router = APIRouter(dependencies=[Depends(require_user)])
 
 
+def _assess_soon(kind: str = "match") -> None:
+    """Votes and travel only rerank for free; a changed profile also earns new assessments."""
+    if profile.profile_exists():
+        owner = tenancy.user_id()
+        tasks.enqueue(kind, owner=owner, dedupe_key=f"{kind}:{owner}")
+
+
 @router.get("/profile", response_class=HTMLResponse)
 def profile_page(request: Request):
     return templates.TemplateResponse(
@@ -68,6 +75,7 @@ def profile_accept():
     if pair is None:
         return RedirectResponse(url="/profile?error=draft", status_code=303)
     profile.accept_draft(pair[0])
+    _assess_soon()
     return RedirectResponse(url="/profile?saved=accepted", status_code=303)
 
 
@@ -113,6 +121,9 @@ def profile_home(
     lon: str = Form(""),
 ):
     label = " ".join(place.split()) or "Nog niet ingesteld"
+    known = label.lower() in geo.PLACES
+    if known:
+        label = geo.PLACE_LABELS[label.lower()]
     coords = geo.PLACES.get(label.lower())
     if coords is None:
         try:
@@ -133,6 +144,7 @@ def profile_home(
         "car_available": car_available == "1",
     }
     profile.write_preferences(preferences)
+    _assess_soon("rerank")
     if coords is None and label != "Nog niet ingesteld":
         # Saved, but travel times stay unknown until coordinates are given.
         return RedirectResponse(url="/profile?error=place#reisbereik", status_code=303)
@@ -152,6 +164,7 @@ def profile_save(request: Request, content: str = Form(...)):
             ),
         )
     profile.write_profile(content, note="handmatige bewerking")
+    _assess_soon()
     return RedirectResponse(url="/profile?saved=profile", status_code=303)
 
 
@@ -166,5 +179,6 @@ def profile_restore(version_id: int):
     if not path.is_relative_to(config.user_path(profile.HISTORY_DIR).resolve()):
         raise HTTPException(status_code=400, detail="invalid archive path")
     profile.write_profile(path.read_text(), note=f"restored {path.name}")
+    _assess_soon()
     return RedirectResponse(url="/profile?saved=restore", status_code=303)
 

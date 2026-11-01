@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import re
 
+import httpx
 from bs4 import BeautifulSoup
 
 from .. import store
@@ -14,6 +15,30 @@ def detail_get(client, url: str, **kwargs):
     response = client.get(url, **kwargs)
     if response.status_code == 200:
         store.record_detail_fetch(url)
+    return response
+
+
+DETAIL_FAILURE_LIMIT = 5
+
+
+def safe_detail_get(client, url: str, entry: dict):
+    """One unreachable or robots-disallowed page skips that vacancy, not the whole source.
+
+    Repeated failures still fail the source: a partial scan must not mark every
+    unseen vacancy as expired.
+    """
+    try:
+        response = detail_get(client, url)
+    except httpx.HTTPError as exc:
+        entry["details_skipped"] = entry.get("details_skipped", 0) + 1
+        # A site that asks not to be crawled is an answer, not a failing source.
+        if str(exc).startswith("Robots policy disallows"):
+            return None
+        entry["failure_streak"] = entry.get("failure_streak", 0) + 1
+        if entry["failure_streak"] >= DETAIL_FAILURE_LIMIT:
+            raise
+        return None
+    entry["failure_streak"] = 0
     return response
 
 

@@ -47,7 +47,7 @@
 {% if error == "seed" %}
   <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Het bronmateriaal voor een eerste profiel ontbreekt. Begin met een gesprek.</span></div>
 {% elif error == "place" %}
-  <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>We kennen de woonplaats “{{ home.label }}” niet, dus reistijden blijven onbekend. Vul hieronder de coördinaten in.</span></div>
+  <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>We kennen “{{ home.label }}” niet, dus reistijden blijven onbekend. Kies een plaats uit de lijst.</span></div>
 {% elif error == "draft" %}
   <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Er is geen open voorstel meer. Maak een nieuw voorstel bij Bijwerken.</span></div>
 {% endif %}
@@ -129,12 +129,12 @@
     {% include '_csrf.html' %}
     <p class="small muted">Reistijden zijn schattingen vanaf je woonplaats. Vacatures buiten je bereik worden standaard verborgen.</p>
     <div class="form-grid">
-      <div class="field"><label for="home-place">Woonplaats</label><input id="home-place" name="place" value="{{ home.label if home.label != 'Nog niet ingesteld' else '' }}" placeholder="Bijvoorbeeld Amersfoort" autocomplete="address-level2"></div>
+      <div class="field"><label for="home-place">Woonplaats</label><input id="home-place" name="place" value="{{ home.label if home.label != 'Nog niet ingesteld' else '' }}" placeholder="Begin te typen, bijvoorbeeld Amersfoort" autocomplete="off" list="home-places"><datalist id="home-places">{% for place in place_labels %}<option value="{{ place }}"></option>{% endfor %}</datalist></div>
       <div class="field"><label for="home-car">Auto beschikbaar</label><select id="home-car" name="car_available"><option value="0" {% if not home.car_available %}selected{% endif %}>Nee</option><option value="1" {% if home.car_available %}selected{% endif %}>Ja</option></select></div>
       <div class="field"><label for="home-bike">Maximaal fietsen (e-bike)</label><input id="home-bike" name="bike_minutes" type="number" min="5" max="180" value="{{ home.bike_minutes }}" inputmode="numeric"><span class="hint">minuten, enkele reis</span></div>
       <div class="field"><label for="home-transit">Maximaal met het OV</label><input id="home-transit" name="transit_minutes" type="number" min="5" max="240" value="{{ home.transit_minutes }}" inputmode="numeric"><span class="hint">minuten, enkele reis</span></div>
       <details class="disclosure span-2" {% if error == 'place' %}open{% endif %}>
-        <summary><span class="small">Woonplaats niet gevonden? Vul coördinaten in</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
+        <summary><span class="small">Staat je plaats er niet tussen? Vul coördinaten in</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
         <div class="form-grid">
           <div class="field"><label for="home-lat">Breedtegraad</label><input id="home-lat" name="lat" type="number" step="0.0001" value="{{ home.lat or '' }}"></div>
           <div class="field"><label for="home-lon">Lengtegraad</label><input id="home-lon" name="lon" type="number" step="0.0001" value="{{ home.lon or '' }}"></div>

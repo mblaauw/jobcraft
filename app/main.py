@@ -7,6 +7,7 @@ from . import (  # noqa: F401
     auth,
     config,
     docs,
+    errors,
     feedback,
     geo,
     interview_state,
@@ -86,6 +87,7 @@ from .workflows import (  # noqa: F401
 app = FastAPI(title="Jobcraft", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=str(config.STATIC_DIR)), name="static")
 app.middleware("http")(auth.middleware)
+errors.install(app)
 app.include_router(auth.router)
 for group in (pages, interview, source_routes, jobs, profile_routes, account, task_routes):
     app.include_router(group.router)

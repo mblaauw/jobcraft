@@ -19,7 +19,7 @@ def record_detail_fetch(url: str) -> None:
         )
 
 
-def touch_recent_detail(url: str, max_age_seconds: int = 86400) -> bool:
+def touch_recent_detail(url: str, max_age_seconds: int = 3 * 86400) -> bool:
     """Touch known rich jobs without extending their last real detail-fetch time."""
     key = "detail_fetched:" + hashlib.sha256(url.encode()).hexdigest()
     with connect() as con:

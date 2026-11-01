@@ -159,7 +159,8 @@ def test_dashboard_diagnostics_are_collapsed_and_metrics_are_real_values():
         next_step={"label": "Bekijk vacatures", "href": "/jobs", "detail": "Een volgende stap"},
     )
     assert [el.get_text() for el in html.select(".metric strong")] == ["12", "7", "2", "3"]
-    assert not html.select_one(".technical-details").has_attr("open")
+    assert not html.select(".technical-details")
+    assert "Kosten" not in html.get_text()
     assert len(html.select("h1")) == 1
 
 

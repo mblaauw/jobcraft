@@ -46,6 +46,16 @@ def usage_total() -> dict:
 
 
 
+def daily_usage_calls(kind: str, owner: str | None = None) -> int:
+    start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    with connect() as con:
+        row = con.execute(
+            "SELECT COUNT(*) AS n FROM usage_log WHERE owner=? AND kind=? AND created_at >= ?",
+            (owner or tenancy.user_id(), kind, start),
+        ).fetchone()
+    return int(row["n"])
+
+
 def daily_usage_cost(owner: str | None = None) -> float:
     start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     with connect() as con:
