@@ -9,6 +9,10 @@
   </div>
 </div>
 
+{% if worker and worker.separate %}
+{% if worker.alive %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>De worker draait. Laatst gezien {{ ui.nl_date(worker.seen, time=True) }}.</span></p>
+{% else %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>De worker draait niet{% if worker.seen %} (laatst gezien {{ ui.nl_date(worker.seen, time=True) }}){% endif %}. Scans en beoordelingen staan in de wachtrij tot hij weer start.</span></p>{% endif %}
+{% endif %}
 <div class="grid two">
   <section class="panel" aria-labelledby="usage-title">
     <h2 id="usage-title">AI-gebruik</h2>
