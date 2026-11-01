@@ -14,9 +14,26 @@ FILTER_TERMS = {
 }
 
 
+HOUR_BUCKETS = {
+    "tot24": (8, 12, 16, 20, 24),
+    "24-32": (24, 26, 28, 30, 32),
+    "32-40": (32, 34, 36, 38, 40),
+}
+
+
 def list_filter_clauses(filters: dict | None) -> tuple[list[str], list]:
     clauses: list[str] = []
     params: list = []
+    bucket = HOUR_BUCKETS.get((filters or {}).get("hours") or "")
+    if bucket:
+        terms = [f"{hours} {word}" for hours in bucket for word in ("uur", "hours")]
+        clauses.append(
+            "("
+            + " OR ".join("search_text LIKE ? OR COALESCE(hours,'') LIKE ?" for _ in terms)
+            + ")"
+        )
+        for term in terms:
+            params.extend([f"%{term}%", f"%{term}%"])
     for key in ("remote", "contract", "salaris"):
         term_key = (filters or {}).get(key)
         terms = FILTER_TERMS.get(term_key) if term_key else None

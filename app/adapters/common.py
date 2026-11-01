@@ -72,6 +72,17 @@ def page_text(raw_html: str, limit: int = 20000) -> str:
     return re.sub(r"\s+", " ", text)[:limit].strip()
 
 
+SHORT_SUMMARY = 400
+
+
+def best_description(summary: str, raw_html: str) -> str:
+    """Structured data is sometimes only a one-line summary; the page then has the real text."""
+    if len(summary) >= SHORT_SUMMARY:
+        return summary
+    full = page_text(raw_html)
+    return full if len(full) > len(summary) else summary
+
+
 def split_company(title: str) -> tuple[str, str]:
     """Culturele Vacatures often prefixes 'Organisatie: Functie'."""
     if ": " in title:

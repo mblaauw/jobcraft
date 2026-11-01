@@ -56,6 +56,10 @@
     <select id="job-salary" name="salaris"><option value="">Alle</option><option value="salaris" {% if list_filters.salaris %}selected{% endif %}>Bedrag genoemd</option></select>
   </div>
   <div class="field">
+    <label for="job-hours">Uren</label>
+    <select id="job-hours" name="uren"><option value="">Alle</option>{% for value, label in [('tot24','Tot 24'),('24-32','24 tot 32'),('32-40','32 tot 40')] %}<option value="{{ value }}" {% if list_filters.uren == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  </div>
+  <div class="field">
     <label for="job-days">Geplaatst</label>
     <select id="job-days" name="dagen"><option value="">Altijd</option>{% for value, label in [('1','Laatste dag'),('7','Laatste week'),('30','Laatste maand')] %}<option value="{{ value }}" {% if list_filters.dagen == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
   </div>
