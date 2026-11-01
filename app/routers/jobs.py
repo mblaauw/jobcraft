@@ -15,9 +15,11 @@ from fastapi.responses import (
 )
 
 from .. import (
+    applications,
     config,
     feedback,
     geo,
+    insights,
     matching,
     profile,
     ranking,
@@ -27,6 +29,7 @@ from .. import (
 )
 from ..auth import require_user
 from ..runtime import get_manager
+from ..scoring import reasons
 from ..util import LOCAL_TZ
 from ..web import templates
 from ..web_helpers import _jobs_return_target
@@ -76,6 +79,7 @@ def jobs_page(
     pages = max(1, (total_filtered + per_page - 1) // per_page)
     page = max(1, min(pages, page))
     page_items = []
+    preferences = profile.read_preferences()
     for row in store.list_jobs_page(
         per_page,
         (page - 1) * per_page,
@@ -87,16 +91,20 @@ def jobs_page(
         within_travel=within_active,
     ):
         item = dict(row)
-        date = store.job_date(row)
+        date = store.job_date(item)
         item["display_date"] = (
             date.astimezone(LOCAL_TZ).strftime("%d-%m-%Y") if date.year > 1 else ""
         )
         item["date_iso"] = date.date().isoformat() if date.year > 1 else ""
-        item["source_name"] = source_names.get(
-            item["source_id"], item["source_id"] or "Onbekende bron"
+        item["source_name"] = (
+            "Zelf toegevoegd"
+            if (item["source_id"] or "").startswith("import:")
+            else source_names.get(item["source_id"], item["source_id"] or "Onbekende bron")
         )
         item["travel"] = ranking.travel_of(item)
-        item["signals"] = ranking.signals_of(row)
+        item["signals"] = ranking.signals_of(item)
+        item["reason_line"] = reasons.reason_line(item, preferences)
+        item["facts"] = reasons.facts(item)
         page_items.append(item)
 
     params = {
@@ -257,6 +265,9 @@ def job_detail(request: Request, job_id: int, return_to: str = ""):
             "travel": travel,
             "list_return": list_return,
             "detail_return": detail_return,
+            "gap": insights.load("gap", job),
+            "prep": insights.load("prep", job),
+            "insight_failed": request.query_params.get("inzicht_fout") == "1",
         },
     )
 
@@ -343,7 +354,7 @@ def job_vote(job_id: int, vote: str = Form(...), url: str = Form("/jobs", alias=
 
 @router.post("/jobs/{job_id}/status")
 def job_status(job_id: int, status: str = Form(...), url: str = Form("/jobs", alias="next")):
-    if status not in ("new", "saved", "ignored", "applied"):
+    if status not in ("new", "ignored", *applications.STATUSES):
         raise HTTPException(status_code=400, detail="unknown status")
     if store.get_job(job_id) is None:
         raise HTTPException(status_code=404, detail="unknown job")

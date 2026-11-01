@@ -92,3 +92,11 @@ def adjust(text: str, title: str, wishes: dict | None) -> tuple[float, list[str]
             delta -= 8.0
             notes.append(f"niveau {level}")
     return delta, notes
+
+
+def remote_kind(text: str) -> str:
+    if _ONSITE.search(text):
+        return "Op locatie"
+    if _FULL_REMOTE.search(text):
+        return "Volledig thuis"
+    return "Deels thuis" if _HYBRID.search(text) else ""

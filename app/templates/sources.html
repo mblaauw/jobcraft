@@ -12,7 +12,10 @@
     <ul class="meta">
       <li>{{ jobs_by_source.get(s["id"], 0) }} vacatures</li>
       <li>{% if s["last_scan_at"] %}opgehaald {{ ui.nl_date(s["last_scan_at"], time=True) }}{% else %}nog niet opgehaald{% endif %}</li>
-      {% if status and status != 'ok' %}<li class="warn-text">laatste ronde mislukt</li>{% endif %}
+      {% set h = health.get(s['id']) if health else none %}
+      {% if status and status != 'ok' %}<li class="warn-text">{% if h and h.failures > 1 %}{{ h.failures }} rondes achter elkaar mislukt{% else %}laatste ronde mislukt{% endif %}</li>{% endif %}
+      {% if admin and h and status == 'ok' and not h['items'] %}<li class="warn-text">laatste ronde niets gevonden</li>{% endif %}
+      {% if admin and h and h.skipped %}<li>{{ h.skipped }} pagina's overgeslagen</li>{% endif %}
     </ul>
     {% if not admin and selection.reason %}<p class="why">{{ selection.reason }}</p>{% endif %}
   </div>

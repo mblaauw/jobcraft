@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui %}
 {% block title %}Overzicht · Jobcraft{% endblock %}
 {% block content %}
+{% if reminders %}<section class="banner warn" aria-label="Deadlines">{{ ui.icon('clock') }}<span>{% for item in reminders[:3] %}{{ 'Verlopen' if item.overdue else 'Deadline' }}: <a href="/sollicitaties">{{ item.job['title'] }}</a> ({{ item.deadline }}){% if not loop.last %} · {% endif %}{% endfor %}</span></section>{% endif %}
 {% set pipeline = pipeline or {} %}
 {% set name =(request.state.user.display_name or request.state.user.username) if request.state is defined and request.state.user else '' %}
 <div class="page-head greeting">

@@ -18,6 +18,7 @@ Polite scanning: sequential requests with a small delay per source.
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import time
@@ -76,6 +77,12 @@ def _apply_seed_revisions(configured: list[dict]) -> list[dict]:
             current = {**current, **seed, "enabled": current.get("enabled", True)}
             store.save_source_config(current)
         merged.append(current)
+    known = {item["id"] for item in merged}
+    if merged:  # A fresh install copies the whole catalogue through the data file instead.
+        for source_id, seed in seeds.items():
+            if source_id not in known and int(seed.get("revision", 0)) >= 2:
+                store.save_source_config(seed)
+                merged.append(dict(seed))
     return merged
 
 
@@ -203,6 +210,25 @@ DEFENSIE_HOST = "https://werkenbijdefensie.nl"
 # ---------------------------------------------------------------- runner
 
 
+def _record_health(summary: dict) -> None:
+    """Keep what one scan cannot show: how long a source has been failing or empty."""
+    try:
+        health = json.loads(store.meta_get("source_health") or "{}")
+    except ValueError:
+        health = {}
+    for source_id, entry in summary["sources"].items():
+        item = health.get(source_id) or {"failures": 0, "last_ok": None}
+        healthy = entry["status"] == "ok"
+        health[source_id] = {
+            "failures": 0 if healthy else item["failures"] + 1,
+            "last_ok": summary["finished_at"] if healthy else item["last_ok"],
+            "items": entry.get("items", 0),
+            "skipped": entry.get("details_skipped", 0),
+            "reason": entry.get("reason", ""),
+        }
+    store.meta_set("source_health", json.dumps(health, ensure_ascii=False))
+
+
 def scan(limit_per_source: int | None = None) -> dict:
     sources = [source for source in load_sources() if source.get("enabled", True)]
     summary: dict = {
@@ -234,4 +260,5 @@ def scan(limit_per_source: int | None = None) -> dict:
             summary["sources"][source["id"]] = entry
             time.sleep(0.5)
     summary["finished_at"] = now_iso()
+    _record_health(summary)
     return summary

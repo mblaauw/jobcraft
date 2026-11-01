@@ -55,6 +55,23 @@ def valid_coordinates(lat: float, lon: float) -> bool:
 
 
 PLACES, RAIL_PLACES, DISTRICTS, PLACE_LABELS = load_gazetteer(GAZETTEER_FILE)
+
+
+def _core_places(path: Path) -> set[str]:
+    """Hand-kept towns. Worldwide text needs these: the full list also holds villages
+    named Zurich and America, which must not make a foreign vacancy look Dutch."""
+    try:
+        with path.open(newline="", encoding="utf-8") as handle:
+            return {
+                row["name"].strip().lower()
+                for row in csv.DictReader(handle)
+                if not (row.get("origin") or "").strip() and not (row.get("city") or "").strip()
+            }
+    except FileNotFoundError:
+        return set()
+
+
+CORE_PLACES = _core_places(GAZETTEER_FILE)
 # Two-letter villages ("Ee") would match stray words in free-form location text.
 _MATCHABLE = sorted((place for place in PLACES if len(place) > 2), key=len, reverse=True)
 PLACE_PATTERN = (

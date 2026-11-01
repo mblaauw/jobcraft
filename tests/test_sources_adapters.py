@@ -66,6 +66,7 @@ def test_configured_sources_use_known_adapters():
         "defensie-cms",
         "hn-resource",
         "local-json",
+        "ats-registry",
         "getro-html",  # documented placeholder, disabled until the adapter exists
         "manual",
         "browser-import",

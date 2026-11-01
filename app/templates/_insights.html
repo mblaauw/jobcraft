@@ -1,0 +1,21 @@
+{% macro panel(job, gap, prep, failed, csrf, next_url, icon) %}
+<section class="panel" id="inzicht" aria-labelledby="inzicht-title">
+  <h2 id="inzicht-title">Voorbereiden</h2>
+  {% if failed %}<p class="banner warn" role="status"><span>Dit lukt nu niet. Probeer het later opnieuw.</span></p>{% endif %}
+  {% if gap %}
+  <h3>Wat je al hebt</h3>
+  <ul class="assess-list">{% for item in gap.have %}<li>{{ item }}</li>{% else %}<li class="muted">Hier zagen we niets concreets in je profiel.</li>{% endfor %}</ul>
+  {% if gap.missing %}<h3>Wat nog ontbreekt</h3>
+  <ul class="assess-list">{% for item in gap.missing %}<li><strong>{{ item.requirement }}</strong>{% if item.how %}<br><span class="small muted">{{ item.how }}</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+  {% endif %}
+  {% if prep %}
+  <h3>Vragen die je kunt verwachten</h3>
+  <ul class="assess-list">{% for item in prep.questions %}<li><strong>{{ item.question }}</strong>{% if item.angle %}<br><span class="small muted">{{ item.angle }}</span>{% endif %}</li>{% endfor %}</ul>
+  {% if prep.ask_them %}<h3>Vragen voor hen</h3><ul class="assess-list">{% for item in prep.ask_them %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+  {% endif %}
+  <div class="btn-row">
+    {% if not gap %}<form method="post" action="/jobs/{{ job['id'] }}/inzicht/gap" data-pending-form>{{ csrf }}<input type="hidden" name="next" value="{{ next_url }}"><button id="detail-insight-gap" class="button" type="submit">Vergelijk met mijn profiel</button></form>{% endif %}
+    {% if not prep %}<form method="post" action="/jobs/{{ job['id'] }}/inzicht/prep" data-pending-form>{{ csrf }}<input type="hidden" name="next" value="{{ next_url }}"><button id="detail-insight-prep" class="button" type="submit">Bereid het gesprek voor</button></form>{% endif %}
+  </div>
+</section>
+{% endmacro %}

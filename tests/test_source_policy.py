@@ -26,10 +26,10 @@ def test_regional_boundary_is_inclusive(monkeypatch):
 def test_legacy_sql_metadata_fallback_does_not_overwrite_config():
     original = {"id": "greenjobs", "kind": "local-json", "file": "custom.json", "enabled": False}
     store.save_source_config(original)
-    loaded = sources.load_sources()[0]
+    loaded = {item["id"]: item for item in sources.load_sources()}["greenjobs"]
     assert loaded["scope"] == "regional" and loaded["regions"] == ["Amsterdam"]
     assert loaded["file"] == "custom.json" and loaded["enabled"] is False
-    assert store.load_source_configs()[0] == original
+    assert {item["id"]: item for item in store.load_source_configs()}["greenjobs"] == original
     assert (
         source_policy.effective_metadata({**original, "scope": "national", "regions": []})["scope"]
         == "national"

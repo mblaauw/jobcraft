@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
+{% import "_insights.html" as insights %}
 {% block title %}{{ job["title"] or "Vacature" }} · Jobcraft{% endblock %}
 {% block content %}
 {% set stamp_job = dict(job, signals=signals) %}
@@ -137,6 +138,7 @@
           <a id="detail-document-{{ doc['id'] }}-pdf" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/pdf">PDF</a>
           {% endif %}
           <a id="detail-document-{{ doc['id'] }}-docx" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/docx">Word</a>
+          {% if '"content"' in (doc["meta_json"] or '') %}<a id="detail-document-{{ doc['id'] }}-edit" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/bewerken">Bewerken</a>{% endif %}
         </div>
       </li>
       {% endfor %}
@@ -145,6 +147,7 @@
     <p class="small subtle">Je hebt voor deze vacature nog geen documenten gemaakt.</p>
     {% endif %}
   </section>
+  {{ insights.panel(job, gap, prep, insight_failed, csrf_input(request), detail_return, ui.icon) }}
 </div>
 </div>
 {% endblock %}

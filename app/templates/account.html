@@ -72,4 +72,38 @@
     <p class="small subtle">Na het opslaan word je op je andere apparaten uitgelogd.</p>
   </section>
 </div>
+
+<section class="panel" aria-labelledby="digest-title">
+  <h2 id="digest-title">Dagelijkse mail</h2>
+  {% if digest.smtp %}
+  <form method="post" action="/account/dagmail" class="form-stack">
+    {{ csrf_input(request) }}
+    <div class="field"><label for="digest-email">E-mailadres</label><input id="digest-email" type="email" name="email" value="{{ digest.email }}" autocomplete="email"></div>
+    <label class="switch"><input type="checkbox" name="enabled" value="1" {% if digest.enabled %}checked{% endif %}> Stuur me elke ochtend de beste nieuwe vacatures</label>
+    <div><button class="button" type="submit">Opslaan</button></div>
+  </form>
+  {% else %}
+  <p class="small muted">Deze installatie kan nog geen mail versturen. De beheerder kan dit instellen.</p>
+  {% endif %}
+</section>
+
+<section class="panel" aria-labelledby="data-title">
+  <h2 id="data-title">Jouw gegevens</h2>
+  <form method="post" action="/account/export">
+    {{ csrf_input(request) }}
+    <button class="button" type="submit">{{ ui.icon('download') }}Download al mijn gegevens</button>
+  </form>
+  {% if account.id != 'legacy' %}
+  <details class="disclosure">
+    <summary><span>Account verwijderen</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
+    <p class="small muted">Dit verwijdert je profiel, cv, documenten en sollicitaties definitief. Dat kan niet ongedaan worden gemaakt.</p>
+    <form method="post" action="/account/verwijderen" class="form-stack">
+      {{ csrf_input(request) }}
+      <div class="field"><label for="delete-password">Je wachtwoord</label><input id="delete-password" type="password" name="password" autocomplete="current-password" required></div>
+      <div class="field"><label for="delete-confirm">Typ VERWIJDER</label><input id="delete-confirm" name="confirm" autocomplete="off" required></div>
+      <div><button class="button" type="submit">Definitief verwijderen</button></div>
+    </form>
+  </details>
+  {% endif %}
+</section>
 {% endblock %}

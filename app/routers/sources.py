@@ -26,6 +26,13 @@ log = logging.getLogger("jobcraft")
 router = APIRouter(dependencies=[Depends(require_user)])
 
 
+def _health() -> dict:
+    try:
+        return json.loads(store.meta_get("source_health") or "{}")
+    except ValueError:
+        return {}
+
+
 @router.get("/sources", response_class=HTMLResponse)
 def sources_page(request: Request):
     summary = None
@@ -44,6 +51,7 @@ def sources_page(request: Request):
             "jobs_by_source": store.count_jobs_by_source(),
             "scan_status": store.meta_get("scan_status", "idle"),
             "summary": summary,
+            "health": _health(),
             "counts": store.count_jobs(),
             "schedule_enabled": store.meta_get("scan_schedule_enabled", "1") == "1",
             "schedule_times": store.meta_get(

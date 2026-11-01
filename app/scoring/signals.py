@@ -81,7 +81,7 @@ def refresh_travel() -> int:
 
 def excluded_from_matching(job: JobRow) -> bool:
     """One shared skip rule for the Jev gate and LLM escalation."""
-    if job["vote"] or job["status"] in ("ignored", "applied"):
+    if job["vote"] or job["status"] in ("ignored", "applied", "interview", "offer", "rejected"):
         return True
     travel = travel_of(job)
     return travel.get("in_range") is False and not travel.get("auto")

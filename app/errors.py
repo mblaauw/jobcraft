@@ -51,6 +51,24 @@ def _page(request: Request, status_code: int, detail: str | None, headers=None) 
     )
 
 
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN",
+    "Referrer-Policy": "same-origin",
+    "Content-Security-Policy": (
+        "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
+        "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+    ),
+}
+
+
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    for name, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(name, value)
+    return response
+
+
 def install(app: FastAPI) -> None:
     @app.exception_handler(HTTPException)
     async def friendly_http_error(request: Request, exc: HTTPException):

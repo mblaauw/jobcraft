@@ -18,6 +18,17 @@ def _norm(value: str | None) -> str:
 
 
 
+@lru_cache(maxsize=4096)
+def _short_term(term: str) -> re.Pattern:
+    return re.compile(rf"(?<!\w){re.escape(term)}(?!\w)")
+
+
+def has_term(term: str, text: str) -> bool:
+    """Short terms match whole words ('it', 'hr'); long ones also inside Dutch compounds."""
+    term = term.lower()
+    return bool(_short_term(term).search(text)) if len(term) <= 4 else term in text
+
+
 def _row_get(row, key: str, default=None):
     try:
         return row[key]
@@ -38,27 +49,27 @@ def rule_score(
 
     for track in preferences.get("tracks", []):
         keywords = [kw for kw in track.get("keywords", []) if kw]
-        hits = sum(1 for kw in keywords if kw.lower() in text)
+        hits = sum(1 for kw in keywords if has_term(kw, text))
         if hits:
             score += min(5, hits) * (2.0 * float(track.get("weight", 1.0)))
             notes.append(f"track {track.get('id')}: {hits} keyword(s)")
 
     for item in preferences.get("likes", []):
         tag = (item.get("tag") or "").lower()
-        if tag and tag in text:
+        if tag and has_term(tag, text):
             score += min(3.0, float(item.get("weight", 1.0))) * 1.5
 
     for item in preferences.get("dislikes", []):
         tag = (item.get("tag") or "").lower()
-        if tag and tag in text:
+        if tag and has_term(tag, text):
             score += min(0.0, float(item.get("weight", -1.0))) * 2.0
             notes.append(f"dislike: {tag}")
 
     for keyword in preferences.get("keywords", {}).get("boost", []):
-        if keyword and keyword.lower() in text:
+        if keyword and has_term(keyword, text):
             score += 1.0
     for keyword in preferences.get("keywords", {}).get("veto", []):
-        if keyword and keyword.lower() in text:
+        if keyword and has_term(keyword, text):
             score -= 12.0
             notes.append(f"veto: {keyword}")
 

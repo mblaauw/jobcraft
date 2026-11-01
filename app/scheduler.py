@@ -7,7 +7,7 @@ import threading
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from . import store, tasks
+from . import digest, store, tasks
 
 _STOP = threading.Event()
 _THREAD: threading.Thread | None = None
@@ -72,6 +72,23 @@ def run_due(now: datetime | None = None) -> str | None:
     return due
 
 
+def run_digest_due(now: datetime | None = None) -> bool:
+    """Once a day after DIGEST_TIME; each task decides by itself whether its owner opted in."""
+    if not digest.smtp_configured():
+        return False
+    local = (now or datetime.now(UTC)).astimezone(ZoneInfo("Europe/Amsterdam"))
+    moments = slots(os.environ.get("DIGEST_TIME", "08:30"))
+    today = local.date().isoformat()
+    if not moments or (local.hour, local.minute) < moments[0]:
+        return False
+    if store.meta_get("digest_last_tick") == today:
+        return False
+    store.meta_set("digest_last_tick", today)
+    for owner in store.active_owners_with_profile():
+        tasks.enqueue("digest", owner=owner, dedupe_key=f"digest:{owner}")
+    return True
+
+
 def start() -> None:
     global _THREAD
     if _THREAD and _THREAD.is_alive():
@@ -82,6 +99,7 @@ def start() -> None:
         while not _STOP.wait(60):
             try:
                 run_due()
+                run_digest_due()
             except Exception:
                 continue
 
