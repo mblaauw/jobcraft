@@ -130,6 +130,9 @@ def _unique_jobs(clauses: list[str]) -> str:
     return _UNIQUE_JOBS.format(select=_job_select(), where=where)
 
 
+MAX_SEARCH_WORDS = 8
+
+
 def _job_filters(
     status: str | None = None,
     query_text: str | None = None,
@@ -147,10 +150,11 @@ def _job_filters(
     if source:
         clauses.append("source_id=?")
         params.append(source)
-    if query_text:
-        like = f"%{query_text}%"
-        clauses.append("(title LIKE ? OR company LIKE ? OR description LIKE ?)")
-        params.extend([like, like, like])
+    # Every word must appear, in any order and also inside Dutch compounds.
+    for word in (query_text or "").lower().split()[:MAX_SEARCH_WORDS]:
+        escaped = word.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        clauses.append("search_text LIKE ? ESCAPE '\\'")
+        params.append(f"%{escaped}%")
     # Pasted vacancies are private: the jobs table itself is shared between accounts.
     clauses.append("(source_id IS NULL OR source_id NOT LIKE 'import:%' OR source_id=?)")
     params.append(import_source())
