@@ -39,7 +39,7 @@ ssh -o BatchMode=yes "$HOST" "mkdir -p ~/$DIR"
 rsync -az --stats "${EXCLUDES[@]}" ./ "$HOST:$DIR/"
 
 echo "== build + restart =="
-ssh -o BatchMode=yes "$HOST" "set -euo pipefail; cd ~/$DIR; test -s .env.local || { echo 'error: remote .env.local ontbreekt of is leeg' >&2; exit 1; }; chmod 600 .env.local; BUILD_LOG=\$(mktemp); if ! docker compose -f compose.yaml -f deploy/compose.vps.yml build > \"\$BUILD_LOG\" 2>&1; then tail -40 \"\$BUILD_LOG\"; rm -f \"\$BUILD_LOG\"; exit 1; fi; tail -3 \"\$BUILD_LOG\"; rm -f \"\$BUILD_LOG\"; docker compose -f compose.yaml -f deploy/compose.vps.yml up -d; sleep 5; docker compose -f compose.yaml -f deploy/compose.vps.yml ps; curl -s -o /dev/null -w 'health=%{http_code}\n' http://127.0.0.1:18080/healthz"
+ssh -o BatchMode=yes "$HOST" "set -euo pipefail; cd ~/$DIR; test -s .env.local || { echo 'error: remote .env.local ontbreekt of is leeg' >&2; exit 1; }; chmod 600 .env.local; BUILD_LOG=\$(mktemp); if ! docker compose -f compose.yaml -f deploy/compose.vps.yml build > \"\$BUILD_LOG\" 2>&1; then tail -40 \"\$BUILD_LOG\"; rm -f \"\$BUILD_LOG\"; exit 1; fi; tail -3 \"\$BUILD_LOG\"; rm -f \"\$BUILD_LOG\"; docker compose -f compose.yaml -f deploy/compose.vps.yml up -d; sleep 5; docker compose -f compose.yaml -f deploy/compose.vps.yml ps; docker compose -f compose.yaml -f deploy/compose.vps.yml exec -T app curl -s -o /dev/null -w 'health=%{http_code}\n' http://127.0.0.1:8080/healthz"
 
 echo "== done =="
 echo "  tunnel:  ssh -N -L 18080:127.0.0.1:18080 $HOST   (http://127.0.0.1:18080)"

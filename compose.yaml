@@ -4,8 +4,9 @@ services:
     image: jobcraft:local
     # 18080 is deliberately outside AzuraCast's stream range (8000-8500) and bound
     # to loopback only: docker-published ports bypass UFW on the shared VPS.
+    # Set JOBCRAFT_PORT in a .env file next to this one when that port is taken.
     ports:
-      - "127.0.0.1:18080:8080"
+      - "127.0.0.1:${JOBCRAFT_PORT:-18080}:8080"
     env_file:
       - .env.local
     environment:
