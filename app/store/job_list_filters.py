@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+from .connection import connect
+
 # Words a vacancy must contain to pass a filter; a vacancy that says nothing does not.
 FILTER_TERMS = {
     "remote": ("thuiswerk", "hybride", "hybrid", "remote", "deels thuis", "vanuit huis", "work from home"),
@@ -46,3 +48,15 @@ def list_filter_clauses(filters: dict | None) -> tuple[list[str], list]:
         clauses.append("COALESCE(posted_at, first_seen) >= ?")
         params.append(cutoff)
     return clauses, params
+
+
+def full_text_share_by_source(minimum: int = 500) -> dict[str, int]:
+    """Percentage of a source's vacancies with enough text to judge them on."""
+    with connect() as con:
+        rows = con.execute(
+            "SELECT COALESCE(source_id,'?') AS source_id, "
+            "ROUND(100.0 * SUM(LENGTH(COALESCE(description,'')) >= ?) / COUNT(*)) AS share "
+            "FROM jobs GROUP BY source_id",
+            (minimum,),
+        ).fetchall()
+    return {row["source_id"]: int(row["share"]) for row in rows}

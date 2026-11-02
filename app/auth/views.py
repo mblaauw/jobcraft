@@ -107,6 +107,7 @@ def _users_response(
     notice: str = "",
     new_password: str = "",
     created_username: str = "",
+    invite_link: str = "",
     status_code: int = 200,
 ):
     rows = _list_users()
@@ -121,6 +122,7 @@ def _users_response(
             "notice": notice,
             "new_password": new_password,
             "created_username": created_username,
+            "invite_link": invite_link,
         },
         status_code=status_code,
     )

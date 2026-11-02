@@ -210,6 +210,9 @@ DEFENSIE_HOST = "https://werkenbijdefensie.nl"
 # ---------------------------------------------------------------- runner
 
 
+HEALTH_ROUNDS = 14
+
+
 def _record_health(summary: dict) -> None:
     """Keep what one scan cannot show: how long a source has been failing or empty."""
     try:
@@ -219,7 +222,13 @@ def _record_health(summary: dict) -> None:
     for source_id, entry in summary["sources"].items():
         item = health.get(source_id) or {"failures": 0, "last_ok": None}
         healthy = entry["status"] == "ok"
+        history = (item.get("history") or [])[-(HEALTH_ROUNDS - 1) :]
+        earlier = sorted(history)
+        typical = earlier[len(earlier) // 2] if len(earlier) >= 3 else 0
         health[source_id] = {
+            # Failed rounds stay out, or a long outage would redefine what is normal.
+            "history": [*history, entry.get("items", 0)] if healthy else history,
+            "dropped": healthy and entry.get("items", 0) < typical / 2,
             "failures": 0 if healthy else item["failures"] + 1,
             "last_ok": summary["finished_at"] if healthy else item["last_ok"],
             "items": entry.get("items", 0),

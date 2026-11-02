@@ -54,7 +54,7 @@ def test_navigation_marks_only_current_section_and_has_skip_link():
         ("/", "/"),
         ("/jobs/120", "/jobs"),
         ("/profile", "/profile"),
-        ("/sources", "/sources"),
+        ("/account", "/account"),
     ]:
         html = render("base.html", path, role="user")
         active = html.select('.top [aria-current="page"]')

@@ -172,7 +172,15 @@ def test_source_health_counts_failures_in_a_row(client):  # noqa: F811
     good = {"finished_at": "2026-11-03", "sources": {"a": {"status": "ok", "items": 4}}}
     sources._record_health(good)
     health = json.loads(store.meta_get("source_health"))["a"]
-    assert health == {"failures": 0, "last_ok": "2026-11-03", "items": 4, "skipped": 0, "reason": ""}
+    assert health == {
+        "failures": 0,
+        "last_ok": "2026-11-03",
+        "items": 4,
+        "skipped": 0,
+        "reason": "",
+        "history": [4],
+        "dropped": False,
+    }
 
 
 # ---------------------------------------------------------------- duplicates

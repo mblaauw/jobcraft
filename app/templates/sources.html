@@ -8,13 +8,16 @@
 {% set status = s["last_status"] %}
 <li class="source-row">
   <div>
-    <h3><span class="dot {{ 'ok' if status == 'ok' else ('err' if status and status != 'ok' else '') }}" title="{{ 'Laatste ophaalronde gelukt' if status == 'ok' else ('Laatste ophaalronde mislukt' if status else 'Nog niet opgehaald') }}"></span>{{ s["name"] }}</h3>
+    <h3>{% if admin %}<span class="dot {{ 'ok' if status == 'ok' else ('err' if status and status != 'ok' else '') }}" title="{{ 'Laatste ophaalronde gelukt' if status == 'ok' else ('Laatste ophaalronde mislukt' if status else 'Nog niet opgehaald') }}"></span>{% endif %}{{ s["name"] }}</h3>
     <ul class="meta">
       <li>{{ jobs_by_source.get(s["id"], 0) }} vacatures</li>
       <li>{% if s["last_scan_at"] %}opgehaald {{ ui.nl_date(s["last_scan_at"], time=True) }}{% else %}nog niet opgehaald{% endif %}</li>
       {% set h = health.get(s['id']) if health else none %}
-      {% if status and status != 'ok' %}<li class="warn-text">{% if h and h.failures > 1 %}{{ h.failures }} rondes achter elkaar mislukt{% else %}laatste ronde mislukt{% endif %}</li>{% endif %}
+      {% if admin and status and status != 'ok' %}<li class="warn-text">{% if h and h.failures > 1 %}{{ h.failures }} rondes achter elkaar mislukt{% else %}laatste ronde mislukt{% endif %}</li>{% endif %}
       {% if admin and h and status == 'ok' and not h['items'] %}<li class="warn-text">laatste ronde niets gevonden</li>{% endif %}
+      {% if admin and h and h.dropped %}<li class="warn-text">veel minder dan normaal</li>{% endif %}
+      {% if admin and full_text and full_text.get(s['id']) is not none %}<li>{{ full_text[s['id']] }}% met volledige tekst</li>{% endif %}
+      {% if admin and h and h.history and h.history | length > 1 %}<li class="subtle">laatste rondes: {{ h.history[-5:] | join(', ') }}</li>{% endif %}
       {% if admin and h and h.skipped %}<li>{{ h.skipped }} pagina's overgeslagen</li>{% endif %}
     </ul>
     {% if not admin and selection.reason %}<p class="why">{{ selection.reason }}</p>{% endif %}
@@ -80,6 +83,13 @@
   <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Ophalen is mislukt.</span><details><summary>Technische toelichting</summary>{{ scan_status[7:] }}</details></div>
 {% elif scan_status == "done" and summary %}
   <div class="banner ok">{{ ui.icon('circle-check') }}<span>Laatst opgehaald op {{ ui.nl_date(summary.finished_at, time=True) }}: {{ summary.new }} nieuw, {{ summary.updated }} bijgewerkt.</span></div>
+{% endif %}
+
+{% if admin %}
+{% set troubled = active | selectattr('id', 'in', (health or {}).keys()) | list %}
+{% set names = namespace(items=[]) %}
+{% for s in troubled %}{% set h = health[s['id']] %}{% if h.failures or h.dropped %}{% set names.items = names.items + [s['name']] %}{% endif %}{% endfor %}
+{% if names.items %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>Aandacht nodig: {{ names.items | join(', ') }}.</span></p>{% endif %}
 {% endif %}
 
 <section class="section" aria-labelledby="active-title">

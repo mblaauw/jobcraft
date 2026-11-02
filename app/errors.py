@@ -66,6 +66,11 @@ async def security_headers(request: Request, call_next):
     response = await call_next(request)
     for name, value in SECURITY_HEADERS.items():
         response.headers.setdefault(name, value)
+    if request.url.path.startswith("/static/fonts/"):
+        response.headers.setdefault("Cache-Control", "public, max-age=604800")
+    elif request.url.path.startswith("/static/"):
+        # Always revalidated by ETag: a deploy must never pair new pages with old styling.
+        response.headers.setdefault("Cache-Control", "no-cache")
     return response
 
 

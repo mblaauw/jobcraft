@@ -49,6 +49,7 @@ def sources_page(request: Request):
             "sources": store.list_sources(),
             "user_sources": store.effective_user_sources(),
             "jobs_by_source": store.count_jobs_by_source(),
+            "full_text": store.full_text_share_by_source(),
             "scan_status": store.meta_get("scan_status", "idle"),
             "summary": summary,
             "health": _health(),

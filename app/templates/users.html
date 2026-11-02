@@ -24,6 +24,14 @@
 </section>
 {% endif %}
 
+{% if invite_link %}
+<section class="panel" aria-labelledby="invite-link-title">
+  <h2 id="invite-link-title">Uitnodiging</h2>
+  <p class="small">Stuur deze link naar één persoon. Die kiest zelf een gebruikersnaam en wachtwoord. De link werkt één keer, 7 dagen lang, en is hierna niet meer op te vragen.</p>
+  <div class="one-time" id="invite-value"><pre class="doc" tabindex="0">{{ invite_link }}</pre></div>
+</section>
+{% endif %}
+
 <section class="panel panel-flush" aria-labelledby="accounts-title">
   <div class="panel-head padded"><h2 id="accounts-title">Accounts</h2><span class="small subtle">{{ users | length }} accounts, {{ active_admins }} actieve beheerder(s)</span></div>
   <div class="table-scroll" role="region" aria-label="Accounts" tabindex="0">
@@ -33,7 +41,7 @@
         {% for user in users %}
         <tr>
           <td><strong>{{ user.display_name }}</strong>{% if user.id == current_user_id %} <span class="chip chip-lime">jij</span>{% endif %}<br><span class="subtle small">{{ user.username }}</span></td>
-          <td>{{ 'Beheerder' if user.role == 'admin' else 'Gebruiker' }}</td>
+          <td class="nowrap">{{ 'Beheerder' if user.role == 'admin' else 'Gebruiker' }}</td>
           <td>{% if user.active %}<span class="chip chip-ok">actief</span>{% else %}<span class="chip chip-warn">gedeactiveerd</span>{% endif %}{% if user.sessions %}<br><span class="small subtle">{{ user.sessions }} sessie(s)</span>{% endif %}</td>
           <td class="small">{{ user.last_login_label }}<br><span class="subtle">sinds {{ user.created_label }}</span></td>
           <td>
@@ -61,6 +69,8 @@
 
 <section class="panel" id="nieuw" aria-labelledby="new-title">
   <h2 id="new-title">Account toevoegen</h2>
+  <form method="post" action="/users/uitnodiging" class="btn-row">{{ csrf_input(request) }}<button class="button primary" type="submit">Maak een uitnodigingslink</button><span class="small subtle">Makkelijkst: de ander kiest zelf een wachtwoord. Altijd een gewone gebruiker.</span></form>
+  <h3>Of maak het account zelf aan</h3>
   <form method="post" action="/users" class="form-grid users-form">
     {{ csrf_input(request) }}
     <div class="field"><label for="new-username">Gebruikersnaam</label><input id="new-username" name="username" type="text" autocapitalize="none" spellcheck="false" required><span class="hint">3 tot 32 tekens: letters, cijfers, punt of streepje</span></div>

@@ -1,6 +1,17 @@
 // Jobs list: follow a running assessment round without reloading the page.
 // Pending-form handling lives in ui.js.
 (function () {
+  const more = document.querySelector(".filters-more");
+  if (more) {
+    more.hidden = false;
+    more.addEventListener("click", function () {
+      more.closest("form").classList.remove("filters-fold");
+      more.hidden = true;
+    });
+  }
+})();
+
+(function () {
   const listURL = window.location.href;
   const progress = document.getElementById("jobs-progress");
   if (!progress || progress.dataset.matchRunning !== "true") return;

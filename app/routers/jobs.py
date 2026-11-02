@@ -298,6 +298,9 @@ def job_detail(request: Request, job_id: int, return_to: str = ""):
             "travel": travel,
             "list_return": list_return,
             "detail_return": detail_return,
+            "facts": reasons.facts(item),
+            "documents_ready": tenancy.user_id() == tenancy.LEGACY_ID
+            or (profile.profile_exists() and (config.seed_dir() / "cv.docx").exists()),
             "gap": insights.load("gap", job),
             "prep": insights.load("prep", job),
             "insight_failed": request.query_params.get("inzicht_fout") == "1",

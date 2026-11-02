@@ -42,7 +42,7 @@
     {% elif saved == "draft" %}Je aanpassingen aan het voorstel zijn bewaard.
     {% elif saved == "discarded" %}Het voorstel is verworpen. Je profiel is niet veranderd.
     {% elif saved == "restore" %}De oude versie is teruggezet; de vorige staat bij Versies.
-    {% else %}Opgeslagen.{% endif %}</span></div>
+    {% else %}Opgeslagen.{% endif %} <a href="/jobs">Bekijk je vacatures</a></span></div>
 {% endif %}
 {% if error == "seed" %}
   <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Het bronmateriaal voor een eerste profiel ontbreekt. Begin met een gesprek.</span></div>
@@ -83,8 +83,8 @@
   {% else %}
   <div class="panel empty-state">
     <h3>Je hebt nog geen profiel</h3>
-    <p class="muted">Een profiel ontstaat uit je gesprekken. Na een paar vragen maakt Jobcraft een voorstel dat je zelf controleert.</p>
-    <a class="button primary" href="/interview">{{ ui.icon('message-circle') }}Start een gesprek</a>
+    <p class="muted">{% if draft %}Er ligt een voorstel klaar. Bekijk het hieronder bij Bijwerken.{% else %}Je CV en een paar keuzes zijn genoeg voor een eerste profiel.{% endif %}</p>
+    {% if draft %}<a class="button primary" href="#bijwerken">Bekijk het voorstel</a>{% else %}<a class="button primary" href="/start">Begin hier</a>{% endif %}
   </div>
   {% endif %}
 </section>
@@ -184,7 +184,7 @@
     <p class="small subtle">Duurt 20 tot 90 seconden. Je ziet eerst wat er verandert.</p>
     <details class="disclosure">
       <summary><span class="small">Meer opties</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
-      <p class="small muted">Een volledige herziening leest al je antwoorden en bronmateriaal opnieuw. Gebruik dit als je profiel niet meer klopt. Iets duurder (ongeveer $0,02).</p>
+      <p class="small muted">Een volledige herziening leest al je antwoorden en bronmateriaal opnieuw. Gebruik dit als je profiel niet meer klopt.</p>
       <form method="post" action="/profile/consolidate">
         {% include '_csrf.html' %}
         <input type="hidden" name="full" value="1">

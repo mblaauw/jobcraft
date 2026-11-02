@@ -1,6 +1,7 @@
 """Local authentication facade; policy remains in security and HTTP middleware."""
 
 from ..web import templates as templates
+from . import invites as invites
 from .bootstrap import (  # noqa: F401
     _bootstrap_credentials_lock,
     _ensure_schema,

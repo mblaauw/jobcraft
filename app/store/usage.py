@@ -1,7 +1,7 @@
 """SQLite usage operations."""
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from .. import tenancy
 from .connection import connect, now
@@ -66,3 +66,23 @@ def daily_usage_cost(owner: str | None = None) -> float:
         ).fetchone()
     return float(row["cost"] or 0.0)
 
+
+def usage_overview(days: int = 14) -> dict:
+    """Totals for the whole installation; never split per person."""
+    start = (datetime.now(UTC) - timedelta(days=days)).isoformat()
+    with connect() as con:
+        by_day = con.execute(
+            "SELECT substr(created_at,1,10) AS day, COUNT(*) AS calls, "
+            "COALESCE(SUM(input_tokens+output_tokens),0) AS tokens, "
+            "COALESCE(SUM(cost_usd),0) AS cost FROM usage_log WHERE created_at >= ? "
+            "GROUP BY day ORDER BY day DESC",
+            (start,),
+        ).fetchall()
+        by_kind = con.execute(
+            "SELECT kind, COUNT(*) AS calls, "
+            "COALESCE(SUM(input_tokens+output_tokens),0) AS tokens, "
+            "COALESCE(SUM(cost_usd),0) AS cost FROM usage_log WHERE created_at >= ? "
+            "GROUP BY kind ORDER BY tokens DESC",
+            (start,),
+        ).fetchall()
+    return {"days": [dict(row) for row in by_day], "kinds": [dict(row) for row in by_kind]}

@@ -6,7 +6,7 @@
 <div class="page-head">
   <div>
     <h1>Vacatures</h1>
-    <p class="lede">Gesorteerd op hoe goed ze bij je profiel passen. Geef met duim omhoog of omlaag aan wat je aanspreekt; de volgorde past zich meteen aan.</p>
+    <p class="lede wide-only">Gesorteerd op hoe goed ze bij je profiel passen. Geef met duim omhoog of omlaag aan wat je aanspreekt; de volgorde past zich meteen aan.</p>
   </div>
   <div class="page-actions jobs-matching">
     <span>Beoordelen gaat vanzelf · {{ queue }} in wachtrij</span>
@@ -31,11 +31,12 @@
 <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Niet alle bronnen konden worden opgehaald. <a href="/sources">Bekijk welke bronnen een probleem hebben</a></span></div>
 {% endif %}
 
-<form method="get" action="/jobs" class="jobs-filters" aria-label="Vacatures zoeken en filteren" data-autosubmit>
+<form method="get" action="/jobs" class="jobs-filters{% if not filter_chips %} filters-fold{% endif %}" aria-label="Vacatures zoeken en filteren" data-autosubmit>
   <div class="field field-search">
     <label for="job-search">Zoeken</label>
     <div class="input-icon">{{ ui.icon('search') }}<input id="job-search" type="search" name="q" value="{{ query or '' }}" placeholder="Functie, organisatie of trefwoord"></div>
   </div>
+  <button class="button small filters-more" type="button" hidden>Meer filters</button>
   <div class="field">
     <label for="job-source">Bron</label>
     <select id="job-source" name="source"><option value="">Alle bronnen</option>{% for s in sources %}<option value="{{ s['id'] }}" {% if source_filter == s['id'] %}selected{% endif %}>{{ s['name'] }}</option>{% endfor %}</select>

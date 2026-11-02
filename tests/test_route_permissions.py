@@ -5,11 +5,18 @@ from fastapi.routing import APIRoute
 from app import auth
 from app.routers import account, interview, jobs, pages, profile, sources, start, tasks, workspace
 
-PUBLIC = {("GET", "/login"), ("POST", "/login"), ("GET", "/healthz")}
+PUBLIC = {
+    ("GET", "/login"),
+    ("POST", "/login"),
+    ("GET", "/healthz"),
+    ("GET", "/uitnodiging/{token}"),
+    ("POST", "/uitnodiging/{token}"),
+}
 ADMIN = {
     ("GET", "/admin"),
     ("GET", "/users"),
     ("POST", "/users"),
+    ("POST", "/users/uitnodiging"),
     ("POST", "/users/{user_id}/deactivate"),
     ("POST", "/users/{user_id}/activate"),
     ("POST", "/users/{user_id}/reset-password"),
@@ -19,6 +26,8 @@ ADMIN = {
 }
 USER = {
     ("POST", "/logout"),
+    ("POST", "/jobs/{job_id}/documents/{document_id}/herschrijven"),
+    ("GET", "/jobs/{job_id}/documents/{document_id}/verschil"),
     ("GET", "/account"),
     ("POST", "/account/password"),
     ("GET", "/"),
