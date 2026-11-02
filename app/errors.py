@@ -5,10 +5,12 @@ from __future__ import annotations
 import logging
 
 from fastapi import FastAPI, Request
-from fastapi.exception_handlers import http_exception_handler
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.exception_handlers import http_exception_handler, request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 from starlette.exceptions import HTTPException
 
+from .auth.sessions import _cookie_secure
 from .web import templates
 
 log = logging.getLogger("jobcraft")
@@ -63,7 +65,17 @@ SECURITY_HEADERS = {
 
 
 async def security_headers(request: Request, call_next):
+    secure = _cookie_secure()
+    if secure and request.headers.get("x-forwarded-proto") == "http":
+        # A login over plain http would expose the password and could never keep its cookie.
+        prefix = request.headers.get("x-forwarded-prefix", "").rstrip("/")
+        query = f"?{request.url.query}" if request.url.query else ""
+        return RedirectResponse(
+            f"https://{request.url.netloc}{prefix}{request.url.path}{query}", status_code=308
+        )
     response = await call_next(request)
+    if secure:
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
     for name, value in SECURITY_HEADERS.items():
         response.headers.setdefault(name, value)
     if request.url.path.startswith("/static/fonts/"):
@@ -80,6 +92,12 @@ def install(app: FastAPI) -> None:
         if exc.status_code < 400 or not _wants_page(request):
             return await http_exception_handler(request, exc)
         return _page(request, exc.status_code, str(exc.detail), exc.headers)
+
+    @app.exception_handler(RequestValidationError)
+    async def friendly_bad_request(request: Request, exc: RequestValidationError):
+        if not _wants_page(request):
+            return await request_validation_exception_handler(request, exc)
+        return _page(request, 400, "Dit adres of formulier klopt niet helemaal. Ga terug en probeer het opnieuw.")
 
     @app.exception_handler(Exception)
     async def friendly_crash(request: Request, exc: Exception):

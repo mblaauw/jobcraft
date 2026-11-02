@@ -105,7 +105,7 @@ def _resolve_task_owner(owner: str) -> dict | None:
 def get_manager() -> llm.ServerManager:
     if manager is None or manager.client is None:
         raise HTTPException(
-            status_code=503, detail="LLM is niet geconfigureerd (LLM_BASE_URL/LLM_API_KEY)."
+            status_code=503, detail="De AI-hulp is nu niet beschikbaar. Probeer het later opnieuw."
         )
     return manager
 

@@ -157,7 +157,7 @@ def cv_prompt(job, profile_md: str, strong_count: int = 5) -> str:
     standards_text = standards.standards_block(("cv-brief-standaarden", "vacature-analyse"))
     extra = f"\n\n{standards_text}" if standards_text else ""
     return (
-        f"Pas het cv van {tenancy.display_name()} licht aan voor deze vacature. Gebruik alleen feiten uit het profiel.\n"
+        "Pas het cv van de gebruiker licht aan voor deze vacature. Gebruik alleen feiten uit het profiel.\n"
         "Verzin geen ervaring, opleiding of vaardigheden.\n\n"
         "## Profiel\n"
         f"{profile_md[:7000]}\n\n"
@@ -174,7 +174,7 @@ def letter_prompt(job, profile_md: str) -> str:
     standards_text = standards.standards_block(("cv-brief-standaarden", "vacature-analyse"))
     extra = f"\n\n{standards_text}" if standards_text else ""
     return (
-        f"Schrijf een korte Nederlandse motivatiebrief voor {tenancy.display_name()}. Maximaal 15 "
+        "Schrijf een korte Nederlandse motivatiebrief voor de gebruiker. Maximaal 15 "
         "gerenderde regels in totaal (ongeveer 1.200 tekens), 3-5 alinea's, concreet "
         "en zonder clichés. Gebruik alleen feiten uit het profiel; verzin niets. "
         "Verwijs naar de vacature en waarom deze persoon daar past. Geen adressen, geen "
@@ -329,7 +329,7 @@ def _generate_job_document(mgr: llm.ServerManager, job, kind: str) -> dict:
         template_path = config.user_path(CV_TEMPLATE, "templates")
         template_bytes = template_path.read_bytes() if template_path.exists() else None
         strong_count = template_count(Document(io.BytesIO(template_bytes))) if template_bytes else 5
-    profile_md = profile.read_public_excerpt(12000)
+    profile_md = profile.read_document_excerpt(12000)
     directory = _job_dir(job)
     _job_json(job, directory)
     version = _next_document_version(directory, kind, store.list_documents(job["id"]))
