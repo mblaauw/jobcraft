@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse, RedirectResponse, Response
 from markupsafe import Markup, escape
 
 from .. import tenancy
+from ..web import templates
 from .constants import COOKIE_NAME, CSRF_FIELD, CSRF_HEADER, PUBLIC_PATHS, ROLE_ADMIN, SAFE_METHODS
 from .sessions import _clear_session_cookie, _session_for_request
 
@@ -27,6 +28,10 @@ def csrf_input(request: Request) -> Markup:
         return Markup("")
     return Markup(f'<input type="hidden" name="{CSRF_FIELD}" value="{escape(token)}">')
 
+
+
+CV_UPLOAD_PATHS = {"/account/cv", "/start/cv"}
+CV_UPLOAD_BYTES = 8 * 1024 * 1024
 
 
 async def _request_body(request: Request, limit: int = 256 * 1024) -> bytes | None:
@@ -58,9 +63,9 @@ async def _csrf_from_request(request: Request) -> str | None:
         candidates = values.get(CSRF_FIELD) or []
         return candidates[0] if candidates else None
     if content_type == "multipart/form-data":
-        body = await _request_body(
-            request, limit=6 * 1024 * 1024 if request.url.path == "/account/cv" else 256 * 1024
-        )
+        # Above the 5 MB the upload pages allow, so they can say so themselves.
+        limit = CV_UPLOAD_BYTES if request.url.path in CV_UPLOAD_PATHS else 256 * 1024
+        body = await _request_body(request, limit=limit)
         if body is None:
             return None
         match = re.search(rb'name="' + CSRF_FIELD.encode("ascii") + rb'"\r\n\r\n([^\r\n]*)', body)
@@ -115,6 +120,19 @@ def _wants_json(request: Request) -> bool:
 def _reject(request: Request, status_code: int, message: str, headers: dict | None = None):
     if _wants_json(request):
         return JSONResponse({"detail": message}, status_code=status_code, headers=headers)
+    if "text/html" in request.headers.get("accept", ""):
+        return templates.TemplateResponse(
+            request,
+            "error.html",
+            {
+                "heading": "Dat lukte niet",
+                "message": "Je sessie is verlopen of deze pagina stond te lang open. Ververs de pagina en probeer het opnieuw.",
+                "action_url": "",
+                "action_label": "",
+            },
+            status_code=status_code,
+            headers=headers,
+        )
     return Response(
         message, status_code=status_code, media_type="text/plain; charset=utf-8", headers=headers
     )
