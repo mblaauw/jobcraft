@@ -45,11 +45,25 @@ def _page(request: Request, name: str, step: int, **context) -> HTMLResponse:
 # ------------------------------------------------------------------ step 1: CV
 
 
-@router.get("/start")
-def start():
+def _resume_url() -> str:
+    """The first unfinished step; a pause never sends anyone back to the beginning."""
+    if store.meta_get("start_finished_at"):
+        return "/jobs"
+    if onboarding.swipe_queue():
+        return "/start/vacatures"
+    if int(store.meta_get("start_swipe_done") or 0) or onboarding.exchanges_saved():
+        return "/start/vragen"
+    return store.meta_get("start_stage") or ""
+
+
+@router.get("/start", response_class=HTMLResponse)
+def start(request: Request):
     if not store.meta_get("start_started_at"):
         store.meta_set("start_started_at", now_iso())
-    return RedirectResponse(url="/start/cv", status_code=303)
+    target = _resume_url()
+    if target:
+        return RedirectResponse(url=target, status_code=303)
+    return templates.TemplateResponse(request, "start_intro.html", {})
 
 
 @router.get("/start/cv", response_class=HTMLResponse)
@@ -78,7 +92,7 @@ async def start_cv_upload(request: Request, cv: UploadFile = File(...)):
         try:  # Only a DOCX with recognisable sections can serve as document template.
             token = cv_uploads.stage(raw, filename, request.state.auth_session_id)["token"]
         except Exception as exc:
-            log.info("uploaded CV not usable as template: %s", type(exc).__name__)
+            log.warning("uploaded CV not usable as template: %s", type(exc).__name__)
     return _page(
         request,
         "start_cv_review.html",
@@ -124,7 +138,20 @@ async def start_cv_confirm(request: Request):
             cv_uploads.create_generated(updates)
         except (ValueError, OSError) as exc:
             log.warning("plain base CV not created: %s", type(exc).__name__)
-    return RedirectResponse(url="/start/keuzes", status_code=303)
+    store.meta_set("start_stage", "/start/verder")
+    return RedirectResponse(url="/start/verder", status_code=303)
+
+
+@router.get("/start/verder", response_class=HTMLResponse)
+def start_route(request: Request):
+    return templates.TemplateResponse(request, "start_route.html", {})
+
+
+@router.post("/start/zelf")
+def start_own_vacancy():
+    """Straight to pasting a vacancy; no questions and no assessment round first."""
+    _finish(assess=False)
+    return RedirectResponse(url="/jobs/toevoegen", status_code=303)
 
 
 # ------------------------------------------------------------- step 2: choices
@@ -252,6 +279,16 @@ def start_swipe(request: Request):
     )
 
 
+@router.post("/start/vacatures/stoppen")
+def start_swipe_stop():
+    if onboarding.swipe_queue():
+        store.meta_set("start_swipe", "[]")
+        store.meta_set("start_swipe_done", str(int(store.meta_get("start_swipe_done") or 0) or 1))
+        feedback.rebuild()
+        ranking.rerank_all()
+    return RedirectResponse(url="/start/vragen", status_code=303)
+
+
 @router.post("/start/vacatures/{job_id}")
 def start_swipe_answer(job_id: int, answer: str = Form(...)):
     queue = onboarding.swipe_queue()
@@ -318,7 +355,7 @@ def start_questions_answer(answer: str = Form(...)):
     return RedirectResponse(url="/start/vragen", status_code=303)
 
 
-def _finish() -> RedirectResponse:
+def _finish(assess: bool = True) -> RedirectResponse:
     answered = [item for item in onboarding.exchanges_saved() if item["answer"]]
     if answered:
         profile.merge_sections(
@@ -335,7 +372,8 @@ def _finish() -> RedirectResponse:
         store.count_event("profile_finished")
     store.meta_set("start_questions", "[]")
     store.meta_set("start_swipe", "[]")
-    _assess_soon()
+    if assess:
+        _assess_soon()
     return RedirectResponse(url="/jobs?welkom=1", status_code=303)
 
 

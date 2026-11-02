@@ -109,7 +109,7 @@ def _workflow(
             return {
                 "label": "Vind in drie minuten je vacatures",
                 "href": "/start",
-                "detail": "Je cv, een paar keuzes en tien echte vacatures. Daaruit maken we je profiel.",
+                "detail": "Je cv, een paar keuzes en vijf echte vacatures. Daaruit maken we je profiel.",
                 "step": 1,
             }
         return {

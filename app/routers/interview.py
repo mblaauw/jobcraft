@@ -19,6 +19,7 @@ from .. import (
     llm,
     profile,
     store,
+    tenancy,
 )
 from ..auth import require_user
 from ..runtime import _session_lock, get_manager
@@ -33,6 +34,8 @@ router = APIRouter(dependencies=[Depends(require_user)])
 
 @router.get("/interview", response_class=HTMLResponse)
 def interview_page(request: Request):
+    if tenancy.user_id() != tenancy.LEGACY_ID:  # The quick start replaced the open-ended chat.
+        return RedirectResponse(url="/", status_code=303)
     session_id = request.query_params.get("session")
     if session_id and not store.get_session(session_id):
         raise HTTPException(status_code=404, detail="unknown session")

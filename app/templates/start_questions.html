@@ -6,7 +6,7 @@
 {{ start.steps(step) }}
 <div class="page-head"><div>
   {% if pending %}<h1>Vraag {{ number }} van {{ total }}</h1>{% else %}<h1>Nog drie vragen die een formulier niet kan stellen</h1>{% endif %}
-  <p class="lede">Overslaan mag altijd. Je antwoorden komen in je profiel en helpen vacatures te beoordelen, ook met AI. Je kunt ze daar aanpassen.</p>
+  <p class="lede">Overslaan mag altijd. Je antwoorden komen in je profiel en helpen vacatures te beoordelen, ook met AI. Je kunt ze daar aanpassen. Ze komen niet in je cv of brieven.</p>
 </div></div>
 {% if unavailable %}<p class="banner" role="status">{{ ui.icon('clock') }}<span>De vragen zijn nu niet beschikbaar. Je kunt gewoon verder; dit gesprek kan later ook.</span></p>{% endif %}
 <section class="panel form-stack">
@@ -28,4 +28,5 @@
     <button class="button" type="submit">{{ 'Naar mijn vacatures' if unavailable else 'Overslaan, toon mijn vacatures' }}</button>
   </form>
 </section>
+{{ start.later() }}
 {% endblock %}

@@ -14,7 +14,7 @@ log = logging.getLogger("jobcraft")
 # A role someone asked for outweighs incidental keyword matches.
 CHOSEN_ROLE_WEIGHT = 4.0
 MAX_QUESTIONS = 3
-SWIPE_COUNT = 10
+SWIPE_COUNT = 5
 ANSWERS_HEADING = profile.ANSWERS_HEADING
 ROLES_HEADING = "Gewenste functies"
 HOURS = {"any": (None, None), "tot24": (8, 24), "24-32": (24, 32), "32-40": (32, 40)}

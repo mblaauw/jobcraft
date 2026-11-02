@@ -6,7 +6,7 @@
 {{ start.steps(step) }}
 <div class="page-head"><div>
   <h1>Zou je hierop reageren?</h1>
-  <p class="lede">Vacature {{ position }} van {{ total }}. Zo leert Jobcraft wat je zoekt.</p>
+  <p class="lede">Vacature {{ position }} van {{ total }}.</p>
 </div></div>
 <article class="panel swipe-card">
   <h2>{{ job['title'] or 'Zonder titel' }}</h2>
@@ -19,4 +19,6 @@
     <button class="button link-button" type="submit" name="answer" value="overslaan">Weet ik niet</button>
   </form>
 </article>
+<form method="post" action="/start/vacatures/stoppen" class="start-later" data-pending-form>{% include '_csrf.html' %}<button class="button small" type="submit">Genoeg vacatures, ga verder</button></form>
+{{ start.later() }}
 {% endblock %}

@@ -54,6 +54,10 @@ def dashboard(request: Request):
         request,
         "dashboard.html",
         {
+            "start_open": tenancy.user_id() != tenancy.LEGACY_ID
+            and not store.meta_get("start_finished_at"),
+            "own_vacancy_hint": tenancy.user_id() != tenancy.LEGACY_ID and documents == 0,
+            "plain_cv": store.meta_get("cv_generated") == "1",
             "top_jobs": _top_new_jobs(5),
             "reminders": applications.reminders(),
             "pipeline": {

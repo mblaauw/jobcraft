@@ -20,17 +20,18 @@
 {%- endmacro %}
 
 {% block content %}
+{% set legacy = request.state is defined and request.state.user and request.state.user.id == 'legacy' %}
 {% set home = preferences.home %}
 {% set hf = preferences.hard_filters %}
 <div class="page-head">
   <div>
     <h1>Profiel</h1>
-    <p class="lede">Zo ziet Jobcraft jou. Hierop zijn de matches en je CV’s en brieven gebaseerd. Wijzigingen uit gesprekken zie je altijd eerst als voorstel.</p>
+    <p class="lede">Zo ziet Jobcraft jou. Hierop zijn de matches en je CV’s en brieven gebaseerd.</p>
   </div>
 </div>
 
 <nav class="subnav" aria-label="Onderdelen van je profiel">
-  <a href="#overzicht">Over jou</a><a href="#voorkeuren">Wat telt bij matching</a><a href="#reisbereik">Reisbereik</a><a href="#bijwerken">Bijwerken{% if draft %} <span class="badge">1</span>{% endif %}</a><a href="#bewerken">Tekst bewerken</a><a href="#versies">Versies</a>
+  <a href="#overzicht">Over jou</a><a href="#voorkeuren">Wat telt bij matching</a><a href="#reisbereik">Reisbereik</a>{% if legacy or draft %}<a href="#bijwerken">Bijwerken{% if draft %} <span class="badge">1</span>{% endif %}</a>{% endif %}<a href="#bewerken">Tekst bewerken</a><a href="#versies">Versies</a>
 </nav>
 
 {% if saved %}
@@ -100,7 +101,7 @@
           <p class="small"><strong>{{ track.name }}</strong></p>
           <div class="chips">{% for keyword in track.keywords %}<span class="chip chip-lime">{{ keyword }}</span>{% endfor %}</div>
           {% if not loop.last %}<hr>{% endif %}
-        {% else %}<p class="small subtle">Nog geen richtingen. Vertel in een gesprek wat voor werk je zoekt.</p>{% endfor %}
+        {% else %}<p class="small subtle">Nog geen richtingen. <a href="/start/keuzes">Kies welk werk je zoekt</a>.</p>{% endfor %}
       </div>
       <div>
         <h3>Harde wensen</h3>
@@ -146,6 +147,7 @@
   </form>
 </section>
 
+{% if legacy or draft %}
 <section class="section" id="bijwerken" aria-labelledby="bijwerken-title">
   <div class="panel-head"><h2 id="bijwerken-title">Bijwerken vanuit gesprekken</h2></div>
   <div class="panel">
@@ -194,6 +196,7 @@
   {% endif %}
   </div>
 </section>
+{% endif %}
 
 <section class="section" id="bewerken" aria-labelledby="bewerken-title">
   <details class="panel disclosure" {% if profile_error %}open{% endif %}>
