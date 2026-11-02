@@ -7,6 +7,7 @@ on:
       - .dockerignore
       - compose.yaml
       - docker/**
+      - deploy/**
       - pyproject.toml
       - uv.lock
       - scripts/container_smoke.sh
