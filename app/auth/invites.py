@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import secrets
+import sqlite3
 import uuid
 from contextlib import closing
 from datetime import UTC, datetime, timedelta
@@ -29,6 +31,7 @@ from .users import _get_user_by_username, _insert_user
 from .views import _start_anonymous_session, _users_response
 
 INVITE_DAYS = 7
+_PREFIX_RE = re.compile(r"/[A-Za-z0-9._/-]*")
 
 
 def _key(token: str) -> str:
@@ -63,13 +66,28 @@ def invite_open(token: str) -> bool:
     return _open(row["value"] if row else None)
 
 
-def consume_invite(token: str) -> bool:
+def consume_invite(token: str) -> str | None:
     """Atomic, so two simultaneous submits cannot both create an account."""
     with closing(store.connect()) as con, con:
         row = con.execute(
             "DELETE FROM meta WHERE key=? RETURNING value", (_key(token),)
         ).fetchone()
-    return _open(row["value"] if row else None)
+    value = row["value"] if row else None
+    return value if _open(value) else None
+
+
+def _restore_invite(token: str, value: str) -> None:
+    with closing(store.connect()) as con, con:
+        con.execute("INSERT INTO meta(key,value) VALUES (?,?)", (_key(token), value))
+
+
+def _public_base(request: Request) -> str:
+    """What the admin's browser sees: the app may sit under a prefix behind a proxy."""
+    proto = request.headers.get("x-forwarded-proto", "")
+    scheme = proto if proto in ("http", "https") else request.url.scheme
+    prefix = request.headers.get("x-forwarded-prefix", "")
+    prefix = prefix.rstrip("/") if _PREFIX_RE.fullmatch(prefix) else ""
+    return f"{scheme}://{request.url.netloc}{prefix}"
 
 
 def _page(request: Request, token: str, *, error: str = "", username: str = "", name: str = "", status_code: int = 200):
@@ -88,7 +106,7 @@ def _page(request: Request, token: str, *, error: str = "", username: str = "", 
 @router.post("/users/uitnodiging", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
 def invite_create(request: Request):
     admin = require_admin(request)
-    link = f"{str(request.base_url).rstrip('/')}/uitnodiging/{create_invite()}"
+    link = f"{_public_base(request)}/uitnodiging/{create_invite()}"
     log.info("invitation created by admin id=%s", admin["id"])
     return _users_response(request, user=admin, invite_link=link)
 
@@ -128,9 +146,14 @@ def invite_submit(
         problem = "Deze gebruikersnaam is al in gebruik."
     if problem:
         return _page(request, token, error=problem, status_code=400, **keep)
-    if not consume_invite(token):
+    invitation = consume_invite(token)
+    if invitation is None:
         return _page(request, token, status_code=404)
     user_id = str(uuid.uuid4())
-    _insert_user(user_id, candidate, name or candidate, ROLE_USER, password)
+    try:
+        _insert_user(user_id, candidate, name or candidate, ROLE_USER, password)
+    except sqlite3.IntegrityError:  # Someone took this name between the check and now.
+        _restore_invite(token, invitation)
+        return _page(request, token, error="Deze gebruikersnaam is al in gebruik.", status_code=400, **keep)
     log.info("user created id=%s through an invitation", user_id)
     return RedirectResponse(url="/login", status_code=303)
