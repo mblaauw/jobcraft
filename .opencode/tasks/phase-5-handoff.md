@@ -10,7 +10,7 @@ publication instructions below describe the earlier session, not current policy.
 - Working tree clean; `main` in sync with `origin/main`.
 - No open pull requests.
 - **195 tests pass** (`uv run pytest -q`), Ruff clean, CI `quality` green.
-- Remote beta `https://tinystormradio.nl/danny/` still runs the drawer-era build
+- The remote beta still runs the drawer-era build
   (`8178e6a`) and has **not** received multiuser or Phase 3–5 work.
 - Local app: `LLM_BASE_URL=... LLM_API_KEY=... APP_USER=owner APP_PASSWORD=dev-local
   uv run uvicorn app.main:app --port 8080`. `APP_SKIP_LLM=1` renders pages without
