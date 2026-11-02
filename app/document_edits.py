@@ -8,7 +8,7 @@ import json
 
 from docx import Document
 
-from . import config, docs, llm_schemas, runtime, store, tenancy
+from . import config, docs, llm_schemas, profile, runtime, store, tenancy
 from .docs import template_count
 from .util import now_iso, parse_json_object
 from .workflows import _budget_reached
@@ -122,3 +122,26 @@ def changes(old: dict, new: dict) -> list[dict]:
         for line in difflib.ndiff(_lines(old), _lines(new))
         if line[:2] in marks
     ]
+
+
+def comparable_ids(documents: list) -> set[int]:
+    """Versions with saved text that have an earlier version with saved text to compare to."""
+    seen: set[str] = set()
+    found: set[int] = set()
+    for row in sorted(documents, key=lambda item: item["version"]):
+        if json.loads(row["meta_json"] or "{}").get("content"):
+            if row["kind"] in seen:
+                found.add(row["id"])
+            seen.add(row["kind"])
+    return found
+
+
+def detail_context(documents: list) -> dict:
+    """What the job page needs to offer the right next step for documents."""
+    has_profile = profile.profile_exists()
+    return {
+        "documents_ready": tenancy.user_id() == tenancy.LEGACY_ID
+        or (has_profile and (config.seed_dir() / "cv.docx").exists()),
+        "needs_profile": not has_profile,
+        "comparable": comparable_ids(documents),
+    }

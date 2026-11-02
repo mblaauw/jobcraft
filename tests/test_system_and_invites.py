@@ -1,12 +1,13 @@
 """Operator views, source health, invitation links and document rewrites."""
 
 import json
+import sqlite3
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
-from app import auth, runtime, sources, store, tasks
+from app import auth, document_edits, runtime, sources, store, tasks
 from app.auth import invites
 from app.main import app
 from tests.test_jobs_page import add_job, client, soup  # noqa: F401
@@ -233,3 +234,35 @@ def test_static_files_revalidate_and_fonts_stay_cached(client):  # noqa: F811
     assert "max-age" in client.get(
         "/static/fonts/schibsted-grotesk-latin-wght-normal.woff2"
     ).headers["cache-control"]
+
+
+def test_invitation_link_follows_the_proxy(client):  # noqa: F811
+    request = SimpleNamespace(
+        headers={"x-forwarded-proto": "https", "x-forwarded-prefix": "/jobcraft"},
+        url=SimpleNamespace(scheme="http", netloc="example.test"),
+    )
+    assert invites._public_base(request) == "https://example.test/jobcraft"
+    request.headers = {"x-forwarded-proto": "ftp", "x-forwarded-prefix": "//evil\\"}
+    assert invites._public_base(request) == "http://example.test"
+
+
+def test_a_name_taken_at_the_last_moment_keeps_the_invitation(client, monkeypatch):  # noqa: F811
+    token = invites.create_invite()
+    path = f"/uitnodiging/{token}"
+    browser, _page, csrf = _anonymous_form(path)
+
+    def taken(*_):
+        raise sqlite3.IntegrityError
+
+    monkeypatch.setattr(invites, "_insert_user", taken)
+    response = _submit(browser, path, csrf, username="ok.naam", password="lang-genoeg-wachtwoord")
+    assert response.status_code == 400
+    assert invites.invite_open(token)
+
+
+def test_only_versions_with_earlier_saved_text_are_comparable():
+    def row(id_, kind, version, content):
+        return {"id": id_, "kind": kind, "version": version, "meta_json": json.dumps({"content": content} if content else {})}
+
+    documents = [row(1, "motivatie", 1, None), row(2, "motivatie", 2, {"a": 1}), row(3, "motivatie", 3, {"a": 2}), row(4, "resume", 2, {"a": 1})]
+    assert document_edits.comparable_ids(documents) == {3}

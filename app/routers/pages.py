@@ -127,7 +127,6 @@ def admin_page(request: Request):
                 "down": len(votes["down"]),
             },
             "feedback": feedback.load(),
-            "usage": store.usage_total(),
             "model": config.MODEL_LABEL,
             "profile_chars": len(profile.read_profile()),
             "sources": source_rows,

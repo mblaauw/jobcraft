@@ -3,7 +3,11 @@
 # privileges for good. Checked per file so a root-owned leftover cannot block the app.
 set -eu
 if [ "$(id -u)" = "0" ]; then
-  find "${APP_DATA_DIR:-/data}" ! -user app -exec chown app:app {} +
+  data="${APP_DATA_DIR:-/data}"
+  mkdir -p "$data"
+  find "$data" ! -user app -exec chown -h app:app {} +
+  # A `docker compose exec` as root can leave this behind, and it survives a restart.
+  rm -rf "${UV_CACHE_DIR:-/tmp/uv-cache}"
   exec setpriv --reuid=app --regid=app --init-groups "$@"
 fi
 exec "$@"

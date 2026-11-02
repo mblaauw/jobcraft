@@ -111,7 +111,7 @@
     <h2 id="detail-documents-title">Solliciteren</h2>
     <p class="small muted">Een CV of brief voor deze vacature, op basis van je profiel. Elke versie blijft bewaard.</p>
     {% if not documents_ready %}
-    <p class="small"><a class="button primary" href="/account">Upload eerst je CV</a></p>
+    <p class="small">{% if needs_profile %}<a class="button primary" href="/start">Maak eerst je profiel</a>{% else %}<a class="button primary" href="/account">Upload eerst je CV</a>{% endif %}</p>
     {% else %}
     <div class="doc-actions">
       <form method="post" action="/jobs/{{ job['id'] }}/documents" data-doc-form>
@@ -144,8 +144,8 @@
           {% endif %}
           <a id="detail-document-{{ doc['id'] }}-docx" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/docx">Word</a>
           {% if '"content"' in (doc["meta_json"] or '') %}<a id="detail-document-{{ doc['id'] }}-edit" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/bewerken">Bewerken</a>
-          {% if doc["version"] > 1 %}<a href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/verschil">Wat is veranderd</a>{% endif %}
-          <form method="post" action="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/herschrijven" class="inline-form">{% include '_csrf.html' %}<button class="button small" name="style" value="korter" type="submit">Korter</button> <button class="button small" name="style" value="formeler" type="submit">Formeler</button></form>{% endif %}
+          {% if doc["id"] in comparable %}<a href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/verschil">Wat is veranderd</a>{% endif %}
+          <form method="post" action="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/herschrijven" class="inline-form" data-pending-form>{% include '_csrf.html' %}<button class="button small" name="style" value="korter" type="submit">Korter</button> <button class="button small" name="style" value="formeler" type="submit">Formeler</button></form>{% endif %}
         </div>
       </li>
       {% endfor %}
