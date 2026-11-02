@@ -21,7 +21,7 @@ SYNC_DATA="${SYNC_DATA:-0}"
 EXCLUDES=(
   --include '.env.example' --exclude '.env*'
   --exclude '.git/' --exclude '.venv/' --exclude '.runtime/'
-  --exclude 'data/runtime/' --exclude '__pycache__/' --exclude '.pytest_cache/'
+  --exclude '/data/runtime/' --exclude '__pycache__/' --exclude '.pytest_cache/'
   --exclude '.ruff_cache/' --exclude '.DS_Store' --exclude '*.pyc'
 )
 if [ "$SYNC_DATA" = "1" ]; then
@@ -30,7 +30,8 @@ if [ "$SYNC_DATA" = "1" ]; then
     sqlite3 data/app.db "PRAGMA wal_checkpoint(TRUNCATE);" >/dev/null || true
   fi
 else
-  EXCLUDES+=(--exclude 'data/' --exclude 'seed/')
+  # Anchored: app/data/ holds files the app needs and must always be uploaded.
+  EXCLUDES+=(--exclude '/data/' --exclude '/seed/')
   echo "== data/ and seed/ are NOT synced (SYNC_DATA=1 to include them) =="
 fi
 
@@ -39,7 +40,7 @@ ssh -o BatchMode=yes "$HOST" "mkdir -p ~/$DIR"
 rsync -az --stats "${EXCLUDES[@]}" ./ "$HOST:$DIR/"
 
 echo "== build + restart =="
-ssh -o BatchMode=yes "$HOST" "set -euo pipefail; cd ~/$DIR; test -s .env.local || { echo 'error: remote .env.local ontbreekt of is leeg' >&2; exit 1; }; chmod 600 .env.local; BUILD_LOG=\$(mktemp); if ! docker compose -f compose.yaml -f deploy/compose.vps.yml build > \"\$BUILD_LOG\" 2>&1; then tail -40 \"\$BUILD_LOG\"; rm -f \"\$BUILD_LOG\"; exit 1; fi; tail -3 \"\$BUILD_LOG\"; rm -f \"\$BUILD_LOG\"; docker compose -f compose.yaml -f deploy/compose.vps.yml up -d; sleep 5; docker compose -f compose.yaml -f deploy/compose.vps.yml ps; curl -s -o /dev/null -w 'health=%{http_code}\n' http://127.0.0.1:18080/healthz"
+ssh -o BatchMode=yes "$HOST" "set -euo pipefail; cd ~/$DIR; test -s .env.local || { echo 'error: remote .env.local ontbreekt of is leeg' >&2; exit 1; }; chmod 600 .env.local; BUILD_LOG=\$(mktemp); if ! docker compose -f compose.yaml -f deploy/compose.vps.yml build > \"\$BUILD_LOG\" 2>&1; then tail -40 \"\$BUILD_LOG\"; rm -f \"\$BUILD_LOG\"; exit 1; fi; tail -3 \"\$BUILD_LOG\"; rm -f \"\$BUILD_LOG\"; docker compose -f compose.yaml -f deploy/compose.vps.yml up -d; for attempt in \$(seq 1 30); do sleep 2; if docker compose -f compose.yaml -f deploy/compose.vps.yml exec -T app curl -fsS -o /dev/null http://127.0.0.1:8080/healthz 2>/dev/null; then echo health=ok; docker compose -f compose.yaml -f deploy/compose.vps.yml ps; exit 0; fi; done; docker compose -f compose.yaml -f deploy/compose.vps.yml logs --tail=20; echo 'error: de app werd niet gezond' >&2; exit 1"
 
 echo "== done =="
 echo "  tunnel:  ssh -N -L 18080:127.0.0.1:18080 $HOST   (http://127.0.0.1:18080)"

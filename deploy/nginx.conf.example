@@ -24,12 +24,18 @@ location /jobcraft/ {
     proxy_set_header X-Forwarded-Prefix /jobcraft;
     proxy_set_header Accept-Encoding "";
 
+    # CV uploads, and long AI answers.
+    client_max_body_size 8m;
+    proxy_read_timeout 300s;
+
     sub_filter_once off;
     sub_filter_types text/javascript application/javascript;
     sub_filter 'href="/' 'href="/jobcraft/';
     sub_filter 'src="/' 'src="/jobcraft/';
     sub_filter 'action="/' 'action="/jobcraft/';
     sub_filter 'fetch(`/api' 'fetch(`/jobcraft/api';
+    sub_filter 'fetch("/start' 'fetch("/jobcraft/start';
+    sub_filter '"/static/icons.svg' '"/jobcraft/static/icons.svg';
 
     proxy_redirect / /jobcraft/;
     proxy_redirect http://jobcraft:8080/ /jobcraft/;
