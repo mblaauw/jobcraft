@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 import re
@@ -11,9 +12,13 @@ import tempfile
 import time
 from pathlib import Path
 
-from . import config, docs, tenancy
+from docx import Document
+
+from . import config, docs, store, tenancy
 
 PREVIEW_SECONDS = 15 * 60
+GENERATED_FLAG = "cv_generated"
+GENERATED_STRONG_POINTS = 5
 UNAVAILABLE = "Deze controle is verlopen of niet beschikbaar. Kies je DOCX-bestand opnieuw."
 
 
@@ -97,6 +102,61 @@ def _publish_exclusive(path: Path, raw: bytes) -> None:
             temporary.unlink(missing_ok=True)
 
 
+def create_generated(sections: dict[str, str]) -> bool:
+    """A plain base CV from confirmed text, for a PDF or a CV without recognisable sections.
+
+    Without one, those people could never get a CV or letter per vacancy. They can still
+    replace it with their own Word file later.
+    """
+    with docs.template_lock():
+        source = config.seed_dir() / config.seed_files()["cv"]
+        target = config.user_path(docs.CV_TEMPLATE, "templates")
+        identity_path = config.user_path(docs.IDENTITY_FILE, "templates")
+        if any(path.exists() for path in (source, target, identity_path)):
+            return False
+        document = Document()
+        document.add_paragraph().add_run(tenancy.display_name()).bold = True
+
+        def heading(text: str) -> None:
+            document.add_paragraph().add_run(text).bold = True
+
+        heading("Profiel")
+        document.add_paragraph("{{PROFILE}}")
+        heading("Kernkwaliteiten")
+        for number in range(1, GENERATED_STRONG_POINTS + 1):
+            document.add_paragraph(f"{{{{STRONG_{number}}}}}", style="List Bullet")
+        for title in ("Werkervaring", "Opleiding", "Talen"):
+            if sections.get(title):
+                heading(title)
+                for line in sections[title].splitlines():
+                    if line.strip():
+                        document.add_paragraph(line.strip())
+        docs._apply_a4(document)
+        output = io.BytesIO()
+        document.save(output)
+        raw = output.getvalue()
+        identity = {
+            **docs._extract_identity(document),
+            "strong_count": GENERATED_STRONG_POINTS,
+            "template_hash": hashlib.sha256(raw).hexdigest(),
+        }
+        _publish_exclusive(source, raw)
+        _publish_exclusive(target, raw)
+        _publish_exclusive(identity_path, json.dumps(identity, ensure_ascii=False, indent=2).encode())
+        store.meta_set(GENERATED_FLAG, "1")
+    return True
+
+
+def is_generated() -> bool:
+    return store.meta_get(GENERATED_FLAG) == "1"
+
+
+def _remove_generated(paths: tuple[Path, ...]) -> None:
+    for path in paths:
+        path.unlink(missing_ok=True)
+    store.meta_set(GENERATED_FLAG, "0")
+
+
 def confirm(token: str, session: str) -> dict:
     with docs.template_lock():
         meta, raw = _load(token, session)
@@ -104,6 +164,8 @@ def confirm(token: str, session: str) -> dict:
         source = config.seed_dir() / config.seed_files()["cv"]
         target = config.user_path(docs.CV_TEMPLATE, "templates")
         identity_path = config.user_path(docs.IDENTITY_FILE, "templates")
+        if is_generated():  # The person's own CV replaces the plain one we made for them.
+            _remove_generated((source, target, identity_path))
         if any(path.exists() for path in (source, target, identity_path)):
             raise FileExistsError(
                 "Je basis-CV is al toegevoegd; bestaande documenten blijven behouden."

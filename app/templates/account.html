@@ -17,10 +17,11 @@
 {% if account.id != 'legacy' %}
 <section class="panel" aria-labelledby="cv-title">
   <h2 id="cv-title">Je basis-CV</h2>
-  {% if has_cv %}
+  {% if has_cv and not cv_generated %}
     {% if request.query_params.get('uploaded') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je basis-CV is opgeslagen.</span></p>{% endif %}
     <p class="muted">{{ ui.icon('file-text') }} Je basis-CV staat klaar. Elke vacature krijgt een aangepaste versie; je origineel blijft ongewijzigd.</p>
   {% else %}
+    {% if cv_generated %}<p class="banner">{{ ui.icon('file-text') }}<span>We hebben een eenvoudig basis-CV voor je gemaakt, zonder contactgegevens. Je kunt die zelf aanvullen in Word, of hieronder je eigen CV toevoegen. Dat vervangt het eenvoudige; bestaande documenten blijven bewaard.</span></p>{% endif %}
     <p class="muted" id="cv-upload-help">Upload je eigen CV als Word-bestand (.docx, maximaal 5 MB). Jobcraft zoekt een profielstuk (bijvoorbeeld “Profiel” of “Over mij”) en een lijst van 3 tot 8 sterke punten (bijvoorbeeld “Kernkwaliteiten”). Je ziet eerst wat er herkend is voordat er iets wordt opgeslagen.</p>
     <form method="post" action="/account/cv" enctype="multipart/form-data" class="form-stack">
       {{ csrf_input(request) }}

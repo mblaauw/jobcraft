@@ -48,7 +48,7 @@ async def account_cv(request: Request, cv: UploadFile = File(...)):
         raise HTTPException(
             status_code=400, detail="Geen geldig, macro-vrij DOCX-bestand."
         ) from None
-    if (config.seed_dir() / "cv.docx").exists():
+    if (config.seed_dir() / "cv.docx").exists() and not cv_uploads.is_generated():
         raise HTTPException(
             status_code=409,
             detail="Je basis-CV is al toegevoegd; bestaande documenten blijven behouden.",

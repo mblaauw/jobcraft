@@ -45,10 +45,17 @@ _IDENTITY_LINE = re.compile(
     r"telefoon|phone|e-?mail|woonplaats)\b.*$",
     re.I | re.M,
 )
-_YEAR_RANGE = re.compile(
-    r"((?:19|20)\d{2})\s*(?:[-–—]|t/m|tot|to)\s*((?:19|20)\d{2}|heden|nu|present|current|now)", re.I
+_MONTHS = (
+    "januari|january|jan|februari|february|feb|maart|march|mrt|mar|april|apr|mei|may|juni|june|jun|"
+    "juli|july|jul|augustus|august|aug|september|sept|sep|oktober|october|okt|oct|november|nov|december|dec"
 )
-_YEAR = re.compile(r"\b(?:\w+\s+)?(?:19|20)\d{2}\b(?:\s*(?:[-–—]|t/m|tot|to)\s*(?:\w+\s+)?(?:(?:19|20)\d{2}|heden|nu|present|current|now))?", re.I)
+# Before a year: a month name or number, as in "jan 2018" or "03-2015". Never just any word,
+# or "Teamleider 2012" would lose its title.
+_MONTH = rf"(?:\b(?:{_MONTHS})\b\.?\s*[/-]?\s*|\b(?:\d{{1,2}}\s*[/.-]\s*){{1,2}})?"
+_RANGE_END = r"(?:[-–—]|t/m|tot|to)\s*" + _MONTH + r"((?:19|20)\d{2}|heden|nu|present|current|now)"
+_YEAR_RANGE = re.compile(rf"{_MONTH}((?:19|20)\d{{2}})\s*{_RANGE_END}", re.I)
+_YEAR = re.compile(rf"{_MONTH}\b(?:19|20)\d{{2}}\b(?:\s*{_RANGE_END})?", re.I)
+_NOT_A_NAME = {"curriculum vitae", "cv", "c.v.", "resume", "résumé", "levensloop"}
 
 
 def extract_text(raw: bytes, filename: str) -> str:
@@ -132,7 +139,10 @@ def split_cv(text: str) -> tuple[list[str], dict[str, list[str]]]:
 
 def _names_in(header: list[str], display_name: str) -> list[str]:
     names = [display_name.strip()] if display_name.strip() else []
-    first = next((line.strip() for line in header if line.strip()), "")
+    first = next(
+        (line.strip() for line in header if line.strip() and line.strip().casefold() not in _NOT_A_NAME),
+        "",
+    )
     if first and len(first.split()) <= 5 and not re.search(r"\d|@", first):
         names.append(first)
     return names
@@ -199,7 +209,8 @@ def read_cv(text: str, display_name: str = "") -> dict:
     """What the review step shows: suggestions plus identity-free profile text."""
     header, sections = split_cv(text)
     names = _names_in(header, display_name)
-    place = geo._find_place(" ".join(header)) or ""
+    # Without the name: "de Vries" must not suggest the village of Vries.
+    place = geo._find_place(" ".join(line for line in header if line.strip() not in names)) or ""
     clean = {key: redact("\n".join(lines), names).strip() for key, lines in sections.items()}
     clean = {key: re.sub(r"\n{3,}", "\n\n", value) for key, value in clean.items() if value}
     if not clean:  # no recognisable headings: keep the body, without the identity block

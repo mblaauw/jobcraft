@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import signal
+import sqlite3
 import threading
 
 from . import runtime, store, workflows  # noqa: F401 - workflows registers the task handlers
@@ -27,7 +28,10 @@ def run() -> None:
     with runtime.services("worker"):
         log.info("worker started")
         while True:
-            beat()
+            try:
+                beat()
+            except sqlite3.OperationalError as exc:  # Busy database: keep working, beat next time.
+                log.warning("worker heartbeat skipped: %s", exc)
             if _STOP.wait(HEARTBEAT_SECONDS):
                 break
     log.info("worker stopped")

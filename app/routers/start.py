@@ -101,7 +101,8 @@ async def start_cv_confirm(request: Request):
     if updates:
         profile.merge_sections(updates)
     preferences = profile.read_preferences()
-    preferences["tracks"] = onboarding.tracks_for(list(dict.fromkeys(map(str, roles))), preferences["tracks"])
+    if roles:  # Coming back later to add a CV must not wipe the chosen functions.
+        preferences["tracks"] = onboarding.tracks_for(list(dict.fromkeys(map(str, roles))), preferences["tracks"])
     boost = preferences["keywords"]["boost"]
     preferences["keywords"]["boost"] = list(dict.fromkeys([*boost, *map(str, skills)]))
     level = str(form.get("seniority") or "")
@@ -118,6 +119,11 @@ async def start_cv_confirm(request: Request):
             cv_uploads.confirm(token, request.state.auth_session_id)
         except (ValueError, OSError) as exc:  # The profile is saved; documents can wait.
             log.info("base CV not stored during start: %s", type(exc).__name__)
+    if updates and tenancy.user_id() != tenancy.LEGACY_ID:
+        try:
+            cv_uploads.create_generated(updates)
+        except (ValueError, OSError) as exc:
+            log.warning("plain base CV not created: %s", type(exc).__name__)
     return RedirectResponse(url="/start/keuzes", status_code=303)
 
 

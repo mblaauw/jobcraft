@@ -411,3 +411,17 @@ def test_redoing_the_choices_restarts_the_vacancy_count(flow):
     store.meta_set("start_swipe_done", "10")
     _choices(flow)
     assert "Vacature 1 van 10" in soup(flow.get("/start/vacatures")).get_text()
+
+
+def test_a_pdf_cv_is_enough_to_make_documents_later(flow, monkeypatch):
+    monkeypatch.setattr(tenancy, "LEGACY_ID", "not-this-account")
+    assert flow.post("/start/cv", files={"cv": ("cv.pdf", _pdf(CV), "application/pdf")}).status_code == 200
+    flow.post(
+        "/start/cv/confirm",
+        data={"role": ["Projectleider"], "section_experience": "Projectleider bij Acme"},
+    )
+    job_id, _ = store.upsert_job(
+        {"source_id": "test", "url": "https://example.test/doc", "title": "Planner", "description": "Tekst", "content_hash": "doc"}
+    )
+    page = flow.get(f"/jobs/{job_id}").text
+    assert "Maak een CV" in page and "Upload eerst je CV" not in page
