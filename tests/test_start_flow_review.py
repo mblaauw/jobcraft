@@ -1,9 +1,12 @@
 """Common CV formats and a base CV for people without a suitable Word file."""
 
+import io
+
 import pytest
 from docx import Document
 
 from app import config, cv_text, cv_uploads, docs, store, tenancy
+from tests.test_jobs_page import client, soup  # noqa: F401
 
 
 @pytest.mark.parametrize(
@@ -76,3 +79,43 @@ def test_plain_base_cv_never_overwrites_an_existing_one(account):
     assert cv_uploads.create_generated(SECTIONS) is False
     assert source.read_bytes() == b"own cv"
     assert not cv_uploads.is_generated()
+
+
+def test_a_table_stays_under_its_own_heading():
+    document = Document()
+    document.add_paragraph("Werkervaring")
+    table = document.add_table(rows=1, cols=2)
+    table.cell(0, 0).text = "mei 2019 - heden"
+    table.cell(0, 1).text = "Beleidsadviseur"
+    document.add_paragraph("Interesses")
+    document.add_paragraph("Hardlopen")
+    buffer = io.BytesIO()
+    document.save(buffer)
+    found = cv_text.read_cv(cv_text.extract_text(buffer.getvalue(), "cv.docx"))
+    assert "Beleidsadviseur" in found["sections"]["experience"]
+    assert "Hardlopen" not in found["sections"]["experience"]
+
+
+def test_a_large_cv_gets_past_the_security_check(client):  # noqa: F811
+    token = soup(client.get("/start/cv")).select_one('input[name="_csrf"]')["value"]
+    for size, message in ((442_190, "niet lezen"), (6_000_000, "maximaal 5 MB")):
+        client.headers.pop("x-csrf-token", None)
+        response = client.post(
+            "/start/cv",
+            data={"_csrf": token},
+            files={"cv": ("cv.pdf", b"x" * size, "application/pdf")},
+            headers={"x-csrf-token": ""},
+        )
+        assert response.status_code == 200, size
+        assert message in response.text
+
+
+def test_an_expired_form_explains_itself_to_a_person(client):  # noqa: F811
+    response = client.post(
+        "/jobs/1/vote",
+        data={"_csrf": "fout", "vote": "up"},
+        headers={"accept": "text/html", "x-csrf-token": ""},
+    )
+    assert response.status_code == 403
+    assert "Ververs de pagina" in response.text
+    assert "CSRF" not in response.text

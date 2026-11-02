@@ -12,6 +12,7 @@ import zipfile
 from datetime import UTC, datetime
 
 from docx import Document
+from docx.table import Table
 from pypdf import PdfReader
 from pypdf.errors import PyPdfError
 
@@ -103,11 +104,23 @@ def _docx_text(raw: bytes) -> str:
         raise ValueError(str(exc) or UNREADABLE) from None
     except (zipfile.BadZipFile, KeyError, OSError, AttributeError):
         raise ValueError(UNREADABLE) from None
-    lines = [paragraph.text for paragraph in document.paragraphs]
-    for table in document.tables:
-        for row in table.rows:
-            lines.append(" | ".join(dict.fromkeys(cell.text.strip() for cell in row.cells)))
+    # In document order: a table belongs under the heading above it, not under the last one.
+    lines: list[str] = []
+    for block in document.iter_inner_content():
+        if isinstance(block, Table):
+            for row in block.rows:
+                lines.extend(_row_lines(row))
+        else:
+            lines.append(block.text)
     return "\n".join(lines)
+
+
+def _row_lines(row) -> list[str]:
+    """One line per table row; a cell with several lines keeps them apart for the reader."""
+    cells = list(dict.fromkeys(cell.text.strip() for cell in row.cells))
+    if any("\n" in cell for cell in cells):
+        return [line for cell in cells for line in cell.splitlines()]
+    return [" | ".join(cells)]
 
 
 def _heading_key(line: str) -> str | None:
