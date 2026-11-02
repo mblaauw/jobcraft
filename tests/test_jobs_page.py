@@ -530,3 +530,14 @@ def test_stream_endpoint_persists_user_and_assistant_messages(client, monkeypatc
         messages = store.list_messages("stream-test")
     assert [message["role"] for message in messages] == ["user", "assistant"]
     assert messages[0]["text"] == "Mijn antwoord"
+
+
+def test_search_finds_all_words_in_any_order_and_inside_compounds(client):
+    add_job(title="Data analist")
+    add_job(title="Wijkverpleegkundige")
+    add_job(title="Analist financien")
+    assert store.list_jobs_page(10, query_text="ANALIST data")[0]["title"] == "Data analist"
+    assert len(store.list_jobs_page(10, query_text="analist data")) == 1
+    assert store.list_jobs_page(10, query_text="verpleegkundige")[0]["title"] == "Wijkverpleegkundige"
+    assert store.list_jobs_page(10, query_text="100%") == []
+    assert store.list_jobs_page(10, query_text="dat_") == []
