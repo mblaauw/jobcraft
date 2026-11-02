@@ -27,7 +27,7 @@
     <p class="small muted">Deze tekst gebruiken we om vacatures te beoordelen en sollicitaties te schrijven, ook met AI. Controleer of er niets in staat dat je niet wilt delen.</p>
     {% for key, title in titles.items() %}<div class="field"><label for="section-{{ key }}">{{ title }}</label><textarea id="section-{{ key }}" name="section_{{ key }}" rows="5">{{ found.sections.get(key, '') }}</textarea></div>{% endfor %}
   </details>
-  {% if not cv_token %}<p class="small muted">Voor cv's en brieven per vacature is een Word-versie van je cv nodig. Die kun je later toevoegen bij Account.</p>{% endif %}
+  {% if not cv_token %}<p class="small muted">Voor cv's en brieven per vacature maken we hiermee een eenvoudig basis-CV. Je contactgegevens vul je zelf aan in Word, of je voegt later bij Account je eigen Word-versie toe.</p>{% endif %}
   <div class="btn-row"><button class="button primary" type="submit">Klopt, volgende</button></div>
 </form>
 {% endblock %}

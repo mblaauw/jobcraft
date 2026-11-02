@@ -57,6 +57,13 @@ def _account_view(row) -> dict:
     }
 
 
+def _cv_generated() -> bool:
+    try:
+        return store.meta_get("cv_generated") == "1"
+    except sqlite3.OperationalError:  # The auth tables can exist before the app tables.
+        return False
+
+
 def _digest_view() -> dict:
     view = {
         "smtp": bool(os.environ.get("SMTP_HOST") and os.environ.get("SMTP_FROM")),
@@ -80,6 +87,7 @@ def _account_response(request: Request, *, user: dict, error: str = "", status_c
             "account": _account_view(row) if row is not None else user,
             "error": error,
             "has_cv": (config.seed_dir() / config.seed_files()["cv"]).is_file(),
+            "cv_generated": _cv_generated(),
             "digest": _digest_view(),
         },
         status_code=status_code,
