@@ -22,7 +22,7 @@
     <p class="muted">{{ ui.icon('file-text') }} Je basis-CV staat klaar. Elke vacature krijgt een aangepaste versie; je origineel blijft ongewijzigd.</p>
   {% else %}
     {% if cv_generated %}<p class="banner">{{ ui.icon('file-text') }}<span>We hebben een eenvoudig basis-CV voor je gemaakt, zonder contactgegevens. Je kunt die zelf aanvullen in Word, of hieronder je eigen CV toevoegen. Dat vervangt het eenvoudige; bestaande documenten blijven bewaard.</span></p>{% endif %}
-    <p class="muted" id="cv-upload-help">Upload je eigen CV als Word-bestand (.docx, maximaal 5 MB). Jobcraft zoekt een profielstuk (bijvoorbeeld “Profiel” of “Over mij”) en een lijst van 3 tot 8 sterke punten (bijvoorbeeld “Kernkwaliteiten”). Je ziet eerst wat er herkend is voordat er iets wordt opgeslagen.</p>
+    <p class="muted" id="cv-upload-help">Upload je eigen CV als Word-bestand (.docx, maximaal 5 MB). Jobcraft zoekt een profielstuk (bijvoorbeeld “Profiel” of “Over mij”) en een lijst van 3 tot 8 sterke punten (bijvoorbeeld “Kernkwaliteiten”). Je ziet eerst wat er herkend is voordat er iets wordt opgeslagen. Heb je alleen een PDF of een ander soort CV? <a href="/start/cv">Upload het via de snelle start</a>, dan maken we er een eenvoudig basis-CV van.</p>
     <form method="post" action="/account/cv" enctype="multipart/form-data" class="form-stack">
       {{ csrf_input(request) }}
       <div class="field"><label for="own-cv">Basis-CV</label><input id="own-cv" type="file" name="cv" accept=".docx" aria-describedby="cv-upload-help" required></div>

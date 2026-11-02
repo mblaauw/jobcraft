@@ -96,6 +96,7 @@ from .sources import (  # noqa: F401
 from .usage import (  # noqa: F401
     daily_usage_calls,
     daily_usage_cost,
+    daily_usage_tokens,
     record_usage,
     usage_overview,
     usage_total,

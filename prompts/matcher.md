@@ -11,6 +11,9 @@ Return STRICT JSON only, no markdown fences, no commentary:
   "questions_for_employer": ["<short Dutch question>", "..."]
 }
 
+Write "why", "concerns" and the questions for the person reading them: address them as
+"je" and never guess their gender.
+
 Scoring guide: below 40 = poor fit, 40-60 = possible, 60-80 = good, above 80 =
 strong. Weigh concrete work content and conditions over job titles. Reward or
 penalize conditions only where the supplied user profile establishes that

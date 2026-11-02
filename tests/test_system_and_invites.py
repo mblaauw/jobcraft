@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
-from app import auth, document_edits, runtime, sources, store, tasks
+from app import auth, config, document_edits, profile, runtime, sources, store, tasks, tenancy
 from app.auth import invites
 from app.main import app
 from tests.test_jobs_page import add_job, client, soup  # noqa: F401
@@ -266,3 +266,62 @@ def test_only_versions_with_earlier_saved_text_are_comparable():
 
     documents = [row(1, "motivatie", 1, None), row(2, "motivatie", 2, {"a": 1}), row(3, "motivatie", 3, {"a": 2}), row(4, "resume", 2, {"a": 1})]
     assert document_edits.comparable_ids(documents) == {3}
+
+
+# ---------------------------------------------------------------- end-to-end findings
+
+
+def test_answers_for_matching_stay_out_of_documents(client):  # noqa: F811
+    profile.write_profile("## Over mij\nBeleidsadviseur.\n\n## Uit het gesprek\nWil minder vergaderen.", note="test")
+    assert "minder vergaderen" in profile.read_public_excerpt()
+    assert "minder vergaderen" not in profile.read_document_excerpt()
+    assert "Beleidsadviseur" in profile.read_document_excerpt()
+
+
+def test_prompts_do_not_contain_the_account_name(client, monkeypatch):  # noqa: F811
+    from app import docs, matching
+
+    monkeypatch.setattr(tenancy, "display_name", lambda: "Unieke Naam")
+    job = {"title": "T", "company": "C", "description": "D", "location": "", "lat": None, "lon": None}
+    assert "Unieke Naam" not in docs.cv_prompt(job, "profiel")
+    assert "Unieke Naam" not in docs.letter_prompt(job, "profiel")
+    source = (config.BASE_DIR / "app" / "matching.py").read_text()
+    assert matching and "display_name" not in source
+    assert "display_name" not in (config.BASE_DIR / "app" / "llm.py").read_text()
+
+
+def test_token_limit_stops_ai_when_no_prices_are_reported(client, monkeypatch):  # noqa: F811
+    from app import workflows
+
+    monkeypatch.setenv("AI_DAILY_TOKEN_LIMIT", "100")
+    assert not workflows._budget_reached()
+    store.record_usage("s", "matching", 90, 20, 0.0)
+    assert store.daily_usage_tokens() == 110
+    assert workflows._budget_reached()
+    monkeypatch.setenv("AI_DAILY_TOKEN_LIMIT", "0")
+    assert not workflows._budget_reached()
+
+
+def test_an_invalid_address_gives_a_friendly_page(client):  # noqa: F811
+    response = client.get("/jobs?per_page=abc", headers={"accept": "text/html"})
+    assert response.status_code == 400
+    assert "klopt niet helemaal" in response.text
+    assert "int_parsing" not in response.text
+
+
+def test_plain_http_behind_the_proxy_goes_to_https(client, monkeypatch):  # noqa: F811
+    monkeypatch.setenv("APP_COOKIE_SECURE", "1")
+    response = client.get(
+        "/login?next=%2Fjobs",
+        headers={"x-forwarded-proto": "http", "x-forwarded-prefix": "/pad", "host": "example.test"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 308
+    assert response.headers["location"] == "https://example.test/pad/login?next=%2Fjobs"
+    safe = client.get("/healthz", headers={"x-forwarded-proto": "https"}, follow_redirects=False)
+    assert safe.status_code == 200 and "max-age" in safe.headers["strict-transport-security"]
+
+
+def test_without_secure_cookies_http_keeps_working(client, monkeypatch):  # noqa: F811
+    monkeypatch.setenv("APP_COOKIE_SECURE", "0")
+    assert client.get("/healthz", headers={"x-forwarded-proto": "http"}).status_code == 200

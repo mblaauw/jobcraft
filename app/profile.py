@@ -30,6 +30,7 @@ HISTORY_DIR = config.PROFILE_DIR / "history"
 DRAFTS_DIR = config.PROFILE_DIR / "drafts"
 
 PRIVATE_HEADING = "Privé"
+ANSWERS_HEADING = "Uit het gesprek"
 HIDDEN_HEADINGS = ("Open vragen", "Privé")
 CONSOLIDATION_COST_NOTE = "~$0.005–0.018 · 20–90 s"
 
@@ -176,14 +177,14 @@ def split_sections(markdown: str) -> list[dict]:
     return sections
 
 
-def public_excerpt(markdown: str, max_chars: int = 6000) -> str:
+def public_excerpt(markdown: str, max_chars: int = 6000, skip: tuple[str, ...] = ()) -> str:
     """Sections safe for letters/CVs/matching: no private or open-questions blocks."""
     parts: list[str] = []
     total = 0
     truncated = False
     for section in split_sections(markdown):
         heading = section["heading"]
-        if heading.startswith(PRIVATE_HEADING) or heading in HIDDEN_HEADINGS:
+        if heading.startswith(PRIVATE_HEADING) or heading in HIDDEN_HEADINGS or heading in skip:
             continue
         body = section["text"]
         if not body and not heading:
@@ -202,6 +203,11 @@ def public_excerpt(markdown: str, max_chars: int = 6000) -> str:
 
 def read_public_excerpt(max_chars: int = 6000) -> str:
     return public_excerpt(read_profile(), max_chars)
+
+
+def read_document_excerpt(max_chars: int = 12000) -> str:
+    """For CVs and letters: what someone told us to help matching is not for employers."""
+    return public_excerpt(read_profile(), max_chars, skip=(ANSWERS_HEADING,))
 
 
 def answer_log_size() -> int:

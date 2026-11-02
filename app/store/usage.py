@@ -67,6 +67,17 @@ def daily_usage_cost(owner: str | None = None) -> float:
     return float(row["cost"] or 0.0)
 
 
+def daily_usage_tokens(owner: str | None = None) -> int:
+    start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    with connect() as con:
+        row = con.execute(
+            "SELECT COALESCE(SUM(input_tokens+output_tokens),0) AS tokens FROM usage_log "
+            "WHERE owner=? AND created_at >= ?",
+            (owner or tenancy.user_id(), start),
+        ).fetchone()
+    return int(row["tokens"])
+
+
 def usage_overview(days: int = 14) -> dict:
     """Totals for the whole installation; never split per person."""
     start = (datetime.now(UTC) - timedelta(days=days)).isoformat()

@@ -9,7 +9,7 @@ import uuid
 from collections.abc import Iterator
 from contextlib import suppress
 
-from . import config, interview_state, profile, prompts, store, tenancy
+from . import config, interview_state, profile, prompts, store
 from .llm_client import (
     Completion,
     FakeLLMClient,
@@ -135,7 +135,7 @@ class ServerManager:
         )
         context = (
             "[ACCOUNT_CONTEXT]\nUse only this user's supplied context, never files or other sessions.\n"
-            f"Name: {tenancy.display_name()}\nPublic profile:\n{profile.read_public_excerpt(16000)}\n"
+            f"Public profile:\n{profile.read_public_excerpt(16000)}\n"
             f"{topics_line}\n[/ACCOUNT_CONTEXT]"
         )
         system = prompts.load("interviewer") or "You are a career interviewer."
@@ -177,7 +177,7 @@ class ServerManager:
         )
         context = (
             "[ACCOUNT_CONTEXT]\nUse only this user's supplied context, never files or other sessions.\n"
-            f"Name: {tenancy.display_name()}\nPublic profile:\n{profile.read_public_excerpt(16000)}\n"
+            f"Public profile:\n{profile.read_public_excerpt(16000)}\n"
             f"{topics_line}\n[/ACCOUNT_CONTEXT]"
         )
         system = prompts.load("interviewer") or "You are a career interviewer."
@@ -285,7 +285,7 @@ class ServerManager:
         )
         context = (
             "[ACCOUNT_CONTEXT]\nUse only this user's supplied context, never files or other sessions.\n"
-            f"Name: {tenancy.display_name()}\nPublic profile:\n{profile.read_public_excerpt(16000)}\n"
+            f"Public profile:\n{profile.read_public_excerpt(16000)}\n"
             f"{topics_line}\n"
             "[/ACCOUNT_CONTEXT]\n[USER_MESSAGE]\n"
         )

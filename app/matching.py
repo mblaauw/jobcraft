@@ -6,7 +6,7 @@ import hashlib
 import json
 import os
 
-from . import feedback, geo, llm, profile, ranking, standards, store, systemone, tenancy
+from . import feedback, geo, llm, profile, ranking, standards, store, systemone
 
 # Bump when the matcher prompt or its instructions change: cached verdicts must
 # not survive a prompt change even when preferences and vacancy text are equal.
@@ -48,7 +48,7 @@ def verdict_prompt(job, preferences: dict, profile_md: str) -> str:
     )
     standards_part = f"{vacancy_standards}\n\n" if vacancy_standards else ""
     return (
-        f"Beoordeel deze vacature voor {tenancy.display_name()}.\n\n"
+        "Beoordeel deze vacature voor deze gebruiker.\n\n"
         "## Voorkeuren (JSON)\n"
         f"{json.dumps(profile.public_preferences(preferences), ensure_ascii=False)}\n\n"
         "## Profiel (samenvatting)\n"
