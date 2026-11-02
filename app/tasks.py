@@ -99,6 +99,18 @@ def list_for_owner(owner: str, limit: int = 20) -> list[dict]:
     return [dict(row) for row in rows]
 
 
+def failures_overview(days: int = 7) -> list[dict]:
+    """Failed work per kind. No error text or owner: admins may not see people's data."""
+    start = (datetime.now(UTC) - timedelta(days=days)).isoformat()
+    with store.connect() as con:
+        rows = con.execute(
+            "SELECT kind, COUNT(*) AS n, MAX(finished_at) AS last FROM tasks "
+            "WHERE status='error' AND finished_at >= ? GROUP BY kind ORDER BY last DESC",
+            (start,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
 def get(task_id: int, *, owner: str | None = None) -> dict | None:
     with store.connect() as con:
         row = con.execute(

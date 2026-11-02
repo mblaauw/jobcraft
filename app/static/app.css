@@ -863,3 +863,12 @@ html.job-drawer-open { overflow: hidden; scrollbar-gutter: stable; }
 }
 
 .nav-badge { margin-left: auto; min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--lime); color: #17310f; font-size: var(--fs-xs); font-weight: 700; text-align: center; }
+.nowrap, .nowrap td, .nowrap th { white-space: nowrap; overflow-wrap: normal; }
+.doc-links .inline-form { display: inline-flex; gap: 4px; }
+.filters-more { display: none; }
+@media (max-width: 900px) {
+  .wide-only { display: none; }
+  .js .jobs-filters.filters-fold > .field:not(:first-of-type) { display: none; }
+  .js .jobs-filters.filters-fold .filters-more { display: inline-flex; justify-self: start; }
+  .job-head h1 { hyphens: auto; }
+}

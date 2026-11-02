@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
+import difflib
 import io
 import json
 
 from docx import Document
 
-from . import config, docs, store, tenancy
+from . import config, docs, llm_schemas, runtime, store, tenancy
 from .docs import template_count
-from .util import now_iso
+from .util import now_iso, parse_json_object
+from .workflows import _budget_reached
+
+REWRITE_STYLES = {
+    "korter": "Maak de tekst duidelijk korter en behoud de sterkste punten.",
+    "formeler": "Maak de toon formeler en zakelijker.",
+}
 
 
 def edit_problem(exc: Exception) -> str:
@@ -71,3 +78,47 @@ def save_edited_version(job, kind: str, content: dict) -> int:
             json.dumps(meta, ensure_ascii=False),
         )
     return version
+
+
+def rewrite(job, kind: str, content: dict, style: str) -> int | None:
+    """Paid, on request only. Sees just the document itself, so no new private facts enter.
+
+    Returns None when the AI is unavailable or the budget is spent.
+    """
+    manager = runtime.manager
+    if manager is None or manager.client is None or _budget_reached():
+        return None
+    prompt = (
+        f"Herschrijf dit document voor de vacature {job['title']}. {REWRITE_STYLES[style]} "
+        "Gebruik alleen feiten die er al in staan en verzin niets. "
+        "Antwoord met alleen JSON in precies dezelfde vorm.\n\n"
+        + json.dumps(content, ensure_ascii=False)
+    )
+    if kind == "resume":
+        text, usage = manager.generate(
+            prompt,
+            agent="cv_writer",
+            schema=llm_schemas.cv_tailoring_model(
+                len(content.get("strong_points") or [])
+            ).model_json_schema(),
+        )
+    else:
+        text, usage = manager.generate(prompt, agent="letter_writer")
+    docs._record_generation_usage(kind, usage)
+    return save_edited_version(job, kind, parse_json_object(text))
+
+
+def _lines(content: dict) -> list[str]:
+    return [content["profile"], *content["strong_points"]] if "profile" in content else list(
+        content.get("paragraphs") or []
+    )
+
+
+def changes(old: dict, new: dict) -> list[dict]:
+    """Whole lines added, removed or kept between two versions."""
+    marks = {"+ ": "add", "- ": "del", "  ": "same"}
+    return [
+        {"kind": marks[line[:2]], "text": line[2:]}
+        for line in difflib.ndiff(_lines(old), _lines(new))
+        if line[:2] in marks
+    ]

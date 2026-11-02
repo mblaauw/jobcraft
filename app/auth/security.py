@@ -179,14 +179,15 @@ async def middleware(request: Request, call_next):
     request.state.auth_session_id = (session or {}).get("token_hash")
     request.state.anonymous_session = bool(session) and user is None
 
-    if request.url.path in PUBLIC_PATHS or request.url.path.startswith("/static/"):
+    invitation = request.url.path.startswith("/uitnodiging/")
+    if request.url.path in PUBLIC_PATHS or invitation or request.url.path.startswith("/static/"):
         response = await call_next(request)
         if invalid and not any(
             header.startswith(f"{COOKIE_NAME}=")
             for header in response.headers.getlist("set-cookie")
         ):
             _clear_session_cookie(response)
-        return _uncached(response) if request.url.path == "/login" else response
+        return _uncached(response) if invitation or request.url.path == "/login" else response
 
     if user is None:
         response = (

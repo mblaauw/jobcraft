@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Wat is veranderd · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <h1>Wat is veranderd</h1>
+  <p class="lede">{{ 'CV' if document.kind == 'resume' else 'Motivatiebrief' }} voor {{ job['title'] }}: versie {{ document.version }} tegenover versie {{ previous['version'] }}.</p>
+</div></div>
+<div class="panel">
+  <pre class="diff" tabindex="0" aria-label="Verschillen tussen de versies">{% for line in lines %}{% if line.kind == 'same' %}{{ line.text }}{{ "\n" }}{% else %}<span class="{{ line.kind }}">{{ line.text }}</span>{% endif %}{% endfor %}</pre>
+  <div class="btn-row"><a class="button" href="/jobs/{{ job['id'] }}#documenten">Terug naar de vacature</a></div>
+</div>
+{% endblock %}

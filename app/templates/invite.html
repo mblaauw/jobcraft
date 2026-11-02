@@ -1,0 +1,49 @@
+{% import "_ui.html" as ui %}
+<!doctype html>
+{% set _theme = (request.cookies.get('theme') if request.cookies is defined else '') %}
+<html lang="nl"{% if _theme in ('light', 'dark') %} data-theme="{{ _theme }}"{% endif %}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#133a2d">
+  <title>Uitnodiging · Jobcraft</title>
+  <link rel="preload" href="/static/fonts/schibsted-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+  <div class="auth-page">
+    <aside class="auth-side">
+      <span class="brand"><span class="brand-mark" aria-hidden="true">j</span>Jobcraft</span>
+      <div>
+        <div class="auth-stamps" aria-hidden="true">
+          <span class="vacancy-score high"><strong>84</strong></span>
+          <span class="vacancy-score mid"><strong>61</strong></span>
+          <span class="vacancy-score low"><strong>38</strong></span>
+        </div>
+        <h2>Werk dat bij je past, met uitleg waarom.</h2>
+        <p>Een persoonlijke werkruimte om vacatures te vinden, te begrijpen en er gericht op te reageren.</p>
+      </div>
+    </aside>
+    <main class="auth-shell" id="main-content" tabindex="-1">
+      <section class="auth-card" aria-labelledby="invite-title">
+        <h1 id="invite-title">Welkom bij Jobcraft</h1>
+        {% if usable %}
+        <p class="muted">Kies een gebruikersnaam en wachtwoord om je account te maken.</p>
+        {% if error %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ error }}</span></p>{% endif %}
+        <form method="post" class="form-stack auth-form">
+          {{ csrf_input(request) }}
+          <div class="field"><label for="username">Gebruikersnaam</label><input id="username" name="username" type="text" value="{{ username }}" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus></div>
+          <div class="field"><label for="display_name">Naam <span class="subtle">(optioneel)</span></label><input id="display_name" name="display_name" type="text" value="{{ name }}" autocomplete="name"></div>
+          <div class="field"><label for="password">Wachtwoord</label><input id="password" name="password" type="password" autocomplete="new-password" minlength="{{ min_length }}" required><span class="hint">Minstens {{ min_length }} tekens</span></div>
+          <button class="button primary block" type="submit">Account maken</button>
+        </form>
+        {% else %}
+        <p class="muted">Deze uitnodiging is verlopen of al gebruikt. Vraag de beheerder om een nieuwe link.</p>
+        <p><a class="button" href="/login">Naar inloggen</a></p>
+        {% endif %}
+      </section>
+    </main>
+  </div>
+</body>
+</html>

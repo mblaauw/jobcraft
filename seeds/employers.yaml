@@ -25,5 +25,11 @@ employers:
   - {name: IMC Trading, system: greenhouse, slug: imc}
   - {name: MongoDB, system: greenhouse, slug: mongodb}
   - {name: Stripe, system: greenhouse, slug: stripe}
+  - {name: commercetools, system: greenhouse, slug: commercetools}
+  - {name: FareHarbor, system: greenhouse, slug: fareharbor}
+  - {name: Zscaler, system: greenhouse, slug: zscaler}
+  - {name: CM.com, system: recruitee, slug: cmcom}
+  - {name: Helloprint, system: recruitee, slug: helloprint}
+  - {name: Shypple, system: recruitee, slug: shypple}
 # Recruitee boards on their own domain (Greenchoice, Effectory) redirect robots.txt, and
 # the scanner fails closed on that, so they stay out. Use boards on *.recruitee.com only.

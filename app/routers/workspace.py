@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -25,6 +26,8 @@ from ..auth.credentials import verify_password
 from ..auth.users import _deactivate_without_losing_last_admin, _get_user_by_id
 from ..web import templates
 from ..web_helpers import _jobs_return_target
+
+log = logging.getLogger("jobcraft")
 
 router = APIRouter(dependencies=[Depends(require_user)])
 
@@ -194,6 +197,51 @@ async def document_save(request: Request, job_id: int, document_id: int):
             status_code=400,
         )
     return RedirectResponse(url=f"/jobs/{job_id}#documenten", status_code=303)
+
+
+@router.post("/jobs/{job_id}/documents/{document_id}/herschrijven")
+def document_rewrite(job_id: int, document_id: int, style: str = Form("")):
+    if style not in document_edits.REWRITE_STYLES:
+        raise HTTPException(status_code=400, detail="unknown style")
+    job = _job_or_404(job_id)
+    document, meta = _editable(job_id, document_id)
+    problem = ""
+    try:
+        if document_edits.rewrite(job, document["kind"], meta["content"], style) is None:
+            problem = "Herschrijven kan nu niet. Probeer het later opnieuw of bewerk de tekst zelf."
+    except Exception:
+        log.exception("document rewrite failed")
+        problem = "Herschrijven is niet gelukt. Je document is niet veranderd."
+    query = f"?{urlencode({'doc_error': problem})}" if problem else ""
+    return RedirectResponse(url=f"/jobs/{job_id}{query}#documenten", status_code=303)
+
+
+@router.get("/jobs/{job_id}/documents/{document_id}/verschil", response_class=HTMLResponse)
+def document_changes(request: Request, job_id: int, document_id: int):
+    job = _job_or_404(job_id)
+    document, meta = _editable(job_id, document_id)
+    earlier = [
+        row
+        for row in store.list_documents(job_id)
+        if row["kind"] == document["kind"]
+        and row["version"] < document["version"]
+        and json.loads(row["meta_json"] or "{}").get("content")
+    ]
+    if not earlier:
+        raise HTTPException(status_code=404, detail="Er is geen eerdere versie om mee te vergelijken.")
+    previous = max(earlier, key=lambda row: row["version"])
+    return templates.TemplateResponse(
+        request,
+        "document_diff.html",
+        {
+            "job": job,
+            "document": document,
+            "previous": previous,
+            "lines": document_edits.changes(
+                json.loads(previous["meta_json"])["content"], meta["content"]
+            ),
+        },
+    )
 
 
 # ---------------------------------------------------------------- your data

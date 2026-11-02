@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from datetime import UTC, datetime
@@ -23,6 +24,7 @@ from .. import (
     ranking,
     sources,
     store,
+    tasks,
     tenancy,
 )
 from ..web import templates
@@ -100,6 +102,14 @@ def _worker_state() -> dict:
     return {"separate": True, "alive": alive, "seen": raw}
 
 
+def _last_scan() -> str | None:
+    try:
+        health = json.loads(store.meta_get("source_health") or "{}")
+    except ValueError:
+        return None
+    return max((item["last_ok"] for item in health.values() if item.get("last_ok")), default=None)
+
+
 @router.get("/admin", response_class=HTMLResponse, dependencies=[Depends(auth.require_admin)])
 def admin_page(request: Request):
     auth.require_admin(request)
@@ -126,6 +136,9 @@ def admin_page(request: Request):
             "answer_log_offset": store.meta_get("answer_log_offset", "0"),
             "bootstrap_status": store.meta_get("bootstrap_status", "idle"),
             "worker": _worker_state(),
+            "overview": store.usage_overview(),
+            "failures": tasks.failures_overview(),
+            "last_scan": _last_scan(),
             "paths": {
                 "data": str(config.DATA_DIR),
                 "profile.md": str(config.user_path(profile.PROFILE_FILE)),

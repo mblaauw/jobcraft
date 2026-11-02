@@ -20,6 +20,7 @@
       {% if job["hours"] %}<li>{{ ui.icon('clock') }}<span>{{ job["hours"] }}</span></li>{% endif %}
       {% if job["posted_at"] %}<li>{{ ui.icon('calendar') }}<span>Geplaatst {{ ui.nl_date(job["posted_at"]) }}</span></li>{% endif %}
     </ul>
+    {% if facts %}<ul class="traits">{% for fact in facts %}<li class="chip chip-lime">{{ fact }}</li>{% endfor %}</ul>{% endif %}
     <a id="detail-original" class="small" href="{{ job['url'] }}" target="_blank" rel="noopener">Bekijk de originele vacature {{ ui.icon('external-link', 'icon-sm') }}</a>
   </div>
   <div>
@@ -109,6 +110,9 @@
   <section class="panel job-documents" id="documenten" data-detail-section="documents" aria-labelledby="detail-documents-title">
     <h2 id="detail-documents-title">Solliciteren</h2>
     <p class="small muted">Een CV of brief voor deze vacature, op basis van je profiel. Elke versie blijft bewaard.</p>
+    {% if not documents_ready %}
+    <p class="small"><a class="button primary" href="/account">Upload eerst je CV</a></p>
+    {% else %}
     <div class="doc-actions">
       <form method="post" action="/jobs/{{ job['id'] }}/documents" data-doc-form>
         {% include '_csrf.html' %}
@@ -125,6 +129,7 @@
     </div>
     <p id="doc-status" class="small muted" aria-live="polite"></p>
     <p class="cost-note">Duurt 10 tot 20 seconden. Je krijgt een PDF en een Word-bestand.</p>
+    {% endif %}
     <h3 id="detail-document-versions-title" class="visually-hidden">Gemaakte documenten</h3>
     {% if documents %}
     <ul class="doc-list" id="detail-document-table" aria-labelledby="detail-document-versions-title">
@@ -138,7 +143,9 @@
           <a id="detail-document-{{ doc['id'] }}-pdf" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/pdf">PDF</a>
           {% endif %}
           <a id="detail-document-{{ doc['id'] }}-docx" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/docx">Word</a>
-          {% if '"content"' in (doc["meta_json"] or '') %}<a id="detail-document-{{ doc['id'] }}-edit" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/bewerken">Bewerken</a>{% endif %}
+          {% if '"content"' in (doc["meta_json"] or '') %}<a id="detail-document-{{ doc['id'] }}-edit" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/bewerken">Bewerken</a>
+          {% if doc["version"] > 1 %}<a href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/verschil">Wat is veranderd</a>{% endif %}
+          <form method="post" action="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/herschrijven" class="inline-form">{% include '_csrf.html' %}<button class="button small" name="style" value="korter" type="submit">Korter</button> <button class="button small" name="style" value="formeler" type="submit">Formeler</button></form>{% endif %}
         </div>
       </li>
       {% endfor %}
