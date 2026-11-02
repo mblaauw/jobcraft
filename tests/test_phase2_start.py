@@ -427,7 +427,7 @@ def test_a_pdf_cv_is_enough_to_make_documents_later(flow, monkeypatch):
         {"source_id": "test", "url": "https://example.test/doc", "title": "Planner", "description": "Tekst", "content_hash": "doc"}
     )
     page = flow.get(f"/jobs/{job_id}").text
-    assert "Maak een CV" in page and "Upload eerst je CV" not in page
+    assert "Maak je sollicitatie" in page and "Maak eerst je profiel" not in page
 
 
 def test_every_step_says_how_long_and_what_for(flow):

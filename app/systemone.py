@@ -31,7 +31,7 @@ from pathlib import Path
 import httpx
 import yaml
 
-from . import profile
+from . import ai_log, profile
 
 DEFAULT_URL = "https://api.runware.ai/v1/decisions"
 DEFAULT_MODEL = "typesafe:jev@1"
@@ -248,6 +248,15 @@ def decide(
     if response.status_code >= 400:
         raise SystemOneError(f"HTTP {response.status_code}: {response.text[:200]}")
     data = response.json()
+    ai_log.record(
+        "systemone",
+        str(payload["model"]),
+        [{"role": "user", "content": state}],
+        json.dumps(data.get("answers") or data, ensure_ascii=False),
+        usage=data.get("usage") or {},
+        duration_ms=latency_ms,
+        limit=3000,  # Every vacancy passes through here; full prompts would swamp the log.
+    )
     return data, data.get("usage") or {}, latency_ms
 
 

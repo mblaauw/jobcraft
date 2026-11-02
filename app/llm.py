@@ -5,11 +5,12 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import time
 import uuid
 from collections.abc import Iterator
 from contextlib import suppress
 
-from . import config, interview_state, profile, prompts, store
+from . import ai_log, config, interview_state, model_routes, profile, prompts, store
 from .llm_client import (
     Completion,
     FakeLLMClient,
@@ -150,8 +151,11 @@ class ServerManager:
         messages = [{"role": "system", "content": system + "\n\n" + context}]
         messages.extend(history)
         messages.append({"role": "user", "content": text})
-        completion = self.client.complete(
-            messages, model=config.role_model("interviewer"), session_key=session_id
+        completion = self._logged_complete(
+            "interviewer",
+            messages,
+            model=model_routes.model_for("interviewer"),
+            session_key=session_id,
         )
         assistant = {
             "id": uuid.uuid4().hex,
@@ -217,7 +221,8 @@ class ServerManager:
             yield streamed_done(assistant, fallback_usage)
             return
         assistant_id = uuid.uuid4().hex
-        model = config.role_model("interviewer")
+        model = model_routes.model_for("interviewer")
+        started = time.monotonic()
         full = ""
         usage: dict[str, object] = {}
         try:
@@ -252,10 +257,51 @@ class ServerManager:
             "model": model,
             "error": None,
         }
+        ai_log.record(
+            "interviewer",
+            model,
+            messages,
+            full,
+            usage=usage,
+            duration_ms=int((time.monotonic() - started) * 1000),
+        )
         yield streamed_done(assistant, usage)
 
+    def _logged_complete(
+        self, agent: str, messages: list[dict], *, model: str, ref: str = "", **options
+    ) -> Completion:
+        started = time.monotonic()
+        try:
+            completion = self.client.complete(messages, model=model, **options)
+        except Exception as exc:
+            ai_log.record(
+                agent,
+                model,
+                messages,
+                error=f"{type(exc).__name__}: {exc}",
+                ref=ref,
+                duration_ms=int((time.monotonic() - started) * 1000),
+            )
+            raise
+        ai_log.record(
+            agent,
+            completion.model or model,
+            messages,
+            completion.text,
+            usage=completion.usage,
+            ref=ref,
+            duration_ms=int((time.monotonic() - started) * 1000),
+        )
+        return completion
+
     def generate(
-        self, prompt: str, *, agent: str, timeout_note: str = "", schema: dict | None = None
+        self,
+        prompt: str,
+        *,
+        agent: str,
+        timeout_note: str = "",
+        schema: dict | None = None,
+        ref: str = "",
     ) -> tuple[str, dict]:
         if self.client is None:
             raise LLMError("LLM client is not configured")
@@ -266,9 +312,11 @@ class ServerManager:
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
-        completion = self.client.complete(
+        completion = self._logged_complete(
+            agent,
             messages,
-            model=config.role_model(agent),
+            model=model_routes.model_for(agent),
+            ref=ref,
             schema=schema,
             session_key=f"{agent}-{uuid.uuid4().hex}",
         )

@@ -44,10 +44,11 @@ def _job_or_404(job_id: int):
 
 @router.get("/sollicitaties", response_class=HTMLResponse)
 def board_page(request: Request):
+    columns = applications.board()
     return templates.TemplateResponse(
         request,
         "board.html",
-        {"columns": applications.board(), "statuses": applications.COLUMNS},
+        {"columns": columns, "statuses": applications.COLUMNS, "funnel": applications.funnel(columns)},
     )
 
 
@@ -59,7 +60,7 @@ def board_update(
     if status not in applications.STATUSES:
         raise HTTPException(status_code=400, detail="unknown status")
     store.update_job_status(job_id, status)
-    applications.save_details(job_id, deadline, note)
+    applications.save_details(job_id, deadline, note, status)
     if status == "applied":
         store.count_event("applications")
     return RedirectResponse(url="/sollicitaties", status_code=303)
@@ -158,10 +159,19 @@ def _editable(job_id: int, document_id: int) -> tuple[dict, dict]:
     return dict(document), meta
 
 
+def _old_format_only(job_id: int, meta: dict) -> RedirectResponse | None:
+    """Documents from the studio are edited there; these pages know only the old shape."""
+    if meta.get("format") == 2:
+        return RedirectResponse(url=f"/jobs/{job_id}/sollicitatie", status_code=303)
+    return None
+
+
 @router.get("/jobs/{job_id}/documents/{document_id}/bewerken", response_class=HTMLResponse)
 def document_edit(request: Request, job_id: int, document_id: int):
     job = _job_or_404(job_id)
     document, meta = _editable(job_id, document_id)
+    if moved := _old_format_only(job_id, meta):
+        return moved
     return templates.TemplateResponse(
         request,
         "document_edit.html",
@@ -173,6 +183,8 @@ def document_edit(request: Request, job_id: int, document_id: int):
 async def document_save(request: Request, job_id: int, document_id: int):
     job = _job_or_404(job_id)
     document, _meta = _editable(job_id, document_id)
+    if moved := _old_format_only(job_id, _meta):
+        return moved
     form = await request.form()
     if document["kind"] == "resume":
         content = {
@@ -205,6 +217,8 @@ def document_rewrite(job_id: int, document_id: int, style: str = Form("")):
         raise HTTPException(status_code=400, detail="unknown style")
     job = _job_or_404(job_id)
     document, meta = _editable(job_id, document_id)
+    if moved := _old_format_only(job_id, meta):
+        return moved
     problem = ""
     try:
         if document_edits.rewrite(job, document["kind"], meta["content"], style) is None:

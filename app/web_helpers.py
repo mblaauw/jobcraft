@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
 from . import (
+    career_position,
     config,
     geo,
     profile,
@@ -192,6 +193,9 @@ def _profile_context(**extra) -> dict:
         "private_note": "De privésectie wordt nooit naar documenten of matching gestuurd.",
     }
     context.update(extra)
+    context["position"] = career_position.load()
+    context["position_status"] = career_position.status()
+    context["cv_checks"] = career_position.cv_checks(current) if current else []
     context["place_labels"] = sorted(geo.PLACE_LABELS.values(), key=str.casefold)
     return context
 

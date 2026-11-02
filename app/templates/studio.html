@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Sollicitatie {{ job['title'] }} · Jobcraft{% endblock %}
+{% block content %}
+<header class="studio-head">
+  <p class="small"><a href="/jobs/{{ job['id'] }}">Terug naar de vacature</a></p>
+  <h1>{{ job['title'] }}</h1>
+  <p class="lede">{{ job['company'] or 'Onbekende organisatie' }}{% if job['location'] %}, {{ job['location'] }}{% endif %}</p>
+</header>
+
+{% if problem %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ problem }}</span></p>{% endif %}
+{% if saved == 'gegevens' %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je gegevens zijn opgeslagen. Ze staan in elke nieuwe versie.</span></p>{% endif %}
+{% if saved == 'tekst' %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Opgeslagen als nieuwe versie. De vorige blijft bewaard.</span></p>{% endif %}
+{% if status.state == 'error' %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ status.error }}</span></p>{% endif %}
+
+{% if running %}
+  {% include "_studio_progress.html" %}
+{% elif not has_profile %}
+  <section class="studio-start">
+    <h2>Eerst je cv</h2>
+    <p>Je sollicitatie wordt gebouwd op wat er in je cv staat. Dat duurt een paar minuten.</p>
+    <a class="button primary" href="/start">Voeg je cv toe</a>
+  </section>
+{% elif not plan %}
+  <section class="studio-start">
+    <h2>Eerst kijken wat ze écht zoeken</h2>
+    <p>We lezen de vacature en wat de werkgever online over zichzelf vertelt, en leggen dat naast je cv. Daarna kies jij het verhaal dat je wilt vertellen, en pas dan schrijven we.</p>
+    <ul class="studio-promises">
+      <li>Alleen wat echt in je cv staat. We controleren elk getal en elke naam.</li>
+      <li>Je naam en contactgegevens gaan niet naar de AI.</li>
+      <li>Duurt ongeveer een minuut. Klik gerust verder: het werk gaat door.</li>
+    </ul>
+    <form method="post" action="/jobs/{{ job['id'] }}/sollicitatie/plan" data-pending-form>{% include '_csrf.html' %}<button class="button primary" id="studio-make-plan" type="submit">Maak mijn sollicitatieplan</button></form>
+  </section>
+{% else %}
+  <nav class="studio-tabs" aria-label="Onderdelen van je sollicitatie">
+    <a href="?tab=plan"{% if tab == 'plan' %} aria-current="page"{% endif %}>Plan</a>
+    <a href="?tab=cv"{% if tab == 'cv' %} aria-current="page"{% endif %}>CV</a>
+    <a href="?tab=brief"{% if tab == 'brief' %} aria-current="page"{% endif %}>Motivatiebrief</a>
+  </nav>
+  {% if tab == 'plan' %}
+    {% include "_studio_plan.html" %}
+  {% elif current %}
+    {% include "_studio_document.html" %}
+  {% else %}
+    <section class="studio-start">
+      <h2>{{ 'Je cv' if tab == 'cv' else 'Je motivatiebrief' }} is er nog niet</h2>
+      <p>Kies in het plan je invalshoek. Daarna schrijven we hem.</p>
+      <a class="button primary" href="?tab=plan">Naar het plan</a>
+    </section>
+  {% endif %}
+{% endif %}
+{% endblock %}

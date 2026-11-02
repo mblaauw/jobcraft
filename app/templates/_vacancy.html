@@ -1,0 +1,38 @@
+{# The vacancy made readable. Marks are never colour alone: "in je cv" is underlined, facts are bold. #}
+{% macro pieces(parts) -%}
+{%- for part in parts -%}
+{%- if part.mark == 'you' %}<mark class="v-you" title="Staat in je cv">{{ part.text }}</mark>{% elif part.mark == 'key' %}<strong class="v-key">{{ part.text }}</strong>{% else %}{{ part.text }}{% endif -%}
+{%- endfor -%}
+{%- endmacro %}
+
+{% macro body(job, vacancy) %}
+<div class="vacancy" id="vacancy-text"{% if vacancy.pending %} data-vacancy-refresh{% endif %}>
+  {% if vacancy.pending %}<a hidden data-vacancy-link href="/jobs/{{ job['id'] }}/tekst"></a><p class="small muted v-reading"><span class="work-dot" aria-hidden="true"></span>We zetten deze tekst overzichtelijk voor je neer. Dat duurt even, je kunt alvast lezen.</p>{% endif %}
+  {% if vacancy.summary %}<p class="v-summary">{{ vacancy.summary }}</p>{% endif %}
+  {% if vacancy.facts %}
+  <dl class="v-facts">{% for label, value in vacancy.facts %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}</dl>
+  {% endif %}
+  {% if vacancy.must_have or vacancy.watch_out %}
+  <div class="v-gates">
+    {% if vacancy.must_have %}
+    <div><h3>Harde eisen</h3><ul class="v-checks">{% for item in vacancy.must_have %}<li class="{{ 'is-in' if item.in_cv else '' }}">{{ item.text }}{% if item.in_cv %} <span class="v-in">In je cv</span>{% endif %}</li>{% endfor %}</ul></div>
+    {% endif %}
+    {% if vacancy.watch_out %}
+    <div><h3>Goed om te weten</h3><ul class="v-watch">{% for item in vacancy.watch_out %}<li>{{ item }}</li>{% endfor %}</ul></div>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% if vacancy.has_terms %}<p class="small muted v-legend"><mark class="v-you">Onderstreept</mark> staat ook in je cv. <strong class="v-key">Vet</strong> zijn feiten en harde eisen.</p>{% endif %}
+  {% for section in vacancy.sections %}
+  {% if section.kind == 'other' and vacancy.sections | length > 1 %}
+  <details class="v-other"><summary class="small">{{ section.title }}</summary>
+  {% else %}<section class="v-section v-{{ section.kind }}">
+    {% if section.title %}<h3>{{ section.title }}</h3>{% endif %}
+  {% endif %}
+    {% for paragraph in section.paragraphs %}<p>{{ pieces(paragraph) }}</p>{% endfor %}
+    {% if section.items %}<ul class="{{ 'v-checks' if section.kind == 'ask' else 'v-list' }}">{% for item in section['items'] %}<li{% if section.kind == 'ask' and item.in_cv %} class="is-in"{% endif %}>{{ pieces(item.pieces) }}</li>{% endfor %}</ul>{% endif %}
+  {% if section.kind == 'other' and vacancy.sections | length > 1 %}</details>{% else %}</section>{% endif %}
+  {% endfor %}
+  <details class="v-other"><summary class="small">Originele tekst</summary><div class="job-body small">{{ job["description"] or "Er is geen tekst opgehaald." }}</div></details>
+</div>
+{% endmacro %}

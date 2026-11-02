@@ -38,6 +38,67 @@
     }
   });
 
+  // Under a path prefix the proxy rewrites links in pages, but not addresses in JSON.
+  const appRoot = new URL(document.querySelector('link[href*="static/app.css"]').href).pathname.split("static/")[0];
+
+  // The vacancy text improves once the AI has read it; swap it in without a reload.
+  const vacancy = document.querySelector("[data-vacancy-refresh]");
+  if (vacancy) {
+    let tries = 0;
+    const check = async () => {
+      const current = document.querySelector("[data-vacancy-refresh]");
+      if (!current || tries++ > 12) return;
+      try {
+        const response = await fetch(current.querySelector("[data-vacancy-link]").href);
+        if (response.ok) {
+          const page = new DOMParser().parseFromString(await response.text(), "text/html");
+          const next = page.querySelector("#vacancy-text");
+          if (next && !next.hasAttribute("data-vacancy-refresh")) { current.replaceWith(next); return; }
+        }
+      } catch (error) { /* The plain version stays on screen. */ }
+      setTimeout(check, 6000);
+    };
+    setTimeout(check, 6000);
+  }
+
+  // Work in the background: visible on every page, announced when it is done.
+  const strips = document.querySelectorAll("[data-work-strip]");
+  if (strips.length && document.querySelector("[data-work-running]")) {
+    const poll = async () => {
+      try {
+        const response = await fetch(appRoot + "api/werk");
+        if (response.ok) {
+          const work = await response.json();
+          strips.forEach((strip) => {
+            const items = [...work.running.map((item) => [item, true]), ...work.done.map((item) => [item, false])];
+            strip.replaceChildren(...items.map(([item, running]) => {
+              const link = document.createElement("a");
+              link.className = "work-item " + (running ? "is-running" : "is-done");
+              link.href = appRoot + item.href.slice(1);
+              const text = document.createElement("span");
+              const strong = document.createElement("strong");
+              strong.textContent = item.what;
+              const title = document.createElement("span");
+              title.className = "work-for";
+              title.textContent = item.title;
+              text.append(strong, " " + item.verb, title);
+              if (running) {
+                const dot = document.createElement("span");
+                dot.className = "work-dot";
+                link.append(dot);
+              }
+              link.append(text);
+              return link;
+            }));
+          });
+          if (!work.running.length) return;
+        }
+      } catch (error) { /* Try again at the next tick. */ }
+      setTimeout(poll, 8000);
+    };
+    setTimeout(poll, 8000);
+  }
+
   // Document generation: one click, clear feedback.
   document.addEventListener("submit", (event) => {
     const form = event.target.closest("form[data-doc-form]");

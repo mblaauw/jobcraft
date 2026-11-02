@@ -9,10 +9,12 @@ import threading
 from datetime import UTC, datetime
 
 from . import (
+    application_plan,
     auth,
+    career_position,  # noqa: F401  (registers its task)
     config,
     digest,
-    docs,
+    document_pipeline,
     feedback,
     matching,
     notifications,
@@ -23,7 +25,9 @@ from . import (
     store,
     tasks,
     tenancy,
+    vacancy_reader,  # noqa: F401  (registers its task)
 )
+from .ai_budget import budget_reached as _budget_reached
 from .runtime import get_manager
 
 log = logging.getLogger("jobcraft")
@@ -54,15 +58,6 @@ def _refresh_notifications() -> None:
         notifications.refresh()
     except Exception:
         log.exception("match notifications failed")
-
-
-def _budget_reached() -> bool:
-    budget = float(os.environ.get("MATCH_DAILY_BUDGET_USD", "0.50") or 0)
-    if budget > 0 and store.daily_usage_cost() >= budget:
-        return True
-    # Many gateways report no price, so spend in dollars can stay 0 forever.
-    tokens = int(os.environ.get("AI_DAILY_TOKEN_LIMIT", "500000") or 0)
-    return tokens > 0 and store.daily_usage_tokens() >= tokens
 
 
 def _run_match() -> None:
@@ -105,20 +100,50 @@ def _doc_status(job_id: int) -> dict:
 
 
 def _run_document(job_id: int, kind: str) -> None:
+    """kind: plan, both, resume or motivatie. The stage tells the page where the work is."""
     key = f"doc_status:{job_id}"
+
+    def emit(stage: str) -> None:
+        store.meta_set(
+            key,
+            json.dumps(
+                {
+                    "state": "running",
+                    "kind": kind,
+                    "stage": stage,
+                    "updated_at": datetime.now(UTC).isoformat(),
+                }
+            ),
+        )
+
     try:
         job = store.get_job(job_id)
         if not job:
             raise RuntimeError("vacature niet gevonden")
+        job = dict(job)
         mgr = get_manager()
-        result = docs.generate_for_job(mgr, job, kind)
+        version = None
+        if kind == "plan":
+            application_plan.make(mgr, job, emit)
+        elif kind.startswith("tone:"):
+            _tone, tone, document_id = kind.split(":")
+            row = store.get_document(int(document_id))
+            if not row or row["job_id"] != job_id:
+                raise RuntimeError("document niet gevonden")
+            meta = json.loads(row["meta_json"])
+            emit("write")
+            version = document_pipeline.retone(mgr, job, row["kind"], meta["content"], meta, tone)["version"]
+        else:
+            version = document_pipeline.create_all(
+                mgr, job, ("resume", "motivatie") if kind == "both" else (kind,), emit
+            )
         store.meta_set(
             key,
             json.dumps(
                 {
                     "state": "done",
                     "kind": kind,
-                    "version": result.get("version"),
+                    "version": version,
                     "finished_at": datetime.now(UTC).isoformat(),
                 }
             ),

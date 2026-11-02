@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}AI-modellen en logboek · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <p class="small"><a href="/admin">Terug naar Systeem</a></p>
+  <h1>AI-modellen en logboek</h1>
+  <p class="lede">Kies per taak een model en zie wat elke aanroep kreeg en teruggaf.</p>
+</div></div>
+{% if notice %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>{{ notice }}</span></p>{% endif %}
+{% if failed %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ failed }}</span></p>{% endif %}
+
+<section class="panel" aria-labelledby="routes-title">
+  <h2 id="routes-title">Model per taak</h2>
+  <p class="small muted">Leeg betekent de standaard. De keuze geldt meteen voor nieuwe aanroepen, ook in de worker.</p>
+  <form method="post" action="/admin/ai/modellen" id="routes-form" data-pending-form>{% include '_csrf.html' %}</form>
+  <datalist id="known-models">{% for name in available %}<option value="{{ name }}"></option>{% endfor %}</datalist>
+  <div class="route-list">
+    {% for role in roles %}
+    <div class="route-row">
+      <div class="route-what"><label for="model-{{ role.id }}"><strong>{{ role.label }}</strong></label><span class="small muted">{{ role.about }}</span></div>
+      <input class="input" id="model-{{ role.id }}" form="routes-form" name="model_{{ role.id }}" value="{{ role.chosen }}" placeholder="{{ role.default }}" list="known-models" autocomplete="off" spellcheck="false">
+      <form method="post" action="/admin/ai/test" data-pending-form>{% include '_csrf.html' %}<input type="hidden" name="role" value="{{ role.id }}"><button class="button small" type="submit">Test</button></form>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="btn-row"><button class="button primary" type="submit" form="routes-form">Modelkeuze opslaan</button></div>
+  <p class="small muted">Test werkt met de opgeslagen keuze en kost één heel kleine aanroep. De snelle beoordeling (Jev) loopt via Runware en stel je in met <code>SYSTEMONE_MODEL</code>.</p>
+</section>
+
+<section class="panel panel-flush" aria-labelledby="log-title">
+  <div class="padded">
+    <h2 id="log-title">Logboek</h2>
+    <p class="small muted">Welk model wat deed. De volledige invoer en uitvoer bevat cv-tekst en antwoorden van gebruikers, zonder naam en contactgegevens. Die lees je hier alleen van je eigen account; van anderen staat hij in de logbestanden op de server. Regels verdwijnen na {{ retention }} dagen, en bij het verwijderen van een account.</p>
+    <form method="get" class="log-filters" data-autosubmit>
+      <div class="field"><label for="f-agent">Taak</label><select id="f-agent" name="taak"><option value="">Alle</option>{% for role, label in labels.items() %}<option value="{{ role }}"{% if filter_agent == role %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="f-owner">Account</label><select id="f-owner" name="account"><option value="">Alle</option>{% for id, name in names.items() %}<option value="{{ id }}"{% if filter_owner == id %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="f-model">Model</label><input id="f-model" name="model" value="{{ filter_model }}" list="known-models" autocomplete="off"></div>
+      <noscript><button class="button small" type="submit">Filter</button></noscript>
+    </form>
+  </div>
+  <div class="table-scroll" role="region" aria-label="AI-aanroepen" tabindex="0">
+    <table class="table nowrap">
+      <thead><tr><th>Moment</th><th>Taak</th><th>Model</th><th>Account</th><th>Tokens in</th><th>Tokens uit</th><th>Duur</th><th>Uitkomst</th></tr></thead>
+      <tbody>
+      {% for call in calls %}
+        <tr>
+          <td><a href="/admin/ai/log/{{ call.owner }}/{{ call.day }}/{{ call.offset }}">{{ ui.nl_date(call.at, time=True) }}</a></td>
+          <td>{{ labels.get(call.agent, call.agent) }}</td>
+          <td><code>{{ call.model }}</code></td>
+          <td>{{ names.get(call.owner, call.owner) }}</td>
+          <td class="num">{{ call.input_tokens }}</td>
+          <td class="num">{{ call.output_tokens }}</td>
+          <td class="num">{{ "%.1f" | format(call.duration_ms / 1000) }} s</td>
+          <td>{% if call.error %}<span class="chip chip-warn">Mislukt</span>{% else %}<span class="chip chip-ok">Gelukt</span>{% endif %}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" class="subtle">Nog geen aanroepen{% if filter_agent or filter_owner or filter_model %} met dit filter{% endif %}.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

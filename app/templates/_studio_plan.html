@@ -1,0 +1,93 @@
+{# The plan: what they want next to your proof, the story to tell, and what would make it stronger. #}
+{% set research = plan.research %}{% set strategy = plan.strategy %}
+<form method="post" action="/jobs/{{ job['id'] }}/sollicitatie/schrijven" data-pending-form class="plan">
+  {% include '_csrf.html' %}
+  <section class="plan-lead">
+    <h2>Waar het om draait</h2>
+    <p class="plan-problem">{{ research.real_problem }}</p>
+    <p class="muted">{{ strategy.fit_summary }}</p>
+  </section>
+
+  <section aria-labelledby="ledger-title">
+    <h2 id="ledger-title">Wat zij vragen en wat jij kunt laten zien</h2>
+    <div class="ledger" role="table" aria-label="Eisen uit de vacature met jouw bewijs">
+      <div class="ledger-row ledger-head" role="row"><span role="columnheader">Zij vragen</span><span role="columnheader">Jij laat zien</span></div>
+      {% for item in strategy.evidence %}
+      <div class="ledger-row is-{{ item.strength }}" role="row">
+        <span role="cell" class="ledger-need">{{ item.need }}</span>
+        <span role="cell"><span class="ledger-strength">{{ {'sterk': 'Sterk', 'deels': 'Deels', 'ontbreekt': 'Ontbreekt'}.get(item.strength) }}</span> {{ item.proof }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section aria-labelledby="angle-title">
+    <h2 id="angle-title">Kies je verhaal</h2>
+    <p class="muted">Eén duidelijke lijn blijft beter hangen dan een opsomming van alles wat je kunt.</p>
+    <div class="angles">
+      {% for angle in strategy.angles %}
+      <label class="angle">
+        <input type="radio" name="invalshoek" value="{{ angle.id }}"{% if plan.angle == angle.id %} checked{% endif %}>
+        <span class="angle-body"><strong>{{ angle.title }}</strong>{% if angle.id == strategy.recommended_angle %}<span class="chip chip-lime">Onze aanrader</span>{% endif %}<span class="angle-story">{{ angle.story }}</span></span>
+      </label>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if strategy.questions %}
+  <section aria-labelledby="questions-title">
+    <h2 id="questions-title">Maak het sterker</h2>
+    <p class="muted">Wij verzinnen niets, dus jouw details maken het verschil. Sla gerust over wat je niet weet. We bewaren je antwoorden voor je volgende sollicitaties.</p>
+    {% for question in strategy.questions %}
+    <div class="field plan-question">
+      <label for="q-{{ question.id }}">{{ question.question }}</label>
+      <span class="hint">{{ question.why }}</span>
+      <textarea id="q-{{ question.id }}" name="antwoord_{{ question.id }}" rows="3">{{ (plan.answers or {}).get(question.id, '') }}</textarea>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <div class="plan-columns">
+    {% if strategy.gaps %}
+    <section aria-labelledby="gaps-title">
+      <h2 id="gaps-title">Eerlijke aandachtspunten</h2>
+      <ul class="plain-list">{% for item in strategy.gaps %}<li><strong>{{ item.gap }}</strong><br>{{ item.how_to_handle }}</li>{% endfor %}</ul>
+    </section>
+    {% endif %}
+    <section aria-labelledby="employer-title">
+      <h2 id="employer-title">Wat we over de werkgever vonden</h2>
+      {% if research.employer_facts %}
+      <ul class="plain-list">{% for item in research.employer_facts %}<li>{{ item.fact }} <a class="small" href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">Bron</a></li>{% endfor %}</ul>
+      {% else %}
+      <p class="muted">We vonden online niets bruikbaars. De brief leunt daarom op de vacaturetekst. Weet jij iets over deze werkgever? Zet het hieronder.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <section>
+    <div class="field">
+      <label for="plan-note">Nog iets dat we moeten weten voor deze sollicitatie?</label>
+      <span class="hint">Bijvoorbeeld waarom juist deze organisatie, of een ervaring die niet in je cv staat. Dit mag in je brief terechtkomen.</span>
+      <textarea id="plan-note" name="toelichting" rows="3">{{ plan.note or '' }}</textarea>
+    </div>
+  </section>
+
+  {% if contact_missing %}<p class="banner warn">{{ ui.icon('triangle-alert') }}<span>Een werkgever moet je kunnen bereiken. Vul onder <a href="#gegevens">Jouw gegevens</a> je volledige naam en een telefoonnummer of e-mailadres in.</span></p>{% endif %}
+  <div class="plan-actions">
+    <button class="button primary" id="studio-write" type="submit" name="wat" value="both">{{ 'Schrijf opnieuw met deze keuzes' if has_documents else 'Schrijf mijn cv en brief' }}</button>
+    <span class="small muted">Duurt een tot twee minuten en gaat door als je verder klikt. Elke vorige versie blijft bewaard.</span>
+  </div>
+</form>
+
+<div class="plan-columns plan-extras">
+  {% include "_studio_contact.html" %}
+  <section aria-labelledby="stories-title">
+    <h2 id="stories-title">Wat je ons eerder vertelde</h2>
+    {% if stories %}
+    <ul class="plain-list">{% for story in stories %}<li><span class="small muted">{{ story.question }}</span><br>{{ story.answer }}
+      <form method="post" action="/jobs/{{ job['id'] }}/sollicitatie/verhaal/{{ loop.index0 }}/verwijderen">{% include '_csrf.html' %}<button class="button quiet small" type="submit">Verwijder</button></form></li>{% endfor %}</ul>
+    {% else %}<p class="muted">Nog niets. Je antwoorden op de vragen hierboven komen hier te staan.</p>{% endif %}
+    <form method="post" action="/jobs/{{ job['id'] }}/sollicitatie/plan" data-pending-form>{% include '_csrf.html' %}<button class="button small" type="submit">Maak het plan opnieuw</button></form>
+  </section>
+</div>

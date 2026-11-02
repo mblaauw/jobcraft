@@ -25,13 +25,13 @@
 {% set hf = preferences.hard_filters %}
 <div class="page-head">
   <div>
-    <h1>Profiel</h1>
-    <p class="lede">Zo ziet Jobcraft jou. Hierop zijn de matches en je CV’s en brieven gebaseerd.</p>
+    <h1>Jouw positie</h1>
+    <p class="lede">Hoe je overkomt, waar je sterk staat en wat je kans op een gesprek het meest vergroot.</p>
   </div>
 </div>
 
 <nav class="subnav" aria-label="Onderdelen van je profiel">
-  <a href="#overzicht">Over jou</a><a href="#voorkeuren">Wat telt bij matching</a><a href="#reisbereik">Reisbereik</a>{% if legacy or draft %}<a href="#bijwerken">Bijwerken{% if draft %} <span class="badge">1</span>{% endif %}</a>{% endif %}<a href="#bewerken">Tekst bewerken</a><a href="#versies">Versies</a>
+  <a href="#positie">Je positie</a><a href="#overzicht">Over jou</a><a href="#voorkeuren">Wat telt bij matching</a><a href="#reisbereik">Reisbereik</a>{% if legacy or draft %}<a href="#bijwerken">Bijwerken{% if draft %} <span class="badge">1</span>{% endif %}</a>{% endif %}<a href="#bewerken">Tekst bewerken</a><a href="#versies">Versies</a>
 </nav>
 
 {% if saved %}
@@ -64,6 +64,8 @@
 {% elif bootstrap_status.startswith("error") %}
   <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Het voorstel kon niet worden gemaakt.</span><details><summary>Technische toelichting</summary>{{ bootstrap_status[7:] }}</details></div>
 {% endif %}
+
+{% include "_profile_position.html" %}
 
 <section class="section" id="overzicht" aria-labelledby="overzicht-title">
   <div class="panel-head"><h2 id="overzicht-title">Over jou</h2>{% if bootstrapped_at %}<span class="small subtle">Laatst bijgewerkt {{ ui.nl_date(bootstrapped_at) }}</span>{% endif %}</div>

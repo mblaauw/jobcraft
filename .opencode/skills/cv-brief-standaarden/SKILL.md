@@ -1,6 +1,6 @@
 ---
 name: cv-brief-standaarden
-description: Vaste standaarden en checklists voor een CV (exact 1 A4) en Nederlandse motivatiebrief (maximaal 15 regels), inclusief ATS-trefwoorden, toon, beschikbaarheid en wat nooit beweerd mag worden. Gebruik bij elke CV- of briefgeneratie, bij het beoordelen van conceptteksten en bij twijfel over lengte of toon.
+description: Vaste standaarden en checklists voor een CV (1 A4, bij een lange loopbaan 2) en Nederlandse motivatiebrief (1 A4, 170 tot 270 woorden), inclusief ATS-trefwoorden, toon, beschikbaarheid en wat nooit beweerd mag worden. Gebruik bij elke CV- of briefgeneratie, bij het beoordelen van conceptteksten en bij twijfel over lengte of toon.
 license: MIT
 metadata:
   author: jobcraft
@@ -12,8 +12,8 @@ metadata:
 
 ## Harde grenzen
 
-- CV: precies 1 pagina A4. Past het niet, schrap dan inhoud — nooit de marges, nooit de leesbaarheid.
-- Motivatiebrief: maximaal 15 gerenderde regels (ongeveer 1.200 tekens), 3-5 alinea's.
+- CV: 1 pagina A4; alleen bij een lange loopbaan 2. Past het niet, schrap dan inhoud, nooit de leesbaarheid.
+- Motivatiebrief: 1 pagina A4, 170 tot 270 woorden, 3 of 4 alinea's.
 - Alleen feiten uit het profiel of het dossier. Verzin geen ervaring, opleiding, certificaten, uren of beschikbaarheid.
 - Geen adresblok, datum of ondertekening in de brieftekst; dat doet het template.
 - Nederlands, tenzij de vacature expliciet Engelstalig is.
@@ -29,7 +29,7 @@ metadata:
 
 ## Motivatiebrief
 
-- Structuur: aanhef · waarom deze organisatie en rol · wat de gebruiker concreet meebrengt (2-3 voorbeelden) · afronding met beschikbaarheid en vervolgstap.
+- Structuur: een opening die de lezer vasthoudt, wat deze rol moet oplossen met het bewijs erbij (1-2 verhalen), wat deze persoon eigen maakt, een zelfverzekerde afronding met een vervolgstap.
 - Toon: warm, direct, bescheiden zonder zelfondergraving. "Je" als de vacature informeel is, anders "u".
 - Verboden clichés: "gedreven teamplayer", "duizendpoot", "passie voor", "op zoek naar een nieuwe uitdaging" zonder bewijs.
 - Noem beschikbaarheid en uren alleen zoals ze in het profiel staan; vul niets aan en suggereer geen periode of locatie die daar niet staat.
@@ -45,7 +45,7 @@ metadata:
 
 ## Checklist voor je teruggeeft
 
-1. CV past op 1 A4; brief is maximaal 15 regels.
+1. CV past op 1 A4 (lange loopbaan: 2); brief past op 1 A4.
 2. Alle feiten komen uit profiel of dossier.
 3. Functietitel en kernwoorden uit de vacature komen terug waar ze kloppen.
 4. Organisatienaam exact gespeld.

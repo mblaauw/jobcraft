@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
+{% import "_vacancy.html" as vacancy_ui %}
 {% import "_insights.html" as insights %}
 {% block title %}{{ job["title"] or "Vacature" }} · Jobcraft{% endblock %}
 {% block content %}
@@ -52,11 +53,11 @@
 
 {% if doc_error %}<div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Document maken is niet gelukt: {{ doc_error }}</span></div>{% endif %}
 {% if running %}
-  <div class="banner" data-auto-refresh="4000">{{ ui.icon('clock') }}<span>Je {{ "CV" if doc_status.kind == "resume" else "motivatiebrief" }} wordt gemaakt. Dit duurt meestal 10 tot 20 seconden.</span></div>
+  <div class="banner" data-auto-refresh="4000">{{ ui.icon('clock') }}<span>We werken aan je sollicitatie. <a href="/jobs/{{ job['id'] }}/sollicitatie">Bekijk hoe ver het is</a></span></div>
 {% elif doc_status and doc_status.state == "error" %}
   <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Document maken is niet gelukt: {{ doc_status.error }}</span></div>
 {% elif doc_status and doc_status.state == "done" and doc_status_recent %}
-  <div class="banner ok">{{ ui.icon('circle-check') }}<span>{{ "CV" if doc_status.kind == "resume" else "Motivatiebrief" }} versie {{ doc_status.version }} staat klaar bij Solliciteren.</span></div>
+  <div class="banner ok">{{ ui.icon('circle-check') }}<span>Je sollicitatie is bijgewerkt. <a href="/jobs/{{ job['id'] }}/sollicitatie">Bekijk hem</a></span></div>
 {% endif %}
 
 <div class="job-layout">
@@ -103,32 +104,17 @@
   </section>
 
   <section class="panel job-text" data-detail-section="text" aria-labelledby="detail-text-title">
-    <h2 id="detail-text-title">Vacaturetekst</h2>
-    <div class="job-body">{{ job["description"] or "Er is geen tekst opgehaald. Bekijk de originele vacature." }}</div>
+    <h2 id="detail-text-title">De vacature</h2>
+    {{ vacancy_ui.body(job, vacancy) }}
   </section>
 
   <section class="panel job-documents" id="documenten" data-detail-section="documents" aria-labelledby="detail-documents-title">
     <h2 id="detail-documents-title">Solliciteren</h2>
-    <p class="small muted">Een CV of brief voor deze vacature, op basis van je profiel. Elke versie blijft bewaard.</p>
-    {% if not documents_ready %}
-    <p class="small">{% if needs_profile %}<a class="button primary" href="/start">Maak eerst je profiel</a>{% else %}<a class="button primary" href="/start/cv">Upload eerst je CV</a>{% endif %}</p>
+    <p class="small muted">Een plan, een cv op maat en een motivatiebrief voor precies deze vacature. Alles komt uit je eigen cv en elke versie blijft bewaard.</p>
+    {% if needs_profile %}
+    <p class="small"><a id="detail-start" class="button primary" href="/start">Maak eerst je profiel</a></p>
     {% else %}
-    <div class="doc-actions">
-      <form method="post" action="/jobs/{{ job['id'] }}/documents" data-doc-form>
-        {% include '_csrf.html' %}
-        <input type="hidden" name="kind" value="resume">
-        <input type="hidden" name="next" value="{{ next_url }}">
-        <button id="detail-resume" class="button primary block" type="submit" {% if running %}disabled{% endif %}>{{ ui.icon('file-text') }}Maak een CV</button>
-      </form>
-      <form method="post" action="/jobs/{{ job['id'] }}/documents" data-doc-form>
-        {% include '_csrf.html' %}
-        <input type="hidden" name="kind" value="motivatie">
-        <input type="hidden" name="next" value="{{ next_url }}">
-        <button id="detail-letter" class="button block" type="submit" {% if running %}disabled{% endif %}>{{ ui.icon('pencil') }}Maak een motivatiebrief</button>
-      </form>
-    </div>
-    <p id="doc-status" class="small muted" aria-live="polite"></p>
-    <p class="cost-note">Duurt 10 tot 20 seconden. Je krijgt een PDF en een Word-bestand.</p>
+    <a id="detail-apply" class="button primary block" href="/jobs/{{ job['id'] }}/sollicitatie">{{ ui.icon('file-text') }}{{ 'Verder met je sollicitatie' if documents else 'Maak je sollicitatie' }}</a>
     {% endif %}
     <h3 id="detail-document-versions-title" class="visually-hidden">Gemaakte documenten</h3>
     {% if documents %}
@@ -143,9 +129,9 @@
           <a id="detail-document-{{ doc['id'] }}-pdf" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/pdf">PDF</a>
           {% endif %}
           <a id="detail-document-{{ doc['id'] }}-docx" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/docx">Word</a>
-          {% if '"content"' in (doc["meta_json"] or '') %}<a id="detail-document-{{ doc['id'] }}-edit" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/bewerken">Bewerken</a>
+          {% if '"format": 2' in (doc["meta_json"] or '') %}<a id="detail-document-{{ doc['id'] }}-edit" href="/jobs/{{ job['id'] }}/sollicitatie?tab={{ 'cv' if doc['kind'] == 'resume' else 'brief' }}&versie={{ doc['id'] }}">Openen</a>
+          {% elif '"content"' in (doc["meta_json"] or '') %}<a id="detail-document-{{ doc['id'] }}-edit" href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/bewerken">Bewerken</a>{% endif %}
           {% if doc["id"] in comparable %}<a href="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/verschil">Wat is veranderd</a>{% endif %}
-          <form method="post" action="/jobs/{{ job['id'] }}/documents/{{ doc['id'] }}/herschrijven" class="inline-form" data-pending-form>{% include '_csrf.html' %}<button class="button small" name="style" value="korter" type="submit">Korter</button> <button class="button small" name="style" value="formeler" type="submit">Formeler</button></form>{% endif %}
         </div>
       </li>
       {% endfor %}

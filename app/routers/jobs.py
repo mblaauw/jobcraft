@@ -28,6 +28,7 @@ from .. import (
     store,
     tasks,
     tenancy,
+    vacancy_reader,
 )
 from ..auth import require_user
 from ..runtime import get_manager
@@ -284,6 +285,7 @@ def job_detail(request: Request, job_id: int, return_to: str = ""):
     if urlsplit(list_return).path != "/jobs":
         list_return = "/jobs"
     detail_return = f"/jobs/{job_id}?" + urlencode({"return_to": list_return})
+    vacancy_reader.request(item)
     return templates.TemplateResponse(
         request,
         "job_detail.html",
@@ -300,6 +302,7 @@ def job_detail(request: Request, job_id: int, return_to: str = ""):
             "list_return": list_return,
             "detail_return": detail_return,
             "facts": reasons.facts(item),
+            "vacancy": vacancy_reader.view(item),
             **document_edits.detail_context(store.list_documents(job_id)),
             "gap": insights.load("gap", job),
             "prep": insights.load("prep", job),
@@ -310,13 +313,8 @@ def job_detail(request: Request, job_id: int, return_to: str = ""):
 
 @router.post("/jobs/{job_id}/documents")
 def job_document(job_id: int, kind: str = Form(...), url: str = Form("", alias="next")):
-    if tenancy.user_id() != tenancy.LEGACY_ID and (
-        not profile.profile_exists() or not (config.seed_dir() / "cv.docx").exists()
-    ):
-        raise HTTPException(
-            status_code=409,
-            detail="Vul eerst je profiel aan en upload je eigen basis-CV via Account.",
-        )
+    if tenancy.user_id() != tenancy.LEGACY_ID and not profile.profile_exists():
+        raise HTTPException(status_code=409, detail="Vul eerst je profiel aan.")
     job = store.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="unknown job")

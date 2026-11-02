@@ -13,6 +13,7 @@ from fastapi.responses import (
 )
 
 from .. import (
+    career_position,
     config,
     geo,
     profile,
@@ -20,6 +21,7 @@ from .. import (
     tasks,
     tenancy,
 )
+from ..ai_budget import budget_reached
 from ..auth import require_user
 from ..runtime import get_manager
 from ..web import templates
@@ -48,6 +50,14 @@ def profile_page(request: Request):
         ),
     )
 
+
+
+@router.post("/profile/positie")
+def profile_position():
+    """Paid, on request: runs in the background, so nobody has to wait on this page."""
+    if profile.profile_exists() and not budget_reached():
+        career_position.request()
+    return RedirectResponse(url="/profile#positie", status_code=303)
 
 
 @router.post("/profile/consolidate")

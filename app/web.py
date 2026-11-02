@@ -36,6 +36,16 @@ def _new_match_count() -> int:
     return notifications.badge_count()
 
 
+def _background_work() -> dict:
+    from . import background_work
+
+    try:
+        return background_work.overview()
+    except Exception:  # A status strip must never take a page down.
+        return {"running": [], "done": []}
+
+
+templates.env.globals["background_work"] = _background_work
 templates.env.globals["csrf_input"] = _csrf_input
 templates.env.globals["new_match_count"] = _new_match_count
 templates.env.filters["amsterdam"] = _amsterdam

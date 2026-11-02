@@ -1,0 +1,25 @@
+{# What the worker is doing right now. Reloads itself until the work is done. #}
+{% set steps = [
+  ('research', 'De vacature en werkgever uitpluizen'),
+  ('strategy', 'Je sterkste bewijs erbij zoeken'),
+] if status.kind == 'plan' else [
+  ('write', 'Een nieuwe versie schrijven'),
+  ('layout', 'Op papier zetten'),
+] if (status.kind or '').startswith('tone') else [
+  ('write', 'Schrijven'),
+  ('review', 'Een kritische recruiter leest mee'),
+  ('revise', 'Verbeteren wat beter kan'),
+  ('layout', 'Op papier zetten'),
+] %}
+{% set stage = {'cv': 'write', 'letter': 'write'}.get(status.stage, status.stage) %}
+{% set ids = steps | map('first') | list %}
+{% set at = ids.index(stage) if stage in ids else -1 %}
+<section class="studio-start" data-auto-refresh="4000" aria-live="polite">
+  <h2>{{ 'We maken je plan' if status.kind == 'plan' else 'We werken aan je sollicitatie' }}</h2>
+  <ol class="studio-steps">
+    {% for id, label in steps %}
+    <li class="{{ 'is-done' if loop.index0 < at else ('is-now' if loop.index0 == at else '') }}">{{ label }}</li>
+    {% endfor %}
+  </ol>
+  <p class="small muted">Dit duurt meestal {{ 'een tot twee minuten' if status.kind in ('both', 'resume', 'motivatie') else 'ongeveer een minuut' }}. Klik gerust verder: het werk gaat door, en je ziet in het menu wanneer het klaar is.</p>
+</section>

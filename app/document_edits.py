@@ -10,6 +10,7 @@ from docx import Document
 
 from . import config, docs, llm_schemas, profile, runtime, store, tenancy
 from .docs import template_count
+from .document_content import cv_lines, is_structured_cv, is_structured_letter, letter_lines
 from .util import now_iso, parse_json_object
 from .workflows import _budget_reached
 
@@ -109,6 +110,10 @@ def rewrite(job, kind: str, content: dict, style: str) -> int | None:
 
 
 def _lines(content: dict) -> list[str]:
+    if is_structured_cv(content):
+        return cv_lines(content)
+    if is_structured_letter(content):
+        return letter_lines(content)
     return [content["profile"], *content["strong_points"]] if "profile" in content else list(
         content.get("paragraphs") or []
     )
@@ -140,8 +145,7 @@ def detail_context(documents: list) -> dict:
     """What the job page needs to offer the right next step for documents."""
     has_profile = profile.profile_exists()
     return {
-        "documents_ready": tenancy.user_id() == tenancy.LEGACY_ID
-        or (has_profile and (config.seed_dir() / "cv.docx").exists()),
+        "documents_ready": tenancy.user_id() == tenancy.LEGACY_ID or has_profile,
         "needs_profile": not has_profile,
         "comparable": comparable_ids(documents),
     }
