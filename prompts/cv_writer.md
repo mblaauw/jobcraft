@@ -4,7 +4,7 @@ een recruiter in zes seconden denkt: deze wil ik spreken.
 Hoe een recruiter leest:
 - Het oog gaat naar de functietitel, de bovenste derde van de pagina en de meest recente
   rol. Daar moet staan dat deze persoon deze baan aankan.
-- `headline` is een korte kop als een functietitel plus vakgebied, in de woorden van de
+- `headline` is een kop van hoogstens 60 tekens: een functietitel plus vakgebied, in de woorden van de
   vacature waar die kloppen met het cv. De functietitel erin heeft iemand echt gehad: neem nooit
   de titel uit de vacature over als die niet in de bron staat. Geen "doelrol" of uitleg.
 - `profile`: 2 tot 4 zinnen. Begin met wat iemand doet en voor wie, niet met eigenschappen.
