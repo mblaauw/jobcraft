@@ -83,7 +83,7 @@
   {% if account.id != 'legacy' %}
   <details class="disclosure">
     <summary><span>Account verwijderen</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
-    <p class="small muted">Dit verwijdert je profiel, cv, documenten en sollicitaties definitief. Dat kan niet ongedaan worden gemaakt.</p>
+    <p class="small muted">Dit verwijdert je profiel, cv, documenten en sollicitaties definitief. Dat kan niet ongedaan worden gemaakt. Reservekopieën die bij een update van Jobcraft zijn gemaakt, kunnen je gegevens nog bevatten tot ze worden vervangen.</p>
     <form method="post" action="/account/verwijderen" class="form-stack">
       {{ csrf_input(request) }}
       <div class="field"><label for="delete-password">Je wachtwoord</label><input id="delete-password" type="password" name="password" autocomplete="current-password" required></div>

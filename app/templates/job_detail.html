@@ -21,7 +21,7 @@
       {% if job["posted_at"] %}<li>{{ ui.icon('calendar') }}<span>Geplaatst {{ ui.nl_date(job["posted_at"]) }}</span></li>{% endif %}
     </ul>
     {% if facts %}<ul class="traits">{% for fact in facts %}<li class="chip chip-lime">{{ fact }}</li>{% endfor %}</ul>{% endif %}
-    <a id="detail-original" class="small" href="{{ job['url'] }}" target="_blank" rel="noopener">Bekijk de originele vacature {{ ui.icon('external-link', 'icon-sm') }}</a>
+    {% if 'import.jobcraft.invalid' not in job['url'] %}<a id="detail-original" class="small" href="{{ job['url'] }}" target="_blank" rel="noopener">Bekijk de originele vacature {{ ui.icon('external-link', 'icon-sm') }}</a>{% endif %}
   </div>
   <div>
     {{ ui.stamp(stamp_job, big=True) }}

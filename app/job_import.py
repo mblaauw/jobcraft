@@ -29,10 +29,25 @@ class ImportBlocked(ValueError):
     """The page cannot be read automatically; pasting the text still works."""
 
 
+def _web_address(url: str):
+    try:
+        parts = urlsplit(url)
+        # Reading .port raises on a port that cannot exist.
+        valid = (
+            parts.scheme in ("http", "https")
+            and parts.hostname
+            and not parts.username
+            and (parts.port is None or parts.port > 0)
+        )
+    except ValueError:
+        valid = False
+    if not valid:
+        raise ImportBlocked("Dit is geen geldig webadres. Gebruik een link die begint met https://.")
+    return parts
+
+
 def _check_public(url: str) -> None:
-    parts = urlsplit(url)
-    if parts.scheme not in ("http", "https") or not parts.hostname or parts.username:
-        raise ImportBlocked("Dit is geen geldige webadres. Gebruik een link die begint met https://.")
+    parts = _web_address(url)
     try:
         infos = socket.getaddrinfo(parts.hostname, parts.port or 443, proto=socket.IPPROTO_TCP)
     except OSError:
@@ -55,15 +70,18 @@ def _get(client: httpx.Client, url: str) -> httpx.Response:
                 body += chunk
                 if len(body) > MAX_BYTES:
                     raise ImportBlocked(CLOSED)
+            # The body is already decompressed; keeping this header would decode it twice.
+            headers = httpx.Headers(response.headers)
+            headers.pop("content-encoding", None)
             return httpx.Response(
-                response.status_code, headers=response.headers, content=body, request=response.request
+                response.status_code, headers=headers, content=body, request=response.request
             )
     raise ImportBlocked(CLOSED)
 
 
 def fetch_page(url: str) -> dict:
     """Vacancy fields from a public page; raises ImportBlocked when it cannot be read."""
-    parts = urlsplit(url)
+    parts = _web_address(url)
     with httpx.Client(
         timeout=20, follow_redirects=False, headers={"User-Agent": USER_AGENT}
     ) as client:
@@ -113,6 +131,11 @@ def _private_url(url: str, description: str) -> str:
 
 def add(fields: dict, url: str = "") -> int:
     """Store the vacancy for this account only and mark it as saved."""
+    if url:  # With pasted text the link was never fetched, so it is unchecked until here.
+        try:
+            _web_address(url)
+        except ImportBlocked:
+            url = ""
     job = make_job(
         store.import_source(),
         _private_url(url, fields.get("description") or ""),
