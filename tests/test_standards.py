@@ -41,7 +41,7 @@ def test_cv_and_letter_prompts_carry_the_standards():
         assert "cv-brief-standaarden" in prompt
         assert "vacature-analyse" in prompt
         assert "1 pagina A4" in prompt
-        assert "maximaal 15" in prompt.lower()
+        assert "170 tot 270 woorden" in prompt
 
 
 def test_matcher_prompt_carries_vacancy_analysis():

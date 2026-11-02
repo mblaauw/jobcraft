@@ -1,0 +1,14 @@
+<section id="gegevens" aria-labelledby="contact-title">
+  <h2 id="contact-title">Jouw gegevens</h2>
+  <p class="small muted">Boven aan je cv en brief. Deze gegevens gaan niet naar de AI.</p>
+  <form method="post" action="/jobs/{{ job['id'] }}/sollicitatie/gegevens" class="contact-form" data-pending-form>
+    {% include '_csrf.html' %}
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <div class="field"><label for="c-name">Volledige naam</label><input id="c-name" name="name" value="{{ contact.name }}" autocomplete="name" required></div>
+    <div class="field"><label for="c-email">E-mailadres</label><input id="c-email" type="email" name="email" value="{{ contact.email }}" autocomplete="email"></div>
+    <div class="field"><label for="c-phone">Telefoon</label><input id="c-phone" name="phone" value="{{ contact.phone }}" autocomplete="tel"></div>
+    <div class="field"><label for="c-place">Woonplaats</label><input id="c-place" name="place" value="{{ contact.place }}" autocomplete="address-level2"></div>
+    <div class="field"><label for="c-linkedin">LinkedIn</label><input id="c-linkedin" name="linkedin" value="{{ contact.linkedin }}" autocomplete="url"></div>
+    <button class="button small" type="submit">Gegevens opslaan</button>
+  </form>
+</section>

@@ -2,30 +2,73 @@
 {% import "_ui.html" as ui %}
 {% block title %}Sollicitaties · Jobcraft{% endblock %}
 {% block content %}
+{% set open_cards = columns | rejectattr('status', 'equalto', 'rejected') | map(attribute='cards') | sum(start=[]) %}
 <div class="page-head"><div>
   <h1>Sollicitaties</h1>
-  <p class="lede">Waar elke sollicitatie staat, met de deadline en je eigen notities.</p>
+  <p class="lede">Wat er nu moet gebeuren om bij een gesprek te komen.</p>
 </div></div>
-<div class="board">
+
+<nav class="pipeline" aria-label="Waar je sollicitaties staan">
   {% for column in columns %}
-  <section class="board-column" aria-labelledby="col-{{ column.status }}">
-    <h2 id="col-{{ column.status }}">{{ column.label }} <span class="tab-count">{{ column.cards | length }}</span></h2>
-    {% for card in column.cards %}
-    <article class="panel board-card">
-      <h3><a href="/jobs/{{ card.job['id'] }}">{{ card.job['title'] or 'Zonder titel' }}</a></h3>
-      <p class="small muted">{{ card.job['company'] or 'Onbekende organisatie' }}</p>
-      <form method="post" action="/sollicitaties/{{ card.job['id'] }}" class="board-form" data-pending-form>
+  <a class="pipeline-step is-{{ column.status }}" href="#fase-{{ column.status }}"><strong>{{ column.cards | length }}</strong><span>{{ column.label }}</span></a>
+  {% endfor %}
+</nav>
+{% if funnel.rate is not none %}<p class="small muted pipeline-note">Van je {{ funnel.sent }} verstuurde sollicitaties leidden er {{ funnel.talks }} tot een gesprek ({{ funnel.rate }}%).</p>{% endif %}
+
+{% if not open_cards and not columns[-1].cards %}
+<section class="studio-start">
+  <h2>Nog niets om op te volgen</h2>
+  <p>Bewaar een vacature die je aanspreekt, dan staat hier wat de volgende stap is.</p>
+  <a class="button primary" href="/jobs">Bekijk je vacatures</a>
+</section>
+{% endif %}
+
+{# What is closest to a job comes first; the strip above keeps the natural order. #}
+{% for status in ('offer', 'interview', 'saved', 'applied', 'rejected') %}
+{% set column = columns | selectattr('status', 'equalto', status) | first %}
+{% if column.cards %}
+{% set collapsed = column.status == 'rejected' %}
+{% if collapsed %}<details class="stage" id="fase-{{ column.status }}"><summary class="stage-head"><h2>{{ column.label }} <span class="tab-count">{{ column.cards | length }}</span></h2><span class="small muted">{{ column.hint }}</span></summary>
+{% else %}<section class="stage" id="fase-{{ column.status }}" aria-labelledby="col-{{ column.status }}"><div class="stage-head"><h2 id="col-{{ column.status }}">{{ column.label }} <span class="tab-count">{{ column.cards | length }}</span></h2><span class="small muted">{{ column.hint }}</span></div>{% endif %}
+  <ul class="app-list">
+  {% for card in column.cards %}
+  {% set job = card.job %}
+  <li class="app-row{% if card.next.urgent %} is-urgent{% endif %}">
+    {{ ui.stamp(job) }}
+    <div class="app-what">
+      <h3><a href="/jobs/{{ job['id'] }}">{{ job['title'] or 'Zonder titel' }}</a></h3>
+      <p class="small muted">{{ job['company'] or 'Onbekende organisatie' }}{% if card.days_here is not none and card.days_here > 0 %}, {{ card.days_here }} {{ 'dag' if card.days_here == 1 else 'dagen' }} in deze fase{% endif %}</p>
+      <ul class="app-marks">
+        <li class="{{ 'is-ok' if card.documents.cv else '' }}">{{ ui.icon('check' if card.documents.cv else 'circle') }}CV</li>
+        <li class="{{ 'is-ok' if card.documents.letter else '' }}">{{ ui.icon('check' if card.documents.letter else 'circle') }}Brief</li>
+        {% if card.due %}<li class="app-due{{ ' is-late' if card.due.days < 3 else '' }}">{{ ui.icon('clock') }}{% if card.due.days < 0 %}Deadline verstreken{% elif card.due.days == 0 %}Vandaag{% elif card.due.days == 1 %}Morgen{% else %}Nog {{ card.due.days }} dagen{% endif %}</li>
+        {% elif card.apply_by and column.status == 'saved' %}<li class="app-due">{{ ui.icon('clock') }}Reageer voor {{ card.apply_by }}</li>{% endif %}
+      </ul>
+    </div>
+    <div class="app-next">
+      <p>{{ card.next.text }}</p>
+      {% if card.next.href %}<a class="button{{ ' primary' if card.next.urgent else '' }} small" href="{{ card.next.href }}">{{ card.next.label }}</a>{% endif %}
+      {% if card.next.follow_up %}
+      <details class="app-follow"><summary class="small">Voorbeeldbericht</summary>
+        <p class="small">Goedemorgen, op {{ card.since.applied if card.since and card.since.applied else 'de genoemde datum' }} heb ik gereageerd op de functie {{ job['title'] }}. Ik ben nog steeds erg geïnteresseerd en vroeg me af hoe de procedure loopt. Is er iets dat ik kan aanvullen?</p>
+      </details>
+      {% endif %}
+    </div>
+    <details class="app-edit">
+      <summary aria-label="Status, deadline en notitie van {{ job['title'] }}">{{ ui.icon('pencil') }}<span>Bijwerken</span>{% if card.note %}<span class="visually-hidden">, er is een notitie</span>{% endif %}</summary>
+      <form method="post" action="/sollicitaties/{{ job['id'] }}" class="board-form" data-pending-form>
         {% include '_csrf.html' %}
-        <div class="field"><label for="st-{{ card.job['id'] }}">Status</label><select id="st-{{ card.job['id'] }}" name="status">{% for value, label in statuses %}<option value="{{ value }}" {% if value == column.status %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-        <div class="field"><label for="dl-{{ card.job['id'] }}">Deadline</label><input id="dl-{{ card.job['id'] }}" type="date" name="deadline" value="{{ card.deadline or '' }}"></div>
-        <div class="field"><label for="nt-{{ card.job['id'] }}">Notitie</label><textarea id="nt-{{ card.job['id'] }}" name="note" rows="2">{{ card.note or '' }}</textarea></div>
+        <div class="field"><label for="st-{{ job['id'] }}">Status</label><select id="st-{{ job['id'] }}" name="status">{% for value, label in statuses %}<option value="{{ value }}" {% if value == column.status %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="dl-{{ job['id'] }}">Deadline</label><input id="dl-{{ job['id'] }}" type="date" name="deadline" value="{{ card.deadline or '' }}"></div>
+        <div class="field board-note"><label for="nt-{{ job['id'] }}">Notitie</label><textarea id="nt-{{ job['id'] }}" name="note" rows="3">{{ card.note or '' }}</textarea></div>
         <button class="button small" type="submit">Opslaan</button>
       </form>
-    </article>
-    {% else %}
-    <p class="small muted">Nog niets hier.</p>
-    {% endfor %}
-  </section>
+    </details>
+    {% if card.note %}<p class="app-note small">{{ card.note }}</p>{% endif %}
+  </li>
   {% endfor %}
-</div>
+  </ul>
+{% if collapsed %}</details>{% else %}</section>{% endif %}
+{% endif %}
+{% endfor %}
 {% endblock %}

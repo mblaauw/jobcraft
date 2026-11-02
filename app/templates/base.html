@@ -11,6 +11,7 @@
   <link rel="preload" href="/static/fonts/schibsted-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/app.css">
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/studio.css">
 </head>
 {% set user = request.state.user if request.state is defined and request.state.user else None %}
 {% set path = request.url.path %}
@@ -20,6 +21,13 @@
 {% set new_matches = new_match_count() if (primary and new_match_count is defined) else 0 %}
 {% if is_admin %}{% set secondary = secondary + [('/users', 'Gebruikers', 'users'), ('/admin', 'Systeem', 'activity')] %}{% endif %}
 {% set home_href = '/admin' if is_admin else '/' %}
+{% set work = background_work() if (user and background_work is defined) else {'running': [], 'done': []} %}
+{% macro work_strip() -%}
+<div class="work-strip" data-work-strip{% if work.running %} data-work-running{% endif %} aria-live="polite">
+  {%- for item in work.running %}<a class="work-item is-running" href="{{ item.href }}"><span class="work-dot" aria-hidden="true"></span><span><strong>{{ item.what }}</strong> {{ item.verb }}<span class="work-for">{{ item.title }}</span></span></a>{% endfor -%}
+  {%- for item in work.done %}<a class="work-item is-done" href="{{ item.href }}">{{ ui.icon('circle-check') }}<span><strong>{{ item.what }}</strong> {{ item.verb }}<span class="work-for">{{ item.title }}</span></span></a>{% endfor -%}
+</div>
+{%- endmacro %}
 {% macro is_active(href) -%}{{ 'yes' if path == href or (href != '/' and path.startswith(href + '/')) else '' }}{%- endmacro %}
 <body>
   <a class="skip-link" href="#main-content">Naar de inhoud</a>
@@ -43,6 +51,7 @@
           </div>
         </div>
       </nav>
+      {{ work_strip() if user }}
       {% if user %}
       <footer class="rail-foot">
         <div class="rail-user"><strong>{{ user.display_name or user.username }}</strong><span>{{ 'Beheerder' if user.role == 'admin' else 'Ingelogd' }}</span></div>
@@ -69,6 +78,7 @@
       {% endif %}
     </div>
 
+    <div class="topbar-work">{{ work_strip() if user }}</div>
     <main id="main-content" class="main" tabindex="-1">
       {% block content %}{% endblock %}
     </main>

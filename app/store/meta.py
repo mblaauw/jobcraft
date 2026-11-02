@@ -36,6 +36,16 @@ def save_token_df(counter: dict[str, int], total: int) -> None:
 
 
 
+def meta_like(prefix: str) -> list[tuple[str, str]]:
+    """This account's settings whose key starts with a fixed prefix."""
+    with connect() as con:
+        rows = con.execute(
+            "SELECT key, value FROM user_meta WHERE owner=? AND key >= ? AND key < ?",
+            (tenancy.user_id(), prefix, prefix + "\U0010ffff"),
+        ).fetchall()
+    return [(row["key"], row["value"]) for row in rows]
+
+
 def meta_get(key: str, default: str | None = None) -> str | None:
     with connect() as con:
         if key in (
@@ -47,6 +57,7 @@ def meta_get(key: str, default: str | None = None) -> str | None:
             "source_health",
             "digest_last_tick",
             "worker_heartbeat",
+            "model_routes",
         ):
             row = con.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
         else:
@@ -68,6 +79,7 @@ def meta_set(key: str, value: str) -> None:
             "source_health",
             "digest_last_tick",
             "worker_heartbeat",
+            "model_routes",
         ):
             con.execute(
                 "INSERT INTO meta(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",

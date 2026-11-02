@@ -76,7 +76,7 @@ def services(role: str) -> Iterator[None]:
                     log.info("LLM client ready for %s", manager.base_url)
             if background:
                 tasks.start_workers(
-                    int(os.environ.get("TASK_WORKERS", "2")), resolve_owner=_resolve_task_owner
+                    int(os.environ.get("TASK_WORKERS", "4")), resolve_owner=_resolve_task_owner
                 )
                 scheduler.start()
             yield

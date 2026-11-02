@@ -135,7 +135,14 @@ also ignores databases, generated documents and common secret files.
 
 Personal data is stripped before prompts: only the public profile excerpt is
 sent for matching and document generation. The `Privé` and `Open vragen`
-sections are not used in applications.
+sections are not used in applications. Name and contact details never enter a
+prompt: the document layout adds them afterwards.
+
+Every AI call (task, model, input, output, tokens, duration) is appended to
+`ai-log/YYYY-MM-DD.jsonl` in the account's folder and removed after `AI_LOG_DAYS`
+(default 30). The folder belongs to the account, so export and deletion include it.
+`/admin/ai` lists the calls; admins read the prompts of their own account there and
+those of others only in the files on the server.
 
 ## Accounts
 
@@ -174,6 +181,16 @@ on `/sources` scan or toggle the shared catalogue. Browser-only sources use
 Per job and account, generated CVs and letters live under `data/jobs/` or
 `data/users/<id>/jobs/`. Every generation creates a new immutable version
 (`kind-vN.docx` + PDF). An interrupted run never overwrites an existing version.
+
+The studio at `/jobs/<id>/sollicitatie` works in stages: read the vacancy and public
+employer pages (`app/employer_research.py`), make a plan with the person's evidence and
+three angles (`app/application_plan.py`), then write, check and revise
+(`app/document_pipeline.py`). Numbers and names that appear nowhere in the source are
+flagged without AI (`app/document_content.py`). The layout (`app/document_design.py`,
+`app/document_letter.py`) is a real Word file and the source of the PDF.
+
+Which model does what is set per task at `/admin/ai`. A choice there wins over
+`LLM_MODEL_<TASK>`, which wins over `LLM_MODEL`.
 
 PDF conversion uses LibreOffice; on macOS without it, the app can use the local
 Docker image as converter.

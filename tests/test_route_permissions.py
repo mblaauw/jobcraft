@@ -3,7 +3,19 @@
 from fastapi.routing import APIRoute
 
 from app import auth
-from app.routers import account, interview, jobs, pages, profile, sources, start, tasks, workspace
+from app.routers import (
+    account,
+    admin_ai,
+    interview,
+    jobs,
+    pages,
+    profile,
+    sources,
+    start,
+    studio,
+    tasks,
+    workspace,
+)
 
 PUBLIC = {
     ("GET", "/login"),
@@ -14,6 +26,10 @@ PUBLIC = {
 }
 ADMIN = {
     ("GET", "/admin"),
+    ("GET", "/admin/ai"),
+    ("POST", "/admin/ai/modellen"),
+    ("POST", "/admin/ai/test"),
+    ("GET", "/admin/ai/log/{owner}/{day}/{offset}"),
     ("GET", "/users"),
     ("POST", "/users"),
     ("POST", "/users/uitnodiging"),
@@ -26,6 +42,18 @@ ADMIN = {
 }
 USER = {
     ("POST", "/logout"),
+    ("GET", "/api/werk"),
+    ("GET", "/jobs/{job_id}/tekst"),
+    ("POST", "/profile/positie"),
+    ("GET", "/jobs/{job_id}/sollicitatie"),
+    ("POST", "/jobs/{job_id}/sollicitatie/plan"),
+    ("POST", "/jobs/{job_id}/sollicitatie/schrijven"),
+    ("POST", "/jobs/{job_id}/sollicitatie/gegevens"),
+    ("POST", "/jobs/{job_id}/sollicitatie/verhaal/{index}/verwijderen"),
+    ("POST", "/jobs/{job_id}/sollicitatie/documenten/{document_id}/opmaak"),
+    ("POST", "/jobs/{job_id}/sollicitatie/documenten/{document_id}/tekst"),
+    ("POST", "/jobs/{job_id}/sollicitatie/documenten/{document_id}/toon"),
+    ("GET", "/jobs/{job_id}/sollicitatie/documenten/{document_id}/voorbeeld/{page}.png"),
     ("POST", "/jobs/{job_id}/documents/{document_id}/herschrijven"),
     ("GET", "/jobs/{job_id}/documents/{document_id}/verschil"),
     ("GET", "/account"),
@@ -92,7 +120,20 @@ USER = {
 
 
 def test_every_endpoint_has_reviewed_permission_dependency():
-    groups = (auth, account, interview, jobs, pages, profile, sources, start, tasks, workspace)
+    groups = (
+        auth,
+        account,
+        admin_ai,
+        interview,
+        jobs,
+        pages,
+        profile,
+        sources,
+        start,
+        studio,
+        tasks,
+        workspace,
+    )
     routes = [
         route for group in groups for route in group.router.routes if isinstance(route, APIRoute)
     ]

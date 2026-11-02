@@ -411,7 +411,7 @@ def test_document_post_retains_context_without_starting_a_second_generation(clie
     assert response.headers["location"] == target + "#documenten"
     html = soup(client.get(response.headers["location"]))
     assert html.select_one('[data-job-detail][data-document-state="running"]')
-    assert html.select_one("#detail-resume").has_attr("disabled")
+    assert html.select_one('a[href$="/sollicitatie"]')
 
 
 def test_document_requests_from_multiple_views_start_one_generation(client, monkeypatch):

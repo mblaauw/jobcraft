@@ -559,8 +559,10 @@ a.vacancy-score:hover { box-shadow: 0 0 0 4px var(--sunk); }
 .job-actionbar .group > .label { margin: 0; color: var(--ink-2); font-weight: 600; }
 .job-layout {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); gap: 22px; align-items: start;
-  grid-template-areas: "text docs" "text assess";
+  grid-template-areas: "text docs" "text assess" "text prep" "text .";
+  grid-template-rows: auto auto auto 1fr;
 }
+#inzicht { grid-area: prep; }
 .job-text { grid-area: text; }
 .job-assessment { grid-area: assess; }
 .job-documents { grid-area: docs; }
@@ -608,7 +610,7 @@ html.job-drawer-open { overflow: hidden; scrollbar-gutter: stable; }
 .job-drawer-notice[role="alert"] { background: var(--clay-soft); color: var(--clay); }
 .job-drawer-notice .button { margin-left: 8px; }
 .job-drawer-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 22px 24px 40px; }
-.job-drawer-body .job-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "assess" "text" "docs"; gap: 16px; }
+.job-drawer-body .job-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "assess" "docs" "text" "prep"; grid-template-rows: none; gap: 16px; }
 .job-drawer-body .job-head { margin-bottom: 14px; }
 .job-drawer-body .panel { padding: 20px; margin: 0; }
 @keyframes drawer-enter { from { transform: translateX(24px); opacity: .6; } to { transform: none; opacity: 1; } }
@@ -732,7 +734,7 @@ html.job-drawer-open { overflow: hidden; scrollbar-gutter: stable; }
 @media (max-width: 1180px) {
   .main { padding: 32px 28px 56px; }
   .dash-grid { grid-template-columns: minmax(0, 1fr); }
-  .job-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "assess" "text" "docs"; }
+  .job-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "docs" "assess" "text" "prep"; grid-template-rows: none; }
   .interview-layout { grid-template-columns: minmax(0, 1fr) 280px; }
 }
 

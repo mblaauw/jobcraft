@@ -1,0 +1,67 @@
+{# Strengths and weak spots, told the way a recruiter would never say them out loud. #}
+<section class="position" id="positie" aria-labelledby="positie-title">
+  <h2 id="positie-title" class="visually-hidden">Je positie</h2>
+  {% if position_status == 'running' %}
+  <div class="position-wait" data-auto-refresh="5000" aria-live="polite">
+    <span class="work-dot" aria-hidden="true"></span>
+    <div><strong>We kijken naar je als een recruiter</strong><p class="small muted">Dit duurt ongeveer een minuut. Klik gerust verder: het werk gaat door.</p></div>
+  </div>
+  {% elif position %}
+  <p class="position-headline">{{ position.headline }}</p>
+  <p class="position-first"><span class="small muted">Wat een recruiter in zes seconden denkt</span>{{ position.first_impression }}</p>
+  {% if position.outdated %}<p class="banner">{{ ui.icon('clock') }}<span>Je profiel is veranderd sinds deze analyse.</span></p>{% endif %}
+
+  {% if position.best_next_steps %}
+  <div class="position-next">
+    <h3>Dit levert deze week het meeste op</h3>
+    <ol>{% for step in position.best_next_steps %}<li>{{ step }}</li>{% endfor %}</ol>
+  </div>
+  {% endif %}
+
+  <div class="position-sides">
+    <div class="position-side">
+      <h3>Hier sta je sterk</h3>
+      {% for item in position.strengths %}
+      <article><strong>{{ item.title }}</strong><p>{{ item.proof }}</p><p class="position-use"><span>Zo zet je het in</span> {{ item.how_to_use }}</p></article>
+      {% endfor %}
+    </div>
+    <div class="position-side is-weak">
+      <h3>Hier ben je kwetsbaar</h3>
+      {% for item in position.weaknesses %}
+      <article><strong>{{ item.title }}</strong><p>{{ item.how_it_looks }}</p><p class="position-use"><span>Dit kun je doen</span> {{ item.action }}</p></article>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if position.in_demand_have or position.in_demand_missing %}
+  <div class="position-market">
+    <h3>Wat vacatures die bij je passen vragen</h3>
+    <div class="chips">
+      {% for item in position.in_demand_have %}<span class="chip chip-ok">{{ ui.icon('check') }}{{ item }}</span>{% endfor %}
+      {% for item in position.in_demand_missing %}<span class="chip chip-warn">{{ item }}<span class="visually-hidden"> (ontbreekt)</span></span>{% endfor %}
+    </div>
+    <p class="small muted">Groen heb je, oranje vragen ze vaak en ontbreekt nog. Op basis van de vacatures die het best bij je passen.</p>
+  </div>
+  {% endif %}
+  <form method="post" action="/profile/positie" data-pending-form class="position-again">{% include '_csrf.html' %}<button class="button small" type="submit">Opnieuw analyseren</button><span class="small muted">Laatst op {{ ui.nl_date(position.created_at) }}</span></form>
+  {% elif profile_md %}
+  <div class="position-invite">
+    <h3>Wat ziet een recruiter als die jouw cv opent?</h3>
+    <p>Een eerlijke analyse van je sterktes en je zwakke plekken, naast de vacatures die bij je passen, met wat je deze week kunt doen.</p>
+    {% if position_status == 'error' %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>Dat lukte net niet. Probeer het opnieuw.</span></p>{% endif %}
+    <form method="post" action="/profile/positie" data-pending-form>{% include '_csrf.html' %}<button class="button primary" id="profile-position" type="submit">{{ ui.icon('sparkles') }}Laat me zien hoe ik overkom</button></form>
+    <p class="small muted">Duurt ongeveer een minuut en loopt door als je verder klikt.</p>
+  </div>
+  {% endif %}
+
+  {% if cv_checks %}
+  <div class="position-checks">
+    <h3>Je cv, nagemeten</h3>
+    <ul>
+      {% for check in cv_checks %}
+      <li class="{{ 'is-ok' if check.ok else 'is-todo' }}">{{ ui.icon('circle-check' if check.ok else 'circle') }}<div><strong>{{ check.label }}</strong><p class="small muted">{{ check.detail }}</p></div></li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</section>

@@ -1,0 +1,118 @@
+{# The workbench: the real page on the left, everything you can do with it on the right. #}
+{% set row = current.row %}{% set meta = current.meta %}{% set content = meta.content %}
+{% set is_cv = row['kind'] == 'resume' %}{% set review = meta.review or {} %}
+{% set base = '/jobs/' ~ job['id'] ~ '/sollicitatie/documenten/' ~ row['id'] %}
+{% set latest = versions[row['kind']][0].row['id'] == row['id'] %}
+<div class="desk">
+  <div class="desk-paper">
+    {% if row['pdf_path'] and can_preview %}
+      {% for page in range(1, (meta.pages or 1) + 1) %}
+      <img class="sheet" src="{{ base }}/voorbeeld/{{ page }}.png" width="910" height="1286" alt="Voorbeeld van {{ 'je cv' if is_cv else 'je brief' }}, pagina {{ page }}. De tekst staat ook onder Tekst aanpassen.">
+      {% endfor %}
+    {% else %}
+      <div class="sheet sheet-none"><p>Een voorbeeld is hier niet beschikbaar. Download het document om het te bekijken.</p></div>
+    {% endif %}
+  </div>
+
+  <aside class="desk-rail" aria-label="Acties voor dit document">
+    <div class="rail-get">
+      {% if row['pdf_path'] %}<a class="button primary" id="studio-pdf" href="/jobs/{{ job['id'] }}/documents/{{ row['id'] }}/pdf">{{ ui.icon('file-text') }}Download PDF</a>{% endif %}
+      <a class="button" id="studio-docx" href="/jobs/{{ job['id'] }}/documents/{{ row['id'] }}/docx">Word</a>
+    </div>
+    {% if not latest %}<p class="banner small">{{ ui.icon('clock') }}<span>Je bekijkt versie {{ row['version'] }}. <a href="?tab={{ tab }}">Naar de nieuwste</a></span></p>{% endif %}
+
+    {% set warnings = (review.warnings or []) + (review.unsupported or []) %}
+    {% if warnings %}
+    <section class="rail-check" aria-labelledby="check-title">
+      <h2 id="check-title">{{ ui.icon('triangle-alert') }}Controleer dit voor je verstuurt</h2>
+      <p class="small">Dit konden we niet terugvinden in je gegevens. Klopt het niet, pas het dan aan.</p>
+      <ul>{% for item in warnings %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+    {% endif %}
+
+    {% if review.score is defined and review.score is not none %}
+    <section class="rail-review" aria-labelledby="review-title">
+      <h2 id="review-title">Wat een recruiter ziet</h2>
+      <p class="review-score"><strong>{{ review.score }}</strong><span>van 100. {{ 'Die nodigt je waarschijnlijk uit.' if review.score >= 85 else ('Sterk, maar het kan scherper.' if review.score >= 70 else 'Nog niet overtuigend.') }}</span></p>
+      <p class="small">{{ review.first_impression }}</p>
+      {% if review.strongest %}<p class="small"><strong>Al sterk:</strong> {{ review.strongest }}</p>{% endif %}
+      {% if review.score < 85 %}
+      <details><summary class="small">Hoe het beter kan</summary><ul class="small">{% for item in review.fixes or [] %}<li>{{ item }}</li>{% endfor %}</ul>
+      <p class="small">Het meeste winst zit meestal in jouw details: <a href="?tab=plan">beantwoord de vragen in het plan</a> en schrijf opnieuw.</p></details>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <section aria-labelledby="tone-title">
+      <h2 id="tone-title">Toon</h2>
+      <form method="post" action="{{ base }}/toon" class="tone-row" data-pending-form>
+        {% include '_csrf.html' %}
+        {% for tone in tones %}<button class="button small" type="submit" name="tone" value="{{ tone }}">{{ tone | capitalize }}</button>{% endfor %}
+      </form>
+      <p class="small muted">Maakt een nieuwe versie met AI. Duurt even en gaat door als je verder klikt.</p>
+    </section>
+
+    <section aria-labelledby="look-title">
+      <h2 id="look-title">Opmaak</h2>
+      <form method="post" action="{{ base }}/opmaak" class="look-form" data-autosubmit data-pending-form>
+        {% include '_csrf.html' %}
+        <fieldset class="look-designs"><legend class="visually-hidden">Ontwerp</legend>
+          {% for id, label in designs.items() %}
+          <label class="look-option"><input type="radio" name="design" value="{{ id }}"{% if meta.design == id %} checked{% endif %}><span><strong>{{ label.split(':')[0] }}</strong><span class="small muted">{{ label.split(':')[1] | trim | capitalize }}</span></span></label>
+          {% endfor %}
+          {% if is_cv and own_layout %}
+          <label class="look-option"><input type="radio" name="design" value="eigen"{% if meta.design == 'eigen' %} checked{% endif %}><span><strong>Mijn eigen Word-cv</strong><span class="small muted">Jouw opmaak. Alleen het profiel en de sterke punten veranderen.</span></span></label>
+          {% endif %}
+        </fieldset>
+        <fieldset class="look-colours"><legend class="small">Kleur</legend>
+          {% for id, colour in colours.items() %}
+          <label class="swatch" title="{{ colour[0] }}" style="--swatch:#{{ colour[1] }}"><input type="radio" name="colour" value="{{ id }}"{% if meta.colour == id %} checked{% endif %}><span class="visually-hidden">{{ colour[0] }}</span></label>
+          {% endfor %}
+        </fieldset>
+        <noscript><button class="button small" type="submit">Toepassen</button></noscript>
+      </form>
+    </section>
+
+    <details class="rail-edit">
+      <summary><h2>Tekst aanpassen</h2></summary>
+      <form method="post" action="{{ base }}/tekst" class="edit-form" data-pending-form>
+        {% include '_csrf.html' %}
+        {% if is_cv %}
+          <div class="field"><label for="e-head">Kop onder je naam</label><input id="e-head" name="kop" value="{{ content.headline }}"></div>
+          <div class="field"><label for="e-profile">Profiel</label><textarea id="e-profile" name="profiel" rows="5">{{ content.profile }}</textarea></div>
+          <div class="field"><label for="e-high">Voor deze rol</label><span class="hint">Eén per regel</span><textarea id="e-high" name="hoogtepunten" rows="5">{{ content.highlights | join('\n') }}</textarea></div>
+          <input type="hidden" name="rollen" value="{{ content.experience | length }}">
+          {% for role in content.experience %}
+          <fieldset class="edit-role"><legend>{{ role.role }}</legend>
+            <div class="field"><label for="e-r{{ loop.index0 }}">Functie</label><input id="e-r{{ loop.index0 }}" name="rol_{{ loop.index0 }}" value="{{ role.role }}"><span class="hint">Leeg laten haalt deze rol weg.</span></div>
+            <div class="field"><label for="e-o{{ loop.index0 }}">Organisatie</label><input id="e-o{{ loop.index0 }}" name="organisatie_{{ loop.index0 }}" value="{{ role.organisation }}"></div>
+            <div class="field"><label for="e-p{{ loop.index0 }}">Periode</label><input id="e-p{{ loop.index0 }}" name="periode_{{ loop.index0 }}" value="{{ role.period }}"></div>
+            <div class="field"><label for="e-b{{ loop.index0 }}">Punten, één per regel</label><textarea id="e-b{{ loop.index0 }}" name="punten_{{ loop.index0 }}" rows="4">{{ role.bullets | join('\n') }}</textarea></div>
+          </fieldset>
+          {% endfor %}
+          <div class="field"><label for="e-edu">Opleiding</label><span class="hint">Eén per regel: opleiding | instelling | jaar</span><textarea id="e-edu" name="opleiding" rows="3">{% for item in content.education %}{{ item.title }} | {{ item.organisation }} | {{ item.period }}{{ '\n' }}{% endfor %}</textarea></div>
+          <div class="field"><label for="e-skills">Vaardigheden, één per regel</label><textarea id="e-skills" name="vaardigheden" rows="5">{{ content.skills | join('\n') }}</textarea></div>
+          <div class="field"><label for="e-lang">Talen, één per regel</label><textarea id="e-lang" name="talen" rows="2">{{ content.languages | join('\n') }}</textarea></div>
+        {% else %}
+          <div class="field"><label for="e-salute">Aanhef</label><input id="e-salute" name="aanhef" value="{{ content.salutation }}"></div>
+          <div class="field"><label for="e-text">Brief</label><span class="hint">Laat een lege regel tussen alinea's.</span><textarea id="e-text" name="tekst" rows="18">{{ content.paragraphs | join('\n\n') }}</textarea></div>
+        {% endif %}
+        <button class="button primary" type="submit">Opslaan als nieuwe versie</button>
+      </form>
+    </details>
+
+    <details>
+      <summary><h2>Eerdere versies</h2></summary>
+      <ul class="plain-list small">
+        {% for item in versions[row['kind']] %}
+        <li><a href="?tab={{ tab }}&versie={{ item.row['id'] }}"{% if item.row['id'] == row['id'] %} aria-current="true"{% endif %}>Versie {{ item.row['version'] }}</a>, {{ ui.nl_date(item.row['created_at'], time=True) }}{% if item.meta.edited %}, zelf aangepast{% elif item.meta.tone %}, {{ item.meta.tone }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+    </details>
+
+    <details>
+      <summary><h2>Jouw gegevens</h2></summary>
+      {% include "_studio_contact.html" %}
+    </details>
+  </aside>
+</div>

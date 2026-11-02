@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 
@@ -24,20 +25,24 @@ def convert_pdf(docx_path: Path) -> Path | None:
     """LibreOffice when present, else the app image as a converter (dev only)."""
     soffice = _soffice()
     if soffice:
-        subprocess.run(
-            [
-                soffice,
-                "--headless",
-                "--convert-to",
-                "pdf",
-                "--outdir",
-                str(docx_path.parent),
-                str(docx_path),
-            ],
-            check=True,
-            timeout=180,
-            capture_output=True,
-        )
+        # Its own profile each time: CV and letter convert at once, and LibreOffice refuses
+        # (without saying so) to run twice on one profile.
+        with tempfile.TemporaryDirectory(prefix="jobcraft-office-") as profile:
+            subprocess.run(
+                [
+                    soffice,
+                    f"-env:UserInstallation=file://{profile}",
+                    "--headless",
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    str(docx_path.parent),
+                    str(docx_path),
+                ],
+                check=True,
+                timeout=180,
+                capture_output=True,
+            )
         pdf = docx_path.with_suffix(".pdf")
         return pdf if pdf.exists() else None
     if shutil.which("docker"):
