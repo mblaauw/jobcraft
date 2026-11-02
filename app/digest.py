@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import smtplib
+import ssl
 from email.message import EmailMessage
 from html import escape
 
@@ -38,14 +39,21 @@ def compose(jobs: list[dict], to_address: str) -> EmailMessage:
     message["Subject"] = f"{len(jobs)} nieuwe vacatures voor je"
     message["From"] = os.environ["SMTP_FROM"]
     message["To"] = to_address
+    # Without a public address a link could only point nowhere.
     lines = [
-        f"- {job['title']} · {job['company'] or 'Onbekende organisatie'}\n  {base}/jobs/{job['id']}"
+        f"- {job['title']} · {job['company'] or 'Onbekende organisatie'}"
+        + (f"\n  {base}/jobs/{job['id']}" if base else "")
         for job in jobs
     ]
     message.set_content("Dit zijn je beste nieuwe vacatures:\n\n" + "\n".join(lines))
     items = "".join(
-        f'<li><a href="{escape(base, quote=True)}/jobs/{job["id"]}">{escape(job["title"] or "")}</a>'
-        f" · {escape(job['company'] or 'Onbekende organisatie')}</li>"
+        "<li>"
+        + (
+            f'<a href="{escape(base, quote=True)}/jobs/{job["id"]}">{escape(job["title"] or "")}</a>'
+            if base
+            else escape(job["title"] or "")
+        )
+        + f" · {escape(job['company'] or 'Onbekende organisatie')}</li>"
         for job in jobs
     )
     message.add_alternative(
@@ -57,7 +65,7 @@ def compose(jobs: list[dict], to_address: str) -> EmailMessage:
 def deliver(message: EmailMessage) -> None:
     host, port = os.environ["SMTP_HOST"], int(os.environ.get("SMTP_PORT", "587"))
     with smtplib.SMTP(host, port, timeout=30) as smtp:
-        smtp.starttls()
+        smtp.starttls(context=ssl.create_default_context())
         if os.environ.get("SMTP_USER"):
             smtp.login(os.environ["SMTP_USER"], os.environ.get("SMTP_PASSWORD", ""))
         smtp.send_message(message)

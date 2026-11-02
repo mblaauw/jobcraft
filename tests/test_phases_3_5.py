@@ -1,7 +1,9 @@
 """Market coverage, the daily habit and winning the application."""
 
+import gzip
 import io
 import json
+import ssl
 import zipfile
 from types import SimpleNamespace
 
@@ -337,7 +339,7 @@ def test_digest_sends_once_a_day_and_never_empty(client, monkeypatch):  # noqa: 
         def __exit__(self, *args):
             return False
 
-        def starttls(self):
+        def starttls(self, context=None):
             pass
 
         def send_message(self, message):
@@ -634,3 +636,75 @@ def test_ranking_module_still_reruns_with_new_statuses(client):  # noqa: F811
     job_id = add_job()
     store.update_job_status(job_id, "offer")
     assert ranking.travel_of(store.get_job(job_id))
+
+
+# ---------------------------------------------------------------- review fixes
+
+
+def test_link_import_reads_compressed_pages(monkeypatch):
+    page = b"<html><h1>Planner</h1><p>" + b"Tekst over het werk. " * 40 + b"</p></html>"
+
+    def handler(request):
+        if request.url.path == "/robots.txt":
+            return httpx.Response(404)
+        return httpx.Response(
+            200,
+            headers={"content-encoding": "gzip", "content-type": "text/html"},
+            content=gzip.compress(page),
+        )
+
+    real_client = httpx.Client
+    monkeypatch.setattr(job_import, "_check_public", lambda url: None)
+    monkeypatch.setattr(
+        job_import.httpx,
+        "Client",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    assert job_import.fetch_page("https://public.test/job")["title"] == "Planner"
+
+
+@pytest.mark.parametrize("url", ["http://[x/y", "https://a.test:99999/x", "javascript:alert(1)", "ftp://a.test/"])
+def test_unusable_links_are_refused_in_plain_dutch(url):
+    with pytest.raises(job_import.ImportBlocked):
+        job_import.fetch_page(url)
+
+
+def test_a_pasted_vacancy_never_stores_a_script_link(client):  # noqa: F811
+    job_id = job_import.add({"title": "Planner", "description": "Tekst"}, "javascript:alert(1)")
+    assert store.get_job(job_id)["url"].startswith("https://import.jobcraft.invalid/")
+    assert "detail-original" not in client.get(f"/jobs/{job_id}").text
+
+
+def test_mail_verifies_the_server_certificate(monkeypatch):
+    seen = {}
+
+    class FakeSMTP:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def starttls(self, context=None):
+            seen["context"] = context
+
+        def send_message(self, message):
+            pass
+
+    monkeypatch.setenv("SMTP_HOST", "mail.test")
+    monkeypatch.setattr(digest.smtplib, "SMTP", FakeSMTP)
+    digest.deliver(digest.EmailMessage())
+    assert seen["context"].verify_mode == ssl.CERT_REQUIRED and seen["context"].check_hostname
+
+
+def test_mail_without_a_public_address_has_no_dead_links(monkeypatch):
+    monkeypatch.setenv("SMTP_FROM", "a@b.test")
+    monkeypatch.delenv("APP_BASE_URL", raising=False)
+    job = {"id": 1, "title": "Planner", "company": "Acme"}
+    message = digest.compose([job], "c@d.test")
+    assert "/jobs/1" not in message.as_string()
+    monkeypatch.setenv("APP_BASE_URL", "https://jobs.test")
+    assert "https://jobs.test/jobs/1" in digest.compose([job], "c@d.test").get_body(("plain",)).get_content()
