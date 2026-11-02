@@ -75,15 +75,26 @@ done
 curl -fsS "$base/healthz"
 jar="$proxy_dir/cookies"
 page=$(curl -fsS -c "$jar" "$base/login")
-echo "$page" | grep -q 'href="/jobcraft/static/app.css"'
-if echo "$page" | grep -qE '(href|src|action)="/[^j]'; then
+case "$page" in
+  *'href="/jobcraft/static/app.css"'*) ;;
+  *) echo "error: stylesheet zonder /jobcraft" >&2; exit 1 ;;
+esac
+if printf '%s' "$page" | grep -E '(href|src|action)="/[^j]' >/dev/null; then
   echo "error: pagina bevat nog een link zonder /jobcraft" >&2
   exit 1
 fi
 curl -fsS -o /dev/null "$base/static/fonts/schibsted-grotesk-latin-wght-normal.woff2"
-curl -fsS "$base/static/app.css" | grep -q 'url("fonts/'
-curl -fsS "$base/static/start.js" | grep -q '/jobcraft/start/'
-curl -fsS "$base/static/job-drawer.js" | grep -q '/jobcraft/static/icons.svg'
+# Read to the end: grep -q closing the pipe early would fail curl under pipefail.
+contains() {
+  body=$(curl -fsS "$base/$1")
+  case "$body" in
+    *"$2"*) ;;
+    *) echo "error: $1 mist $2" >&2; exit 1 ;;
+  esac
+}
+contains static/app.css 'url("fonts/'
+contains static/start.js '/jobcraft/start/'
+contains static/job-drawer.js '/jobcraft/static/icons.svg'
 csrf=$(echo "$page" | grep -oE 'name="_csrf" value="[^"]+"' | sed -E 's/.*value="([^"]+)"/\1/')
 target=$(curl -sS -o /dev/null -b "$jar" -c "$jar" -w '%{redirect_url}' \
   --data-urlencode "_csrf=$csrf" --data-urlencode username=owner \
