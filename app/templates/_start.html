@@ -1,7 +1,18 @@
 {% macro steps(current) -%}
+{% set info = [
+  ('Je cv', 'ongeveer 30 seconden', 'We lezen je cv zonder AI, zodat je zo min mogelijk hoeft in te vullen. Je naam en contactgegevens laten we weg.'),
+  ('Je keuzes', 'ongeveer 1 minuut', 'Hiermee filteren we vacatures die sowieso niet passen, zoals te ver weg of het verkeerde aantal uren.'),
+  ('Echte vacatures', 'ongeveer 1 minuut', 'Vijf vacatures met ja of nee. Zo leert Jobcraft wat je echt aanspreekt en komen de beste bovenaan.'),
+  ('Drie vragen', 'ongeveer 1 minuut', 'Hoogstens drie korte vragen over wat een formulier niet kan vragen. Dat helpt bij het beoordelen van vacatures.')
+] %}
 <ol class="start-steps" aria-label="Stappen van de snelle start">
-  {% for label in ['Je cv', 'Je keuzes', 'Echte vacatures', 'Drie vragen'] %}
+  {% for label, _time, _why in info %}
   <li class="{{ 'is-done' if loop.index < current else ('is-current' if loop.index == current else '') }}"{% if loop.index == current %} aria-current="step"{% endif %}><span>{{ loop.index }}</span>{{ label }}</li>
   {% endfor %}
 </ol>
+<p class="start-why"><strong>Stap {{ current }} van 4, {{ info[current - 1][1] }}.</strong> {{ info[current - 1][2] }}</p>
+{%- endmacro %}
+
+{% macro later() -%}
+<p class="small start-later"><a href="/">Later verder</a>: je antwoorden zijn bewaard en je gaat verder waar je was.</p>
 {%- endmacro %}

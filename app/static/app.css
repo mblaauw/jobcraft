@@ -872,3 +872,6 @@ html.job-drawer-open { overflow: hidden; scrollbar-gutter: stable; }
   .js .jobs-filters.filters-fold .filters-more { display: inline-flex; justify-self: start; }
   .job-head h1 { hyphens: auto; }
 }
+.start-why { color: var(--ink-2); font-size: var(--fs-sm); margin: -10px 0 20px; max-width: 68ch; }
+.start-later { margin-top: 14px; }
+.start-overview { margin: 0 0 14px; padding-left: 20px; display: grid; gap: 10px; }

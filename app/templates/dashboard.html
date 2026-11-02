@@ -2,6 +2,8 @@
 {% import "_ui.html" as ui %}
 {% block title %}Overzicht · Jobcraft{% endblock %}
 {% block content %}
+{% if start_open %}<section class="banner" aria-label="Snelle start">{{ ui.icon('clock') }}<span>Je snelle start is nog niet af. Je antwoorden zijn bewaard. <a href="/start">Ga verder waar je gebleven was</a></span></section>{% endif %}
+{% if own_vacancy_hint %}<section class="banner" aria-label="Eigen vacature">{{ ui.icon('file-text') }}<span>Heb je zelf een vacature gevonden? <a href="/jobs/toevoegen">Voeg hem toe</a> en laat meteen een cv en brief maken.{% if plain_cv %} Je gebruikt nu een eenvoudig basis-CV; <a href="/account">voeg je eigen Word-CV toe</a> voor je eigen opmaak.{% endif %}</span></section>{% endif %}
 {% if reminders %}<section class="banner warn" aria-label="Deadlines">{{ ui.icon('clock') }}<span>{% for item in reminders[:3] %}{{ 'Verlopen' if item.overdue else 'Deadline' }}: <a href="/sollicitaties">{{ item.job['title'] }}</a> ({{ item.deadline }}){% if not loop.last %} · {% endif %}{% endfor %}</span></section>{% endif %}
 {% set pipeline = pipeline or {} %}
 {% set name =(request.state.user.display_name or request.state.user.username) if request.state is defined and request.state.user else '' %}
@@ -77,6 +79,7 @@
       </ol>
     </section>
 
+    {% if request.state.user.id == 'legacy' %}
     <section class="panel" aria-labelledby="talk-title">
       <div class="panel-head"><h2 id="talk-title">Gesprekken</h2>
         <form method="post" action="/interview/new" class="inline-form">{% include '_csrf.html' %}<button class="button small" type="submit">{{ ui.icon('plus') }}Nieuw gesprek</button></form>
@@ -93,6 +96,7 @@
       <form method="post" action="/profile/consolidate" class="btn-row">{% include '_csrf.html' %}<input type="hidden" name="full" value="1"><button class="button" type="submit">Profiel maken uit bestaand materiaal</button></form>
       {% endif %}
     </section>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

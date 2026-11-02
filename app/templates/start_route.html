@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% import "_start.html" as start %}
+{% block title %}Wat wil je doen? · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <h1>Wat wil je nu doen?</h1>
+  <p class="lede">Je cv is verwerkt. Kies wat op dit moment het handigst is; het andere kan later altijd nog.</p>
+</div></div>
+<div class="grid two">
+  <section class="panel">
+    <h2>Zoek passende vacatures</h2>
+    <p class="muted">Ongeveer 3 minuten: je keuzes, vijf vacatures en hoogstens drie vragen. Daarna staan de best passende vacatures bovenaan.</p>
+    <div class="btn-row"><a class="button primary" href="/start/keuzes">Ja, zoek voor mij</a></div>
+  </section>
+  <section class="panel">
+    <h2>Ik heb zelf een vacature</h2>
+    <p class="muted">Plak de link of tekst en laat meteen een cv en brief maken. Geen vragen vooraf.</p>
+    <form method="post" action="/start/zelf" data-pending-form>{% include '_csrf.html' %}<div class="btn-row"><button class="button" type="submit">Vacature toevoegen</button></div></form>
+  </section>
+</div>
+{{ start.later() }}
+{% endblock %}

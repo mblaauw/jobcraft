@@ -418,9 +418,9 @@ def test_routes_deny_cross_account_ids_and_admin_privileges(isolated):
     for url in [
         f"/jobs/{jid}/documents/{doc_id}/pdf",
         "/api/sessions/private-owner-session/messages",
-        "/interview?session=private-owner-session",
     ]:
         assert client.get(url).status_code == 404
+    assert client.get("/interview?session=private-owner-session", follow_redirects=False).status_code == 303
     assert (
         client.post(
             "/api/sessions/private-owner-session/send", json={"text": "intrusion"}

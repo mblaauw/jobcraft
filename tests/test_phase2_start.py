@@ -189,7 +189,10 @@ def test_new_account_lands_on_the_start(client, monkeypatch):  # noqa: F811
     monkeypatch.setattr(tenancy, "LEGACY_ID", "not-this-account")
     response = client.get("/", follow_redirects=False)
     assert response.headers["location"] == "/start"
-    assert client.get("/start", follow_redirects=False).headers["location"] == "/start/cv"
+    page = client.get("/start", follow_redirects=False)
+    assert page.status_code == 200
+    assert "ongeveer 3 minuten" in page.text
+    assert 'href="/start/cv"' in page.text
 
 
 def test_cv_upload_shows_corrections_and_stores_only_what_is_confirmed(flow):
@@ -212,7 +215,7 @@ def test_cv_upload_shows_corrections_and_stores_only_what_is_confirmed(flow):
         },
         follow_redirects=False,
     )
-    assert response.headers["location"] == "/start/keuzes"
+    assert response.headers["location"] == "/start/verder"
     with store.connect() as con:
         owner = con.execute("SELECT id FROM users WHERE username='test'").fetchone()["id"]
     with tenancy.scope({"id": owner}):
@@ -291,8 +294,8 @@ def test_choices_are_saved_and_lead_to_varied_real_vacancies(flow):
         assert profile.profile_exists()
         queue = json.loads(store.meta_get("start_swipe"))
         companies = {store.get_job(job_id)["company"] for job_id in queue}
-    assert len(queue) == 10
-    assert len(companies) == 10
+    assert len(queue) == 5
+    assert len(companies) == 5
 
 
 def test_swipes_feed_votes_and_lead_to_the_questions(flow):
@@ -302,8 +305,8 @@ def test_swipes_feed_votes_and_lead_to_the_questions(flow):
         owner = con.execute("SELECT id FROM users WHERE username='test'").fetchone()["id"]
     with tenancy.scope({"id": owner}):
         queue = json.loads(store.meta_get("start_swipe"))
-    assert "Vacature 1 van 10" in soup(flow.get("/start/vacatures")).get_text()
-    answers = ["ja", "nee"] + ["overslaan"] * 8
+    assert "Vacature 1 van 5" in soup(flow.get("/start/vacatures")).get_text()
+    answers = ["ja", "nee"] + ["overslaan"] * 3
     for job_id, answer in zip(queue, answers, strict=True):
         flow.post(f"/start/vacatures/{job_id}", data={"answer": answer}, follow_redirects=False)
     with tenancy.scope({"id": owner}):
@@ -410,7 +413,7 @@ def test_redoing_the_choices_restarts_the_vacancy_count(flow):
     _add_jobs()
     store.meta_set("start_swipe_done", "10")
     _choices(flow)
-    assert "Vacature 1 van 10" in soup(flow.get("/start/vacatures")).get_text()
+    assert "Vacature 1 van 5" in soup(flow.get("/start/vacatures")).get_text()
 
 
 def test_a_pdf_cv_is_enough_to_make_documents_later(flow, monkeypatch):
@@ -425,3 +428,53 @@ def test_a_pdf_cv_is_enough_to_make_documents_later(flow, monkeypatch):
     )
     page = flow.get(f"/jobs/{job_id}").text
     assert "Maak een CV" in page and "Upload eerst je CV" not in page
+
+
+def test_every_step_says_how_long_and_what_for(flow):
+    for path, step in (("/start/cv", "Stap 1 van 4"), ("/start/keuzes", "Stap 2 van 4"), ("/start/vragen", "Stap 4 van 4")):
+        text = soup(flow.get(path)).get_text()
+        assert step in text and "ongeveer" in text
+
+
+def test_a_pause_returns_to_the_first_unfinished_step(flow, monkeypatch):
+    monkeypatch.setattr(tenancy, "LEGACY_ID", "not-this-account")
+    _add_jobs()
+    flow.post("/start/cv/confirm", data={"role": ["Planner"], "section_summary": "Rustige planner met ervaring."})
+    assert flow.get("/start", follow_redirects=False).headers["location"] == "/start/verder"
+    _choices(flow)
+    assert flow.get("/start", follow_redirects=False).headers["location"] == "/start/vacatures"
+    assert "Ga verder waar je gebleven was" in flow.get("/").text
+    flow.post("/start/vacatures/stoppen", follow_redirects=False)
+    assert flow.get("/start", follow_redirects=False).headers["location"] == "/start/vragen"
+    assert flow.post("/start/klaar", follow_redirects=False).headers["location"] == "/jobs?welkom=1"
+    assert flow.get("/start", follow_redirects=False).headers["location"] == "/jobs"
+    assert "Ga verder waar je gebleven was" not in flow.get("/").text
+
+
+def test_own_vacancy_skips_the_questions_and_any_assessment(flow, monkeypatch):
+    monkeypatch.setattr(tenancy, "LEGACY_ID", "not-this-account")
+    calls = []
+    monkeypatch.setattr(start_routes, "_assess_soon", lambda *args: calls.append(args))
+    flow.post("/start/cv/confirm", data={"role": ["Planner"], "section_summary": "Rustige planner met ervaring."})
+    assert "Ik heb zelf een vacature" in flow.get("/start/verder").text
+    response = flow.post("/start/zelf", follow_redirects=False)
+    assert response.headers["location"] == "/jobs/toevoegen"
+    assert calls == []
+    assert flow.get("/start", follow_redirects=False).headers["location"] == "/jobs"
+
+
+def test_the_old_chat_is_gone_for_normal_accounts(flow, monkeypatch):
+    monkeypatch.setattr(tenancy, "LEGACY_ID", "not-this-account")
+    response = flow.get("/interview", follow_redirects=False)
+    assert response.status_code == 303 and response.headers["location"] == "/"
+
+
+def test_existing_accounts_see_what_is_new_on_the_overview(flow, monkeypatch):
+    monkeypatch.setattr(tenancy, "LEGACY_ID", "not-this-account")
+    flow.post("/start/cv/confirm", data={"role": ["Planner"], "section_summary": "Rustige planner met ervaring."})
+    page = flow.get("/").text
+    assert "Ga verder waar je gebleven was" in page
+    assert "/jobs/toevoegen" in page
+    assert "voeg je eigen Word-CV toe" in page
+    store_votes = flow.get("/jobs?within=0")
+    assert store_votes.status_code == 200
