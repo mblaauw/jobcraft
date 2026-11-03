@@ -17,6 +17,7 @@ from . import (
     document_pipeline,
     feedback,
     insights,  # noqa: F401  (registers its task)
+    job_index,
     matching,
     notifications,
     profile,
@@ -41,6 +42,7 @@ def _run_scan() -> dict:
     try:
         summary = sources.scan()
         feedback.refresh_document_frequency()
+        _refresh_index()
         store.meta_set("scan_summary", json.dumps(summary, ensure_ascii=False))
         store.meta_set("scan_status", "done")
         if os.environ.get("MATCH_AFTER_SCAN", "1") != "0":
@@ -51,6 +53,26 @@ def _run_scan() -> dict:
         log.exception("scan failed")
         store.meta_set("scan_status", f"error: {exc}"[:400])
         raise
+
+
+def _refresh_index() -> int:
+    """New vacancies get their meaning vector before anyone's ranking runs; never fails a scan."""
+    try:
+        return job_index.refresh()
+    except Exception:
+        log.exception("vacancy index failed")
+        return 0
+
+
+@tasks.handler("index")
+def _task_index(task):
+    """At worker start: build or complete the index, then re-rank everyone with it."""
+    if task["owner"] is not None:
+        raise RuntimeError("index tasks must be shared")
+    if _refresh_index():
+        for owner in store.active_owners_with_profile():
+            tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}")
+    return {}
 
 
 def _refresh_notifications() -> None:

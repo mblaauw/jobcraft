@@ -46,7 +46,8 @@ services:
       - ./seed:/seed:ro
     restart: unless-stopped
     stop_grace_period: 60s
-    mem_limit: 1280m
+    # 1.8 GB of this is the embedding model's short-lived child process (app/embed_child.py).
+    mem_limit: 3072m
     cpus: 1.25
     logging:
       driver: json-file

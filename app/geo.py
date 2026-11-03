@@ -7,6 +7,8 @@ without a driving-time budget it does not bypass the bike/transit limits.
 
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import csv
 import json
 import math
@@ -122,10 +124,25 @@ def _settings_cached(serialized: str) -> dict:
     }
 
 
+_REMEMBERED: contextvars.ContextVar[dict | None] = contextvars.ContextVar("geo_home", default=None)
+
+
+@contextlib.contextmanager
+def remembered_home():
+    """Read home once for a whole re-rank instead of once per vacancy."""
+    token = _REMEMBERED.set(home())
+    try:
+        yield
+    finally:
+        _REMEMBERED.reset(token)
+
+
 def home() -> dict:
     """Read the current account's preferences; cache by content, never request identity."""
     from . import profile
 
+    if (remembered := _REMEMBERED.get()) is not None:
+        return dict(remembered)
     data = profile.read_preferences().get("home") or {}
     return dict(_settings_cached(json.dumps(data, sort_keys=True)))
 

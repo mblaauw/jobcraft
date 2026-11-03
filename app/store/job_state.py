@@ -87,6 +87,17 @@ def set_rank_scores(scores: dict[int, float]) -> None:
             _set_job_state(con, job_id, rank_score=score)
 
 
+def light_job_states() -> list:
+    """Only what a vote re-rank needs, without the long texts, for every vacancy."""
+    with connect() as con:
+        return con.execute(
+            "SELECT j.id, j.content_hash, COALESCE(s.status,'new') AS status, COALESCE(s.vote,0) AS vote, "
+            "s.match_score, s.profile_hash, s.rank_score FROM jobs j "
+            "LEFT JOIN job_states s ON s.job_id=j.id AND s.owner=?",
+            (tenancy.user_id(),),
+        ).fetchall()
+
+
 def set_job_vote(job_id: int, vote: int) -> None:
     """Store the account's up/down vote (1, -1 or 0) plus a learning event."""
     with connect() as con:

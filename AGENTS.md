@@ -18,6 +18,8 @@ under `data/` and is git-ignored; never commit `data/`, `seed/`, `.runtime/`,
   typed signals for every job; only low-confidence/high-rank cases go to the LLM.
   The LLM verdict cache key must **never include feedback** — votes are applied by
   the deterministic ranker (`app/ranking.py`) so a vote costs $0 and stays instant.
+  A local meaning index (`app/job_index.py`, `app/taste.py`) adds a free "taste"
+  part from the functions sought and the account's own votes, saves and ignores.
 - **Personal data never goes into prompts outside `public_excerpt`.** The `Privé`
   and `Open vragen` sections are stripped; letters/CVs use only public facts.
 - **Accounts are isolated.** Pass ownership explicitly to background work with
@@ -27,7 +29,9 @@ under `data/` and is git-ignored; never commit `data/`, `seed/`, `.runtime/`,
   skill and verify content access (not just titles) before enabling.
 - **Documents are immutable versions.** Never overwrite generated CVs/letters.
 - **Container parity:** the app must work in the Docker image; no browser or local
-  model dependency. Browser-only sources use `local-json` imports instead.
+  model server. The one exception is the pinned static embedding model baked in by
+  `docker/fetch_model.py`; without it the app ranks as before. Browser-only sources
+  use `local-json` imports instead.
 
 ## Delegation (OpenCode agents)
 

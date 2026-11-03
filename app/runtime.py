@@ -16,6 +16,7 @@ from . import (
     docs,
     feedback,
     interview_state,
+    job_index,
     llm,
     profile,
     runtime_lock,
@@ -79,6 +80,8 @@ def services(role: str) -> Iterator[None]:
                     int(os.environ.get("TASK_WORKERS", "4")), resolve_owner=_resolve_task_owner
                 )
                 scheduler.start()
+                if job_index.model_available():
+                    tasks.enqueue("index", owner=None, dedupe_key="index")
             yield
         finally:
             source_http.STOPPING.set()
