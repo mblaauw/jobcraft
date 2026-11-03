@@ -161,6 +161,48 @@ def _names_in(header: list[str], display_name: str) -> list[str]:
     return names
 
 
+_LINKEDIN = re.compile(r"(?:https?://)?(?:www\.)?linkedin\.com/\S+", re.I)
+_CONTACT_LABEL = re.compile(r"^\s*(?:telefoon|tel|mobiel|phone|e-?mail|linkedin)\s*[:.]?\s*$", re.I | re.M)
+_HEADER_LINES = 25
+
+
+def _phones(text: str) -> list[str]:
+    return [match.group(0).strip() for match in _PHONE.finditer(text) if not _YEAR_RANGE.search(match.group(0))]
+
+
+def contact_of(text: str) -> dict:
+    """Name, e-mail, phone and LinkedIn from the top of a CV, so documents can carry them."""
+    lines = [line.strip().lstrip("#").strip() for line in (text or "").splitlines()]
+    top = "\n".join(lines[:_HEADER_LINES])
+    found: dict[str, str] = {}
+    for line in lines[:_HEADER_LINES]:
+        # "CV Jan de Vries 2026 — voor ..." or just "Jan de Vries": the name, without the rest.
+        candidate = re.split(r"\s[—–|-]\s|\d|@|:", re.sub(r"^(?:cv|c\.v\.|curriculum vitae|resume)\b\s*", "", line, flags=re.I))[0]
+        words = candidate.split()
+        if 2 <= len(words) <= 4 and words[0][:1].isupper() and words[-1][:1].isupper() and candidate.casefold() not in _NOT_A_NAME:
+            found["name"] = " ".join(words)
+            break
+    email = _EMAIL.search(text or "")
+    linkedin = _LINKEDIN.search(text or "")
+    phones = _phones(top)
+    if email:
+        found["email"] = email.group(0).rstrip(".")
+    if linkedin:
+        found["linkedin"] = linkedin.group(0).rstrip(".,)")
+    if phones:
+        found["phone"] = phones[0]
+    return found
+
+
+def strip_contact(text: str) -> str:
+    """The same text without e-mail, phone numbers and LinkedIn, and without labels left empty."""
+    text = _EMAIL.sub("", text)
+    text = _LINKEDIN.sub("", text)
+    text = _PHONE.sub(lambda match: "" if not _YEAR_RANGE.search(match.group(0)) else match.group(0), text)
+    text = _CONTACT_LABEL.sub("", "\n".join(re.sub(r"[ \t]{2,}", " ", line).rstrip(" |,·•") for line in text.splitlines()))
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
 def redact(text: str, names: list[str] | None = None) -> str:
     """Remove contact and identity details; deliberately errs on the side of removing."""
     text = _IDENTITY_LINE.sub("", text)

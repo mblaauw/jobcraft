@@ -1,6 +1,7 @@
 {# The plan: what they want next to your proof, the story to tell, and what would make it stronger. #}
 {% set research = plan.research %}{% set strategy = plan.strategy %}
-<form method="post" action="/jobs/{{ job['id'] }}/sollicitatie/schrijven" data-pending-form class="plan">
+<form method="post" action="/jobs/{{ job['id'] }}/sollicitatie/plan" class="plan-redo" data-pending-form>{% include '_csrf.html' %}<span class="small muted">Klopt het plan niet meer, bijvoorbeeld na een nieuw cv?</span> <button class="button quiet small" type="submit">Maak het plan opnieuw</button></form>
+<form method="post" action="/jobs/{{ job['id'] }}/sollicitatie/schrijven" data-pending-form class="plan" id="plan-form">
   {% include '_csrf.html' %}
   <section class="plan-lead">
     <h2>Waar het om draait</h2>
@@ -73,21 +74,23 @@
     </div>
   </section>
 
-  {% if contact_missing %}<p class="banner warn">{{ ui.icon('triangle-alert') }}<span>Een werkgever moet je kunnen bereiken. Vul onder <a href="#gegevens">Jouw gegevens</a> je volledige naam en een telefoonnummer of e-mailadres in.</span></p>{% endif %}
-  <div class="plan-actions">
-    <button class="button primary" id="studio-write" type="submit" name="wat" value="both">{{ 'Schrijf opnieuw met deze keuzes' if has_documents else 'Schrijf mijn cv en brief' }}</button>
-    <span class="small muted">Duurt een tot twee minuten en gaat door als je verder klikt. Elke vorige versie blijft bewaard.</span>
-  </div>
 </form>
 
+{% if contact_missing %}
+<div class="banner warn plan-contact">{{ ui.icon('triangle-alert') }}<div><p><strong>Een werkgever moet je kunnen bereiken.</strong> Vul je volledige naam en een telefoonnummer of e-mailadres in, dan staan ze bovenaan je cv en brief.</p>{% include "_studio_contact.html" %}</div></div>
+{% endif %}
+<div class="plan-actions">
+  <button class="button primary" id="studio-write" type="submit" form="plan-form" name="wat" value="both">{{ 'Schrijf opnieuw met deze keuzes' if has_documents else 'Schrijf mijn cv en brief' }}</button>
+  <span class="small muted">Duurt een tot twee minuten en gaat door als je verder klikt. Elke vorige versie blijft bewaard.</span>
+</div>
+
 <div class="plan-columns plan-extras">
-  {% include "_studio_contact.html" %}
+  {% if not contact_missing %}<details class="plan-contact-saved"><summary><h2>Jouw gegevens</h2></summary>{% include "_studio_contact.html" %}</details>{% endif %}
   <section aria-labelledby="stories-title">
     <h2 id="stories-title">Wat je ons eerder vertelde</h2>
     {% if stories %}
     <ul class="plain-list">{% for story in stories %}<li><span class="small muted">{{ story.question }}</span><br>{{ story.answer }}
       <form method="post" action="/jobs/{{ job['id'] }}/sollicitatie/verhaal/{{ loop.index0 }}/verwijderen">{% include '_csrf.html' %}<button class="button quiet small" type="submit">Verwijder</button></form></li>{% endfor %}</ul>
     {% else %}<p class="muted">Nog niets. Je antwoorden op de vragen hierboven komen hier te staan.</p>{% endif %}
-    <form method="post" action="/jobs/{{ job['id'] }}/sollicitatie/plan" data-pending-form>{% include '_csrf.html' %}<button class="button small" type="submit">Maak het plan opnieuw</button></form>
   </section>
 </div>

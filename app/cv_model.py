@@ -14,7 +14,7 @@ import secrets
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from . import profile, store
+from . import cv_text, profile, store
 from .util import now_iso
 
 KEY = "cv_data"
@@ -155,3 +155,16 @@ def points_from_lines(old: list[dict], text: str) -> list[dict]:
 
 def lines(text: str) -> list[str]:
     return [line.strip().lstrip("-•* ").strip() for line in text.replace("\r\n", "\n").split("\n") if line.strip()]
+
+
+def without_contact(data: dict) -> dict:
+    """The CV without phone numbers, e-mail or LinkedIn in its text; those belong in Jouw gegevens."""
+    clean = json.loads(json.dumps(data))
+    clean["summary"] = cv_text.strip_contact(clean.get("summary") or "")
+    for role in clean.get("roles") or []:
+        for point in role["points"]:
+            point["text"] = cv_text.strip_contact(point["text"])
+        role["points"] = [point for point in role["points"] if point["text"]]
+    for key in LISTS:
+        clean[key] = [text for text in (cv_text.strip_contact(item) for item in clean.get(key) or []) if text]
+    return clean

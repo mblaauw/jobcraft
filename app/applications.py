@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from datetime import date, timedelta
 
-from . import store, vacancy_text
+from . import ranking, store, vacancy_text
 
 COLUMNS = (
     ("saved", "Bewaard"),
@@ -59,6 +59,16 @@ def record_status(job_id: int, status: str) -> None:
     if status in STATUSES:
         current = details(job_id)
         save_details(job_id, current.get("deadline", ""), current.get("note", ""), status)
+
+
+def on_the_list(job: dict) -> dict:
+    """Working on an application means it belongs on Sollicitaties, where Vandaag finds it."""
+    if job["status"] != "new":
+        return job
+    store.update_job_status(job["id"], "saved")
+    record_status(job["id"], "saved")
+    ranking.after_vote(job["id"])
+    return {**job, "status": "saved"}
 
 
 def _documents(job_id: int) -> dict:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import logging
+import re
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -48,6 +49,33 @@ TONES = {
     "korter": "Maak het duidelijk korter en houd alleen het sterkste over.",
     "gedurfder": "Maak het gedurfder en opvallender: een sterkere opening en een eigen stem.",
 }
+
+
+CHECKED = "nagekeken"  # a rewrite that takes the points under "Controleer dit" away
+_QUOTED = re.compile("[\"'\u2018\u201c]([^\"'\u2019\u201d]{2,80})[\"'\u2019\u201d]")
+
+
+def check_points(review: dict) -> list[str]:
+    """What to check before sending, each point once: two notes about the same quote are one."""
+    seen: set[str] = set()
+    points = []
+    for item in [*(review.get("warnings") or []), *(review.get("unsupported") or [])]:
+        quoted = _QUOTED.findall(item)
+        key = (quoted[0] if quoted else item).casefold().strip()
+        if key not in seen:
+            seen.add(key)
+            points.append(item)
+    return points
+
+
+def _instruction(tone: str, meta: dict) -> str:
+    if tone == CHECKED:
+        points = "\n".join(f"- {item}" for item in check_points(meta.get("review") or {}))
+        return (
+            "Verander alleen wat nodig is zodat deze punten niet meer gelden: haal wat niet in de "
+            "gegevens staat weg, of zeg alleen wat er wel staat. Houd de rest en de stem gelijk.\n" + points
+        )
+    return TONES[tone]
 
 
 def _lines(kind: str, content: dict) -> list[str]:
@@ -252,6 +280,7 @@ def save_version(
         "review": review or {},
         "angle": plan.get("angle"),
         "pdf_error": pdf_error,
+        "contact_key": document_contact.key(document_contact.load()),
         **(extra or {}),
     }
     (directory / f"{stem}.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))
@@ -290,7 +319,7 @@ def retone(mgr, job: dict, kind: str, content: dict, meta: dict, tone: str) -> d
     """Paid, on request. The same fact checks apply as to a first draft."""
     plan = application_plan.load(job["id"]) or {}
     agent, model = ("cv_writer", CvContent) if kind == "resume" else ("letter_writer", LetterContent)
-    prompt = _write_prompt(kind, job, plan, TONES[tone], content)
+    prompt = _write_prompt(kind, job, plan, _instruction(tone, meta), content)
     with docs._generation_lock(tenancy.user_id(), job["id"], kind):
         better = application_plan.call_json(mgr, prompt, agent=agent, model=model, ref=f"job:{job['id']}")
         source = application_plan.person_source(plan) + "\n" + application_plan.employer_source(job, plan)
