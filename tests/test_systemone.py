@@ -127,3 +127,13 @@ def test_disabled_without_key(monkeypatch):
     assert systemone.enabled() is False
     with pytest.raises(systemone.SystemOneError):
         systemone.decide("state")
+
+
+def test_good_or_excellent_is_a_sure_fit_and_the_middle_is_not():
+    sure = {"type": "score", "score": 3.4, "confidence": 0.53,
+            "probabilities": {"0": 0, "1": 0.02, "2": 0.05, "3": 0.4, "4": 0.53}}
+    assert systemone.signals_from_answers({"fit": sure})["confidence"] == 0.93
+    assert systemone.signals_from_answers({"fit": sure})["escalate"] is False
+    torn = {"type": "score", "score": 2.0, "confidence": 0.5,
+            "probabilities": {"0": 0.1, "1": 0.2, "2": 0.4, "3": 0.2, "4": 0.1}}
+    assert systemone.signals_from_answers({"fit": torn})["escalate"] is True
