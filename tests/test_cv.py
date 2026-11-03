@@ -139,3 +139,10 @@ def test_without_a_cv_the_page_invites_one_and_tabs_still_work(client, monkeypat
     assert "Zet je cv hier neer" in page and 'action="/profile/cv/inlezen"' in page
     assert "Woonplaats en reisbereik" in client.get("/profile?tab=zoek").text
     assert client.post("/profile/cv/over-mij", data={"tekst": "x"}).status_code == 409
+
+
+def test_an_id_with_digits_never_vouches_for_a_number(cv):
+    cv["roles"][0]["points"][0]["id"] = "p3f40e2"  # ids are random; this one contains "40"
+    point = cv["roles"][0]["points"][0]["id"]
+    answer = {"notes": [{"target": point, "kind": "sterker", "text": "Met getal.", "suggestion": "Maakte 40 offertes per week."}]}
+    assert cv_ai.coach(_manager([answer]), cv) == []
