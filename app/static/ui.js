@@ -108,6 +108,11 @@
     if (status) status.textContent = "Document wordt gemaakt. Dit duurt meestal 10 tot 20 seconden.";
   });
 
+  // Old links into the profile point at parts that now live on another tab.
+  if (document.querySelector("[data-profile-tabs]") && location.hash.length > 1 && !document.getElementById(location.hash.slice(1))) {
+    location.replace("?tab=" + (location.hash === "#positie" ? "positie" : "meer") + location.hash);
+  }
+
   // Text boxes that grow with what is in them, up to most of the screen.
   const grow = (box) => {
     box.style.height = "auto";

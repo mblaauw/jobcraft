@@ -66,7 +66,7 @@ def test_place_lookup_prefers_the_longest_name():
 
 
 def test_profile_offers_all_places_and_saves_canonical_label(client):  # noqa: F811
-    options = soup(client.get("/profile")).select("#home-places option")
+    options = soup(client.get("/profile?tab=meer")).select("#home-places option")
     assert len(options) > 2500
     response = client.post("/profile/home", data={"place": "nijkerk"}, follow_redirects=False)
     assert response.headers["location"].endswith("saved=home#reisbereik")

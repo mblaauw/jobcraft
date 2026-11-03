@@ -483,10 +483,10 @@ def test_cv_checks_count_what_is_really_there():
 
 def test_position_runs_on_request_and_is_marked_outdated(client, monkeypatch):  # noqa: F811
     profile.write_profile(PROFILE, "test")
-    assert "Laat me zien hoe ik overkom" in client.get("/profile").text
+    assert "Laat me zien hoe ik overkom" in client.get("/profile?tab=positie").text
     client.post("/profile/positie")
     assert career_position.status() == "running"
-    assert "We kijken naar je als een recruiter" in client.get("/profile").text
+    assert "We kijken naar je als een recruiter" in client.get("/profile?tab=positie").text
     position = {
         "headline": "Kop", "first_impression": "Indruk",
         "strengths": [{"title": "Sterk punt", "proof": "Bewijs", "how_to_use": "Gebruik"}],
@@ -497,7 +497,7 @@ def test_position_runs_on_request_and_is_marked_outdated(client, monkeypatch):  
     career_position.make(sent)
     assert "Geheim feit" not in json.dumps(sent.client.calls)
     career_position._set_status("idle")
-    page = client.get("/profile").text
+    page = client.get("/profile?tab=positie").text
     assert "Sterk punt" in page and "Zwak punt" in page
     profile.write_profile(PROFILE + "\n## Talen\nFrans\n", "test")
     assert career_position.load()["outdated"] is True

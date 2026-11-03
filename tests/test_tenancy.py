@@ -418,7 +418,8 @@ def test_routes_deny_cross_account_ids_and_admin_privileges(isolated):
     )
     assert client.get("/users").status_code == 403 and client.get("/admin").status_code == 403
     assert client.post("/sources/scan").status_code == 403
-    assert "LEGACY_PRIVATE_PROFILE" not in client.get("/profile").text
+    for tab in ("cv", "positie", "meer"):
+        assert "LEGACY_PRIVATE_PROFILE" not in client.get(f"/profile?tab={tab}").text
     assert client.get("/jobs").status_code == 200
     assert client.get("/api/sessions").json() == {"sessions": []}
     assert client.post("/profile/restore/1").status_code == 404

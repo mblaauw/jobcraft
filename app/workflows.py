@@ -13,6 +13,7 @@ from . import (
     auth,
     career_position,  # noqa: F401  (registers its task)
     config,
+    cv_ai,  # noqa: F401  (registers its tasks)
     digest,
     document_pipeline,
     feedback,

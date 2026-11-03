@@ -20,6 +20,8 @@ ROLES = (
     ("doc_critic", "Recruitercontrole", "Leest cv en brief kritisch na en wijst verzinsels aan."),
     ("vacancy_reader", "Vacaturetekst opmaken", "Maakt van rommelige tekst een leesbare vacature. Eén keer per tekst; een snel model is genoeg."),
     ("career_coach", "Sterktes en zwaktes", "De eerlijke analyse op de profielpagina."),
+    ("cv_reader", "Cv inlezen", "Zet een geplakt of geüpload cv om naar onderdelen. Letterlijk; een snel model is genoeg."),
+    ("cv_coach", "Cv-coach", "Leest Mijn cv mee en zet vragen, tegenstrijdigheden en sterkere zinnen bij de onderdelen."),
     ("matcher", "Vacature beoordelen", "De diepere beoordeling van twijfelgevallen."),
     ("job_gap", "Wat ontbreekt", "De vergelijking tussen vacature en profiel."),
     ("job_prep", "Gesprek voorbereiden", "Vragen en voorbereiding voor het gesprek."),

@@ -15,6 +15,8 @@ from fastapi.responses import (
 from .. import (
     career_position,
     config,
+    cv_ai,
+    cv_model,
     geo,
     profile,
     profile_check,
@@ -42,12 +44,25 @@ def _assess_soon(kind: str = "match") -> None:
 
 @router.get("/profile", response_class=HTMLResponse)
 def profile_page(request: Request):
+    query = request.query_params
+    saved, error = query.get("saved", ""), query.get("error", "")
+    tab = query.get("tab") or ("meer" if saved or error else "cv")
+    data = cv_model.load()
     return templates.TemplateResponse(
         request,
         "profile.html",
         _profile_context(
-            saved=request.query_params.get("saved", ""),
-            error=request.query_params.get("error", ""),
+            saved=saved,
+            error=error,
+            tab=tab if tab in ("cv", "positie", "meer") else "cv",
+            cv=data,
+            cv_draft=cv_ai.draft(),
+            cv_status=cv_ai.status(),
+            coach=cv_ai.view(data),
+            cv_sources=cv_model.SOURCES,
+            cv_problem=query.get("probleem", "")[:300],
+            cv_saved=query.get("opgeslagen", ""),
+            has_profile_text=bool(profile.public_excerpt(profile.read_profile(), 400).strip()),
         ),
     )
 
@@ -58,7 +73,7 @@ def profile_position():
     """Paid, on request: runs in the background, so nobody has to wait on this page."""
     if profile.profile_exists() and not budget_reached():
         career_position.request()
-    return RedirectResponse(url="/profile#positie", status_code=303)
+    return RedirectResponse(url="/profile?tab=positie", status_code=303)
 
 
 @router.post("/profile/consolidate")

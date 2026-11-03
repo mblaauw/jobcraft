@@ -31,7 +31,7 @@ def test_one_part_of_the_profile_can_be_changed_on_its_own(client):  # noqa: F81
     from app import profile, store
 
     profile.write_profile("## Kern\nOud feit.\n\n## Werkvoorkeuren\nBuiten werken.\n", "test")
-    page = client.get("/profile").text
+    page = client.get("/profile?tab=meer").text
     assert 'action="/profile/sectie"' in page and "data-autogrow" in page
     answer = client.post("/profile/sectie", data={"heading": "Kern", "text": "Nieuw feit.\r\n- Een punt"}, follow_redirects=False)
     assert answer.status_code == 303
@@ -128,12 +128,12 @@ def test_the_one_click_fixes_save_a_new_version(client, monkeypatch):  # noqa: F
 
     profile.write_profile("## Kern\nFeit.\n\n## Zoekprofiel\nGroen.\n", "test")
     client.post("/profile/save", data={"content": PASTED})
-    page = client.get("/profile").text
+    page = client.get("/profile?tab=meer").text
     assert 'action="/profile/onderdelen-terug"' in page and 'action="/profile/aantekeningen-apart"' in page
     client.post("/profile/aantekeningen-apart")
-    assert 'action="/profile/onderdelen-terug"' in client.get("/profile").text  # still known after a small fix
+    assert 'action="/profile/onderdelen-terug"' in client.get("/profile?tab=meer").text  # still known after a small fix
     client.post("/profile/onderdelen-terug")
-    assert "Bij je laatste wijziging" not in client.get("/profile").text
+    assert "Bij je laatste wijziging" not in client.get("/profile?tab=meer").text
     text = profile.read_profile()
     assert "## Kern\nFeit." in text and "### 4. Nog te bevestigen" in text
     assert "+351" not in profile.read_public_excerpt(20000)

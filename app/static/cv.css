@@ -1,0 +1,67 @@
+/* Mijn cv: a calm sheet of parts, a short index beside it, the coach's notes in place. */
+.profile-tabs { overflow-x: auto; scrollbar-width: none; }
+.profile-tabs a { flex: none; white-space: nowrap; }
+.profile-tabs .badge { margin-left: 6px; }
+.cv-start, .cv-review { max-width: 72ch; margin: 0 0 24px; }
+.cv-start h2, .cv-review h2 { margin: 0 0 8px; }
+.cv-read-in { display: grid; gap: 18px; margin-top: 18px; max-width: 72ch; }
+.cv-read-in form { display: grid; gap: 8px; justify-items: start; margin: 0; }
+.cv-read-in label { font-weight: 650; }
+.cv-read-in textarea { min-height: 140px; }
+.cv-again { margin-top: 28px; max-width: 72ch; }
+
+.cv-coach { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: 0 0 24px; padding: 16px 20px; border-radius: var(--r-lg); background: var(--lime-soft); border: 1px solid var(--line); }
+.cv-coach h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 2px; font-size: var(--fs-md); }
+.cv-coach p { margin: 0; max-width: 70ch; }
+.cv-coach form { margin: 0; }
+.cv-coach .wait { flex: 1; background: transparent; border: 0; padding: 0; }
+
+.cv-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 28px; align-items: start; }
+.cv-nav { position: sticky; top: 16px; display: grid; gap: 2px; font-size: var(--fs-sm); }
+.cv-nav a { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: var(--r-sm); color: var(--ink-2); text-decoration: none; font-weight: 650; }
+.cv-nav a:hover { background: var(--sunk); color: var(--ink); }
+.cv-nav .cv-nav-sub { padding-left: 22px; font-weight: 500; }
+.cv-nav .badge { margin-left: auto; }
+
+.cv-sheet { max-width: 76ch; }
+.cv-sheet.is-draft { padding: 4px 24px; border: 1px dashed var(--line-strong); border-radius: var(--r-lg); }
+.cv-part { padding: 20px 0; border-top: 1px solid var(--line); }
+.cv-part:first-child { border-top: 0; padding-top: 4px; }
+.cv-part > h2 { font-size: var(--fs-lg); margin: 0 0 10px; }
+.cv-summary { font-size: var(--fs-md); line-height: 1.6; margin: 0 0 8px; }
+.cv-role { padding: 14px 0; }
+.cv-role + .cv-role { border-top: 1px dashed var(--line); }
+.cv-role header h3 { font-size: var(--fs-md); margin: 0; }
+.cv-role header p { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 2px 0 8px; }
+.cv-period { font-variant-numeric: tabular-nums; }
+.cv-points { margin: 0 0 8px; padding-left: 20px; line-height: 1.6; }
+.cv-points li { margin: 0 0 4px; }
+.cv-source { margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--sunk); color: var(--ink-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.cv-chips { list-style: none; margin: 0 0 8px; padding: 0; }
+
+.cv-edit > summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; color: var(--moss); font-size: var(--fs-sm); font-weight: 650; }
+.cv-edit > summary::-webkit-details-marker { display: none; }
+.cv-edit[open] > summary { margin-bottom: 10px; }
+.cv-edit form { display: grid; gap: 8px; margin: 0 0 8px; }
+.cv-role-form { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
+.cv-role-form .span-all { grid-column: 1 / -1; }
+.cv-role-tools { align-items: center; margin-top: 4px; }
+.cv-role-tools form { margin: 0; }
+.cv-add { margin-top: 12px; }
+
+.cv-note { margin: 10px 0 0; padding: 12px 14px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--moss); border-radius: 0 var(--r) var(--r) 0; font-size: var(--fs-sm); }
+.cv-note.is-klopt_niet { border-left-color: var(--clay); }
+.cv-note.is-niet_claimen { border-left-color: var(--danger); }
+.cv-note p { margin: 0 0 6px; }
+.cv-note-kind { display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--ink); }
+.cv-note-was { color: var(--ink-3); text-decoration: line-through; }
+.cv-note-new { font-weight: 600; }
+.cv-note-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 0; }
+.cv-note-actions input { flex: 1 1 220px; min-height: 36px; padding: 6px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface); font: inherit; }
+
+@media (max-width: 900px) {
+  .profile-tabs a { padding: 10px 12px; }
+  .cv-layout { grid-template-columns: minmax(0, 1fr); }
+  .cv-nav { display: none; }
+  .cv-role-form { grid-template-columns: minmax(0, 1fr); }
+}
