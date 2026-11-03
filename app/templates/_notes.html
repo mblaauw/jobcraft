@@ -62,7 +62,7 @@
       </form>
     </details>
   {% else %}
-    <p>{% if new_answer_chars %}Je hebt sinds de laatste keer nieuwe antwoorden gegeven. Maak een voorstel om ze in je profiel te verwerken.{% else %}Er zijn geen nieuwe antwoorden sinds de laatste keer. Voer eerst een <a href="/interview">gesprek</a>.{% endif %}</p>
+    <p>{% if new_answer_chars %}Je hebt sinds de laatste keer nieuwe antwoorden gegeven. Maak een voorstel om ze in je profiel te verwerken.{% else %}Er zijn geen nieuwe antwoorden sinds de laatste keer. Nieuwe antwoorden komen uit de <a href="/start/vragen">drie korte vragen</a> van de snelle start.{% endif %}</p>
     <div class="btn-row">
       <form method="post" action="/profile/consolidate">
         {% include '_csrf.html' %}

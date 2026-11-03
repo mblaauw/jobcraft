@@ -24,19 +24,10 @@ from . import (  # noqa: F401
     tasks,
     tenancy,
 )
-from .routers import admin_ai, cv, interview, jobs, pages, start, studio, workspace
+from .routers import admin_ai, cv, jobs, pages, start, studio, workspace
 from .routers import profile as profile_routes
 from .routers import sources as source_routes
 from .routers import tasks as task_routes
-from .routers.interview import (  # noqa: F401
-    SendBody,
-    api_messages,
-    api_send,
-    api_sessions,
-    interview_new,
-    interview_page,
-    interview_toggle,
-)
 from .routers.jobs import (  # noqa: F401
     download_document,
     job_detail,
@@ -63,12 +54,8 @@ from .runtime import _resolve_task_owner, _session_lock, get_manager, lifespan  
 from .web import templates  # noqa: F401
 from .web_helpers import (  # noqa: F401
     _jobs_return_target,
-    _last_assistant_text,
-    _model_label,
-    _persist_turn,
     _profile_context,
     _profile_meta,
-    _visible_messages,
 )
 from .workflows import (  # noqa: F401
     _doc_status,
@@ -90,5 +77,5 @@ errors.install(app)
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.middleware("http")(errors.security_headers)
 app.include_router(auth.router)
-for group in (pages, interview, source_routes, workspace, jobs, profile_routes, cv, task_routes, start, studio, admin_ai):
+for group in (pages, source_routes, workspace, jobs, profile_routes, cv, task_routes, start, studio, admin_ai):
     app.include_router(group.router)

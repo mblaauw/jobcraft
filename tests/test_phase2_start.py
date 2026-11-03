@@ -463,10 +463,9 @@ def test_own_vacancy_skips_the_questions_and_any_assessment(flow, monkeypatch):
     assert flow.get("/start", follow_redirects=False).headers["location"] == "/jobs"
 
 
-def test_the_old_chat_is_gone_for_normal_accounts(flow, monkeypatch):
-    monkeypatch.setattr(tenancy, "LEGACY_ID", "not-this-account")
-    response = flow.get("/interview", follow_redirects=False)
-    assert response.status_code == 303 and response.headers["location"] == "/"
+def test_the_old_chat_is_gone(flow):
+    assert flow.get("/interview", follow_redirects=False).status_code == 404
+    assert "/interview" not in flow.get("/jobs").text
 
 
 def test_existing_accounts_see_what_is_new_on_the_overview(flow, monkeypatch):

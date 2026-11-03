@@ -5,7 +5,6 @@ from __future__ import annotations
 import difflib
 import json
 import logging
-import uuid
 from datetime import UTC, datetime
 from urllib.parse import parse_qsl, urlencode, urlsplit
 
@@ -19,75 +18,6 @@ from . import (
 )
 
 log = logging.getLogger("jobcraft")
-
-
-
-def _model_label(model) -> str | None:
-    if isinstance(model, dict):
-        return f"{model.get('providerID')}/{model.get('id')}"
-    return str(model) if model else None
-
-
-
-def _persist_turn(session_id: str, result: dict, kind: str, *, hide_kickoff: bool = False) -> None:
-    for message in result["messages"]:
-        message_id = message.get("id") or f"anon-{uuid.uuid4()}"
-        hidden = int(
-            hide_kickoff
-            and message["role"] == "user"
-            and message["text"].strip() == config.KICKOFF_TEXT
-        )
-        store.add_message(
-            session_id,
-            message_id,
-            message["role"],
-            message["text"],
-            _model_label(message.get("model")),
-            hidden,
-        )
-    usage = result.get("usage") or {}
-    if usage.get("cost_usd") or usage.get("input_tokens") or usage.get("output_tokens"):
-        store.record_usage(
-            session_id,
-            kind,
-            int(usage.get("input_tokens") or 0),
-            int(usage.get("output_tokens") or 0),
-            float(usage.get("cost_usd") or 0.0),
-        )
-    session = result.get("session") or {}
-    if session:
-        store.update_session(
-            session_id,
-            cost_usd=float(session.get("cost") or 0.0),
-            tokens_in=int((session.get("tokens") or {}).get("input") or 0),
-            tokens_out=int((session.get("tokens") or {}).get("output") or 0),
-        )
-    else:
-        store.add_session_usage(
-            session_id,
-            int(usage.get("input_tokens") or 0),
-            int(usage.get("output_tokens") or 0),
-            float(usage.get("cost_usd") or 0.0),
-        )
-
-
-
-def _last_assistant_text(session_id: str) -> str:
-    for row in reversed(store.list_messages(session_id)):
-        if row["role"] == "assistant" and row["text"].strip():
-            return row["text"].strip()
-    return ""
-
-
-
-def _visible_messages(session_id: str) -> list[dict]:
-    rows = store.list_messages(session_id)
-    visible = []
-    for row in rows:
-        if row["hidden"]:
-            continue
-        visible.append({"role": row["role"], "text": row["text"]})
-    return visible
 
 
 

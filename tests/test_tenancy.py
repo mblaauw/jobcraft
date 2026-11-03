@@ -404,24 +404,12 @@ def test_routes_deny_cross_account_ids_and_admin_privileges(isolated):
     ]
     client = TestClient(main.app)
     login(client, "test-user", credentials["test-user"]["password"])
-    for url in [
-        f"/jobs/{jid}/documents/{doc_id}/pdf",
-        "/api/sessions/private-owner-session/messages",
-    ]:
-        assert client.get(url).status_code == 404
-    assert client.get("/interview?session=private-owner-session", follow_redirects=False).status_code == 303
-    assert (
-        client.post(
-            "/api/sessions/private-owner-session/send", json={"text": "intrusion"}
-        ).status_code
-        == 404
-    )
+    assert client.get(f"/jobs/{jid}/documents/{doc_id}/pdf").status_code == 404
     assert client.get("/users").status_code == 403 and client.get("/admin").status_code == 403
     assert client.post("/sources/scan").status_code == 403
     for tab in ("cv", "positie", "meer"):
         assert "LEGACY_PRIVATE_PROFILE" not in client.get(f"/profile?tab={tab}").text
     assert client.get("/jobs").status_code == 200
-    assert client.get("/api/sessions").json() == {"sessions": []}
     assert client.post("/profile/restore/1").status_code == 404
     assert (
         client.post(
@@ -434,4 +422,16 @@ def test_routes_deny_cross_account_ids_and_admin_privileges(isolated):
     assert admin.get("/users").status_code == 200
     assert "LEGACY_PRIVATE_PROFILE" not in admin.get("/admin").text
     client.close()
+    admin.close()
+
+
+def test_admin_shows_tokens_and_the_daily_limit_when_no_prices_are_known(isolated, monkeypatch):
+    monkeypatch.setenv("AI_DAILY_TOKEN_LIMIT", "2000000")
+    store.record_usage(None, "matching", 1_000_000, 108_960, 0.0, agent="matcher")
+    credentials = json.loads((config.RUNTIME_DIR / "bootstrap-accounts.json").read_text())["accounts"]
+    admin = TestClient(main.app)
+    login(admin, "admin", credentials["admin"]["password"])
+    page = admin.get("/admin").text
+    assert "1.108.960" in page and "2.000.000 tokens" in page
+    assert "<th>Kosten</th>" not in page and "meldt geen prijzen" in page
     admin.close()

@@ -151,17 +151,6 @@ def test_interview_context_lists_open_topics(monkeypatch):
     assert "Nog open onderwerpen: Fysieke belasting" in prompts[0]
 
 
-def test_unknown_interview_topic_returns_400():
-    import pytest
-    from fastapi import HTTPException
-
-    from app import main
-
-    with pytest.raises(HTTPException) as error:
-        main.interview_toggle(topic_id="does-not-exist", status="covered", session_id="")
-    assert error.value.status_code == 400
-
-
 def test_interview_context_is_sent_once_until_the_profile_changes():
     store.create_session("context-session", "Context", "interviewer", "fixture")
     prompts = []

@@ -21,23 +21,24 @@
       <div><dt>Model</dt><dd>{{ model }}</dd></div>
       <div><dt>Bronnen actief</dt><dd>{{ enabled_count }} van {{ sources | length }}</dd></div>
       <div><dt>Laatste geslaagde ophaalronde</dt><dd>{% if last_scan %}{{ ui.nl_date(last_scan, time=True) }}{% else %}—{% endif %}</dd></div>
+      <div><dt>Daglimiet per account</dt><dd>{% if token_limit %}{{ ui.number(token_limit) }} tokens{% else %}geen{% endif %}</dd></div>
     </dl>
-    <p class="small muted">Cijfers voor deze hele installatie, de afgelopen 14 dagen. Snelle beoordelingen (Jev) staan als $0 geboekt: de echte kosten staan op het Runware-dashboard.</p>
+    <p class="small muted">Cijfers voor deze hele installatie, de afgelopen 14 dagen. {% if priced %}Snelle beoordelingen (Jev) staan als $0 geboekt: de echte kosten staan op het Runware-dashboard.{% else %}De AI-dienst meldt geen prijzen, dus hier staan alleen tokens. De daglimiet per account houdt het verbruik in de hand.{% endif %}</p>
     <div class="table-scroll" role="region" aria-label="AI-gebruik per soort" tabindex="0">
-      <table class="table nowrap"><thead><tr><th>Soort</th><th>Aanroepen</th><th>Tokens</th><th>Kosten</th></tr></thead><tbody>
-        {% for row in overview.kinds %}<tr><td>{{ row.kind }}</td><td class="num">{{ row.calls }}</td><td class="num">{{ row.tokens }}</td><td class="num">${{ "%.4f" | format(row.cost) }}</td></tr>{% else %}<tr><td colspan="4" class="subtle">Nog geen gebruik.</td></tr>{% endfor %}
+      <table class="table nowrap"><thead><tr><th>Soort</th><th>Aanroepen</th><th>Tokens</th>{% if priced %}<th>Kosten</th>{% endif %}</tr></thead><tbody>
+        {% for row in overview.kinds %}<tr><td>{{ row.kind }}</td><td class="num">{{ ui.number(row.calls) }}</td><td class="num">{{ ui.number(row.tokens) }}</td>{% if priced %}<td class="num">${{ "%.4f" | format(row.cost) }}</td>{% endif %}</tr>{% else %}<tr><td colspan="4" class="subtle">Nog geen gebruik.</td></tr>{% endfor %}
       </tbody></table>
     </div>
   </section>
   <section class="panel" aria-labelledby="days-title">
     <h2 id="days-title">Per dag</h2>
     <div class="table-scroll" role="region" aria-label="AI-gebruik per dag" tabindex="0">
-      <table class="table nowrap"><thead><tr><th>Dag</th><th>Aanroepen</th><th>Tokens</th><th>Kosten</th></tr></thead><tbody>
-        {% for row in overview.days %}<tr><td>{{ ui.nl_date(row.day) }}</td><td class="num">{{ row.calls }}</td><td class="num">{{ row.tokens }}</td><td class="num">${{ "%.4f" | format(row.cost) }}</td></tr>{% else %}<tr><td colspan="4" class="subtle">Nog geen gebruik.</td></tr>{% endfor %}
+      <table class="table nowrap"><thead><tr><th>Dag</th><th>Aanroepen</th><th>Tokens</th>{% if priced %}<th>Kosten</th>{% endif %}</tr></thead><tbody>
+        {% for row in overview.days %}<tr><td>{{ ui.nl_date(row.day) }}</td><td class="num">{{ ui.number(row.calls) }}</td><td class="num">{{ ui.number(row.tokens) }}</td>{% if priced %}<td class="num">${{ "%.4f" | format(row.cost) }}</td>{% endif %}</tr>{% else %}<tr><td colspan="4" class="subtle">Nog geen gebruik.</td></tr>{% endfor %}
       </tbody></table>
     </div>
     <h3>Mislukt werk, 7 dagen</h3>
-    {% if failures %}<ul class="list small">{% for item in failures %}<li><span>{{ item.kind }}: {{ item.n }} keer</span><span class="subtle">{{ ui.nl_date(item['last'], time=True) }}</span></li>{% endfor %}</ul>{% else %}<p class="small muted">Niets mislukt.</p>{% endif %}
+    {% if failures %}<ul class="list small">{% for item in failures %}<li><span>{{ item.kind }}: {{ item.n }} keer</span><span class="subtle">{{ ui.nl_date(item['last'], time=True) }}</span></li>{% endfor %}</ul><p class="small muted">De oorzaak staat in het logboek van de worker. Hier staat bewust niets wat over iemand kan gaan.</p>{% else %}<p class="small muted">Niets mislukt.</p>{% endif %}
   </section>
 </div>
 

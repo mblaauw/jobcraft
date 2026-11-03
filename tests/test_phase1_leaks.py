@@ -181,7 +181,7 @@ def test_browser_errors_are_friendly_and_api_stays_json(client):  # noqa: F811
     assert page.status_code == 404
     assert "unknown job" not in page.text
     assert "Deze pagina bestaat niet" in page.text
-    assert client.get("/api/sessions/nope/messages", headers={"accept": "text/html"}).json()
+    assert client.get("/api/tasks/999999", headers={"accept": "text/html"}).json()
     assert client.get("/jobs/999999").json() == {"detail": "unknown job"}
 
 
