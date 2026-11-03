@@ -136,9 +136,10 @@
   });
 
   // Live refresh for long-running tasks: instead of <meta http-equiv="refresh">
-  // we poll the current page and reload once the running banner disappears.
-  document.querySelectorAll("[data-auto-refresh]").forEach((banner) => {
-    const interval = parseInt(banner.dataset.autoRefresh, 10) || 4000;
+  // we poll the current page once and reload when nothing on it is running any more.
+  const waiting = document.querySelector("[data-auto-refresh]");
+  if (waiting) {
+    const interval = parseInt(waiting.dataset.autoRefresh, 10) || 4000;
     const url = window.location.href;
     async function check() {
       try {
@@ -155,7 +156,23 @@
       window.setTimeout(check, interval);
     }
     window.setTimeout(check, interval);
-  });
+  }
+
+  // How long running work has been going, so a wait never looks like a hang.
+  const clocks = document.querySelectorAll("[data-elapsed]");
+  if (clocks.length) {
+    const opened = Date.now();
+    const tick = () => {
+      clocks.forEach((clock) => {
+        const since = Date.parse(clock.dataset.elapsed);
+        const seconds = Math.max(0, Math.round((Date.now() - (Number.isNaN(since) ? opened : since)) / 1000));
+        const minutes = Math.floor(seconds / 60);
+        clock.textContent = "Bezig: " + (minutes ? minutes + " min " : "") + (seconds % 60) + " s.";
+      });
+    };
+    tick();
+    window.setInterval(tick, 1000);
+  }
 
   // Theme toggle on Account: persist the choice in a cookie and reload.
   const themeSelect = document.getElementById("theme-select");

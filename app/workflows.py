@@ -16,6 +16,7 @@ from . import (
     digest,
     document_pipeline,
     feedback,
+    insights,  # noqa: F401  (registers its task)
     matching,
     notifications,
     profile,
@@ -89,19 +90,32 @@ def _run_match() -> None:
         store.meta_set("match_status", f"error: {exc}"[:400])
 
 
+DOC_STALE_SECONDS = 15 * 60
+
+
 def _doc_status(job_id: int) -> dict:
+    """A task that went silent long ago must not lock a page forever."""
     raw = store.meta_get(f"doc_status:{job_id}")
     if not raw:
         return {}
     try:
-        return json.loads(raw)
+        status = json.loads(raw)
     except ValueError:
         return {}
+    if status.get("state") == "running":
+        try:
+            age = (datetime.now(UTC) - datetime.fromisoformat(status.get("updated_at") or "")).total_seconds()
+        except ValueError:
+            age = 0
+        if age > DOC_STALE_SECONDS:
+            return {"state": "error", "error": "Dit duurde te lang. Probeer het opnieuw."}
+    return status
 
 
 def _run_document(job_id: int, kind: str) -> None:
     """kind: plan, both, resume or motivatie. The stage tells the page where the work is."""
     key = f"doc_status:{job_id}"
+    started = _doc_status(job_id).get("started_at") or datetime.now(UTC).isoformat()
 
     def emit(stage: str) -> None:
         store.meta_set(
@@ -111,6 +125,7 @@ def _run_document(job_id: int, kind: str) -> None:
                     "state": "running",
                     "kind": kind,
                     "stage": stage,
+                    "started_at": started,
                     "updated_at": datetime.now(UTC).isoformat(),
                 }
             ),

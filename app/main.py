@@ -24,11 +24,10 @@ from . import (  # noqa: F401
     tasks,
     tenancy,
 )
-from .routers import account, admin_ai, interview, jobs, pages, start, studio, workspace
+from .routers import admin_ai, interview, jobs, pages, start, studio, workspace
 from .routers import profile as profile_routes
 from .routers import sources as source_routes
 from .routers import tasks as task_routes
-from .routers.account import account_cv, account_cv_cancel, account_cv_confirm  # noqa: F401
 from .routers.interview import (  # noqa: F401
     SendBody,
     api_messages,
@@ -92,5 +91,5 @@ errors.install(app)
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.middleware("http")(errors.security_headers)
 app.include_router(auth.router)
-for group in (pages, interview, source_routes, workspace, jobs, profile_routes, account, task_routes, start, studio, admin_ai):
+for group in (pages, interview, source_routes, workspace, jobs, profile_routes, task_routes, start, studio, admin_ai):
     app.include_router(group.router)

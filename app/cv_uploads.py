@@ -186,8 +186,3 @@ def confirm(token: str, session: str) -> dict:
         _remove(token)
         return meta["inspection"]
 
-
-def discard(token: str, session: str) -> None:
-    with docs.template_lock():
-        _load(token, session)
-        _remove(token)

@@ -32,7 +32,7 @@ router = APIRouter(dependencies=[Depends(require_user)])
 
 
 
-def _page(request: Request, name: str, step: int, **context) -> HTMLResponse:
+def _page(request: Request, name: str, step: int | None, **context) -> HTMLResponse:
     return templates.TemplateResponse(request, name, {"step": step, **context})
 
 
@@ -71,11 +71,18 @@ def start_cv(request: Request):
     return _page(request, "start_cv.html", 1)
 
 
+def _update(form) -> bool:
+    """Account sends an existing user here to replace their CV, outside the quick start."""
+    return str(form.get("terug") or "") == "account"
+
+
 @router.post("/start/cv", response_class=HTMLResponse)
 async def start_cv_upload(request: Request, cv: UploadFile = File(...)):
+    update = _update(await request.form())
+    step = None if update else 1
     raw = await cv.read(cv_text.MAX_BYTES + 1)
     if len(raw) > cv_text.MAX_BYTES:
-        return _page(request, "start_cv.html", 1, error="Het bestand mag maximaal 5 MB zijn.")
+        return _page(request, "start_cv.html", step, update=update, error="Het bestand mag maximaal 5 MB zijn.")
     filename = cv.filename or ""
     display_name = tenancy.display_name()
 
@@ -85,10 +92,10 @@ async def start_cv_upload(request: Request, cv: UploadFile = File(...)):
     try:
         found = await run_in_threadpool(read)
     except ValueError as exc:
-        return _page(request, "start_cv.html", 1, error=str(exc))
+        return _page(request, "start_cv.html", step, update=update, error=str(exc))
     token = ""
     can_store = tenancy.user_id() != tenancy.LEGACY_ID and filename.lower().endswith(".docx")
-    if can_store and not (config.seed_dir() / "cv.docx").exists():
+    if can_store and (cv_uploads.is_generated() or not (config.seed_dir() / "cv.docx").exists()):
         try:  # Only a DOCX with recognisable sections can serve as document template.
             token = cv_uploads.stage(raw, filename, request.state.auth_session_id)["token"]
         except Exception as exc:
@@ -96,7 +103,8 @@ async def start_cv_upload(request: Request, cv: UploadFile = File(...)):
     return _page(
         request,
         "start_cv_review.html",
-        1,
+        step,
+        update=update,
         found=found,
         titles=cv_text.SECTION_TITLES,
         cv_token=token,
@@ -138,6 +146,8 @@ async def start_cv_confirm(request: Request):
             cv_uploads.create_generated(updates)
         except (ValueError, OSError) as exc:
             log.warning("plain base CV not created: %s", type(exc).__name__)
+    if _update(form):
+        return RedirectResponse(url="/account?uploaded=1", status_code=303)
     store.meta_set("start_stage", "/start/verder")
     return RedirectResponse(url="/start/verder", status_code=303)
 

@@ -105,7 +105,16 @@
       <summary><h2>Eerdere versies</h2></summary>
       <ul class="plain-list small">
         {% for item in versions[row['kind']] %}
-        <li><a href="?tab={{ tab }}&versie={{ item.row['id'] }}"{% if item.row['id'] == row['id'] %} aria-current="true"{% endif %}>Versie {{ item.row['version'] }}</a>, {{ ui.nl_date(item.row['created_at'], time=True) }}{% if item.meta.edited %}, zelf aangepast{% elif item.meta.tone %}, {{ item.meta.tone }}{% endif %}</li>
+        <li class="version-row"><span><a href="?tab={{ tab }}&versie={{ item.row['id'] }}"{% if item.row['id'] == row['id'] %} aria-current="true"{% endif %}>Versie {{ item.row['version'] }}</a>, {{ ui.nl_date(item.row['created_at'], time=True) }}{% if item.meta.edited %}, zelf aangepast{% elif item.meta.tone %}, {{ item.meta.tone }}{% endif %}</span>
+          <details class="doc-remove">
+            <summary aria-label="Versie {{ item.row['version'] }} verwijderen">Verwijderen</summary>
+            <form method="post" action="/jobs/{{ job['id'] }}/documents/{{ item.row['id'] }}/verwijderen" data-pending-form>
+              {% include '_csrf.html' %}<input type="hidden" name="next" value="/jobs/{{ job['id'] }}/sollicitatie">
+              <span>Versie {{ item.row['version'] }} is daarna echt weg.</span>
+              <button class="button small danger" type="submit">Definitief verwijderen</button>
+            </form>
+          </details>
+        </li>
         {% endfor %}
       </ul>
     </details>

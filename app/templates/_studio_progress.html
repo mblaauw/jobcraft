@@ -21,5 +21,5 @@
     <li class="{{ 'is-done' if loop.index0 < at else ('is-now' if loop.index0 == at else '') }}">{{ label }}</li>
     {% endfor %}
   </ol>
-  <p class="small muted">Dit duurt meestal {{ 'een tot twee minuten' if status.kind in ('both', 'resume', 'motivatie') else 'ongeveer een minuut' }}. Klik gerust verder: het werk gaat door, en je ziet in het menu wanneer het klaar is.</p>
+  <p class="small muted">Dit duurt meestal {{ 'een tot twee minuten' if status.kind in ('both', 'resume', 'motivatie') else 'ongeveer een minuut' }}. <span class="wait-elapsed" data-elapsed="{{ status.started_at or status.updated_at or '' }}"></span> Klik gerust verder: het werk gaat door, en je ziet bovenaan wanneer het klaar is.</p>
 </section>

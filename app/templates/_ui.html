@@ -4,6 +4,15 @@
 <svg class="icon{% if cls %} {{ cls }}{% endif %}" aria-hidden="true" focusable="false"><use href="/static/icons.svg#i-{{ name }}"></use></svg>
 {%- endmacro %}
 
+{# Work that takes a while: what is happening, how long it usually takes and how long it has run.
+   The page reloads by itself once the work is done. #}
+{% macro wait(title, usually, since='', refresh=4000) -%}
+<div class="wait" role="status" data-auto-refresh="{{ refresh }}">
+  <span class="work-dot" aria-hidden="true"></span>
+  <span class="wait-text"><strong>{{ title }}</strong><span>{{ usually }} <span class="wait-elapsed" data-elapsed="{{ since }}"></span></span><span>Klik gerust verder. Het gaat door en je ziet bovenaan wanneer het klaar is.</span></span>
+</div>
+{%- endmacro %}
+
 {% macro score_level(score) -%}
 {{ 'high' if score >= 70 else ('mid' if score >= 50 else 'low') }}
 {%- endmacro %}

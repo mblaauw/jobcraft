@@ -132,15 +132,16 @@ async def import_submit(request: Request):
 
 @router.post("/jobs/{job_id}/inzicht/{kind}")
 def job_insight(job_id: int, kind: str, url: str = Form("", alias="next")):
+    """Queued, not awaited: the page shows it is running and fills in by itself."""
     if kind not in insights.KINDS:
         raise HTTPException(status_code=404, detail="unknown insight")
     job = _job_or_404(job_id)
     target = _jobs_return_target(url) if url else f"/jobs/{job_id}"
     if not target.startswith(f"/jobs/{job_id}"):
         target = f"/jobs/{job_id}"
-    if insights.load(kind, job) is None and insights.generate(kind, job) is None:
+    if problem := insights.request(kind, job):
         separator = "&" if "?" in target else "?"
-        target += f"{separator}inzicht_fout=1"
+        target += f"{separator}inzicht_fout={problem}"
     return RedirectResponse(url=f"{target}#inzicht", status_code=303)
 
 
@@ -228,6 +229,18 @@ def document_rewrite(job_id: int, document_id: int, style: str = Form("")):
         problem = "Herschrijven is niet gelukt. Je document is niet veranderd."
     query = f"?{urlencode({'doc_error': problem})}" if problem else ""
     return RedirectResponse(url=f"/jobs/{job_id}{query}#documenten", status_code=303)
+
+
+@router.post("/jobs/{job_id}/documents/{document_id}/verwijderen")
+def document_remove(job_id: int, document_id: int, url: str = Form("", alias="next")):
+    _job_or_404(job_id)
+    kind = document_edits.remove(job_id, document_id)
+    if kind is None:
+        raise HTTPException(status_code=404, detail="unknown document")
+    if url.startswith(f"/jobs/{job_id}/sollicitatie"):
+        tab = "cv" if kind == "resume" else "brief"
+        return RedirectResponse(url=f"/jobs/{job_id}/sollicitatie?tab={tab}&verwijderd=1", status_code=303)
+    return RedirectResponse(url=f"/jobs/{job_id}?verwijderd=1#documenten", status_code=303)
 
 
 @router.get("/jobs/{job_id}/documents/{document_id}/verschil", response_class=HTMLResponse)

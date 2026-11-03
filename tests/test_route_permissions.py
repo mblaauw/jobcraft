@@ -4,7 +4,6 @@ from fastapi.routing import APIRoute
 
 from app import auth
 from app.routers import (
-    account,
     admin_ai,
     interview,
     jobs,
@@ -111,10 +110,8 @@ USER = {
     ("POST", "/profile/home"),
     ("POST", "/profile/save"),
     ("POST", "/profile/restore/{version_id}"),
-    ("POST", "/account/cv"),
-    ("POST", "/account/cv/confirm"),
-    ("POST", "/account/cv/cancel"),
     ("GET", "/api/tasks"),
+    ("POST", "/jobs/{job_id}/documents/{document_id}/verwijderen"),
     ("GET", "/api/tasks/{task_id}"),
 }
 
@@ -122,7 +119,6 @@ USER = {
 def test_every_endpoint_has_reviewed_permission_dependency():
     groups = (
         auth,
-        account,
         admin_ai,
         interview,
         jobs,

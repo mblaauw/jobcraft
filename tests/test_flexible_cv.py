@@ -130,16 +130,12 @@ def test_preview_confirmation_is_owner_session_bound_and_not_replayable():
             cv_uploads.confirm(preview["token"], "session-a")
 
 
-def test_preview_expiry_integrity_and_cancel(monkeypatch):
+def test_preview_expiry_and_integrity(monkeypatch):
     monkeypatch.setattr(cv_uploads.time, "time", lambda: 1800000000)
     preview = cv_uploads.stage(cv_bytes(), "own.docx", "session")
     monkeypatch.setattr(cv_uploads.time, "time", lambda: 1800001000)
     with pytest.raises(ValueError, match="verlopen"):
         cv_uploads.confirm(preview["token"], "session")
-    second = cv_uploads.stage(cv_bytes(), "own.docx", "session")
-    cv_uploads.discard(second["token"], "session")
-    with pytest.raises(ValueError):
-        cv_uploads.confirm(second["token"], "session")
     third = cv_uploads.stage(cv_bytes(), "own.docx", "session")
     (cv_uploads._directory() / (third["token"] + ".docx")).write_bytes(b"tampered")
     with pytest.raises(ValueError):

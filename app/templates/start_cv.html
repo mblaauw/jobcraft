@@ -3,17 +3,20 @@
 {% import "_start.html" as start %}
 {% block title %}Snelle start · Jobcraft{% endblock %}
 {% block content %}
-{{ start.steps(step) }}
+{% if step %}{{ start.steps(step) }}{% endif %}
 <div class="page-head"><div>
-  <h1>In drie minuten de vacatures die bij je passen</h1>
-  <p class="lede">Begin met je cv, dan hoef je veel minder in te vullen.</p>
+  {% if update %}<h1>Je cv bijwerken</h1>
+  <p class="lede">Kies je nieuwste cv. Je ziet eerst wat we hebben gelezen.</p>
+  {% else %}<h1>In drie minuten de vacatures die bij je passen</h1>
+  <p class="lede">Begin met je cv, dan hoef je veel minder in te vullen.</p>{% endif %}
 </div></div>
 {% if error %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ error }}</span></p>{% endif %}
 <section class="panel">
   <form method="post" action="/start/cv" enctype="multipart/form-data" class="form-stack" data-pending-form>
     {% include '_csrf.html' %}
+    {% if update %}<input type="hidden" name="terug" value="account">{% endif %}
     <div class="field"><label for="start-cv">Je cv</label><input id="start-cv" type="file" name="cv" accept=".pdf,.docx" required><span class="hint">PDF of Word, maximaal 5 MB. Je cv wordt hier gelezen, zonder AI. Je ziet zo wat we hebben gevonden.</span></div>
-    <div class="btn-row"><button class="button primary" type="submit">{{ ui.icon('file-text') }}Lees mijn cv</button><a class="button" href="/start/keuzes">Verder zonder cv</a></div>
+    <div class="btn-row"><button class="button primary" type="submit">{{ ui.icon('file-text') }}Lees mijn cv</button>{% if update %}<a class="button" href="/account">Annuleren</a>{% else %}<a class="button" href="/start/keuzes">Verder zonder cv</a>{% endif %}</div>
   </form>
 </section>
 {% endblock %}

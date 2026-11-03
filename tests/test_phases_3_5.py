@@ -421,6 +421,16 @@ class FakeManager:
 GAP = json.dumps({"have": ["Plannen"], "missing": [{"requirement": "SQL", "how": "Noem je cursus"}]})
 
 
+def _run_insights():
+    """What the worker does: run the queued insight tasks (and nothing else)."""
+    from app import tasks
+
+    while task := tasks.claim_next():
+        if task["kind"] == "insight":
+            insights._task(task)
+        tasks.finish(task["id"])
+
+
 def test_insight_runs_on_request_and_is_kept_until_the_vacancy_changes(client, monkeypatch):  # noqa: F811
     job_id = add_job()
     manager = FakeManager(GAP)
@@ -430,9 +440,15 @@ def test_insight_runs_on_request_and_is_kept_until_the_vacancy_changes(client, m
     assert html.select_one(f'form[action="/jobs/{job_id}/inzicht/gap"]')
     client.post(f"/jobs/{job_id}/inzicht/gap")
     client.post(f"/jobs/{job_id}/inzicht/gap")
+    waiting = soup(client.get(f"/jobs/{job_id}"))
+    assert waiting.select_one("#inzicht [data-auto-refresh]") and not manager.calls
+    assert client.get("/api/werk").json()["running"][0]["what"] == "De vergelijking met je profiel"
+    _run_insights()
     assert len(manager.calls) == 1
     assert manager.calls[0][1] == "job_gap"
-    assert "Noem je cursus" in soup(client.get(f"/jobs/{job_id}")).get_text()
+    page = soup(client.get(f"/jobs/{job_id}"))
+    assert "Noem je cursus" in page.get_text() and not page.select_one("#inzicht [data-auto-refresh]")
+    assert client.get("/api/werk").json() == {"running": [], "done": []}
     with store.connect() as con:
         con.execute("UPDATE jobs SET content_hash='new' WHERE id=?", (job_id,))
     assert insights.load("gap", store.get_job(job_id)) is None
@@ -446,6 +462,7 @@ def test_insight_prompt_has_no_private_profile_text(client, monkeypatch):  # noq
     manager = FakeManager(GAP)
     monkeypatch.setattr(runtime, "manager", manager)
     client.post(f"/jobs/{job_id}/inzicht/gap")
+    _run_insights()
     assert "Open." in manager.calls[0][0] and "GEHEIM" not in manager.calls[0][0]
 
 
@@ -453,12 +470,16 @@ def test_insight_failure_or_spent_budget_costs_nothing_and_says_so(client, monke
     job_id = add_job()
     manager = FakeManager("not json")
     monkeypatch.setattr(runtime, "manager", manager)
-    response = client.post(f"/jobs/{job_id}/inzicht/prep", follow_redirects=False)
-    assert "inzicht_fout=1" in response.headers["location"]
+    client.post(f"/jobs/{job_id}/inzicht/prep")
+    _run_insights()
+    assert "Dit lukte niet" in client.get(f"/jobs/{job_id}").text
     monkeypatch.setattr(insights, "_budget_reached", lambda: True)
     manager.calls.clear()
-    client.post(f"/jobs/{job_id}/inzicht/gap")
+    response = client.post(f"/jobs/{job_id}/inzicht/gap", follow_redirects=False)
+    assert "inzicht_fout=budget" in response.headers["location"]
+    _run_insights()
     assert not manager.calls
+    assert "daglimiet" in client.get(response.headers["location"]).text
 
 
 def test_insight_return_target_cannot_leave_the_job(client, monkeypatch):  # noqa: F811

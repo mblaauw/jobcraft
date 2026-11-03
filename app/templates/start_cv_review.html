@@ -3,7 +3,7 @@
 {% import "_start.html" as start %}
 {% block title %}Controleer je cv · Jobcraft{% endblock %}
 {% block content %}
-{{ start.steps(step) }}
+{% if step %}{{ start.steps(step) }}{% endif %}
 <div class="page-head"><div>
   <h1>Klopt dit?</h1>
   <p class="lede">Haal weg wat niet past en vul aan wat ontbreekt. Je naam en contactgegevens hebben we weggelaten.</p>
@@ -11,6 +11,7 @@
 <form method="post" action="/start/cv/confirm" class="panel form-stack" data-pending-form>
   {% include '_csrf.html' %}
   <input type="hidden" name="cv_token" value="{{ cv_token }}">
+  {% if update %}<input type="hidden" name="terug" value="account">{% endif %}
   <fieldset class="choice-group"><legend>Functies die je zoekt</legend>
     <div class="choice-grid">{% for role in found.roles %}<label class="choice"><input type="checkbox" name="role" value="{{ role }}" checked><span>{{ role }}</span></label>{% else %}<p class="small muted">We vonden geen functienamen in je cv.</p>{% endfor %}</div>
     <div class="field"><label for="more-roles">Andere functies</label><input id="more-roles" name="more_roles" placeholder="Gescheiden door komma's"></div>
@@ -27,7 +28,7 @@
     <p class="small muted">Deze tekst gebruiken we om vacatures te beoordelen en sollicitaties te schrijven, ook met AI. Controleer of er niets in staat dat je niet wilt delen.</p>
     {% for key, title in titles.items() %}<div class="field"><label for="section-{{ key }}">{{ title }}</label><textarea id="section-{{ key }}" name="section_{{ key }}" rows="5">{{ found.sections.get(key, '') }}</textarea></div>{% endfor %}
   </details>
-  {% if not cv_token %}<p class="small muted">Voor cv's en brieven per vacature maken we hiermee een eenvoudig basis-CV. Je contactgegevens vul je zelf aan in Word, of je voegt later bij Account je eigen Word-versie toe.</p>{% endif %}
-  <div class="btn-row"><button class="button primary" type="submit">Klopt, volgende</button></div>
+  {% if update %}<p class="small muted">Je profiel wordt bijgewerkt met deze tekst. Elke nieuwe sollicitatie gebruikt dan je nieuwe cv. Wat je al hebt gemaakt, blijft zoals het is.</p>{% endif %}
+  <div class="btn-row">{% if update %}<button class="button primary" type="submit">Klopt, werk mijn profiel bij</button><a class="button" href="/account">Annuleren</a>{% else %}<button class="button primary" type="submit">Klopt, volgende</button>{% endif %}</div>
 </form>
 {% endblock %}
