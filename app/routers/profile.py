@@ -19,8 +19,10 @@ from .. import (
     cv_model,
     geo,
     onboarding,
+    private_notes,
     profile,
     profile_check,
+    profile_versions,
     store,
     tasks,
     tenancy,
@@ -36,7 +38,8 @@ log = logging.getLogger("jobcraft")
 router = APIRouter(dependencies=[Depends(require_user)])
 
 
-TABS = ("cv", "zoek", "positie", "meer")
+TABS = ("cv", "zoek", "positie", "notities")
+OLD_TABS = {"meer": "notities"}  # links from before the advanced tab was folded away
 # Parts of the profile text that say what someone looks for, edited on Wat ik zoek.
 WISH_HEADINGS = ("Zoekprofiel", "Werkvoorkeuren", "Energie en ritme", "Afknappers")
 
@@ -52,11 +55,22 @@ def _assess_soon(kind: str = "match") -> None:
 def profile_page(request: Request):
     query = request.query_params
     saved, error = query.get("saved", ""), query.get("error", "")
-    tab = query.get("tab") or ("meer" if saved or error else "cv")
+    tab = query.get("tab") or ("notities" if saved or error else "cv")
+    tab = OLD_TABS.get(tab, tab)
     tab = tab if tab in TABS else "cv"
     data = cv_model.load()
     current = profile.read_profile()
     wishes = {}
+    if tab == "notities":
+        wishes = {
+            "notes": private_notes.load(),
+            "history": profile_versions.history(),
+            "kept_sections": [
+                item
+                for item in profile.split_sections(current)
+                if item["text"] and (item["heading"] in profile.HIDDEN_HEADINGS or item["heading"].startswith(profile.PRIVATE_HEADING))
+            ],
+        }
     if tab == "zoek":
         wishes = {
             "choices": onboarding.choices_context(profile.read_preferences()),
@@ -70,7 +84,7 @@ def profile_page(request: Request):
             error=error,
             tab=tab,
             **wishes,
-            elsewhere=(*cv_model.SECTIONS, *WISH_HEADINGS, onboarding.ROLES_HEADING),
+            elsewhere=(*cv_model.SECTIONS, *WISH_HEADINGS, onboarding.ROLES_HEADING, *profile.HIDDEN_HEADINGS),
             cv=data,
             cv_draft=cv_ai.draft(),
             cv_status=cv_ai.status(),
@@ -220,7 +234,7 @@ def profile_save(request: Request, content: str = Form(...)):
         )
     profile.write_profile(content, note=profile_check.MANUAL_NOTE)
     _assess_soon()
-    return RedirectResponse(url="/profile?saved=profile", status_code=303)
+    return RedirectResponse(url="/profile?tab=notities&saved=profile#bewerken", status_code=303)
 
 
 
@@ -234,18 +248,28 @@ def profile_section(heading: str = Form(...), text: str = Form(""), terug: str =
     _assess_soon()
     if terug == "zoek":
         return RedirectResponse(url="/profile?tab=zoek&saved=woorden#woorden", status_code=303)
-    return RedirectResponse(url="/profile?saved=profile#overzicht", status_code=303)
+    if terug == "notities":
+        return RedirectResponse(url="/profile?tab=notities&saved=profile#prive", status_code=303)
+    return RedirectResponse(url="/profile?tab=cv&opgeslagen=deel#overzicht", status_code=303)
+
+
+@router.post("/profile/notities")
+def profile_notes(tekst: str = Form("")):
+    """Notities live outside the profile text, so nothing ever sends them to the AI."""
+    private_notes.save(tekst)
+    return RedirectResponse(url="/profile?tab=notities&saved=notes#notities", status_code=303)
 
 
 @router.post("/profile/aantekeningen-apart")
 def profile_notes_apart():
-    """Working notes stay, under Open vragen, where the AI does not read them as facts."""
+    """Working notes move to Notities, where the AI never reads them as facts."""
     current = profile.read_profile()
-    updated = profile_check.notes_apart(current)
-    if updated != current:
-        profile.write_profile(updated, note="aantekeningen naar Open vragen")
+    updated, moved = profile_check.notes_apart(current)
+    if moved:
+        private_notes.append(moved)
+        profile.write_profile(updated, note="aantekeningen naar Notities")
         _assess_soon()
-    return RedirectResponse(url="/profile?saved=profile#overzicht", status_code=303)
+    return RedirectResponse(url="/profile?tab=notities&saved=notes#notities", status_code=303)
 
 
 @router.post("/profile/onderdelen-terug")
@@ -256,7 +280,7 @@ def profile_parts_back():
     if updated != current:
         profile.write_profile(updated, note=profile_check.RESTORED_NOTE)
         _assess_soon()
-    return RedirectResponse(url="/profile?saved=profile#overzicht", status_code=303)
+    return RedirectResponse(url="/profile?tab=cv&opgeslagen=deel#overzicht", status_code=303)
 
 
 @router.post("/profile/restore/{version_id}")

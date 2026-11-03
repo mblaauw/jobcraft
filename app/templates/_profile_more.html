@@ -1,0 +1,48 @@
+{# Meer over jou: the public profile text that is neither CV nor wishes, with its warnings. #}
+{% set sections = (profile_sections or []) | selectattr('text') | rejectattr('heading', 'in', elsewhere or []) | list %}
+{% if sections or profile_warnings %}
+<section class="section profile-more" id="overzicht" aria-labelledby="overzicht-title">
+  <div class="panel-head"><h2 id="overzicht-title">Meer over jou</h2>{% if bootstrapped_at %}<span class="small subtle">Laatst bijgewerkt {{ ui.nl_date(bootstrapped_at) }}</span>{% endif %}</div>
+  <p class="small muted">Wat Jobcraft verder over je weet, uit je gesprekken en eerdere teksten. De AI leest dit net als je cv. Klopt iets niet, pas dat stuk dan aan.</p>
+  {% if profile_warnings %}
+  <div class="profile-warnings" role="status">
+    {% for item in profile_warnings %}
+    <div class="profile-warning">{{ ui.icon('triangle-alert') }}<div><p><strong>{{ item.title }}.</strong> {{ item.detail }}</p>{% if item.action %}<form method="post" action="{{ item.action }}" data-pending-form>{% include '_csrf.html' %}<button class="button small" type="submit">{{ item.label }}</button></form>{% endif %}</div></div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if sections %}
+  <div class="profile-read">
+    {% for section in sections %}
+      {% set private = section.heading.startswith('Privé') %}
+      {% set open_q = False %}
+      <details class="profile-card{% if private %} private{% endif %}">
+        <summary>
+          <span class="profile-card-head">
+            <span class="profile-card-title">{% if private %}{{ ui.icon('lock') }}Privé{% elif open_q %}{{ ui.icon('message-circle') }}Nog open{% else %}{{ section.heading or 'Inleiding' }}{% endif %}</span>
+            <span class="profile-card-teaser">{{ section.text | teaser }}</span>
+          </span>
+          {{ ui.icon('chevron-down', 'chev') }}
+        </summary>
+        {% if private %}<p class="small subtle">Alleen voor jou. Dit wordt nooit gebruikt voor matching, cv’s of brieven.</p>{% endif %}
+        {% if open_q %}<p class="small subtle">Hier gaat een volgend gesprek op in.</p>{% endif %}
+        <div class="profile-text">{{ section.text | prose }}</div>
+        {% if section.heading %}
+        <details class="profile-edit">
+          <summary>{{ ui.icon('pencil') }}Pas dit stuk aan</summary>
+          <form method="post" action="/profile/sectie" data-pending-form>
+            {% include '_csrf.html' %}
+            <input type="hidden" name="heading" value="{{ section.heading }}">
+            <label class="visually-hidden" for="section-{{ loop.index }}">{{ section.heading }}</label>
+            <textarea id="section-{{ loop.index }}" class="prose-edit" name="text" data-autogrow spellcheck="true">{{ section.text }}</textarea>
+            <p class="small subtle">Een regel met <code>- </code> wordt een opsomming, <code>**zo**</code> wordt vet. De vorige versie blijft bewaard.</p>
+            <div class="btn-row"><button class="button primary small" type="submit">Opslaan</button></div>
+          </form>
+        </details>
+        {% endif %}
+      </details>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endif %}

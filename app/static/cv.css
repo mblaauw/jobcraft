@@ -74,3 +74,21 @@
 .wishes-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
 .wishes-head .start-count { margin: 0 0 12px; }
 .wishes-words { display: grid; gap: 8px; margin: 0 20px 18px; }
+
+/* Notities and Meer over jou. */
+.profile-more { margin-top: 36px; max-width: 76ch; }
+.notes-part { max-width: 80ch; padding: 4px 0 28px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+.notes-part > h2 { display: flex; align-items: center; gap: 8px; font-size: var(--fs-lg); margin: 0 0 6px; }
+.notes-form { display: grid; gap: 8px; }
+.version-history { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.version-history > li { border-top: 1px solid var(--line); }
+.version-history > li:first-child { border-top: 0; }
+.version-history details > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 12px 16px; cursor: pointer; list-style: none; }
+.version-history details > summary::-webkit-details-marker { display: none; }
+.version-history .version-when { font-weight: 650; font-variant-numeric: tabular-nums; }
+.version-history .version-what { color: var(--ink-2); flex: 1; min-width: 0; }
+.version-count { display: inline-flex; gap: 8px; font-variant-numeric: tabular-nums; }
+.version-count .add { color: var(--ok); }
+.version-count .del { color: var(--danger); }
+.version-history details[open] > :not(summary) { margin: 0 16px 14px; }
+.version-history .diff { white-space: pre-wrap; max-height: 360px; }
