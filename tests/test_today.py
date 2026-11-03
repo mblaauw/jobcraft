@@ -82,3 +82,18 @@ def test_the_overview_triages_in_place(client, monkeypatch):  # noqa: F811
     assert saved.headers["location"] == "/"
     assert "Maak je sollicitatie voor Hovenier" in client.get("/").text
     assert store.meta_get(today.VISIT_KEY)
+
+
+def test_new_matches_skip_far_jobs_and_count_only_what_arrived_since_the_visit(client):  # noqa: F811
+    import json
+
+    from app import store
+    from tests.test_jobs_page import add_job
+
+    best, far, other = add_job("Hovenier", rank=90), add_job("Boomverzorger", rank=95), add_job("Tuinman", rank=70)
+    store.set_job_travel(far, "test", json.dumps({"in_range": False}))
+    picks, fresh = today.new_matches(1, "2000-01-01")
+    assert [item["id"] for item in picks] == [best] and picks[0]["is_new"] and fresh == 2
+    assert today.new_matches(5, "2999-01-01")[1] == 0
+    picks, fresh = today.new_matches(5, None)
+    assert [item["id"] for item in picks] == [best, other] and fresh == 0

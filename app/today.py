@@ -107,20 +107,21 @@ def last_visit() -> str | None:
 
 
 def new_matches(limit: int, since: str | None) -> tuple[list[dict], int]:
-    """The best new vacancies within reach, and how many arrived since the last visit."""
-    picks: list[dict] = []
-    fresh = 0
-    for row in store.list_jobs(None, "new", only_unvoted=True):
-        item = dict(row)
+    """The best new vacancies within reach, and how many arrived since the last visit.
+
+    Picking and counting run in SQL on the stored travel estimates, like the job list,
+    so the page never walks every vacancy.
+    """
+    picks = store.list_jobs_page(limit, 0, "new", sort="rank", within_travel=True, only_unvoted=True)
+    for item in picks:
         item["travel"] = ranking.travel_of(item)
-        if item["travel"]["in_range"] is False:
-            continue
         item["is_new"] = bool(since and (item["first_seen"] or "") > since)
-        fresh += item["is_new"]
-        if len(picks) < limit:
-            item["signals"] = ranking.signals_of(row)
-            picks.append(item)
-    return picks, fresh
+        item["signals"] = ranking.signals_of(item)
+    if not since:
+        return picks, 0
+    counts = store.job_status_counts(list_filters={"seen_after": since}, only_unvoted=True)
+    total, far = counts.get("new", (0, 0))
+    return picks, total - far
 
 
 def tip() -> str:
