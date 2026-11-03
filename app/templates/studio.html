@@ -10,6 +10,7 @@
 
 {% if problem %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ problem }}</span></p>{% endif %}
 {% if saved == 'gegevens' %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je gegevens zijn opgeslagen. Ze staan in elke nieuwe versie.</span></p>{% endif %}
+{% if saved == 'gegevens-nieuw' %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je gegevens zijn opgeslagen en staan nu bovenaan een nieuwe versie van je cv en brief. De vorige versies blijven bewaard.</span></p>{% endif %}
 {% if request.query_params.get('verwijderd') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Die versie is verwijderd.</span></p>{% endif %}
 {% if saved == 'tekst' %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Opgeslagen als nieuwe versie. De vorige blijft bewaard.</span></p>{% endif %}
 {% if status.state == 'error' %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ status.error }}</span></p>{% endif %}

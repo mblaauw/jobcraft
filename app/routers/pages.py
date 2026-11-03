@@ -49,8 +49,8 @@ def dashboard(request: Request):
         request,
         "dashboard.html",
         {
-            "start_open": tenancy.user_id() != tenancy.LEGACY_ID
-            and not store.meta_get("start_finished_at"),
+            "start": today.start_state(),
+            "first_name": today.first_name(),
             "has_profile": profile.profile_exists(),
             "tasks": task_list,
             "summary": today.summary(task_list, fresh),

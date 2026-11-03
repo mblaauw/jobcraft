@@ -17,6 +17,7 @@ from pydantic import ValidationError
 
 from .. import (
     application_plan,
+    applications,
     background_work,
     config,
     document_contact,
@@ -113,6 +114,8 @@ def _enqueue(job_id: int, kind: str) -> str:
 def studio(request: Request, job_id: int):
     job = _job(job_id)
     plan = application_plan.load(job_id)
+    if plan:
+        job = applications.on_the_list(job)
     background_work.mark_seen(job_id)
     versions = {kind: _versions(job_id, kind) for kind in KINDS.values()}
     has_documents = any(versions.values())
@@ -142,6 +145,9 @@ def studio(request: Request, job_id: int):
             "saved": request.query_params.get("opgeslagen", ""),
             "contact": contact,
             "contact_missing": document_contact.missing(contact),
+            "contact_from_cv": document_contact.from_cv_unconfirmed(contact),
+            "contact_stale": bool(current) and current["meta"].get("contact_key") != document_contact.key(contact),
+            "check_points": document_pipeline.check_points((current or {}).get("meta", {}).get("review") or {}),
             "has_profile": profile.profile_exists(),
             "stories": application_plan.stories(),
             "designs": document_design.DESIGNS,
@@ -155,9 +161,10 @@ def studio(request: Request, job_id: int):
 
 @router.post("/jobs/{job_id}/sollicitatie/plan")
 def make_plan(job_id: int):
-    _job(job_id)
+    job = _job(job_id)
     if not profile.profile_exists():
         return RedirectResponse(url="/start", status_code=303)
+    applications.on_the_list(job)
     problem = _enqueue(job_id, "plan")
     return RedirectResponse(url=_here(job_id, "plan", probleem=problem), status_code=303)
 
@@ -180,16 +187,39 @@ async def write(request: Request, job_id: int):
     return RedirectResponse(url=_here(job_id, "plan", probleem=problem), status_code=303)
 
 
+def _renew(job: dict) -> int:
+    """The newest CV and letter again with the new details on top: same words, no AI, new versions."""
+    renewed = 0
+    for kind in KINDS.values():
+        if rows := _versions(job["id"], kind):
+            meta = rows[0]["meta"]
+            document_pipeline.save_version(
+                job, kind, meta["content"], design=meta.get("design"), colour=meta.get("colour"), review=meta.get("review")
+            )
+            renewed += 1
+    return renewed
+
+
 @router.post("/jobs/{job_id}/sollicitatie/gegevens")
 async def save_contact(request: Request, job_id: int):
-    _job(job_id)
+    job = _job(job_id)
     form = await request.form()
+    before = document_contact.load()
     document_contact.save({key: str(form.get(key) or "") for key in document_contact.FIELDS})
+    renewed = await run_in_threadpool(_renew, job) if document_contact.load() != before else 0
     target = str(form.get("tab") or "")
     return RedirectResponse(
-        url=_here(job_id, target if target in ("plan", "cv", "brief") else "", opgeslagen="gegevens"),
+        url=_here(job_id, target if target in ("plan", "cv", "brief") else "", opgeslagen="gegevens-nieuw" if renewed else "gegevens"),
         status_code=303,
     )
+
+
+@router.post("/jobs/{job_id}/sollicitatie/gegevens/vernieuwen")
+async def renew_contact(job_id: int, tab: str = Form("")):
+    """Put the current details on the newest CV and letter, without AI."""
+    renewed = await run_in_threadpool(_renew, _job(job_id))
+    target = tab if tab in ("plan", "cv", "brief") else ""
+    return RedirectResponse(url=_here(job_id, target, opgeslagen="gegevens-nieuw" if renewed else ""), status_code=303)
 
 
 @router.post("/jobs/{job_id}/sollicitatie/verhaal/{index}/verwijderen")
@@ -305,7 +335,7 @@ async def save_text(request: Request, job_id: int, document_id: int):
 @router.post("/jobs/{job_id}/sollicitatie/documenten/{document_id}/toon")
 def retone(job_id: int, document_id: int, tone: str = Form("")):
     """In the background like all writing, so nobody has to stay on this page."""
-    if tone not in document_pipeline.TONES:
+    if tone not in (*document_pipeline.TONES, document_pipeline.CHECKED):
         raise HTTPException(status_code=400, detail="unknown tone")
     _job(job_id)
     row, _meta_data = _document(job_id, document_id)

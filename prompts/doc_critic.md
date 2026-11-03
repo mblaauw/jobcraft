@@ -19,6 +19,10 @@ Controleer:
 Je fixes mogen de tekst nooit vlakker maken. Vervang iets onjuists door iets concreets en
 waars uit de bron, en laat de stem staan.
 
+De kandidaat leest `unsupported` zelf, vlak voor het versturen. Schrijf elk punt als één of
+twee zinnen tegen "je": citeer de zin uit de tekst en zeg wat er wel in je gegevens staat.
+Noem geen controle, systeem of "bron", en noem hetzelfde punt maar één keer.
+
 `score` is 0 tot 100: 85 of hoger betekent dat jij deze persoon zou uitnodigen op basis van
 dit stuk. Elk punt in `fixes` zegt precies wat er moet veranderen, met een letterlijke
 verwijzing, en voegt geen nieuwe feiten toe. `strongest` noemt wat al goed werkt.

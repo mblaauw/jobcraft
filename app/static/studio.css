@@ -51,6 +51,13 @@
 .plan-question { margin-top: 16px; max-width: 70ch; }
 .plan-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }
 .plan-extras { max-width: 900px; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); }
+.plan-redo { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; max-width: 900px; margin: 0 0 20px; }
+.plan-contact { max-width: 900px; margin: 36px 0 0; }
+.plan-contact > div { flex: 1; min-width: 0; }
+.plan-contact p { margin: 0 0 10px; }
+.plan-contact #contact-title, .plan-contact #contact-title + .muted { display: none; }
+.plan-contact-saved summary { cursor: pointer; }
+.plan-contact-saved summary h2 { display: inline; }
 .plain-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 12px; }
 .plan-actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; position: sticky; bottom: 0; padding: 14px 0; background: var(--paper); border-top: 1px solid var(--line); z-index: 2; }
 .contact-form { display: grid; gap: 12px; margin-top: 10px; }
@@ -92,6 +99,8 @@
 .edit-role { border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
 .edit-role legend { font-weight: 650; font-size: var(--fs-sm); padding: 0 4px; }
 .desk-rail #gegevens h2 { display: none; }
+.rail-contact .contact-form { margin-top: 10px; }
+.rail-note p { margin: 0 0 8px; }
 
 /* ---------------------------------------------------------------- admin */
 
@@ -111,7 +120,9 @@
   .rail-check { order: -1; }
   .desk-paper { order: 0; }
   .desk-rail > section, .desk-rail > details { order: 1; }
-  .desk-rail > .rail-check { order: -1; }
+  .desk-rail > .rail-check, .desk-rail > .rail-note { order: -1; }
+  .rail-get { min-width: 0; }
+  .rail-get .button { flex-shrink: 1; min-width: 0; }
   .desk-rail h2 { margin-top: 0; }
 }
 @media (max-width: 720px) {
