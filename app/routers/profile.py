@@ -17,6 +17,7 @@ from .. import (
     config,
     geo,
     profile,
+    profile_check,
     store,
     tasks,
     tenancy,
@@ -173,7 +174,7 @@ def profile_save(request: Request, content: str = Form(...)):
                 profile_text=content,
             ),
         )
-    profile.write_profile(content, note="handmatige bewerking")
+    profile.write_profile(content, note=profile_check.MANUAL_NOTE)
     _assess_soon()
     return RedirectResponse(url="/profile?saved=profile", status_code=303)
 
@@ -187,6 +188,28 @@ def profile_section(heading: str = Form(...), text: str = Form("")):
         raise HTTPException(status_code=404, detail="unknown section")
     profile.merge_sections({heading: text.replace("\r\n", "\n").strip()}, note=f"aangepast: {heading}"[:80])
     _assess_soon()
+    return RedirectResponse(url="/profile?saved=profile#overzicht", status_code=303)
+
+
+@router.post("/profile/aantekeningen-apart")
+def profile_notes_apart():
+    """Working notes stay, under Open vragen, where the AI does not read them as facts."""
+    current = profile.read_profile()
+    updated = profile_check.notes_apart(current)
+    if updated != current:
+        profile.write_profile(updated, note="aantekeningen naar Open vragen")
+        _assess_soon()
+    return RedirectResponse(url="/profile?saved=profile#overzicht", status_code=303)
+
+
+@router.post("/profile/onderdelen-terug")
+def profile_parts_back():
+    """Add back the parts the last change dropped, from the version before it."""
+    current = profile.read_profile()
+    updated = profile_check.lost_back(current, profile_check.previous_version())
+    if updated != current:
+        profile.write_profile(updated, note=profile_check.RESTORED_NOTE)
+        _assess_soon()
     return RedirectResponse(url="/profile?saved=profile#overzicht", status_code=303)
 
 

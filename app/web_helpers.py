@@ -14,6 +14,7 @@ from . import (
     config,
     geo,
     profile,
+    profile_check,
     store,
 )
 
@@ -119,6 +120,7 @@ def _profile_context(**extra) -> dict:
     context = {
         "profile_md": current,
         "profile_sections": profile.split_sections(current),
+        "profile_warnings": profile_check.warnings(current),
         "preferences": profile.read_preferences(),
         "editor_chars": len(current),
         "editor_lines": (current.count("\n") + 1) if current else 0,
