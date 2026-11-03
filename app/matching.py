@@ -133,6 +133,9 @@ def _system_one_round(preferences, feedback_data, digest_base, summary) -> None:
         needed = (facts is None) + (wants_fit and bool(calls_left))
         if facts is None and calls_left <= 0:
             continue
+        if wants_fit and calls_left <= 0 and ranking.signals_of(job):
+            # Out of calls: the last answer, fit included, is better than facts alone.
+            continue
         try:
             if facts is None:
                 facts = _ask_system_one(

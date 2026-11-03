@@ -29,7 +29,8 @@ def test_signals_from_answers_full_and_confident():
     assert signals["fit"] == 99.8
     assert signals["category"] == "groen_buiten"
     assert signals["noul"]["phone_sales_main"] == 0.02
-    assert signals["confidence"] == 0.9  # min(0.99, 1.0, 0.98, 0.9, 0.97)
+    assert signals["confidence"] == 0.99  # the fit's own certainty
+    assert signals["facts_confidence"] == 0.9  # min(0.99, 1.0, 0.98, 0.9, 0.97)
     assert signals["escalate"] is False
 
 
@@ -40,8 +41,23 @@ def test_low_confidence_escalates():
         "phone_sales_main": {"type": "noul", "noul": 0.5},
     }
     signals = systemone.signals_from_answers(answers)
-    assert signals["confidence"] == 0.5
+    assert signals["confidence"] == 0.6 and signals["facts_confidence"] == 0.5
     assert signals["escalate"] is True
+
+
+def test_a_sure_fit_is_not_escalated_because_a_fact_is_unclear():
+    answers = {
+        "fit": {"type": "score", "score": 0.03, "confidence": 0.98},
+        "company_car": {"type": "noul", "noul": 0.5},
+        "guidance": {"type": "noul", "noul": 0.4},
+    }
+    signals = systemone.signals_from_answers(answers)
+    assert signals["confidence"] == 0.98 and signals["escalate"] is False
+
+
+def test_facts_alone_always_escalate():
+    signals = systemone.signals_from_answers({"day_hours": {"type": "noul", "noul": 0.99}})
+    assert signals["fit"] is None and signals["escalate"] is True
 
 
 def test_compose_state_contains_job_facts():

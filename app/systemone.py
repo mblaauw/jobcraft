@@ -292,15 +292,20 @@ def signals_from_answers(answers: dict, questions: dict | None = None) -> dict:
         noul[key] = round(probability, 3)
         confidences.append(max(probability, 1 - probability))
 
-    confidence = round(min(confidences), 3) if confidences else 0.0
+    # How sure Jev is about the fit decides; a vacancy that says nothing about a company
+    # car must not send every job to the LLM. Without a fit there is nothing to rely on.
+    facts_confidence = round(min(confidences), 3) if confidences else 0.0
+    fit_confidence = float(fit["confidence"]) if fit_value is not None and "confidence" in fit else None
+    confidence = round(fit_confidence, 3) if fit_confidence is not None else facts_confidence
     return {
         "version": question_version(questions if questions is not None else QUESTIONS),
         "fit": fit_value,
         "category": category.get("choice"),
         "category_probabilities": category.get("probabilities"),
         "confidence": confidence,
+        "facts_confidence": facts_confidence,
         "noul": noul,
-        "escalate": confidence < confidence_threshold(),
+        "escalate": fit_value is None or confidence < confidence_threshold(),
     }
 
 
