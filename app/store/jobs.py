@@ -216,10 +216,11 @@ def job_status_counts(
     source: str | None = None,
     include_stale: bool = False,
     list_filters: dict | None = None,
+    only_unvoted: bool = False,
 ) -> dict[str, tuple[int, int]]:
     """Per status: (unique jobs, unique jobs known to be outside the travel range)."""
     clauses, filters = _job_filters(
-        None, query_text, source, include_stale, list_filters=list_filters
+        None, query_text, source, include_stale, only_unvoted, list_filters
     )
     sql = (
         f"SELECT status, COUNT(*) AS n, COALESCE(SUM({TRAVEL_OUT_OF_RANGE}),0) AS far FROM ("

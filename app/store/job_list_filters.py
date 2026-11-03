@@ -47,6 +47,10 @@ def list_filter_clauses(filters: dict | None) -> tuple[list[str], list]:
         cutoff = (datetime.now(UTC) - timedelta(days=int(days))).isoformat()
         clauses.append("COALESCE(posted_at, first_seen) >= ?")
         params.append(cutoff)
+    seen_after = (filters or {}).get("seen_after")
+    if seen_after:
+        clauses.append("first_seen > ?")
+        params.append(seen_after)
     return clauses, params
 
 
