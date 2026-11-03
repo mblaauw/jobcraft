@@ -172,6 +172,39 @@ def _system_one_round(preferences, feedback_data, digest_base, summary) -> None:
                 return
 
 
+def judge(mgr, job, preferences, profile_md, feedback_data, digest_base, summary=None) -> float:
+    """One full LLM verdict, stored on the job; returns its score."""
+    digest = job_match_digest(digest_base, job)
+    base, notes = rule_score(job, preferences, feedback_data)
+    text, usage = mgr.generate(verdict_prompt(job, preferences, profile_md), agent="matcher")
+    # A completed paid call must be accounted for even when its answer
+    # cannot be parsed. Record before validating the provider text.
+    if summary is not None:
+        summary["cost_usd"] += float(usage.get("cost_usd") or 0.0)
+    store.record_usage(
+        None,
+        "matching",
+        int(usage.get("input_tokens") or 0),
+        int(usage.get("output_tokens") or 0),
+        float(usage.get("cost_usd") or 0.0),
+        agent="matcher",
+    )
+    verdict = _parse_verdict(text)
+    reason = json.dumps(
+        {
+            "why": verdict["why"],
+            "concerns": verdict["concerns"],
+            "questions_for_employer": verdict["questions_for_employer"],
+            "rule_score": round(base, 1),
+            "rule_notes": notes,
+            "signals": ranking.signals_of(job),
+        },
+        ensure_ascii=False,
+    )
+    store.update_job_match(job["id"], float(verdict["score"]), reason, digest)
+    return float(verdict["score"])
+
+
 def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
     limit = limit or int(os.environ.get("MATCH_BATCH", "12"))
     preferences = profile.read_preferences()
@@ -204,36 +237,8 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
     )
     summary["escalated"] = len(candidates)
     for job in candidates:
-        digest = job_match_digest(digest_base, job)
-        base, notes = rule_score(job, preferences, feedback_data)
         try:
-            text, usage = mgr.generate(
-                verdict_prompt(job, preferences, profile_md), agent="matcher"
-            )
-            # A completed paid call must be accounted for even when its answer
-            # cannot be parsed. Record before validating the provider text.
-            summary["cost_usd"] += float(usage.get("cost_usd") or 0.0)
-            store.record_usage(
-                None,
-                "matching",
-                int(usage.get("input_tokens") or 0),
-                int(usage.get("output_tokens") or 0),
-                float(usage.get("cost_usd") or 0.0),
-                agent="matcher",
-            )
-            verdict = _parse_verdict(text)
-            reason = json.dumps(
-                {
-                    "why": verdict["why"],
-                    "concerns": verdict["concerns"],
-                    "questions_for_employer": verdict["questions_for_employer"],
-                    "rule_score": round(base, 1),
-                    "rule_notes": notes,
-                    "signals": ranking.signals_of(job),
-                },
-                ensure_ascii=False,
-            )
-            store.update_job_match(job["id"], float(verdict["score"]), reason, digest)
+            judge(mgr, job, preferences, profile_md, feedback_data, digest_base, summary)
             summary["matched"] += 1
         except Exception as exc:
             summary["failed"] += 1

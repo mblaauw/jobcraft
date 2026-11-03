@@ -22,7 +22,9 @@ from .. import (
     document_contact,
     document_design,
     document_pipeline,
+    job_verdict,
     profile,
+    ranking,
     runtime,
     store,
     tasks,
@@ -317,6 +319,17 @@ def job_text(request: Request, job_id: int):
     job = _job(job_id)
     return templates.TemplateResponse(
         request, "_vacancy_fragment.html", {"job": job, "vacancy": vacancy_reader.view(job)}
+    )
+
+
+@router.get("/jobs/{job_id}/oordeel", response_class=HTMLResponse)
+def job_assessment(request: Request, job_id: int):
+    """Just "Waarom dit (niet) past", for the page to swap in once the assessment is ready."""
+    job = _job(job_id)
+    return templates.TemplateResponse(
+        request,
+        "_assessment.html",
+        {"job": job, "signals": ranking.signals_of(job), **job_verdict.context(job)},
     )
 
 

@@ -54,6 +54,13 @@ def save_details(job_id: int, deadline: str, note: str, status: str = "") -> Non
     )
 
 
+def record_status(job_id: int, status: str) -> None:
+    """Remember since when an application has this status, wherever it was changed."""
+    if status in STATUSES:
+        current = details(job_id)
+        save_details(job_id, current.get("deadline", ""), current.get("note", ""), status)
+
+
 def _documents(job_id: int) -> dict:
     kinds = {row["kind"] for row in store.list_documents(job_id)}
     return {"cv": "resume" in kinds, "letter": "motivatie" in kinds}

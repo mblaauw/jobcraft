@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import re
 
+from .feedback import STOPWORDS
+
 MAX_SENTENCES = 3
 # Phrase, kind. Kinds: role (the work), ask (what they want), offer, about, apply.
 _HEADINGS = {
@@ -174,21 +176,41 @@ def facts_of(text: str) -> list[tuple[str, str]]:
     return facts
 
 
-def profile_terms(markdown: str, extra: list[str] | None = None) -> list[str]:
-    """Words and skills from the CV that are worth finding again in a vacancy."""
-    terms = list(extra or [])
+_CV_WORD = re.compile(r"[a-zà-ÿ][a-zà-ÿ0-9-]{4,}")
+
+
+def profile_terms(markdown: str, extra: list[str] | None = None, common=None) -> list[str]:
+    """Skills, job titles and their telling words from the CV, to find again in a vacancy.
+
+    Skill lines are often short phrases that never occur word for word, so their words
+    count on their own too. ``common`` takes a set of words and returns the ones too
+    ordinary to mean anything (in many vacancies), which are left out.
+    """
+    phrases = list(extra or [])
+    languages = set()
     for section in re.split(r"\n(?=## )", markdown or ""):
         head, _, body = section.partition("\n")
-        if re.match(r"#+\s*(Vaardigheden|Skills|Kernkwaliteiten|Competenties|Talen)", head, re.I):
-            terms += re.split(r"[,;\n•·|]", re.sub(r"\([^)]*\)", "", body))
-    clean = {" ".join(term.strip(" -.*").split()) for term in terms}
-    return sorted((term for term in clean if 3 < len(term) <= 40), key=len, reverse=True)
+        if re.match(r"#+\s*(Talen|Languages)", head, re.I):
+            # "Nederlands — moedertaal": the language is a demand vacancies name, however common.
+            languages |= {match.lower() for match in re.findall(r"^[-*•\s]*([A-Za-zÀ-ÿ]{4,})", body, re.M)}
+        elif re.match(r"#+\s*(Vaardigheden|Skills|Kernkwaliteiten|Competenties)", head, re.I):
+            phrases += re.split(r"[,;\n•·|]", re.sub(r"\([^)]*\)", "", body))
+        elif re.match(r"#+\s*(Werkervaring|Ervaring|Work experience|Experience)", head, re.I):
+            # "### period — title | organisation, place": only the title says what you did.
+            phrases += [line.split("|")[0].split(" — ")[-1] for line in re.findall(r"^###\s*(.+)$", body, re.M)]
+    clean = {" ".join(phrase.strip(" -.*").split()) for phrase in phrases}
+    words = {word for phrase in clean for word in _CV_WORD.findall(phrase.lower()) if word not in STOPWORDS}
+    words -= set(common(words)) if common and words else set()
+    terms = {term for term in clean if 3 < len(term) <= 40} | words | languages
+    return sorted(terms, key=len, reverse=True)
 
 
 def _pattern(terms: list[str]) -> re.Pattern | None:
     if not terms:
         return None
-    return re.compile(r"(?<![\w-])(" + "|".join(re.escape(term) for term in terms) + r")(?![\w-])", re.I)
+    # A plural or inflected ending still counts: "klantcontact" finds "klantcontacten".
+    alternatives = "|".join(re.escape(term) for term in terms)
+    return re.compile(r"(?<![\w-])(" + alternatives + r")(?:en|s|e|n)?(?![\w-])", re.I)
 
 
 def marked(text: str, terms: list[str]) -> list[dict]:

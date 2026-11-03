@@ -78,7 +78,8 @@
       save.title = saved ? "Bewaard" : "Bewaren";
       save.setAttribute("aria-label", (saved ? "Haal uit je bewaarde vacatures: " : "Bewaar: ") + jobTitle);
       const use = save.querySelector("use");
-      if (use) use.setAttribute("href", "/static/icons.svg#i-" + (saved ? "bookmark-check" : "bookmark"));
+      // Keep the sprite address the page was served with: under a path prefix "/static" is wrong.
+      if (use) use.setAttribute("href", use.getAttribute("href").replace(/#i-.*$/, "#i-" + (saved ? "bookmark-check" : "bookmark")));
       hide.value = hidden ? "new" : "ignored";
       hide.setAttribute("aria-pressed", String(hidden));
       hide.title = hidden ? "Terugzetten" : "Negeren";
@@ -147,6 +148,9 @@
     if (detail.dataset.documentState === "running") {
       pollTimer = window.setTimeout(() => loadDetail(true), 4000);
     }
+    // Parts still being made (assessment, tidy text) swap themselves in, as on the full page.
+    if (window.jobcraftWatchSwaps) window.jobcraftWatchSwaps();
+    if (window.jobcraftStartClocks) window.jobcraftStartClocks();
   }
 
   async function loadDetail(preserveScroll = false) {

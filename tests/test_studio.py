@@ -501,3 +501,15 @@ def test_position_runs_on_request_and_is_marked_outdated(client, monkeypatch):  
     assert "Sterk punt" in page and "Zwak punt" in page
     profile.write_profile(PROFILE + "\n## Talen\nFrans\n", "test")
     assert career_position.load()["outdated"] is True
+
+
+def test_words_from_skills_and_job_titles_count_on_their_own_unless_everyone_asks_for_them():
+    cv = (
+        "## Werkervaring\n### jun 2024 – heden — Verkoopadviseur buitendienst | Voorbeeldbedrijf, Utrecht\n- Offertes.\n\n"
+        "## Vaardigheden\n- Klantcontact en advies op locatie\n- Planning van monteurs\n\n## Talen\n- Engels — vloeiend\n"
+    )
+    terms = vacancy_text.profile_terms(cv, common=lambda words: {"planning", "engels"} & words)
+    assert {"verkoopadviseur", "buitendienst", "klantcontact", "monteurs", "engels"} <= set(terms)
+    assert "planning" not in terms and "voorbeeldbedrijf" not in terms and "heden" not in terms
+    pieces = vacancy_text.marked("Je hebt klantcontacten in de buitendienst en plant de planning.", terms)
+    assert [piece["text"] for piece in pieces if piece["mark"] == "you"] == ["klantcontacten", "buitendienst"]

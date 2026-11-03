@@ -44,6 +44,7 @@ USER = {
     ("POST", "/logout"),
     ("GET", "/api/werk"),
     ("GET", "/jobs/{job_id}/tekst"),
+    ("GET", "/jobs/{job_id}/oordeel"),
     ("POST", "/profile/positie"),
     ("GET", "/jobs/{job_id}/sollicitatie"),
     ("POST", "/jobs/{job_id}/sollicitatie/plan"),

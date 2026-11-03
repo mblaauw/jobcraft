@@ -20,6 +20,22 @@ def load_token_df() -> tuple[dict[str, int], int] | None:
     return {row["token"]: int(row["n"]) for row in rows}, int(total["value"])
 
 
+def common_tokens(words: set[str], share: float) -> set[str]:
+    """The given words that occur in more than ``share`` of all vacancies."""
+    if not words:
+        return set()
+    with connect() as con:
+        total = con.execute("SELECT value FROM meta WHERE key='token_df_total'").fetchone()
+        if total is None or not int(total["value"]):
+            return set()
+        listed = sorted(words)[:500]
+        rows = con.execute(
+            "SELECT token FROM token_df WHERE n > ? AND token IN (" + ",".join("?" for _ in listed) + ")",
+            (share * int(total["value"]), *listed),
+        ).fetchall()
+    return {row["token"] for row in rows}
+
+
 
 def save_token_df(counter: dict[str, int], total: int) -> None:
     with connect() as con:

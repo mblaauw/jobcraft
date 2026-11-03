@@ -10,7 +10,7 @@ import pytest
 from bs4 import BeautifulSoup
 from fastapi.testclient import TestClient
 
-from app import auth, config, main, runtime, store
+from app import applications, auth, config, main, runtime, store
 
 
 @pytest.fixture()
@@ -300,7 +300,12 @@ def test_status_from_detail_stays_on_detail_and_unknown_job_is_404(client):
         data={"status": "saved", "next": f"/jobs/{job_id}"},
         follow_redirects=False,
     )
-    assert response.headers["location"] == f"/jobs/{job_id}"
+    assert response.headers["location"] == f"/jobs/{job_id}?gedaan=saved#acties"
+    page = client.get(response.headers["location"]).text
+    assert "Bewaard. Je vindt hem bij Sollicitaties" in page and 'value="applied"' in page and "Toch niet bewaren" in page
+    client.post(f"/jobs/{job_id}/status", data={"status": "applied", "next": f"/jobs/{job_id}"})
+    assert applications.details(job_id)["since"]["applied"]  # the board can count the days
+    assert "Volg hem bij Sollicitaties" in client.get(f"/jobs/{job_id}").text
     assert client.post("/jobs/999/status", data={"status": "saved"}).status_code == 404
 
 

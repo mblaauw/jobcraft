@@ -554,9 +554,12 @@ a.vacancy-score:hover { box-shadow: 0 0 0 4px var(--sunk); }
   padding: 10px 12px 10px 16px; margin: 0 0 22px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
 }
 .job-actionbar form { margin: 0; }
+.job-actionbar { scroll-margin-top: 88px; } /* lands below the sticky top bar after a status change */
 .job-actionbar .group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .job-actionbar .group { min-width: 0; max-width: 100%; }
 .job-actionbar .group > .label { margin: 0; color: var(--ink-2); font-weight: 600; }
+.job-actionbar .status-now { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); }
+.job-actionbar .status-now .icon { color: var(--moss); flex: none; }
 .job-layout {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); gap: 22px; align-items: start;
   grid-template-areas: "text docs" "text assess" "text prep" "text .";
@@ -840,8 +843,6 @@ textarea.prose-edit:focus { border-color: var(--moss); outline: 2px solid var(--
   .vacancy-score.big strong { font-size: 24px; }
   .job-actionbar { padding: 10px 12px; }
   .job-actionbar form.group:first-child { width: 100%; }
-  .job-actionbar .segmented { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; border-radius: var(--r); overflow: visible; }
-  .job-actionbar .segmented button { justify-content: center; border-radius: var(--r-sm); }
   .interview-layout { grid-template-columns: minmax(0, 1fr); }
   .chat { min-height: calc(100dvh - 56px - 96px - 120px); }
   .chat-log { max-height: none; }

@@ -22,6 +22,7 @@ from .. import (
     feedback,
     geo,
     insights,
+    job_verdict,
     matching,
     notifications,
     profile,
@@ -36,7 +37,7 @@ from ..runtime import get_manager
 from ..scoring import reasons
 from ..util import LOCAL_TZ
 from ..web import templates
-from ..web_helpers import _jobs_return_target
+from ..web_helpers import _jobs_return_target, _with_done
 from ..workflows import _doc_status, _document_lock
 
 log = logging.getLogger("jobcraft")
@@ -258,12 +259,6 @@ def job_detail(request: Request, job_id: int, return_to: str = ""):
     job = store.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="unknown job")
-    reason = None
-    if job["match_reason"]:
-        try:
-            reason = json.loads(job["match_reason"])
-        except ValueError:
-            reason = {"why": job["match_reason"]}
     store.count_event("jobs_opened")
     doc_status = _doc_status(job_id)
     doc_status_recent = False
@@ -292,7 +287,7 @@ def job_detail(request: Request, job_id: int, return_to: str = ""):
         "job_detail.html",
         {
             "job": item,
-            "reason": reason,
+            **job_verdict.context(item),
             "signals": signals,
             "counts": store.count_jobs(),
             "documents": store.list_documents(job_id),
@@ -382,8 +377,7 @@ def job_vote(job_id: int, vote: str = Form(...), url: str = Form("/jobs", alias=
     ranking.after_vote(job_id)
     owner = tenancy.user_id()
     tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}")
-    target = _jobs_return_target(url)
-    return RedirectResponse(url=f"{target}", status_code=303)
+    return RedirectResponse(url=_with_done(_jobs_return_target(url), job_id, vote), status_code=303)
 
 
 @router.post("/jobs/{job_id}/status")
@@ -393,7 +387,8 @@ def job_status(job_id: int, status: str = Form(...), url: str = Form("/jobs", al
     if store.get_job(job_id) is None:
         raise HTTPException(status_code=404, detail="unknown job")
     store.update_job_status(job_id, status)
+    applications.record_status(job_id, status)  # the board counts days from here
     ranking.after_vote(job_id)  # saved and ignored teach the ranking as much as a vote
     if status == "applied":
         store.count_event("applications")
-    return RedirectResponse(url=_jobs_return_target(url), status_code=303)
+    return RedirectResponse(url=_with_done(_jobs_return_target(url), job_id, status), status_code=303)

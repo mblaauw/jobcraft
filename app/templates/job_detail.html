@@ -7,7 +7,6 @@
 {% set stamp_job = dict(job, signals=signals) %}
 {% set next_url = detail_return or ('/jobs/' ~ job['id']) %}
 {% set running = doc_status and doc_status.state == "running" %}
-{% set n = (signals.get('noul') if signals else none) or {} %}
 <div data-job-detail data-job-id="{{ job['id'] }}" data-job-vote="{{ job['vote'] or 0 }}" data-job-status="{{ job['status'] }}" data-job-score="{{ job['rank_score'] if job['rank_score'] is not none else '' }}" data-job-provisional="{{ 'true' if job['match_score'] is none else 'false' }}" data-document-state="{{ doc_status.state if doc_status else '' }}">
 <p class="detail-back"><a href="{{ list_return or '/jobs' }}">{{ ui.icon('arrow-left') }}Terug naar vacatures</a></p>
 
@@ -30,26 +29,45 @@
   </div>
 </header>
 
-<div class="job-actionbar">
-  <form method="post" action="/jobs/{{ job['id'] }}/status" class="group">
+{% set status = job['status'] %}
+<div class="job-actionbar" id="acties">
+  <form method="post" action="/jobs/{{ job['id'] }}/status" class="group status-actions">
     {% include '_csrf.html' %}
     <input type="hidden" name="next" value="{{ next_url }}">
-    <span class="label" id="detail-status-label">Status</span>
-    <div class="segmented" role="group" aria-labelledby="detail-status-label">
-      {% for value in ["new", "saved", "applied", "ignored"] %}
-      <button id="detail-status-{{ value }}" type="submit" name="status" value="{{ value }}" aria-pressed="{{ 'true' if job['status'] == value else 'false' }}">{{ ui.status_label(value) }}</button>
-      {% endfor %}
-    </div>
+    {% if status == 'new' %}
+    <button id="detail-save" class="button primary small" type="submit" name="status" value="saved">{{ ui.icon('bookmark') }}Bewaar</button>
+    <button id="detail-ignore" class="button small" type="submit" name="status" value="ignored">{{ ui.icon('eye-off') }}Niet voor mij</button>
+    {% elif status == 'saved' %}
+    <span class="status-now">{{ ui.icon('bookmark-check') }}<span>Bewaard. <a href="/sollicitaties">Staat bij Sollicitaties</a></span></span>
+    <button id="detail-applied" class="button small" type="submit" name="status" value="applied">{{ ui.icon('send') }}Ik heb gereageerd</button>
+    <button id="detail-unsave" class="button quiet small" type="submit" name="status" value="new">Toch niet bewaren</button>
+    {% elif status == 'ignored' %}
+    <span class="status-now">{{ ui.icon('eye-off') }}<span>Niet voor jou. Hij staat niet meer in je lijst.</span></span>
+    <button id="detail-restore" class="button small" type="submit" name="status" value="new">Zet terug</button>
+    {% else %}
+    <span class="status-now">{{ ui.icon('list-checks') }}<span>{{ ui.status_label(status) }}. <a href="/sollicitaties">Volg hem bij Sollicitaties</a></span></span>
+    {% endif %}
   </form>
   <form method="post" action="/jobs/{{ job['id'] }}/vote" class="group vote-form">
     {% include '_csrf.html' %}
     <input type="hidden" name="next" value="{{ next_url }}">
-    <span class="label">Jouw stem</span>
+    <span class="label" id="detail-vote-label">Meer vacatures zoals deze?</span>
     {% set up = job['vote'] and job['vote'] > 0 %}{% set down = job['vote'] and job['vote'] < 0 %}
-    <button id="detail-vote-up" class="icon-button vote up" type="submit" name="vote" value="{{ 'clear' if up else 'up' }}" aria-pressed="{{ 'true' if up else 'false' }}" title="Interessant" aria-label="{{ 'Wis positieve stem' if up else 'Interessant' }}">{{ ui.icon('thumbs-up') }}</button>
-    <button id="detail-vote-down" class="icon-button is-down vote down" type="submit" name="vote" value="{{ 'clear' if down else 'down' }}" aria-pressed="{{ 'true' if down else 'false' }}" title="Minder passend" aria-label="{{ 'Wis negatieve stem' if down else 'Minder passend' }}">{{ ui.icon('thumbs-down') }}</button>
+    <button id="detail-vote-up" class="icon-button vote up" type="submit" name="vote" value="{{ 'clear' if up else 'up' }}" aria-pressed="{{ 'true' if up else 'false' }}" title="Ja, meer zoals deze" aria-label="{{ 'Wis: meer zoals deze' if up else 'Ja, meer zoals deze' }}">{{ ui.icon('thumbs-up') }}</button>
+    <button id="detail-vote-down" class="icon-button is-down vote down" type="submit" name="vote" value="{{ 'clear' if down else 'down' }}" aria-pressed="{{ 'true' if down else 'false' }}" title="Nee, minder zoals deze" aria-label="{{ 'Wis: minder zoals deze' if down else 'Nee, minder zoals deze' }}">{{ ui.icon('thumbs-down') }}</button>
   </form>
 </div>
+{% set done = request.query_params.get('gedaan', '') %}
+{% set done_text = {
+  'saved': 'Bewaard. Je vindt hem bij Sollicitaties, waar je je sollicitatie maakt.',
+  'ignored': 'Je ziet deze vacature niet meer in je lijst. Vacatures die erop lijken zakken iets.',
+  'new': 'Teruggezet bij je nieuwe vacatures.',
+  'applied': 'Genoteerd dat je hebt gereageerd. Bij Sollicitaties zie je wanneer nabellen slim is.',
+  'up': 'Genoteerd. Vacatures zoals deze komen hoger in je lijst.',
+  'down': 'Genoteerd. Vacatures zoals deze zakken in je lijst.',
+  'clear': 'Je stem is gewist.',
+}.get(done, '') %}
+{% if done_text %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>{{ done_text }}</span></p>{% endif %}
 
 {% if request.query_params.get('verwijderd') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Het document is verwijderd.</span></p>{% endif %}
 {% if doc_error %}<div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Document maken is niet gelukt: {{ doc_error }}</span></div>{% endif %}
@@ -61,47 +79,7 @@
 {% endif %}
 
 <div class="job-layout">
-  <section class="panel job-assessment" data-detail-section="assessment" aria-labelledby="detail-assessment-title">
-    <h2 id="detail-assessment-title">Waarom dit (niet) past</h2>
-    {% if job["match_score"] is not none and reason %}
-      {% if reason.why %}<p class="verdict-why">{{ reason.why }}</p>{% endif %}
-      {% if reason.concerns %}
-      <h3>Let op</h3>
-      <ul class="assess-list">{% for item in reason.concerns %}<li class="neg">{{ ui.icon('triangle-alert') }}<span>{{ item }}</span></li>{% endfor %}</ul>
-      {% endif %}
-      {% if reason.questions_for_employer %}
-      <h3>Vragen voor de werkgever</h3>
-      <ul class="assess-list">{% for item in reason.questions_for_employer %}<li class="q">{{ ui.icon('message-circle') }}<span>{{ item }}</span></li>{% endfor %}</ul>
-      {% endif %}
-    {% elif signals %}
-      <p class="muted">Deze vacature heeft alleen een snelle eerste beoordeling. De kansrijkste vacatures krijgen vanzelf een uitgebreide toelichting.</p>
-    {% else %}
-      <p class="muted">Nog niet beoordeeld. Dat gebeurt vanzelf.</p>
-    {% endif %}
-    {% if signals %}
-    <h3>In het kort</h3>
-    <ul class="traits">
-      {% for key, yes, no in [('day_hours', 'Dagwerk', 'Geen vast dagwerk'), ('evening_weekend', 'Avond- of weekendwerk', None), ('outdoor_mobile', 'Veel buiten of op locatie', None), ('physically_heavy', 'Fysiek zwaar', None), ('phone_sales_main', 'Veel bellen of verkoop', None), ('guidance', 'Inwerkperiode', None), ('company_car', 'Bedrijfsauto', None)] %}
-        {% set p = n.get(key) %}
-        {% if p is not none and p > 0.5 %}<li class="chip {{ 'chip-warn' if key in ('evening_weekend', 'physically_heavy', 'phone_sales_main') else 'chip-ok' }}">{{ yes }}</li>
-        {% elif p is not none and no and p < 0.5 %}<li class="chip chip-warn">{{ no }}</li>{% endif %}
-      {% endfor %}
-    </ul>
-    {% endif %}
-    {% if signals or (reason and reason.rule_notes) %}
-    <details class="disclosure">
-      <summary><span class="small">Technische details</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
-      <dl class="stats small">
-        {% if job["match_score"] is not none %}<div><dt>Uitgebreide beoordeling</dt><dd>{{ "%.0f" | format(job["match_score"]) }}/100</dd></div>{% endif %}
-        {% if job["rank_score"] is not none %}<div><dt>Rangschikking</dt><dd>{{ "%.0f" | format(job["rank_score"]) }}/100</dd></div>{% endif %}
-        {% if signals %}<div><dt>Snelle beoordeling</dt><dd>{% if signals.get('fit') is not none %}{{ signals.get('fit') }}/100{% else %}—{% endif %}</dd></div><div><dt>Zekerheid</dt><dd>{% if signals.get('confidence') is not none %}{{ "%.0f" | format(signals.get('confidence') * 100) }}%{% else %}—{% endif %}</dd></div><div><dt>Categorie</dt><dd>{{ signals.get('category') or "—" }}</dd></div>{% endif %}
-        <div><dt>Bron</dt><dd>{{ job["source_id"] }}</dd></div>
-        <div><dt>Eerst gezien</dt><dd>{{ ui.nl_date(job["first_seen"]) }}</dd></div>
-      </dl>
-      {% if reason and reason.rule_notes %}<p class="small muted">Regels: {{ reason.rule_notes | join(", ") }}</p>{% endif %}
-    </details>
-    {% endif %}
-  </section>
+  {% include '_assessment.html' %}
 
   <section class="panel job-text" data-detail-section="text" aria-labelledby="detail-text-title">
     <h2 id="detail-text-title">De vacature</h2>
