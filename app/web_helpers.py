@@ -15,7 +15,6 @@ from . import (
     geo,
     profile,
     store,
-    tenancy,
 )
 
 log = logging.getLogger("jobcraft")
@@ -102,60 +101,6 @@ def _profile_meta() -> dict:
 
 
 
-def _workflow(
-    profile_state: dict, jobs: dict, documents: int, draft: dict | None, queue: int
-) -> dict:
-    if not profile_state["exists"]:
-        if tenancy.user_id() != tenancy.LEGACY_ID:
-            return {
-                "label": "Vind in drie minuten je vacatures",
-                "href": "/start",
-                "detail": "Je cv, een paar keuzes en vijf echte vacatures. Daaruit maken we je profiel.",
-                "step": 1,
-            }
-        return {
-            "label": "Maak je eerste profiel",
-            "href": "/profile",
-            "detail": "We lezen je bestaande materiaal in en stellen een profiel voor dat je zelf controleert.",
-            "step": 1,
-        }
-    if draft:
-        return {
-            "label": "Bekijk het voorstel voor je profiel",
-            "href": "/profile#bijwerken",
-            "detail": "Je ziet precies wat er verandert en kiest zelf of je het overneemt.",
-            "step": 1,
-        }
-    if jobs["total"] == 0:
-        return {
-            "label": "Haal de eerste vacatures op",
-            "href": "/sources",
-            "detail": "Kies bij Bronnen welke vacaturesites meedoen.",
-            "step": 2,
-        }
-    if queue > 0:
-        return {
-            "label": f"{queue} kansrijke vacatures wachten op een beoordeling",
-            "href": "/jobs",
-            "detail": "Werk de beoordelingen bij op de vacaturelijst. Je krijgt per vacature een toelichting.",
-            "step": 3,
-        }
-    if documents == 0:
-        return {
-            "label": "Kies een vacature en maak je CV",
-            "href": "/jobs",
-            "detail": "Open een vacature die je aanspreekt; Jobcraft past je CV of brief erop aan.",
-            "step": 4,
-        }
-    return {
-        "label": "Bekijk je nieuwste vacatures",
-        "href": "/jobs",
-        "detail": "Je profiel, beoordelingen en documenten zijn bijgewerkt.",
-        "step": 4,
-    }
-
-
-
 def _profile_context(**extra) -> dict:
     draft_pair = profile.pending_draft()
     draft = draft_pair[1] if draft_pair else None
@@ -214,7 +159,7 @@ def _jobs_return_target(url: str) -> str:
         parts = urlsplit(url)
     except ValueError:
         return "/jobs"
-    valid_path = parts.path == "/jobs" or (
+    valid_path = parts.path in ("/", "/jobs") or (  # "/": choices made on the overview
         parts.path.startswith("/jobs/") and parts.path.removeprefix("/jobs/").isdigit()
     )
     return url if not parts.scheme and not parts.netloc and valid_path else "/jobs"

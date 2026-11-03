@@ -475,6 +475,5 @@ def test_existing_accounts_see_what_is_new_on_the_overview(flow, monkeypatch):
     page = flow.get("/").text
     assert "Ga verder waar je gebleven was" in page
     assert "/jobs/toevoegen" in page
-    assert "voeg je eigen Word-CV toe" in page
     store_votes = flow.get("/jobs?within=0")
     assert store_votes.status_code == 200

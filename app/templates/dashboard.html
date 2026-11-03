@@ -1,102 +1,112 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}Overzicht · Jobcraft{% endblock %}
+{% block title %}Vandaag · Jobcraft{% endblock %}
 {% block content %}
 {% if start_open %}<section class="banner" aria-label="Snelle start">{{ ui.icon('clock') }}<span>Je snelle start is nog niet af. Je antwoorden zijn bewaard. <a href="/start">Ga verder waar je gebleven was</a></span></section>{% endif %}
-{% if own_vacancy_hint %}<section class="banner" aria-label="Eigen vacature">{{ ui.icon('file-text') }}<span>Heb je zelf een vacature gevonden? <a href="/jobs/toevoegen">Voeg hem toe</a> en laat meteen een cv en brief maken.{% if plain_cv %} Je gebruikt nu een eenvoudig basis-CV; <a href="/account">voeg je eigen Word-CV toe</a> voor je eigen opmaak.{% endif %}</span></section>{% endif %}
-{% if reminders %}<section class="banner warn" aria-label="Deadlines">{{ ui.icon('clock') }}<span>{% for item in reminders[:3] %}{{ 'Verlopen' if item.overdue else 'Deadline' }}: <a href="/sollicitaties">{{ item.job['title'] }}</a> ({{ item.deadline }}){% if not loop.last %} · {% endif %}{% endfor %}</span></section>{% endif %}
-{% set pipeline = pipeline or {} %}
-{% set name =(request.state.user.display_name or request.state.user.username) if request.state is defined and request.state.user else '' %}
+{% set name = (request.state.user.display_name or request.state.user.username) if request.state is defined and request.state.user else '' %}
 <div class="page-head greeting">
   <div>
     <h1>Hallo{% if name %} {{ name }}{% endif %}</h1>
-    <p class="lede">{% if jobs.total %}{{ jobs.total }} vacatures in je overzicht, waarvan {{ jobs.matched }} uitgebreid beoordeeld.{% else %}Hier zie je straks je beste vacatures en wat je volgende stap is.{% endif %}</p>
+    <p class="lede">{{ summary }}</p>
   </div>
 </div>
 
-<section class="next-step" aria-labelledby="next-step-title">
+{% set first = tasks[0] if tasks else none %}
+<section class="next-step" aria-labelledby="first-title">
   <div>
-    <p class="kicker">Volgende stap</p>
-    <h2 id="next-step-title">{{ next_step.label }}</h2>
-    <p>{{ next_step.detail }}</p>
+    {% if first %}
+      <p class="kicker">{{ first.tag or 'Eerst dit' }}</p>
+      <h2 id="first-title">{{ first.title }}</h2>
+      <p>{{ first.why }}</p>
+    {% elif not has_profile %}
+      <p class="kicker">Eerst dit</p>
+      <h2 id="first-title">Vertel Jobcraft wat je zoekt</h2>
+      <p>Met je cv en een paar keuzes zie je hier elke dag wat je kansen vergroot.</p>
+    {% else %}
+      <p class="kicker">Niets dringends</p>
+      <h2 id="first-title">Kies een vacature om op te reageren</h2>
+      <p>Bewaar wat je aanspreekt. Dan zetten we hier wat je moet doen, met een cv en brief op maat.</p>
+    {% endif %}
   </div>
-  <a class="button primary" href="{{ next_step.href }}">Ga verder</a>
+  {% if first %}<a class="button primary" href="{{ first.href }}">{{ first.label }}</a>
+  {% elif not has_profile %}<a class="button primary" href="/start">Begin hier</a>
+  {% else %}<a class="button primary" href="#nieuw">Bekijk wat er nieuw is</a>{% endif %}
 </section>
 
-<section class="metric-grid" aria-label="In cijfers">
-  <a class="metric" href="/jobs"><span>vacatures</span><strong>{{ jobs.total }}</strong></a>
-  <a class="metric" href="/jobs"><span>uitgebreid beoordeeld</span><strong>{{ jobs.matched }}</strong></a>
-  <a class="metric" href="/jobs"><span>wachten op beoordeling</span><strong>{{ queue }}</strong></a>
-  <a class="metric" href="/jobs"><span>documenten gemaakt</span><strong>{{ documents }}</strong></a>
-</section>
+<div class="today-grid">
+  <div>
+    {% if tasks | length > 1 %}
+    <section class="today-block" aria-labelledby="tasks-title">
+      <h2 id="tasks-title">Daarna</h2>
+      <ol class="task-list" start="2">
+        {% for task in tasks[1:] %}
+        <li class="task{% if task.urgent %} is-urgent{% endif %}">
+          <div class="task-body">
+            <h3>{{ task.title }}</h3>
+            <p>{% if task.tag %}<span class="task-tag">{{ task.tag }}</span>{% endif %}{{ task.why }}</p>
+          </div>
+          <a class="button small" href="{{ task.href }}">{{ task.label }}</a>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+    {% endif %}
 
-<div class="dash-grid">
-  <section aria-labelledby="top-title">
-    <div class="panel-head"><h2 id="top-title">Beste nieuwe vacatures</h2><a class="small" href="/jobs?status=new">Alle nieuwe</a></div>
-    <div class="panel panel-flush">
-      {% if not profile_state.exists %}
-      <div class="empty-state">
-        <h3>Eerst je profiel</h3>
-        <p class="muted small">Jobcraft weet nog niet wat je zoekt. In een paar minuten zie je hier de vacatures die het best bij je passen.</p>
-        <a class="button primary" href="/start">Begin hier</a>
+    <section class="today-block" id="nieuw" aria-labelledby="new-title">
+      <div class="panel-head">
+        <h2 id="new-title">Nieuw en kansrijk</h2>
+        {% if fresh %}<span class="small subtle">{{ fresh }} nieuw sinds je vorige bezoek</span>{% endif %}
       </div>
-      {% elif top_jobs %}
-      <ul class="top-matches">
-        {% for job in top_jobs %}
+      {% if matches %}
+      <ul class="pick-list">
+        {% for job in matches %}
         {% set url = '/jobs/' ~ job['id'] ~ '?return_to=' ~ ('/jobs' | urlencode) %}
-        <li>
+        <li class="pick">
           {{ ui.stamp(job) }}
-          <div>
-            <h3><a href="{{ url }}">{{ job['title'] or 'Zonder titel' }}</a></h3>
+          <div class="pick-body">
+            <h3><a href="{{ url }}">{{ job['title'] or 'Zonder titel' }}</a>{% if job.is_new %}<span class="chip chip-lime">Nieuw</span>{% endif %}</h3>
             <ul class="meta small">
               <li>{{ job['company'] or 'Onbekende organisatie' }}</li>
               {{ ui.travel(job['travel']) }}
             </ul>
           </div>
+          <div class="pick-actions">
+            <form method="post" action="/jobs/{{ job['id'] }}/status" data-pending-form>{% include '_csrf.html' %}<input type="hidden" name="next" value="/"><button class="button small" type="submit" name="status" value="saved">{{ ui.icon('bookmark') }}Bewaar</button></form>
+            <form method="post" action="/jobs/{{ job['id'] }}/vote" data-pending-form>{% include '_csrf.html' %}<input type="hidden" name="next" value="/"><button class="button small quiet" type="submit" name="vote" value="down" title="Minder passend: vergelijkbare vacatures zakken meteen">Niet voor mij</button></form>
+          </div>
         </li>
         {% endfor %}
       </ul>
-      <div class="panel-foot"><a href="/jobs">Naar alle vacatures</a></div>
+      <p class="small link-row"><a href="/jobs?status=new">Alle nieuwe vacatures</a><a href="/jobs/toevoegen">Zelf een vacature gevonden? Voeg hem toe</a></p>
       {% else %}
-      <div class="empty-state">
-        <h3>Nog geen nieuwe vacatures om te tonen</h3>
-        <p class="muted small">{% if jobs.total %}Je hebt alle nieuwe vacatures al beoordeeld of ze vallen buiten je reisbereik.{% else %}Zodra er vacatures zijn opgehaald, zie je hier de best passende.{% endif %}</p>
-        <a class="button" href="{{ '/jobs' if jobs.total else '/sources' }}">{{ 'Bekijk alle vacatures' if jobs.total else 'Naar bronnen' }}</a>
+      <div class="panel empty-state">
+        <h3>{% if has_jobs %}Je bent bij{% else %}Nog geen vacatures{% endif %}</h3>
+        <p class="muted small">{% if has_jobs %}Alle nieuwe vacatures binnen je reisbereik heb je al bekeken. Er komen er twee keer per dag nieuwe bij.{% else %}Zodra er vacatures zijn opgehaald, zie je hier de best passende.{% endif %}</p>
+        <a class="button" href="/jobs/toevoegen">Zelf een vacature toevoegen</a>
       </div>
       {% endif %}
-    </div>
-  </section>
-
-  <div>
-    <section class="panel" aria-labelledby="journey-title">
-      <h2 id="journey-title">Zo werkt het</h2>
-      <ol class="journey">
-        {% set profile_done = profile_state.exists and not draft %}
-        <li class="{{ 'done' if profile_done else 'current' }}"><a href="/profile"><strong>Profiel</strong><span>{% if draft %}Een voorstel wacht op je akkoord{% elif profile_state.exists %}Bijgewerkt op {{ ui.nl_date(profile_state.updated) }}{% else %}Nog niet gemaakt{% endif %}</span></a></li>
-        <li class="{{ 'done' if jobs.total > 0 else ('current' if profile_done else '') }}"><a href="/sources"><strong>Vacatures ophalen</strong><span>{{ jobs.total }} gevonden</span></a></li>
-        <li class="{{ 'done' if queue == 0 and jobs.matched > 0 else ('current' if queue > 0 else '') }}"><a href="/jobs"><strong>Beoordelen</strong><span>{% if queue %}{{ queue }} in wachtrij{% else %}{{ jobs.matched }} met toelichting{% endif %}</span></a></li>
-        <li class="{{ 'done' if (pipeline.applied or 0) > 0 else ('current' if jobs.matched > 0 else '') }}"><a href="/jobs?status=saved"><strong>Solliciteren</strong><span>{{ pipeline.saved or 0 }} bewaard, {{ pipeline.applied or 0 }} gereageerd, {{ documents }} documenten</span></a></li>
-      </ol>
     </section>
+  </div>
 
-    {% if request.state.user.id == 'legacy' %}
-    <section class="panel" aria-labelledby="talk-title">
-      <div class="panel-head"><h2 id="talk-title">Gesprekken</h2>
-        <form method="post" action="/interview/new" class="inline-form">{% include '_csrf.html' %}<button class="button small" type="submit">{{ ui.icon('plus') }}Nieuw gesprek</button></form>
-      </div>
-      {% if sessions %}
-      <ul class="list session-list">
-        {% for s in sessions[:4] %}<li><a href="/interview?session={{ s.id }}">{{ s.title or s.id[:12] }}</a><span class="subtle small">{{ ui.nl_date(s.updated_at) }}</span></li>{% endfor %}
-      </ul>
-      {% else %}
-      <p class="small muted">Een gesprek helpt Jobcraft te begrijpen wat je zoekt. Elke sessie wordt bewaard.</p>
-      {% endif %}
-      {% if bootstrap_status == "running" %}<p class="small muted">Je profiel wordt bijgewerkt…</p>{% endif %}
-      {% if not profile_state.exists and seed.ready and request.state.user.id == 'legacy' %}
-      <form method="post" action="/profile/consolidate" class="btn-row">{% include '_csrf.html' %}<input type="hidden" name="full" value="1"><button class="button" type="submit">Profiel maken uit bestaand materiaal</button></form>
-      {% endif %}
+  <aside class="today-side" aria-label="Je voortgang">
+    <section class="panel week" aria-labelledby="week-title">
+      <h2 id="week-title">Je week</h2>
+      <dl class="week-numbers">
+        <div><dt>verstuurd deze week</dt><dd>{{ week.sent_week }}</dd></div>
+        <div><dt>wacht op antwoord</dt><dd>{{ week.waiting }}</dd></div>
+        <div><dt>{{ 'gesprek' if week.talks == 1 else 'gesprekken' }}</dt><dd>{{ week.talks }}</dd></div>
+      </dl>
+      {% if week.rate is not none %}<p class="small muted">{{ week.rate }}% van je sollicitaties leidde tot een gesprek.</p>
+      {% elif week.sent_week == 0 %}<p class="small muted">Drie sollicitaties per week houdt je zoektocht in beweging.</p>{% endif %}
+      <a class="small" href="/sollicitaties">Naar je sollicitaties</a>
+    </section>
+    {% if tip %}
+    <section class="panel tip" aria-labelledby="tip-title">
+      <h2 id="tip-title">{{ ui.icon('sparkles') }}Levert deze week het meeste op</h2>
+      <p>{{ tip }}</p>
+      <a class="small" href="/profile#positie">Meer over je positie</a>
     </section>
     {% endif %}
-  </div>
+  </aside>
 </div>
 {% endblock %}
