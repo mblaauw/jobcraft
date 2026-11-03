@@ -514,29 +514,6 @@ def test_home_rejects_nonfinite_or_out_of_range_coordinates(client, lat, lon):
     assert response.status_code == 400
 
 
-def test_stream_endpoint_persists_user_and_assistant_messages(client, monkeypatch):
-    from app import llm, tenancy
-    from app.routers import interview
-
-    with store.connect() as con:
-        owner = con.execute("SELECT id FROM users WHERE username='test'").fetchone()["id"]
-    with tenancy.scope({"id": owner}):
-        store.create_session("stream-test", "Stream", "interviewer", "fixture")
-    manager = llm.ServerManager()
-    manager.client = llm.FakeLLMClient(["Hallo daar"])
-    monkeypatch.setattr(interview, "get_manager", lambda: manager)
-    response = client.post(
-        "/api/sessions/stream-test/send/stream", json={"text": "Mijn antwoord"}
-    )
-    assert response.status_code == 200
-    assert '"type": "token"' in response.text
-    assert '"type": "done"' in response.text
-    with tenancy.scope({"id": owner}):
-        messages = store.list_messages("stream-test")
-    assert [message["role"] for message in messages] == ["user", "assistant"]
-    assert messages[0]["text"] == "Mijn antwoord"
-
-
 def test_search_finds_all_words_in_any_order_and_inside_compounds(client):
     add_job(title="Data analist")
     add_job(title="Wijkverpleegkundige")

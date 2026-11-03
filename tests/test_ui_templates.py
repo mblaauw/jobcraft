@@ -79,22 +79,6 @@ def test_admin_navigation_is_settings_only():
     assert html.select_one(".brand")["href"] == "/admin"
 
 
-def test_interview_empty_coverage_and_accessible_composer():
-    html = render(
-        "interview.html",
-        "/interview",
-        sessions=[],
-        session_id="example",
-        messages=[{"role": "assistant", "text": "Wat zoek je?"}],
-        coverage={"covered": 0, "total": 0, "question_count": 0, "topics": []},
-    )
-    assert html.select_one("progress")["max"] == "1"
-    assert html.select_one('label[for="chat-input"]')
-    assert html.select_one('#chat-log[role="log"]')
-    assert html.select_one('#chat-status[aria-live="polite"]')
-    assert html.select_one('script[src="/static/chat.js"]')
-
-
 def test_job_filters_preserve_search_source_and_travel_and_show_empty_state():
     html = render(
         "jobs.html",

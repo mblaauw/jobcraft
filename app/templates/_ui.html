@@ -39,6 +39,9 @@
 {% endif %}
 {%- endmacro %}
 
+{# 1108960 -> "1.108.960", the way Dutch readers group digits. #}
+{% macro number(value) -%}{{ "{:,}".format(value | int).replace(",", ".") }}{%- endmacro %}
+
 {% macro status_label(value) -%}
 {{ {'new': 'Nieuw', 'saved': 'Bewaard', 'applied': 'Gereageerd', 'ignored': 'Genegeerd', 'interview': 'Gesprek', 'offer': 'Aanbod', 'rejected': 'Afgewezen'}.get(value, value) }}
 {%- endmacro %}

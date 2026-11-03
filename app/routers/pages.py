@@ -89,6 +89,7 @@ def admin_page(request: Request):
     auth.require_admin(request)
     votes = store.list_votes()
     source_rows = [dict(row) for row in store.list_sources()]
+    overview = store.usage_overview()
     return templates.TemplateResponse(
         request,
         "admin.html",
@@ -109,7 +110,10 @@ def admin_page(request: Request):
             "answer_log_offset": store.meta_get("answer_log_offset", "0"),
             "bootstrap_status": store.meta_get("bootstrap_status", "idle"),
             "worker": _worker_state(),
-            "overview": store.usage_overview(),
+            "overview": overview,
+            # Many gateways report no price: then dollars say nothing and tokens are the brake.
+            "priced": any(row["cost"] for row in overview["kinds"]),
+            "token_limit": int(os.environ.get("AI_DAILY_TOKEN_LIMIT", "500000") or 0),
             "failures": tasks.failures_overview(),
             "last_scan": _last_scan(),
             "paths": {
