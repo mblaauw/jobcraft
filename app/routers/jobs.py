@@ -15,6 +15,7 @@ from fastapi.responses import (
 )
 
 from .. import (
+    application_plan,
     applications,
     config,
     document_edits,
@@ -298,15 +299,14 @@ def job_detail(request: Request, job_id: int, return_to: str = ""):
             "doc_error": request.query_params.get("doc_error", ""),
             "doc_status": doc_status,
             "doc_status_recent": doc_status_recent,
+            "has_plan": application_plan.load(job_id) is not None,
             "travel": travel,
             "list_return": list_return,
             "detail_return": detail_return,
             "facts": reasons.facts(item),
             "vacancy": vacancy_reader.view(item),
             **document_edits.detail_context(store.list_documents(job_id)),
-            "gap": insights.load("gap", job),
-            "prep": insights.load("prep", job),
-            "insight_failed": request.query_params.get("inzicht_fout") == "1",
+            **insights.context(job, request.query_params.get("inzicht_fout", "")),
         },
     )
 

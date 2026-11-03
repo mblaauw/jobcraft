@@ -1,21 +1,33 @@
-{% macro panel(job, gap, prep, failed, csrf, next_url, icon) %}
-<section class="panel" id="inzicht" aria-labelledby="inzicht-title">
+{% macro panel(job, gap, prep, state, problem, csrf, next_url, ui) %}
+<section class="panel insights" id="inzicht" aria-labelledby="inzicht-title">
   <h2 id="inzicht-title">Voorbereiden</h2>
-  {% if failed %}<p class="banner warn" role="status"><span>Dit lukt nu niet. Probeer het later opnieuw.</span></p>{% endif %}
-  {% if gap %}
-  <h3>Wat je al hebt</h3>
-  <ul class="assess-list">{% for item in gap.have %}<li>{{ item }}</li>{% else %}<li class="muted">Hier zagen we niets concreets in je profiel.</li>{% endfor %}</ul>
-  {% if gap.missing %}<h3>Wat nog ontbreekt</h3>
-  <ul class="assess-list">{% for item in gap.missing %}<li><strong>{{ item.requirement }}</strong>{% if item.how %}<br><span class="small muted">{{ item.how }}</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
-  {% endif %}
-  {% if prep %}
-  <h3>Vragen die je kunt verwachten</h3>
-  <ul class="assess-list">{% for item in prep.questions %}<li><strong>{{ item.question }}</strong>{% if item.angle %}<br><span class="small muted">{{ item.angle }}</span>{% endif %}</li>{% endfor %}</ul>
-  {% if prep.ask_them %}<h3>Vragen voor hen</h3><ul class="assess-list">{% for item in prep.ask_them %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
-  {% endif %}
-  <div class="btn-row">
-    {% if not gap %}<form method="post" action="/jobs/{{ job['id'] }}/inzicht/gap" data-pending-form>{{ csrf }}<input type="hidden" name="next" value="{{ next_url }}"><button id="detail-insight-gap" class="button" type="submit">Vergelijk met mijn profiel</button></form>{% endif %}
-    {% if not prep %}<form method="post" action="/jobs/{{ job['id'] }}/inzicht/prep" data-pending-form>{{ csrf }}<input type="hidden" name="next" value="{{ next_url }}"><button id="detail-insight-prep" class="button" type="submit">Bereid het gesprek voor</button></form>{% endif %}
+  {% if problem %}<p class="banner warn" role="status">{{ ui.icon('triangle-alert') }}<span>{{ problem }}</span></p>{% endif %}
+
+  <div class="insight" aria-labelledby="insight-gap-title">
+    <h3 id="insight-gap-title">Jij naast deze vacature</h3>
+    {% if gap %}
+    <ul class="assess-list">{% for item in gap.have %}<li class="pos">{{ ui.icon('circle-check') }}<span>{{ item }}</span></li>{% else %}<li class="q">{{ ui.icon('info') }}<span>Hier zagen we niets concreets in je profiel.</span></li>{% endfor %}</ul>
+    {% if gap.missing %}<h4>Wat nog ontbreekt</h4>
+    <ul class="assess-list">{% for item in gap.missing %}<li class="neg">{{ ui.icon('circle-dot') }}<span><strong>{{ item.requirement }}</strong>{% if item.how %}<span class="assess-how">{{ item.how }}</span>{% endif %}</span></li>{% endfor %}</ul>{% endif %}
+    {% elif state.gap.state == 'running' %}
+    {{ ui.wait('We leggen de vacature naast je profiel', 'Duurt meestal een halve minuut.', state.gap.updated_at) }}
+    {% else %}
+    <p class="small muted">Wat je al meebrengt en wat nog ontbreekt, met per punt hoe je het oplost.</p>
+    <form method="post" action="/jobs/{{ job['id'] }}/inzicht/gap" data-pending-form>{{ csrf }}<input type="hidden" name="next" value="{{ next_url }}"><button id="detail-insight-gap" class="button" type="submit">{{ ui.icon('list-checks') }}Vergelijk met mijn profiel</button></form>
+    {% endif %}
+  </div>
+
+  <div class="insight" aria-labelledby="insight-prep-title">
+    <h3 id="insight-prep-title">Het gesprek</h3>
+    {% if prep %}
+    <ul class="assess-list">{% for item in prep.questions %}<li class="q">{{ ui.icon('message-circle') }}<span><strong>{{ item.question }}</strong>{% if item.angle %}<span class="assess-how">{{ item.angle }}</span>{% endif %}</span></li>{% endfor %}</ul>
+    {% if prep.ask_them %}<h4>Vragen die jij kunt stellen</h4><ul class="assess-list">{% for item in prep.ask_them %}<li class="q">{{ ui.icon('send') }}<span>{{ item }}</span></li>{% endfor %}</ul>{% endif %}
+    {% elif state.prep.state == 'running' %}
+    {{ ui.wait('We zetten je gesprek klaar', 'Duurt meestal een halve minuut.', state.prep.updated_at) }}
+    {% else %}
+    <p class="small muted">De vragen die je kunt verwachten, met hoe je ze beantwoordt, en wat jij zelf kunt vragen.</p>
+    <form method="post" action="/jobs/{{ job['id'] }}/inzicht/prep" data-pending-form>{{ csrf }}<input type="hidden" name="next" value="{{ next_url }}"><button id="detail-insight-prep" class="button" type="submit">{{ ui.icon('message-circle') }}Bereid het gesprek voor</button></form>
+    {% endif %}
   </div>
 </section>
 {% endmacro %}

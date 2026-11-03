@@ -16,7 +16,13 @@ from .accounts import (  # noqa: F401
     set_profile,
 )
 from .connection import connect, now, stale_cutoff  # noqa: F401
-from .documents import add_document, count_documents, get_document, list_documents  # noqa: F401
+from .documents import (  # noqa: F401
+    add_document,
+    count_documents,
+    delete_document,
+    get_document,
+    list_documents,
+)
 from .ingestion import (
     record_detail_fetch as record_detail_fetch,
 )

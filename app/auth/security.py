@@ -30,7 +30,7 @@ def csrf_input(request: Request) -> Markup:
 
 
 
-CV_UPLOAD_PATHS = {"/account/cv", "/start/cv"}
+CV_UPLOAD_PATHS = {"/start/cv"}
 CV_UPLOAD_BYTES = 8 * 1024 * 1024
 
 

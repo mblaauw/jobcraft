@@ -16,19 +16,15 @@
 
 {% if account.id != 'legacy' %}
 <section class="panel" aria-labelledby="cv-title">
-  <h2 id="cv-title">Je basis-CV</h2>
-  {% if has_cv and not cv_generated %}
-    {% if request.query_params.get('uploaded') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je basis-CV is opgeslagen.</span></p>{% endif %}
-    <p class="muted">{{ ui.icon('file-text') }} Je basis-CV staat klaar. Elke vacature krijgt een aangepaste versie; je origineel blijft ongewijzigd.</p>
-  {% else %}
-    {% if cv_generated %}<p class="banner">{{ ui.icon('file-text') }}<span>We hebben een eenvoudig basis-CV voor je gemaakt, zonder contactgegevens. Je kunt die zelf aanvullen in Word, of hieronder je eigen CV toevoegen. Dat vervangt het eenvoudige; bestaande documenten blijven bewaard.</span></p>{% endif %}
-    <p class="muted" id="cv-upload-help">Upload je eigen CV als Word-bestand (.docx, maximaal 5 MB). Jobcraft zoekt een profielstuk (bijvoorbeeld “Profiel” of “Over mij”) en een lijst van 3 tot 8 sterke punten (bijvoorbeeld “Kernkwaliteiten”). Je ziet eerst wat er herkend is voordat er iets wordt opgeslagen. Heb je alleen een PDF of een ander soort CV? <a href="/start/cv">Upload het via de snelle start</a>, dan maken we er een eenvoudig basis-CV van.</p>
-    <form method="post" action="/account/cv" enctype="multipart/form-data" class="form-stack">
-      {{ csrf_input(request) }}
-      <div class="field"><label for="own-cv">Basis-CV</label><input id="own-cv" type="file" name="cv" accept=".docx" aria-describedby="cv-upload-help" required></div>
-      <div><button class="button primary" type="submit">{{ ui.icon('check') }}CV controleren</button></div>
-    </form>
-  {% endif %}
+  <h2 id="cv-title">Je cv</h2>
+  {% if request.query_params.get('uploaded') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je cv is ingelezen en je profiel is bijgewerkt. Nieuwe sollicitaties gebruiken het meteen.</span></p>{% endif %}
+  <p class="muted" id="cv-upload-help">Alles wat Jobcraft voor je schrijft, komt uit je cv. Heb je een nieuwere versie? Upload hem hier als PDF of Word (maximaal 5 MB). We lezen hem zonder AI en je ziet eerst wat we hebben gevonden. Cv's en brieven die je al hebt gemaakt, blijven zoals ze zijn.</p>
+  <form method="post" action="/start/cv" enctype="multipart/form-data" class="form-stack" data-pending-form>
+    {{ csrf_input(request) }}
+    <input type="hidden" name="terug" value="account">
+    <div class="field"><label for="own-cv">{{ 'Nieuwe versie van je cv' if has_cv or cv_generated else 'Je cv' }}</label><input id="own-cv" type="file" name="cv" accept=".pdf,.docx" aria-describedby="cv-upload-help" required></div>
+    <div><button class="button primary" type="submit">{{ ui.icon('file-text') }}Lees mijn cv</button></div>
+  </form>
 </section>
 {% endif %}
 

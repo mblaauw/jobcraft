@@ -42,7 +42,6 @@ router = APIRouter(dependencies=[Depends(require_user)])
 KINDS = {"cv": "resume", "brief": "motivatie"}
 TAB_OF = {"resume": "cv", "motivatie": "brief"}
 PREVIEW_DPI = "110"
-STALE_SECONDS = 15 * 60
 
 
 def _job(job_id: int) -> dict:
@@ -55,19 +54,6 @@ def _job(job_id: int) -> dict:
 def _here(job_id: int, tab: str = "", **params) -> str:
     query = {key: value for key, value in {"tab": tab, **params}.items() if value}
     return f"/jobs/{job_id}/sollicitatie" + (f"?{urlencode(query)}" if query else "")
-
-
-def _status(job_id: int) -> dict:
-    """A task that went silent long ago must not lock the page forever."""
-    status = _doc_status(job_id)
-    if status.get("state") == "running":
-        try:
-            started = datetime.fromisoformat(status.get("updated_at") or "")
-            if (datetime.now(UTC) - started).total_seconds() > STALE_SECONDS:
-                return {"state": "error", "error": "Dit duurde te lang. Probeer het opnieuw."}
-        except ValueError:
-            pass
-    return status
 
 
 def _meta(row) -> dict:
@@ -96,7 +82,7 @@ def _enqueue(job_id: int, kind: str) -> str:
     if budget_reached():
         return "Je daglimiet voor AI is bereikt. Morgen kan het weer."
     with _document_lock:
-        if _status(job_id).get("state") == "running":
+        if _doc_status(job_id).get("state") == "running":
             return ""
         store.meta_set(
             f"doc_status:{job_id}",
@@ -105,6 +91,7 @@ def _enqueue(job_id: int, kind: str) -> str:
                     "state": "running",
                     "kind": kind,
                     "stage": "queued",
+                    "started_at": datetime.now(UTC).isoformat(),
                     "updated_at": datetime.now(UTC).isoformat(),
                 }
             ),
@@ -136,7 +123,7 @@ def studio(request: Request, job_id: int):
         wanted = request.query_params.get("versie", "")
         current = next((item for item in rows if str(item["row"]["id"]) == wanted), rows[0] if rows else None)
     contact = document_contact.load()
-    status = _status(job_id)
+    status = _doc_status(job_id)
     return templates.TemplateResponse(
         request,
         "studio.html",

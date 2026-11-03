@@ -252,3 +252,24 @@ details.stage > summary { cursor: pointer; border-bottom-color: var(--line-stron
 
 .topbar-work { display: none; }
 @media (max-width: 900px) { .topbar-work { display: block; padding: 8px 16px 0; } }
+
+/* Work that takes a while, shown where it was started. */
+.wait { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--r); background: var(--lime-soft); border: 1px solid var(--line); }
+.wait .work-dot { margin-top: 6px; background: var(--moss); }
+.wait-text { display: grid; gap: 2px; font-size: var(--fs-sm); color: var(--ink-2); }
+.wait-text strong { color: var(--ink); font-size: var(--fs-base); }
+.wait-elapsed { font-variant-numeric: tabular-nums; }
+
+/* Preparing: two blocks that each start, wait and fill in on their own. */
+.insights .insight + .insight { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+.insights h3 { margin: 0 0 10px; }
+.insights h4 { margin: 14px 0 8px; font-size: var(--fs-sm); color: var(--ink-2); }
+.insights form { margin: 10px 0 0; }
+.assess-how { display: block; margin-top: 2px; color: var(--ink-3); font-weight: 400; }
+
+/* The three steps of an application, before anything has been made. */
+.apply-steps { list-style: none; counter-reset: step; margin: 4px 0 16px; padding: 0; display: grid; gap: 10px; }
+.apply-steps li { counter-increment: step; display: grid; grid-template-columns: 26px minmax(0, 1fr); column-gap: 10px; font-size: var(--fs-sm); color: var(--ink-2); }
+.apply-steps li::before { content: counter(step); grid-row: span 2; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: var(--lime-soft); color: var(--ink); }
+.apply-steps strong { color: var(--ink); }
+.job-documents .wait { margin-bottom: 10px; }

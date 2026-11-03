@@ -165,10 +165,11 @@ def test_dashboard_diagnostics_are_collapsed_and_metrics_are_real_values():
 
 
 def test_long_running_banners_poll_instead_of_meta_refresh():
-    for name in ("profile.html", "sources.html", "job_detail.html"):
+    for name in ("profile.html", "sources.html", "_ui.html"):
         text = (TEMPLATES / name).read_text()
         assert 'http-equiv="refresh"' not in text
         assert "data-auto-refresh=" in text
+    assert "ui.wait(" in (TEMPLATES / "job_detail.html").read_text()
 
 
 def test_theme_cookie_is_applied_to_base_and_login():

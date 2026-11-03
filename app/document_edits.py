@@ -149,3 +149,22 @@ def detail_context(documents: list) -> dict:
         "needs_profile": not has_profile,
         "comparable": comparable_ids(documents),
     }
+
+
+def remove(job_id: int, document_id: int) -> str | None:
+    """Deletes one version and its files; returns its kind, or None when it is not yours."""
+    row = store.get_document(document_id)
+    if not row or row["job_id"] != job_id:
+        return None
+    store.delete_document(document_id)
+    root = config.jobs_dir().resolve()
+    for relative in (row["docx_path"], row["pdf_path"]):
+        if not relative:
+            continue
+        path = (config.DATA_DIR / relative).resolve()
+        if not path.is_relative_to(root):
+            continue
+        stem = path.with_suffix("")
+        for leftover in (path, stem.with_suffix(".json"), *path.parent.glob(f"{stem.name}-p*.png")):
+            leftover.unlink(missing_ok=True)
+    return row["kind"]

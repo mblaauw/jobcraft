@@ -42,6 +42,18 @@ def get_document(document_id: int) -> sqlite3.Row | None:
 
 
 
+def delete_document(document_id: int) -> sqlite3.Row | None:
+    """Removes the row and returns it, so the caller can remove its files."""
+    with connect() as con:
+        row = con.execute(
+            "SELECT * FROM documents WHERE id=? AND owner=?", (document_id, tenancy.user_id())
+        ).fetchone()
+        if row:
+            con.execute("DELETE FROM documents WHERE id=? AND owner=?", (document_id, tenancy.user_id()))
+        return row
+
+
+
 def count_documents() -> int:
     with connect() as con:
         return con.execute(

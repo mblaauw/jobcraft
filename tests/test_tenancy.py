@@ -325,13 +325,7 @@ def login(client, username, password):
     client.headers["x-csrf-token"] = html.select_one('meta[name="csrf-token"]')["content"]
 
 
-def test_own_cv_upload_cannot_read_or_replace_owners_template(isolated):
-    credentials = json.loads((config.RUNTIME_DIR / "bootstrap-accounts.json").read_text())[
-        "accounts"
-    ]
-    client = TestClient(main.app)
-    login(client, "test-user", credentials["test-user"]["password"])
-    token = client.headers.pop("x-csrf-token")
+def _own_cv() -> bytes:
     document = Document()
     document.add_paragraph("Synthetic Test Person")
     document.add_paragraph("Own career direction")
@@ -343,63 +337,58 @@ def test_own_cv_upload_cannot_read_or_replace_owners_template(isolated):
         document.add_paragraph(f"Own skill {i}", style="List Bullet")
     content = io.BytesIO()
     document.save(content)
-    response = client.post(
-        "/account/cv",
-        data={"_csrf": token},
-        files={
-            "cv": (
-                "own.docx",
-                content.getvalue(),
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            )
-        },
-        follow_redirects=False,
-    )
-    assert response.status_code == 200
-    preview_token = BeautifulSoup(response.text, "html.parser").select_one('input[name="token"]')[
-        "value"
-    ]
-    uid = auth._get_user_by_username("test-user")["id"]
-    with tenancy.scope({"id": uid, "username": "test-user"}):
-        assert not (config.seed_dir() / "cv.docx").exists()
-    saved = client.post(
-        "/account/cv/confirm", data={"_csrf": token, "token": preview_token}, follow_redirects=False
-    )
-    assert saved.status_code == 303
-    with tenancy.scope({"id": uid, "username": "test-user"}):
-        assert (config.seed_dir() / "cv.docx").exists()
-        assert "Synthetic Test Person" in docs.cv_identity()["name"]
-    assert not docs.CV_TEMPLATE.exists()
-    assert not (config.SEED_DIR / config.SEED_FILES["cv"]).exists()
-    client.close()
+    return content.getvalue()
 
 
-def test_cv_preview_requires_confirmation_csrf_and_escapes_filename(isolated):
-    from tests.test_flexible_cv import cv_bytes
-
+def test_own_cv_upload_cannot_read_or_replace_owners_template(isolated):
     credentials = json.loads((config.RUNTIME_DIR / "bootstrap-accounts.json").read_text())[
         "accounts"
     ]
     client = TestClient(main.app)
     login(client, "test-user", credentials["test-user"]["password"])
-    assert "Je basis-CV is opgeslagen" not in client.get("/account?uploaded=1").text
-    response = client.post("/account/cv", files={"cv": ("<script>.docx", cv_bytes(4))})
+    token = client.headers.pop("x-csrf-token")
+    response = client.post(
+        "/start/cv",
+        data={"_csrf": token, "terug": "account"},
+        files={"cv": ("own.docx", _own_cv(), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+        follow_redirects=False,
+    )
     assert response.status_code == 200
-    assert "&lt;script&gt;.docx" in response.text and "<script>.docx" not in response.text
-    assert "Original public profile from this account." not in response.text
     html = BeautifulSoup(response.text, "html.parser")
-    token = html.select_one('input[name="token"]')["value"]
-    assert {field["name"] for field in html.select("form input")} == {"token", "_csrf"}
-    csrf = client.headers.pop("x-csrf-token")
-    denied = client.post("/account/cv/confirm", data={"token": token})
+    assert html.select_one('input[name="terug"]')["value"] == "account"
+    preview_token = html.select_one('input[name="cv_token"]')["value"]
+    uid = auth._get_user_by_username("test-user")["id"]
+    with tenancy.scope({"id": uid, "username": "test-user"}):
+        assert not (config.seed_dir() / "cv.docx").exists()
+    denied = client.post("/start/cv/confirm", data={"cv_token": preview_token, "terug": "account"})
     assert denied.status_code == 403
-    client.headers["x-csrf-token"] = csrf
-    cancelled = client.post("/account/cv/cancel", data={"token": token}, follow_redirects=False)
-    assert cancelled.status_code == 303
-    assert client.post("/account/cv/confirm", data={"token": token}).status_code == 400
-    invalid = client.post("/account/cv", files={"cv": ("own.docx", cv_bytes(2))})
-    assert invalid.status_code == 400 and "2 sterke punten" in invalid.text
-    assert "/account/cv/confirm" not in invalid.text
+    saved = client.post(
+        "/start/cv/confirm",
+        data={"_csrf": token, "cv_token": preview_token, "terug": "account"},
+        follow_redirects=False,
+    )
+    assert saved.status_code == 303 and saved.headers["location"] == "/account?uploaded=1"
+    with tenancy.scope({"id": uid, "username": "test-user"}):
+        assert (config.seed_dir() / "cv.docx").exists()
+        assert "Synthetic Test Person" in docs.cv_identity()["name"]
+        assert store.meta_get("start_stage") is None
+    assert not docs.CV_TEMPLATE.exists()
+    assert not (config.SEED_DIR / config.SEED_FILES["cv"]).exists()
+    client.close()
+
+
+def test_account_offers_one_readable_cv_upload(isolated):
+    credentials = json.loads((config.RUNTIME_DIR / "bootstrap-accounts.json").read_text())[
+        "accounts"
+    ]
+    client = TestClient(main.app)
+    login(client, "test-user", credentials["test-user"]["password"])
+    html = BeautifulSoup(client.get("/account").text, "html.parser")
+    form = html.select_one('form[action="/start/cv"]')
+    assert form.select_one('input[name="terug"]')["value"] == "account"
+    assert ".pdf" in form.select_one('input[type="file"]')["accept"]
+    assert "Je cv is ingelezen" not in client.get("/account").text
+    assert "Je cv is ingelezen" in client.get("/account?uploaded=1").text
     client.close()
 
 
