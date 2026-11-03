@@ -176,7 +176,8 @@ class SystemOneError(RuntimeError):
 
 
 def api_key() -> str:
-    return os.environ.get("RUNWARE_API_KEY", "").strip()
+    """Any provider of the same decisions API: OpenCode (jev-1.13) or Runware."""
+    return (os.environ.get("SYSTEMONE_API_KEY") or os.environ.get("RUNWARE_API_KEY") or "").strip()
 
 
 def enabled() -> bool:
