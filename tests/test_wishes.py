@@ -65,6 +65,9 @@ def test_own_words_are_edited_here_too(client):  # noqa: F811
 
 def test_the_advanced_tab_shows_only_what_lives_nowhere_else(client):  # noqa: F811
     profile.write_profile("## Kern\nKernfeit.\n\n## Zoekprofiel\nGroen.\n\n## Werkervaring\n### Rol\n- Punt\n", "test")
+    from bs4 import BeautifulSoup
+
     page = client.get("/profile?tab=meer").text
-    assert "Geavanceerd" in page and "Kernfeit." in page
-    assert "Groen." not in page and "- Punt" not in page and "Wat telt bij matching" not in page
+    cards = [card.select_one(".profile-card-title").get_text(strip=True) for card in BeautifulSoup(page, "html.parser").select("#overzicht .profile-card")]
+    assert "Geavanceerd" in page and cards == ["Kern"]
+    assert "Wat telt bij matching" not in page and 'id="reisbereik"' not in page
