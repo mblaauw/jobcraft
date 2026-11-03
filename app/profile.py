@@ -20,6 +20,7 @@ from .preference_models import (  # noqa: F401
     _validate_preferences,
     public_preferences,
 )
+from .profile_sections import join_sections, split_sections
 from .util import now_iso, now_local, parse_json_object
 
 PROFILE_FILE = config.PROFILE_DIR / "profile.md"
@@ -139,13 +140,7 @@ def merge_sections(updates: dict[str, str], note: str = "snelle start") -> None:
             existing["text"] = text
         else:
             sections.append({"heading": heading, "text": text})
-    write_profile(
-        "\n\n".join(
-            (f"## {item['heading']}\n" if item["heading"] else "") + item["text"]
-            for item in sections
-        ),
-        note=note,
-    )
+    write_profile(join_sections(sections), note=note)
 
 
 def append_answer(question: str, answer: str) -> None:
@@ -157,24 +152,6 @@ def append_answer(question: str, answer: str) -> None:
     with config.user_path(ANSWER_LOG_FILE).open("a") as handle:
         handle.write(f"\n## {stamp}\n**Vraag:** {question}\n\n**Antwoord:** {answer}\n")
     store.append_answer(question, answer)
-
-
-def split_sections(markdown: str) -> list[dict]:
-    """Split markdown on '## ' headings; the preamble becomes heading ''."""
-    sections: list[dict] = []
-    heading = ""
-    lines: list[str] = []
-    for line in (markdown or "").splitlines():
-        if line.startswith("## "):
-            if heading or any(part.strip() for part in lines):
-                sections.append({"heading": heading, "text": "\n".join(lines).strip()})
-            heading = line[3:].strip()
-            lines = []
-        else:
-            lines.append(line)
-    if heading or any(part.strip() for part in lines):
-        sections.append({"heading": heading, "text": "\n".join(lines).strip()})
-    return sections
 
 
 def public_excerpt(markdown: str, max_chars: int = 6000, skip: tuple[str, ...] = ()) -> str:

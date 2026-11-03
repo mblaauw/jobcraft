@@ -698,6 +698,17 @@ html.job-drawer-open { overflow: hidden; scrollbar-gutter: stable; }
 .profile-text li { margin: 0 0 6px; }
 .profile-text li > ul { margin: 6px 0 0; }
 .profile-text strong { font-weight: 650; }
+.profile-text .profile-sub { margin: 18px 0 6px; font-size: var(--fs-base); font-weight: 700; color: var(--ink); }
+.profile-text .profile-sub:first-child { margin-top: 0; }
+.profile-table { max-width: 100%; overflow-x: auto; margin: 0 0 12px; }
+.profile-table table { border-collapse: collapse; font-size: var(--fs-sm); line-height: 1.45; }
+.profile-table th, .profile-table td { text-align: left; vertical-align: top; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); }
+.profile-table th { color: var(--ink-2); font-weight: 650; }
+.profile-warnings { display: grid; gap: 8px; margin: 0 0 14px; padding: 14px 16px; border-radius: var(--r); background: var(--clay-soft); border: 1px solid var(--line); }
+.profile-warning { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; font-size: var(--fs-sm); max-width: 80ch; }
+.profile-warning p { margin: 0; }
+.profile-warning form { margin: 8px 0 2px; }
+.profile-warnings .icon { margin-top: 2px; color: var(--clay); }
 .profile-edit { margin-top: 4px; border-top: 1px solid var(--line); padding-top: 12px; }
 .profile-edit > summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; color: var(--moss); font-size: var(--fs-sm); font-weight: 650; }
 .profile-edit > summary::-webkit-details-marker { display: none; }

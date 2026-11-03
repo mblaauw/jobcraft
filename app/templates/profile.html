@@ -53,9 +53,16 @@
 
 <section class="section" id="overzicht" aria-labelledby="overzicht-title">
   <div class="panel-head"><h2 id="overzicht-title">Over jou</h2>{% if bootstrapped_at %}<span class="small subtle">Laatst bijgewerkt {{ ui.nl_date(bootstrapped_at) }}</span>{% endif %}</div>
-  {% set sections = (profile_sections or []) | rejectattr('heading', 'equalto', '') | list %}
+  {% set sections = (profile_sections or []) | selectattr('text') | list %}
   {% if sections %}
   <p class="small muted">Dit weet Jobcraft over je. Het bepaalt welke vacatures je ziet en wat er in je cv en brieven komt. Klopt iets niet, pas dat stuk dan aan.</p>
+  {% if profile_warnings %}
+  <div class="profile-warnings" role="status">
+    {% for item in profile_warnings %}
+    <div class="profile-warning">{{ ui.icon('triangle-alert') }}<div><p><strong>{{ item.title }}.</strong> {{ item.detail }}</p>{% if item.action %}<form method="post" action="{{ item.action }}" data-pending-form>{% include '_csrf.html' %}<button class="button small" type="submit">{{ item.label }}</button></form>{% endif %}</div></div>
+    {% endfor %}
+  </div>
+  {% endif %}
   <div class="profile-read">
     {% for section in sections %}
       {% set private = section.heading.startswith('Privé') %}
@@ -63,7 +70,7 @@
       <details class="profile-card{% if private %} private{% endif %}"{% if loop.first %} open{% endif %}>
         <summary>
           <span class="profile-card-head">
-            <span class="profile-card-title">{% if private %}{{ ui.icon('lock') }}Privé{% elif open_q %}{{ ui.icon('message-circle') }}Nog open{% else %}{{ section.heading }}{% endif %}</span>
+            <span class="profile-card-title">{% if private %}{{ ui.icon('lock') }}Privé{% elif open_q %}{{ ui.icon('message-circle') }}Nog open{% else %}{{ section.heading or 'Inleiding' }}{% endif %}</span>
             <span class="profile-card-teaser">{{ section.text | teaser }}</span>
           </span>
           {{ ui.icon('chevron-down', 'chev') }}
@@ -71,6 +78,7 @@
         {% if private %}<p class="small subtle">Alleen voor jou. Dit wordt nooit gebruikt voor matching, cv’s of brieven.</p>{% endif %}
         {% if open_q %}<p class="small subtle">Hier gaat een volgend gesprek op in.</p>{% endif %}
         <div class="profile-text">{{ section.text | prose }}</div>
+        {% if section.heading %}
         <details class="profile-edit">
           <summary>{{ ui.icon('pencil') }}Pas dit stuk aan</summary>
           <form method="post" action="/profile/sectie" data-pending-form>
@@ -82,6 +90,7 @@
             <div class="btn-row"><button class="button primary small" type="submit">Opslaan</button></div>
           </form>
         </details>
+        {% endif %}
       </details>
     {% endfor %}
   </div>

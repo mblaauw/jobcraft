@@ -110,6 +110,8 @@ USER = {
     ("POST", "/profile/home"),
     ("POST", "/profile/save"),
     ("POST", "/profile/sectie"),
+    ("POST", "/profile/aantekeningen-apart"),
+    ("POST", "/profile/onderdelen-terug"),
     ("POST", "/profile/restore/{version_id}"),
     ("GET", "/api/tasks"),
     ("POST", "/jobs/{job_id}/documents/{document_id}/verwijderen"),
