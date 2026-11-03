@@ -5,6 +5,7 @@ from fastapi.routing import APIRoute
 from app import auth
 from app.routers import (
     admin_ai,
+    cv,
     interview,
     jobs,
     pages,
@@ -110,6 +111,15 @@ USER = {
     ("POST", "/profile/home"),
     ("POST", "/profile/save"),
     ("POST", "/profile/sectie"),
+    ("POST", "/profile/cv/inlezen"),
+    ("POST", "/profile/cv/omzetting"),
+    ("POST", "/profile/cv/over-mij"),
+    ("POST", "/profile/cv/functie"),
+    ("POST", "/profile/cv/functie/{role_id}/{actie}"),
+    ("POST", "/profile/cv/opleiding"),
+    ("POST", "/profile/cv/lijst/{key}"),
+    ("POST", "/profile/cv/coach"),
+    ("POST", "/profile/cv/coach/{note_id}"),
     ("POST", "/profile/aantekeningen-apart"),
     ("POST", "/profile/onderdelen-terug"),
     ("POST", "/profile/restore/{version_id}"),
@@ -123,6 +133,7 @@ def test_every_endpoint_has_reviewed_permission_dependency():
     groups = (
         auth,
         admin_ai,
+        cv,
         interview,
         jobs,
         pages,

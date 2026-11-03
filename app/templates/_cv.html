@@ -1,0 +1,196 @@
+{# Mijn cv: the CV part by part, with the coach's notes next to what they are about. #}
+{% set running = cv_status.state == 'running' %}
+
+{% macro notes_for(place, anchor) %}
+{% for note in coach.by_place.get(place, []) %}
+<div class="cv-note is-{{ note.kind }}" id="note-{{ note.id }}">
+  <p class="cv-note-kind">{% if note.kind == 'vraag' %}{{ ui.icon('message-circle') }}Vraag van de coach{% elif note.kind == 'klopt_niet' %}{{ ui.icon('triangle-alert') }}Klopt niet met elkaar{% elif note.kind == 'sterker' %}{{ ui.icon('sparkles') }}Sterker te zeggen{% else %}{{ ui.icon('shield') }}Liever niet claimen{% endif %}</p>
+  {% if note.point and note.kind in ('sterker', 'niet_claimen') %}<p class="cv-note-was">{{ note.point }}</p>{% endif %}
+  {% if note.kind == 'sterker' %}<p class="cv-note-new">{{ note.suggestion }}</p>{% endif %}
+  <p>{{ note.text }}</p>
+  <form method="post" action="/profile/cv/coach/{{ note.id }}" class="cv-note-actions" data-pending-form>
+    {% include '_csrf.html' %}
+    {% if note.kind == 'vraag' %}
+      <label class="visually-hidden" for="answer-{{ note.id }}">Je antwoord</label>
+      <input id="answer-{{ note.id }}" name="antwoord" placeholder="Je antwoord, zo concreet mogelijk">
+      <button class="button small primary" type="submit" name="actie" value="antwoord">Voeg toe</button>
+    {% elif note.kind == 'sterker' %}
+      <button class="button small primary" type="submit" name="actie" value="overnemen">Neem over</button>
+    {% elif note.kind == 'niet_claimen' and note.point %}
+      <button class="button small" type="submit" name="actie" value="weghalen">Haal weg</button>
+    {% else %}
+      <a class="button small" href="#{{ anchor }}">Pas aan</a>
+    {% endif %}
+    <button class="button small quiet" type="submit" name="actie" value="laat">{{ 'Klopt zo' if note.kind in ('klopt_niet', 'niet_claimen') else 'Laat zo' }}</button>
+  </form>
+</div>
+{% endfor %}
+{% endmacro %}
+
+{% macro read_in(open=False) %}
+<div class="cv-read-in" id="inlezen">
+  {% if has_profile_text %}
+  <form method="post" action="/profile/cv/inlezen" data-pending-form>{% include '_csrf.html' %}<input type="hidden" name="bron" value="profiel"><button class="button{{ ' primary' if open else '' }}" type="submit">Zet mijn huidige profiel om</button></form>
+  {% endif %}
+  <form method="post" action="/profile/cv/inlezen" enctype="multipart/form-data" class="cv-read-file" data-pending-form>
+    {% include '_csrf.html' %}
+    <label for="cv-file">Upload je cv</label>
+    <input id="cv-file" type="file" name="bestand" accept=".pdf,.docx" required>
+    <button class="button" type="submit">Lees in</button>
+  </form>
+  <form method="post" action="/profile/cv/inlezen" class="cv-read-paste" data-pending-form>
+    {% include '_csrf.html' %}
+    <label for="cv-paste">Of plak je cv</label>
+    <textarea id="cv-paste" class="prose-edit" name="tekst" data-autogrow placeholder="Plak hier de tekst van je cv. Aantekeningen en bronnen laten we weg."></textarea>
+    <button class="button" type="submit">Lees in</button>
+  </form>
+  <p class="small muted">Je naam en contactgegevens halen we eruit voordat de AI iets leest. Je ziet eerst wat we gevonden hebben.</p>
+</div>
+{% endmacro %}
+
+{% macro show(data, editable) %}
+<section class="cv-part" id="cv-summary" aria-labelledby="cv-summary-title">
+  <h2 id="cv-summary-title">Over mij</h2>
+  {% if data.summary %}<p class="cv-summary">{{ data.summary }}</p>{% else %}<p class="muted small">Twee of drie zinnen over wat je doet en voor wie. Dit leest een recruiter als eerste.</p>{% endif %}
+  {% if editable %}
+  <details class="cv-edit"><summary>{{ ui.icon('pencil') }}Bewerk</summary>
+    <form method="post" action="/profile/cv/over-mij" data-pending-form>{% include '_csrf.html' %}
+      <label class="visually-hidden" for="cv-summary-text">Over mij</label>
+      <textarea id="cv-summary-text" class="prose-edit" name="tekst" data-autogrow>{{ data.summary }}</textarea>
+      <button class="button small primary" type="submit">Opslaan</button>
+    </form>
+  </details>
+  {{ notes_for('summary', 'cv-summary') }}
+  {% endif %}
+</section>
+
+<section class="cv-part" id="cv-roles" aria-labelledby="cv-roles-title">
+  <h2 id="cv-roles-title">Werkervaring</h2>
+  {% for role in data.roles %}
+  <article class="cv-role" id="{{ role.id }}">
+    <header>
+      <h3>{{ role.title }}</h3>
+      <p class="small muted">{% if role.organisation %}<span>{{ role.organisation }}{% if role.place %}, {{ role.place }}{% endif %}</span>{% endif %}{% if role.period %}<span class="cv-period">{{ role.period }}</span>{% endif %}</p>
+    </header>
+    <ul class="cv-points">{% for point in role.points %}<li>{{ point.text }}{% if point.source != 'cv' %}<span class="cv-source">{{ cv_sources.get(point.source, '') }}</span>{% endif %}</li>{% else %}<li class="muted">Nog geen punten. Wat deed je hier, en wat leverde het op?</li>{% endfor %}</ul>
+    {% if editable %}
+    <details class="cv-edit"><summary>{{ ui.icon('pencil') }}Bewerk</summary>
+      <form method="post" action="/profile/cv/functie" class="cv-role-form" data-pending-form>{% include '_csrf.html' %}
+        <input type="hidden" name="id" value="{{ role.id }}">
+        <div class="field"><label for="title-{{ role.id }}">Functie</label><input id="title-{{ role.id }}" name="functie" value="{{ role.title }}" required></div>
+        <div class="field"><label for="org-{{ role.id }}">Werkgever</label><input id="org-{{ role.id }}" name="organisatie" value="{{ role.organisation }}"></div>
+        <div class="field"><label for="place-{{ role.id }}">Plaats</label><input id="place-{{ role.id }}" name="plaats" value="{{ role.place }}"></div>
+        <div class="field"><label for="period-{{ role.id }}">Periode</label><input id="period-{{ role.id }}" name="periode" value="{{ role.period }}" placeholder="jun 2024 – heden"></div>
+        <div class="field span-all"><label for="points-{{ role.id }}">Punten, één per regel</label><textarea id="points-{{ role.id }}" class="prose-edit" name="punten" data-autogrow>{% for point in role.points %}{{ point.text }}
+{% endfor %}</textarea></div>
+        <div class="btn-row span-all"><button class="button small primary" type="submit">Opslaan</button></div>
+      </form>
+      <div class="btn-row cv-role-tools">
+        {% if not loop.first %}<form method="post" action="/profile/cv/functie/{{ role.id }}/omhoog">{% include '_csrf.html' %}<button class="button small quiet" type="submit">Naar boven</button></form>{% endif %}
+        {% if not loop.last %}<form method="post" action="/profile/cv/functie/{{ role.id }}/omlaag">{% include '_csrf.html' %}<button class="button small quiet" type="submit">Naar beneden</button></form>{% endif %}
+        <details class="doc-remove"><summary>Verwijderen</summary><form method="post" action="/profile/cv/functie/{{ role.id }}/verwijderen">{% include '_csrf.html' %}<span>Deze functie gaat uit je cv. Eerdere versies blijven bewaard.</span><button class="button small danger" type="submit">Verwijder functie</button></form></details>
+      </div>
+    </details>
+    {{ notes_for(role.id, role.id) }}
+    {% endif %}
+  </article>
+  {% endfor %}
+  {% if editable %}
+  <details class="cv-edit cv-add"><summary>{{ ui.icon('plus') }}Functie toevoegen</summary>
+    <form method="post" action="/profile/cv/functie" class="cv-role-form" data-pending-form>{% include '_csrf.html' %}
+      <div class="field"><label for="new-title">Functie</label><input id="new-title" name="functie" required></div>
+      <div class="field"><label for="new-org">Werkgever</label><input id="new-org" name="organisatie"></div>
+      <div class="field"><label for="new-place">Plaats</label><input id="new-place" name="plaats"></div>
+      <div class="field"><label for="new-period">Periode</label><input id="new-period" name="periode" placeholder="jun 2024 – heden"></div>
+      <div class="field span-all"><label for="new-points">Punten, één per regel</label><textarea id="new-points" class="prose-edit" name="punten" data-autogrow></textarea></div>
+      <div class="btn-row span-all"><button class="button small primary" type="submit">Toevoegen</button></div>
+    </form>
+  </details>
+  {% endif %}
+</section>
+
+<section class="cv-part" id="cv-education" aria-labelledby="cv-education-title">
+  <h2 id="cv-education-title">Opleiding</h2>
+  <ul class="cv-points">{% for item in data.education %}<li><strong>{{ item.title }}</strong>{% if item.school or item.period %}<span class="muted">, {{ item.school }}{% if item.school and item.period %}, {% endif %}{{ item.period }}</span>{% endif %}</li>{% else %}<li class="muted">Nog geen opleiding.</li>{% endfor %}</ul>
+  {% if editable %}
+  <details class="cv-edit"><summary>{{ ui.icon('pencil') }}Bewerk</summary>
+    <form method="post" action="/profile/cv/opleiding" data-pending-form>{% include '_csrf.html' %}
+      <label for="cv-education-text" class="small muted">Eén per regel: opleiding | school | periode</label>
+      <textarea id="cv-education-text" class="prose-edit" name="tekst" data-autogrow>{% for item in data.education %}{{ item.title }} | {{ item.school }} | {{ item.period }}
+{% endfor %}</textarea>
+      <button class="button small primary" type="submit">Opslaan</button>
+    </form>
+  </details>
+  {{ notes_for('education', 'cv-education') }}
+  {% endif %}
+</section>
+
+{% for key, heading in [('skills', 'Vaardigheden'), ('languages', 'Talen'), ('extras', 'Aanvullend'), ('interests', 'Interesses')] %}
+<section class="cv-part" id="cv-{{ key }}" aria-labelledby="cv-{{ key }}-title">
+  <h2 id="cv-{{ key }}-title">{{ heading }}</h2>
+  {% if data[key] %}<ul class="chips cv-chips">{% for item in data[key] %}<li class="chip">{{ item }}</li>{% endfor %}</ul>{% else %}<p class="muted small">Nog leeg.</p>{% endif %}
+  {% if editable %}
+  <details class="cv-edit"><summary>{{ ui.icon('pencil') }}Bewerk</summary>
+    <form method="post" action="/profile/cv/lijst/{{ key }}" data-pending-form>{% include '_csrf.html' %}
+      <label for="cv-{{ key }}-text" class="small muted">Eén per regel</label>
+      <textarea id="cv-{{ key }}-text" class="prose-edit" name="tekst" data-autogrow>{{ data[key] | join('\n') }}</textarea>
+      <button class="button small primary" type="submit">Opslaan</button>
+    </form>
+  </details>
+  {{ notes_for(key, 'cv-' ~ key) }}
+  {% endif %}
+</section>
+{% endfor %}
+{% endmacro %}
+
+{% if cv_problem %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ cv_problem }}</span></p>{% endif %}
+{% if cv_status.state == 'error' %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ cv_status.error }}</span></p>{% endif %}
+{% if cv_saved == 'cv' %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je cv staat erin. Je volgende sollicitaties gebruiken het, en de coach leest nu mee.</span></p>
+{% elif cv_saved == 'deel' %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Opgeslagen. Je volgende sollicitaties gebruiken dit.</span></p>{% endif %}
+
+{% if running and cv_status.kind == 'import' %}
+  {{ ui.wait('We lezen je cv', 'Duurt meestal een halve minuut.', cv_status.updated_at) }}
+{% elif cv_draft %}
+  <section class="cv-review" aria-labelledby="review-title">
+    <h2 id="review-title">Zo hebben we je cv gelezen</h2>
+    <p>Klopt het? Pas na jouw akkoord komt het in Mijn cv.{% if cv %} Het vervangt je huidige cv; die blijft bewaard bij de versies.{% endif %} Daarna kun je alles per onderdeel aanpassen.</p>
+    <form method="post" action="/profile/cv/omzetting" class="btn-row" data-pending-form>{% include '_csrf.html' %}
+      <button class="button primary" type="submit" name="wat" value="overnemen">{{ ui.icon('check') }}Neem over in Mijn cv</button>
+      <button class="button" type="submit" name="wat" value="weggooien">Gooi weg</button>
+    </form>
+  </section>
+  <div class="cv-sheet is-draft">{{ show(cv_draft.data, False) }}</div>
+{% elif not cv %}
+  <section class="cv-start" aria-labelledby="start-title">
+    <h2 id="start-title">Zet je cv hier neer</h2>
+    <p>Eén keer goed, dan gebruikt elke sollicitatie het. Je bewerkt je cv per functie in plaats van in één lange tekst, en een coach leest mee: wat het sterker maakt, wat niet klopt en wat je beter niet claimt.</p>
+    {{ read_in(True) }}
+  </section>
+{% else %}
+  <section class="cv-coach" id="coach" aria-labelledby="coach-title">
+    {% if running and cv_status.kind == 'coach' %}
+      {{ ui.wait('De coach leest je cv', 'Duurt meestal een halve minuut.', cv_status.updated_at) }}
+    {% else %}
+      <div>
+        <h2 id="coach-title">{{ ui.icon('sparkles') }}Coach</h2>
+        <p class="small">{% if not coach.ran %}Laat een ervaren recruiter je cv meelezen: vragen die het sterker maken, wat niet klopt en zinnen die beter kunnen.
+        {% elif coach.open %}{{ coach.open }} {{ 'punt staat' if coach.open == 1 else 'punten staan' }} nog open, bij het onderdeel waar {{ 'het' if coach.open == 1 else 'ze' }} over {{ 'gaat' if coach.open == 1 else 'gaan' }}.
+        {% else %}Alles wat de coach zag, is afgehandeld.{% endif %}
+        {% if coach.stale %} Je cv is veranderd sinds de coach meelas.{% endif %}</p>
+      </div>
+      {% if not coach.ran or coach.stale or not coach.open %}<form method="post" action="/profile/cv/coach" data-pending-form>{% include '_csrf.html' %}<button class="button{{ ' primary' if not coach.ran or coach.stale else '' }}" type="submit">{{ 'Laat de coach meelezen' if not coach.ran else 'Lees opnieuw mee' }}</button></form>{% endif %}
+    {% endif %}
+  </section>
+  <div class="cv-layout">
+    <nav class="cv-nav" aria-label="Onderdelen van je cv">
+      {% set counts = coach.by_place %}
+      <a href="#cv-summary">Over mij{% if counts.get('summary') %}<span class="badge">{{ counts['summary'] | length }}</span>{% endif %}</a>
+      <a href="#cv-roles">Werkervaring</a>
+      {% for role in cv.roles %}<a class="cv-nav-sub" href="#{{ role.id }}">{{ role.organisation or role.title }}{% if counts.get(role.id) %}<span class="badge">{{ counts[role.id] | length }}</span>{% endif %}</a>{% endfor %}
+      <a href="#cv-education">Opleiding{% if counts.get('education') %}<span class="badge">{{ counts['education'] | length }}</span>{% endif %}</a>
+      {% for key, heading in [('skills', 'Vaardigheden'), ('languages', 'Talen'), ('extras', 'Aanvullend'), ('interests', 'Interesses')] %}<a href="#cv-{{ key }}">{{ heading }}{% if counts.get(key) %}<span class="badge">{{ counts[key] | length }}</span>{% endif %}</a>{% endfor %}
+    </nav>
+    <div class="cv-sheet">{{ show(cv, True) }}</div>
+  </div>
+  <details class="disclosure cv-again"><summary><span>Cv opnieuw inlezen</span>{{ ui.icon('chevron-down', 'chev') }}</summary>{{ read_in() }}</details>
+{% endif %}

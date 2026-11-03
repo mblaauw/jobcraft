@@ -9,13 +9,24 @@
 {% set hf = preferences.hard_filters %}
 <div class="page-head">
   <div>
-    <h1>Jouw positie</h1>
-    <p class="lede">Hoe je overkomt, waar je sterk staat en wat je kans op een gesprek het meest vergroot.</p>
+    <h1>Jouw profiel</h1>
+    <p class="lede">Je cv, hoe je overkomt en wat Jobcraft verder over je weet. Alles wat je hier verbetert, komt in je volgende sollicitaties.</p>
   </div>
 </div>
 
+<nav class="studio-tabs profile-tabs" aria-label="Je profiel" data-profile-tabs>
+  <a href="?tab=cv"{% if tab == 'cv' %} aria-current="page"{% endif %}>Mijn cv{% if coach.open %} <span class="badge">{{ coach.open }}</span>{% endif %}</a>
+  <a href="?tab=positie"{% if tab == 'positie' %} aria-current="page"{% endif %}>Hoe je overkomt</a>
+  <a href="?tab=meer"{% if tab == 'meer' %} aria-current="page"{% endif %}>Alles over jou</a>
+</nav>
+
+{% if tab == 'cv' %}
+{% include "_cv.html" %}
+{% elif tab == 'positie' %}
+{% include "_profile_position.html" %}
+{% else %}
 <nav class="subnav" aria-label="Onderdelen van je profiel">
-  <a href="#positie">Je positie</a><a href="#overzicht">Over jou</a><a href="#voorkeuren">Wat telt bij matching</a><a href="#reisbereik">Reisbereik</a>{% if legacy or draft %}<a href="#bijwerken">Bijwerken{% if draft %} <span class="badge">1</span>{% endif %}</a>{% endif %}<a href="#bewerken">Tekst bewerken</a><a href="#versies">Versies</a>
+  <a href="#overzicht">Over jou</a><a href="#voorkeuren">Wat telt bij matching</a><a href="#reisbereik">Reisbereik</a>{% if legacy or draft %}<a href="#bijwerken">Bijwerken{% if draft %} <span class="badge">1</span>{% endif %}</a>{% endif %}<a href="#bewerken">Tekst bewerken</a><a href="#versies">Versies</a>
 </nav>
 
 {% if saved %}
@@ -48,8 +59,6 @@
 {% elif bootstrap_status.startswith("error") %}
   <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Het voorstel kon niet worden gemaakt.</span><details><summary>Technische toelichting</summary>{{ bootstrap_status[7:] }}</details></div>
 {% endif %}
-
-{% include "_profile_position.html" %}
 
 <section class="section" id="overzicht" aria-labelledby="overzicht-title">
   <div class="panel-head"><h2 id="overzicht-title">Over jou</h2>{% if bootstrapped_at %}<span class="small subtle">Laatst bijgewerkt {{ ui.nl_date(bootstrapped_at) }}</span>{% endif %}</div>
@@ -238,4 +247,5 @@
     </ul>
   </div>
 </section>
+{% endif %}
 {% endblock %}
