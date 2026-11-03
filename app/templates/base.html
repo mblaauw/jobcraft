@@ -16,7 +16,7 @@
 {% set user = request.state.user if request.state is defined and request.state.user else None %}
 {% set path = request.url.path %}
 {% set is_admin = user and user.role == 'admin' %}
-{% set primary = [] if is_admin else [('/', 'Overzicht', 'house'), ('/jobs', 'Vacatures', 'briefcase-business'), ('/sollicitaties', 'Sollicitaties', 'list-checks')] + ([('/interview', 'Gesprek', 'message-circle')] if user and user.id == 'legacy' else []) + [('/profile', 'Profiel', 'user-round')] %}
+{% set primary = [] if is_admin else [('/', 'Vandaag', 'house'), ('/jobs', 'Vacatures', 'briefcase-business'), ('/sollicitaties', 'Sollicitaties', 'list-checks')] + ([('/interview', 'Gesprek', 'message-circle')] if user and user.id == 'legacy' else []) + [('/profile', 'Profiel', 'user-round')] %}
 {% set secondary = [('/sources', 'Bronnen', 'rss'), ('/account', 'Account', 'settings-2')] if is_admin else [('/account', 'Account', 'settings-2')] %}
 {% set new_matches = new_match_count() if (primary and new_match_count is defined) else 0 %}
 {% if is_admin %}{% set secondary = secondary + [('/users', 'Gebruikers', 'users'), ('/admin', 'Systeem', 'activity')] %}{% endif %}

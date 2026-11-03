@@ -19,16 +19,14 @@ from .. import (
     auth,
     config,
     feedback,
-    matching,
     profile,
-    ranking,
     sources,
     store,
     tasks,
     tenancy,
+    today,
 )
 from ..web import templates
-from ..web_helpers import _profile_meta, _workflow
 
 log = logging.getLogger("jobcraft")
 
@@ -39,58 +37,30 @@ router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse, dependencies=[Depends(auth.require_user)])
 def dashboard(request: Request):
+    """Today: what to do to get closer to an interview, what is new, and how the week goes."""
     if auth.require_user(request)["role"] == auth.ROLE_ADMIN:
         return RedirectResponse(url="/admin", status_code=303)
     if tenancy.user_id() != tenancy.LEGACY_ID and not profile.profile_exists():
         return RedirectResponse(url="/start", status_code=303)
-    sessions = store.list_sessions(8)
-    profile_state = _profile_meta()
-    jobs = store.count_jobs()
-    documents = store.count_documents()
-    draft_pair = profile.pending_draft()
-    draft = draft_pair[1] if draft_pair else None
-    queue = ranking.queue_depth(matching.current_digest())
+    columns = applications.board()
+    task_list = today.tasks(columns)
+    matches, fresh = today.new_matches(5, today.last_visit())
     return templates.TemplateResponse(
         request,
         "dashboard.html",
         {
             "start_open": tenancy.user_id() != tenancy.LEGACY_ID
             and not store.meta_get("start_finished_at"),
-            "own_vacancy_hint": tenancy.user_id() != tenancy.LEGACY_ID and documents == 0,
-            "plain_cv": store.meta_get("cv_generated") == "1",
-            "top_jobs": _top_new_jobs(5),
-            "reminders": applications.reminders(),
-            "pipeline": {
-                status: len(store.list_jobs(None, status)) for status in ("saved", "applied")
-            },
-            "sessions": sessions,
-            "profile_state": profile_state,
-            "seed": profile.seed_status(),
-            "usage": store.usage_total(),
-            "bootstrap_status": store.meta_get("bootstrap_status", "idle"),
-            "jobs": jobs,
-            "documents": documents,
-            "draft": draft,
-            "queue": queue,
-            "next_step": _workflow(profile_state, jobs, documents, draft, queue),
-            "model": config.MODEL_LABEL,
+            "has_profile": profile.profile_exists(),
+            "tasks": task_list,
+            "summary": today.summary(task_list, fresh),
+            "matches": matches,
+            "fresh": fresh,
+            "week": today.week(columns),
+            "tip": today.tip(),
+            "has_jobs": bool(store.count_jobs()["total"]),
         },
     )
-
-
-def _top_new_jobs(limit: int) -> list[dict]:
-    """Best-ranked new vacancies the user has not voted on and can plausibly reach."""
-    picks: list[dict] = []
-    for row in store.list_jobs(None, "new", only_unvoted=True):
-        item = dict(row)
-        item["travel"] = ranking.travel_of(item)
-        if item["travel"]["in_range"] is False:
-            continue
-        item["signals"] = ranking.signals_of(row)
-        picks.append(item)
-        if len(picks) == limit:
-            break
-    return picks
 
 
 def _worker_state() -> dict:

@@ -149,22 +149,25 @@ def test_job_filters_preserve_search_source_and_travel_and_show_empty_state():
     assert not html.select("table")
 
 
-def test_dashboard_diagnostics_are_collapsed_and_metrics_are_real_values():
+def test_today_leads_with_the_first_task_and_shows_the_week():
+    task = {"title": "Bereid je gesprek bij Gemeente voor", "why": "Ken de vragen.", "href": "/jobs/1#inzicht", "label": "Bereid je voor", "tag": "Gesprek"}
+    other = {"title": "Neem contact op met DEPT", "why": "Je reageerde 9 dagen geleden.", "href": "/sollicitaties", "label": "Zo pak je het aan", "tag": "Nabellen"}
     html = render(
         "dashboard.html",
-        jobs={"total": 12, "matched": 7},
-        queue=2,
-        documents=3,
-        profile_state={"exists": True, "updated": "2026-10-18"},
-        sessions=[],
-        seed={"ready": True, "dir": "example"},
-        usage={"calls": 1, "tin": 2, "tout": 3, "cost": 0.01},
-        next_step={"label": "Bekijk vacatures", "href": "/jobs", "detail": "Een volgende stap"},
+        has_profile=True,
+        tasks=[task, other],
+        summary="Vandaag: 2 dingen om te doen.",
+        matches=[],
+        fresh=0,
+        week={"sent_week": 2, "waiting": 3, "talks": 1, "rate": None},
+        tip="Zet je resultaten bovenaan.",
+        has_jobs=True,
     )
-    assert [el.get_text() for el in html.select(".metric strong")] == ["12", "7", "2", "3"]
-    assert not html.select(".technical-details")
-    assert "Kosten" not in html.get_text()
-    assert len(html.select("h1")) == 1
+    assert html.select_one(".next-step h2").get_text() == task["title"]
+    assert [el.get_text(strip=True) for el in html.select(".task h3")] == [other["title"]]
+    assert [el.get_text() for el in html.select(".week-numbers dd")] == ["2", "3", "1"]
+    assert "Zet je resultaten bovenaan." in html.get_text()
+    assert len(html.select("h1")) == 1 and "uitgebreid beoordeeld" not in html.get_text()
 
 
 def test_long_running_banners_poll_instead_of_meta_refresh():

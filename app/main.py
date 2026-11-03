@@ -69,7 +69,6 @@ from .web_helpers import (  # noqa: F401
     _profile_context,
     _profile_meta,
     _visible_messages,
-    _workflow,
 )
 from .workflows import (  # noqa: F401
     _doc_status,
