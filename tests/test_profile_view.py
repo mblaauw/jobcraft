@@ -31,7 +31,7 @@ def test_one_part_of_the_profile_can_be_changed_on_its_own(client):  # noqa: F81
     from app import profile, store
 
     profile.write_profile("## Kern\nOud feit.\n\n## Werkvoorkeuren\nBuiten werken.\n", "test")
-    page = client.get("/profile?tab=meer").text
+    page = client.get("/profile?tab=cv").text
     assert 'action="/profile/sectie"' in page and "data-autogrow" in page
     answer = client.post("/profile/sectie", data={"heading": "Kern", "text": "Nieuw feit.\r\n- Een punt"}, follow_redirects=False)
     assert answer.status_code == 303
@@ -108,12 +108,13 @@ def test_the_profile_warns_about_contact_details_notes_and_lost_parts():
     assert profile_check.warnings(before, before) == []
 
 
-def test_notes_move_under_open_questions_and_lost_parts_come_back():
+def test_notes_move_out_of_the_profile_and_lost_parts_come_back():
     from app import profile, profile_check
 
-    apart = profile_check.notes_apart(PASTED)
+    apart, moved = profile_check.notes_apart(PASTED)
     sections = {item["heading"]: item["text"] for item in profile.split_sections(apart)}
-    assert "1. Wat is toegevoegd" not in sections and "### 1. Wat is toegevoegd" in sections["Open vragen"]
+    assert "1. Wat is toegevoegd" not in sections and "Open vragen" not in sections
+    assert "### 1. Wat is toegevoegd" in moved and "+351" in moved
     assert "+351" not in profile.public_excerpt(apart, 20000)
     assert profile_check.lost(apart, PASTED) == []
     before = "## Kern\nFeit.\n\n## Zoekprofiel\nGroen.\n"
@@ -128,12 +129,15 @@ def test_the_one_click_fixes_save_a_new_version(client, monkeypatch):  # noqa: F
 
     profile.write_profile("## Kern\nFeit.\n\n## Zoekprofiel\nGroen.\n", "test")
     client.post("/profile/save", data={"content": PASTED})
-    page = client.get("/profile?tab=meer").text
+    from app import private_notes
+
+    page = client.get("/profile?tab=cv").text
     assert 'action="/profile/onderdelen-terug"' in page and 'action="/profile/aantekeningen-apart"' in page
     client.post("/profile/aantekeningen-apart")
-    assert 'action="/profile/onderdelen-terug"' in client.get("/profile?tab=meer").text  # still known after a small fix
+    assert 'action="/profile/onderdelen-terug"' in client.get("/profile?tab=cv").text  # still known after a small fix
     client.post("/profile/onderdelen-terug")
-    assert "Bij je laatste wijziging" not in client.get("/profile?tab=meer").text
+    assert "Bij je laatste wijziging" not in client.get("/profile?tab=cv").text
     text = profile.read_profile()
-    assert "## Kern\nFeit." in text and "### 4. Nog te bevestigen" in text
-    assert "+351" not in profile.read_public_excerpt(20000)
+    assert "## Kern\nFeit." in text and "Nog te bevestigen" not in text and "+351" not in text
+    assert "### 4. Nog te bevestigen" in private_notes.load()["text"]
+    assert "Nog te bevestigen" in client.get("/profile?tab=notities").text

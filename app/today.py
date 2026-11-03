@@ -74,7 +74,7 @@ def tasks(columns: list[dict], today: date | None = None) -> list[dict]:
         found.append((40, {
             "title": "Bekijk het voorstel voor je profiel",
             "why": "Je laatste antwoorden zijn verwerkt. Je ziet eerst wat er verandert.",
-            "href": "/profile?tab=meer#bijwerken", "label": "Bekijk het voorstel", "tag": "",
+            "href": "/profile?tab=notities#bijwerken", "label": "Bekijk het voorstel", "tag": "",
         }))
     found.sort(key=lambda item: item[0], reverse=True)
     return [task for _weight, task in found[:MAX_TASKS]]

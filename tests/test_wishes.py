@@ -63,11 +63,13 @@ def test_own_words_are_edited_here_too(client):  # noqa: F811
     assert "Groen, buiten en rustig." in profile.read_profile()
 
 
-def test_the_advanced_tab_shows_only_what_lives_nowhere_else(client):  # noqa: F811
-    profile.write_profile("## Kern\nKernfeit.\n\n## Zoekprofiel\nGroen.\n\n## Werkervaring\n### Rol\n- Punt\n", "test")
+def test_more_about_you_shows_only_what_lives_nowhere_else(client):  # noqa: F811
+    profile.write_profile("## Kern\nKernfeit.\n\n## Zoekprofiel\nGroen.\n\n## Werkervaring\n### Rol\n- Punt\n\n## Open vragen\nVraag.\n", "test")
     from bs4 import BeautifulSoup
 
-    page = client.get("/profile?tab=meer").text
+    page = client.get("/profile?tab=cv").text
     cards = [card.select_one(".profile-card-title").get_text(strip=True) for card in BeautifulSoup(page, "html.parser").select("#overzicht .profile-card")]
-    assert "Geavanceerd" in page and cards == ["Kern"]
-    assert "Wat telt bij matching" not in page and 'id="reisbereik"' not in page
+    assert cards == ["Kern"] and "Geavanceerd" not in page
+    notes = client.get("/profile?tab=notities").text
+    assert "Vraag." in notes and 'action="/profile/notities"' in notes
+    assert client.get("/profile?tab=meer").text.count('aria-current="page">Notities') == 1

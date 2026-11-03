@@ -110,8 +110,8 @@
 
   // Old links into the profile point at parts that now live on another tab.
   if (document.querySelector("[data-profile-tabs]") && location.hash.length > 1 && !document.getElementById(location.hash.slice(1))) {
-    const tab = { "#positie": "positie", "#reisbereik": "zoek", "#voorkeuren": "zoek" }[location.hash] || "meer";
-    location.replace("?tab=" + tab + location.hash);
+    const tab = { "#positie": "positie", "#reisbereik": "zoek", "#voorkeuren": "zoek", "#overzicht": "cv" }[location.hash] || "notities";
+    if (new URLSearchParams(location.search).get("tab") !== tab) location.replace("?tab=" + tab + location.hash);
   }
 
   // Text boxes that grow with what is in them, up to most of the screen.

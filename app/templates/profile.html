@@ -18,21 +18,10 @@
   <a href="?tab=cv"{% if tab == 'cv' %} aria-current="page"{% endif %}>Mijn cv{% if coach.open %} <span class="badge">{{ coach.open }}</span>{% endif %}</a>
   <a href="?tab=zoek"{% if tab == 'zoek' %} aria-current="page"{% endif %}>Wat ik zoek</a>
   <a href="?tab=positie"{% if tab == 'positie' %} aria-current="page"{% endif %}>Hoe je overkomt</a>
-  <a href="?tab=meer"{% if tab == 'meer' %} aria-current="page"{% endif %}>Geavanceerd</a>
+  <a href="?tab=notities"{% if tab == 'notities' %} aria-current="page"{% endif %}>Notities{% if draft %} <span class="badge">1</span>{% endif %}</a>
 </nav>
 
-{% if tab == 'cv' %}
-{% include "_cv.html" %}
-{% elif tab == 'zoek' %}
-{% include "_wishes.html" %}
-{% elif tab == 'positie' %}
-{% include "_profile_position.html" %}
-{% else %}
-<nav class="subnav" aria-label="Onderdelen van je profiel">
-  <a href="#overzicht">Overige tekst</a>{% if legacy or draft %}<a href="#bijwerken">Bijwerken{% if draft %} <span class="badge">1</span>{% endif %}</a>{% endif %}<a href="#bewerken">Tekst bewerken</a><a href="#versies">Versies</a>
-</nav>
-
-{% if saved %}
+{% if saved and saved not in ('zoek', 'home', 'woorden') %}
   <div class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>
     {% if saved == "accepted" %}Voorstel overgenomen. Je profiel en voorkeuren zijn bijgewerkt.
     {% elif saved == "profile" %}Je profiel is opgeslagen als nieuwe versie.
@@ -41,19 +30,18 @@
     {% elif saved == "draft" %}Je aanpassingen aan het voorstel zijn bewaard.
     {% elif saved == "discarded" %}Het voorstel is verworpen. Je profiel is niet veranderd.
     {% elif saved == "restore" %}De oude versie is teruggezet; de vorige staat bij Versies.
+    {% elif saved == "notes" %}Je notities zijn opgeslagen. De AI leest ze nooit.
     {% else %}Opgeslagen.{% endif %} <a href="/jobs">Bekijk je vacatures</a></span></div>
 {% endif %}
 {% if error == "seed" %}
   <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Het bronmateriaal voor een eerste profiel ontbreekt. Begin met een gesprek.</span></div>
-{% elif error == "place" %}
-  <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>We kennen “{{ home.label }}” niet, dus reistijden blijven onbekend. Kies een plaats uit de lijst.</span></div>
 {% elif error == "draft" %}
   <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Er is geen open voorstel meer. Maak een nieuw voorstel bij Bijwerken.</span></div>
 {% endif %}
 {% if profile_error %}<div class="banner warn">{{ ui.icon('triangle-alert') }}<span>{{ profile_error }}</span></div>{% endif %}
 {% if pref_error %}<div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Voorkeuren niet opgeslagen: {{ pref_error }}</span></div>{% endif %}
 {% if draft and not saved %}
-  <div class="banner ok">{{ ui.icon('sparkles') }}<span>Er ligt een voorstel klaar om je profiel bij te werken. <a href="#bijwerken">Bekijk wat er verandert</a></span></div>
+  <div class="banner ok">{{ ui.icon('sparkles') }}<span>Er ligt een voorstel klaar om je profiel bij te werken. <a href="?tab=notities#bijwerken">Bekijk wat er verandert</a></span></div>
 {% endif %}
 {% if bootstrap_status == "running" %}
   <div class="banner" data-auto-refresh="5000">{{ ui.icon('clock') }}<span>Je profielvoorstel wordt gemaakt. Dit duurt 20 tot 90 seconden.</span></div>
@@ -63,136 +51,15 @@
   <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Het voorstel kon niet worden gemaakt.</span><details><summary>Technische toelichting</summary>{{ bootstrap_status[7:] }}</details></div>
 {% endif %}
 
-<section class="section" id="overzicht" aria-labelledby="overzicht-title">
-  <div class="panel-head"><h2 id="overzicht-title">Overige tekst over jou</h2>{% if bootstrapped_at %}<span class="small subtle">Laatst bijgewerkt {{ ui.nl_date(bootstrapped_at) }}</span>{% endif %}</div>
-  {% set sections = (profile_sections or []) | selectattr('text') | rejectattr('heading', 'in', elsewhere or []) | list %}
-  {% if sections %}
-  <p class="small muted">Wat Jobcraft verder over je weet, naast Mijn cv en Wat ik zoek. Ook dit bepaalt welke vacatures je ziet en wat er in je cv en brieven komt. Klopt iets niet, pas dat stuk dan aan.</p>
-  {% if profile_warnings %}
-  <div class="profile-warnings" role="status">
-    {% for item in profile_warnings %}
-    <div class="profile-warning">{{ ui.icon('triangle-alert') }}<div><p><strong>{{ item.title }}.</strong> {{ item.detail }}</p>{% if item.action %}<form method="post" action="{{ item.action }}" data-pending-form>{% include '_csrf.html' %}<button class="button small" type="submit">{{ item.label }}</button></form>{% endif %}</div></div>
-    {% endfor %}
-  </div>
-  {% endif %}
-  <div class="profile-read">
-    {% for section in sections %}
-      {% set private = section.heading.startswith('Privé') %}
-      {% set open_q = section.heading == 'Open vragen' %}
-      <details class="profile-card{% if private %} private{% endif %}"{% if loop.first %} open{% endif %}>
-        <summary>
-          <span class="profile-card-head">
-            <span class="profile-card-title">{% if private %}{{ ui.icon('lock') }}Privé{% elif open_q %}{{ ui.icon('message-circle') }}Nog open{% else %}{{ section.heading or 'Inleiding' }}{% endif %}</span>
-            <span class="profile-card-teaser">{{ section.text | teaser }}</span>
-          </span>
-          {{ ui.icon('chevron-down', 'chev') }}
-        </summary>
-        {% if private %}<p class="small subtle">Alleen voor jou. Dit wordt nooit gebruikt voor matching, cv’s of brieven.</p>{% endif %}
-        {% if open_q %}<p class="small subtle">Hier gaat een volgend gesprek op in.</p>{% endif %}
-        <div class="profile-text">{{ section.text | prose }}</div>
-        {% if section.heading %}
-        <details class="profile-edit">
-          <summary>{{ ui.icon('pencil') }}Pas dit stuk aan</summary>
-          <form method="post" action="/profile/sectie" data-pending-form>
-            {% include '_csrf.html' %}
-            <input type="hidden" name="heading" value="{{ section.heading }}">
-            <label class="visually-hidden" for="section-{{ loop.index }}">{{ section.heading }}</label>
-            <textarea id="section-{{ loop.index }}" class="prose-edit" name="text" data-autogrow spellcheck="true">{{ section.text }}</textarea>
-            <p class="small subtle">Een regel met <code>- </code> wordt een opsomming, <code>**zo**</code> wordt vet. De vorige versie blijft bewaard.</p>
-            <div class="btn-row"><button class="button primary small" type="submit">Opslaan</button></div>
-          </form>
-        </details>
-        {% endif %}
-      </details>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="panel empty-state">
-    <h3>Je hebt nog geen profiel</h3>
-    <p class="muted">{% if draft %}Er ligt een voorstel klaar. Bekijk het hieronder bij Bijwerken.{% else %}Je CV en een paar keuzes zijn genoeg voor een eerste profiel.{% endif %}</p>
-    {% if draft %}<a class="button primary" href="#bijwerken">Bekijk het voorstel</a>{% else %}<a class="button primary" href="/start">Begin hier</a>{% endif %}
-  </div>
-  {% endif %}
-</section>
-
-{% if legacy or draft %}
-<section class="section" id="bijwerken" aria-labelledby="bijwerken-title">
-  <div class="panel-head"><h2 id="bijwerken-title">Bijwerken vanuit gesprekken</h2></div>
-  <div class="panel">
-  {% if draft %}
-    <p><strong>Er ligt een voorstel klaar.</strong> Hieronder zie je wat er verandert. Groen komt erbij, rood verdwijnt.</p>
-    <pre class="diff" tabindex="0" aria-label="Wijzigingen in je profiel">{% for line in (draft_diff or '').splitlines() %}{% if line.startswith('+++') or line.startswith('---') %}{% elif line.startswith('@@') %}<span class="hunk">…</span>{{ "\n" }}{% elif line.startswith('+') %}<span class="add">{{ line[1:] }}</span>{{ "\n" }}{% elif line.startswith('-') %}<span class="del">{{ line[1:] }}</span>{{ "\n" }}{% else %}{{ line[1:] }}{{ "\n" }}{% endif %}{% else %}Geen tekstuele verschillen.{% endfor %}</pre>
-    <div class="btn-row">
-      <form method="post" action="/profile/consolidate/accept">{% include '_csrf.html' %}<button class="button primary" type="submit">{{ ui.icon('check') }}Overnemen</button></form>
-      <form method="post" action="/profile/consolidate/discard">{% include '_csrf.html' %}<button class="button" type="submit">{{ ui.icon('x') }}Verwerpen</button></form>
-    </div>
-    <p class="small subtle">Overnemen maakt het voorstel je nieuwe profiel; de huidige versie blijft bewaard bij Versies.</p>
-
-    <details class="disclosure" {% if draft_error %}open{% endif %}>
-      <summary><span>Voorstel eerst aanpassen</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
-      <form method="post" action="/profile/consolidate/save-draft">
-        {% include '_csrf.html' %}
-        <div class="field"><label for="draft_profile">Profieltekst</label><textarea id="draft_profile" class="prose-edit" name="profile_md" data-autogrow>{{ draft_profile_text }}</textarea></div>
-        <details class="disclosure">
-          <summary><span class="small">Voorkeuren als JSON (geavanceerd)</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
-          <div class="field"><label for="draft_preferences">Voorkeuren (JSON)</label><textarea id="draft_preferences" class="doc-edit" name="preferences">{{ draft_preferences_text }}</textarea></div>
-          <div class="grid two"><div><p class="small muted">Nu</p><pre class="doc">{{ preferences | tojson(indent=2) }}</pre></div><div><p class="small muted">Voorstel</p><pre class="doc">{{ draft_preferences_text }}</pre></div></div>
-        </details>
-        {% if draft_error %}<p class="warn-text">{{ draft_error }}</p>{% endif %}
-        <div class="btn-row"><button class="button" type="submit">Aanpassingen bewaren</button></div>
-      </form>
-    </details>
-  {% else %}
-    <p>{% if new_answer_chars %}Je hebt sinds de laatste keer nieuwe antwoorden gegeven. Maak een voorstel om ze in je profiel te verwerken.{% else %}Er zijn geen nieuwe antwoorden sinds de laatste keer. Voer eerst een <a href="/interview">gesprek</a>.{% endif %}</p>
-    <div class="btn-row">
-      <form method="post" action="/profile/consolidate">
-        {% include '_csrf.html' %}
-        <input type="hidden" name="full" value="0">
-        <button class="button primary" type="submit" {% if bootstrap_status == "running" %}disabled{% endif %}>{{ ui.icon('sparkles') }}Maak een voorstel</button>
-      </form>
-    </div>
-    <p class="small subtle">Duurt 20 tot 90 seconden. Je ziet eerst wat er verandert.</p>
-    <details class="disclosure">
-      <summary><span class="small">Meer opties</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
-      <p class="small muted">Een volledige herziening leest al je antwoorden en bronmateriaal opnieuw. Gebruik dit als je profiel niet meer klopt.</p>
-      <form method="post" action="/profile/consolidate">
-        {% include '_csrf.html' %}
-        <input type="hidden" name="full" value="1">
-        <button class="button" type="submit" {% if bootstrap_status == "running" %}disabled{% endif %}>Volledige herziening maken</button>
-      </form>
-    </details>
-  {% endif %}
-  </div>
-</section>
-{% endif %}
-
-<section class="section" id="bewerken" aria-labelledby="bewerken-title">
-  <details class="panel disclosure" {% if profile_error %}open{% endif %}>
-    <summary><h2 id="bewerken-title">Tekst zelf bewerken</h2>{{ ui.icon('chevron-down', 'chev') }}</summary>
-    <form method="post" action="/profile/save">
-      {% include '_csrf.html' %}
-      <p class="small muted">Voor grotere wijzigingen in één keer. Een stuk begint met een kop als <code>## Werkvoorkeuren</code>. Alles onder <code>## Privé</code> blijft van jou en wordt nooit gebruikt voor matching of documenten.</p>
-      <textarea class="prose-edit prose-edit-full" id="profile-editor" name="content" aria-label="Profieltekst" spellcheck="true" data-autogrow>{{ profile_text or profile_md }}</textarea>
-      <div class="btn-row"><button class="button primary" type="submit">Opslaan als nieuwe versie</button><span class="small subtle" id="editor-stats">{{ editor_chars }} tekens · {{ editor_lines }} regels</span></div>
-    </form>
-  </details>
-</section>
-
-<section class="section" id="versies" aria-labelledby="versies-title">
-  <div class="panel-head"><h2 id="versies-title">Versies</h2><span class="small subtle">Elke wijziging bewaart de vorige versie</span></div>
-  <div class="panel">
-    <ul class="list version-list">
-      {% for v in versions %}
-        <li>
-          <span>{{ ui.icon('history') }} {{ ui.nl_date(v.created_at, time=True) }}{% if v.note %} <span class="subtle">· {{ v.note }}</span>{% endif %}</span>
-          <form method="post" action="/profile/restore/{{ v.id }}" class="inline-form">{% include '_csrf.html' %}<button class="button small" type="submit">Terugzetten</button></form>
-        </li>
-      {% else %}
-        <li class="subtle">Nog geen eerdere versies.</li>
-      {% endfor %}
-    </ul>
-  </div>
-</section>
+{% if tab == 'cv' %}
+{% include "_cv.html" %}
+{% include "_profile_more.html" %}
+{% elif tab == 'zoek' %}
+{% include "_wishes.html" %}
+{% elif tab == 'positie' %}
+{% include "_profile_position.html" %}
+{% else %}
+{% include "_notes.html" %}
 {% endif %}
 {% endblock %}
 {% block scripts %}{% if tab == 'zoek' %}<script src="/static/start.js" defer></script>{% endif %}{% endblock %}

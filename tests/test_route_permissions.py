@@ -112,6 +112,7 @@ USER = {
     ("POST", "/profile/save"),
     ("POST", "/profile/sectie"),
     ("POST", "/profile/zoek"),
+    ("POST", "/profile/notities"),
     ("POST", "/profile/cv/inlezen"),
     ("POST", "/profile/cv/omzetting"),
     ("POST", "/profile/cv/over-mij"),

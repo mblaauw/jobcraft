@@ -1,0 +1,123 @@
+{# Notities: what is only for you, and the profile's history. Nothing here is sent to the AI, apart from Open vragen for the conversations. #}
+<section class="notes-part" id="notities" aria-labelledby="notes-title">
+  <h2 id="notes-title">{{ ui.icon('lock') }}Je notities</h2>
+  <p class="small muted">Alleen voor jou. Deze tekst staat los van je profiel en gaat nooit naar de AI: handig voor bronnen, wat je nog moet nakijken, of iets wat je liever niet in je cv ziet.</p>
+  <form method="post" action="/profile/notities" class="notes-form" data-pending-form>
+    {% include '_csrf.html' %}
+    <label class="visually-hidden" for="notes-text">Je notities</label>
+    <textarea id="notes-text" class="prose-edit" name="tekst" data-autogrow spellcheck="true" placeholder="Bijvoorbeeld: nog navragen welk jaar mijn diploma is.">{{ notes.text }}</textarea>
+    <div class="btn-row"><button class="button primary small" type="submit">Opslaan</button>{% if notes.updated_at %}<span class="small subtle">Laatst opgeslagen {{ ui.nl_date(notes.updated_at, time=True) }}</span>{% endif %}</div>
+  </form>
+</section>
+
+{% set kept = kept_sections or [] %}
+{% if kept %}
+<section class="notes-part" id="prive" aria-labelledby="private-title">
+  <h2 id="private-title">Voor de gesprekken</h2>
+  <p class="small muted">Deze delen van je profiel gaan niet in je cv of brieven. Open vragen gebruikt Jobcraft om in een volgend gesprek op door te vragen.</p>
+  {% for section in kept %}
+  <details class="profile-card{% if section.heading.startswith('Privé') %} private{% endif %}">
+    <summary><span class="profile-card-head"><span class="profile-card-title">{% if section.heading.startswith('Privé') %}{{ ui.icon('lock') }}Privé{% else %}{{ ui.icon('message-circle') }}Nog open{% endif %}</span><span class="profile-card-teaser">{{ section.text | teaser }}</span></span>{{ ui.icon('chevron-down', 'chev') }}</summary>
+    <div class="profile-text">{{ section.text | prose }}</div>
+    <details class="profile-edit">
+      <summary>{{ ui.icon('pencil') }}Pas dit stuk aan</summary>
+      <form method="post" action="/profile/sectie" data-pending-form>
+        {% include '_csrf.html' %}
+        <input type="hidden" name="heading" value="{{ section.heading }}"><input type="hidden" name="terug" value="notities">
+        <label class="visually-hidden" for="kept-{{ loop.index }}">{{ section.heading }}</label>
+        <textarea id="kept-{{ loop.index }}" class="prose-edit" name="text" data-autogrow spellcheck="true">{{ section.text }}</textarea>
+        <div class="btn-row"><button class="button primary small" type="submit">Opslaan</button></div>
+      </form>
+    </details>
+  </details>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if legacy or draft %}
+<section class="section" id="bijwerken" aria-labelledby="bijwerken-title">
+  <div class="panel-head"><h2 id="bijwerken-title">Uit je gesprekken</h2></div>
+  <div class="panel">
+  {% if draft %}
+    <p><strong>Er ligt een voorstel klaar.</strong> Hieronder zie je wat er verandert. Groen komt erbij, rood verdwijnt.</p>
+    <pre class="diff" tabindex="0" aria-label="Wijzigingen in je profiel">{% for line in (draft_diff or '').splitlines() %}{% if line.startswith('+++') or line.startswith('---') %}{% elif line.startswith('@@') %}<span class="hunk">…</span>{{ "\n" }}{% elif line.startswith('+') %}<span class="add">{{ line[1:] }}</span>{{ "\n" }}{% elif line.startswith('-') %}<span class="del">{{ line[1:] }}</span>{{ "\n" }}{% else %}{{ line[1:] }}{{ "\n" }}{% endif %}{% else %}Geen tekstuele verschillen.{% endfor %}</pre>
+    <div class="btn-row">
+      <form method="post" action="/profile/consolidate/accept">{% include '_csrf.html' %}<button class="button primary" type="submit">{{ ui.icon('check') }}Overnemen</button></form>
+      <form method="post" action="/profile/consolidate/discard">{% include '_csrf.html' %}<button class="button" type="submit">{{ ui.icon('x') }}Verwerpen</button></form>
+    </div>
+    <p class="small subtle">Overnemen maakt het voorstel je nieuwe profiel; de huidige versie blijft bewaard bij Versies.</p>
+
+    <details class="disclosure" {% if draft_error %}open{% endif %}>
+      <summary><span>Voorstel eerst aanpassen</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
+      <form method="post" action="/profile/consolidate/save-draft">
+        {% include '_csrf.html' %}
+        <div class="field"><label for="draft_profile">Profieltekst</label><textarea id="draft_profile" class="prose-edit" name="profile_md" data-autogrow>{{ draft_profile_text }}</textarea></div>
+        <details class="disclosure">
+          <summary><span class="small">Voorkeuren als JSON (geavanceerd)</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
+          <div class="field"><label for="draft_preferences">Voorkeuren (JSON)</label><textarea id="draft_preferences" class="doc-edit" name="preferences">{{ draft_preferences_text }}</textarea></div>
+          <div class="grid two"><div><p class="small muted">Nu</p><pre class="doc">{{ preferences | tojson(indent=2) }}</pre></div><div><p class="small muted">Voorstel</p><pre class="doc">{{ draft_preferences_text }}</pre></div></div>
+        </details>
+        {% if draft_error %}<p class="warn-text">{{ draft_error }}</p>{% endif %}
+        <div class="btn-row"><button class="button" type="submit">Aanpassingen bewaren</button></div>
+      </form>
+    </details>
+  {% else %}
+    <p>{% if new_answer_chars %}Je hebt sinds de laatste keer nieuwe antwoorden gegeven. Maak een voorstel om ze in je profiel te verwerken.{% else %}Er zijn geen nieuwe antwoorden sinds de laatste keer. Voer eerst een <a href="/interview">gesprek</a>.{% endif %}</p>
+    <div class="btn-row">
+      <form method="post" action="/profile/consolidate">
+        {% include '_csrf.html' %}
+        <input type="hidden" name="full" value="0">
+        <button class="button primary" type="submit" {% if bootstrap_status == "running" %}disabled{% endif %}>{{ ui.icon('sparkles') }}Maak een voorstel</button>
+      </form>
+    </div>
+    <p class="small subtle">Duurt 20 tot 90 seconden. Je ziet eerst wat er verandert.</p>
+    <details class="disclosure">
+      <summary><span class="small">Meer opties</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
+      <p class="small muted">Een volledige herziening leest al je antwoorden en bronmateriaal opnieuw. Gebruik dit als je profiel niet meer klopt.</p>
+      <form method="post" action="/profile/consolidate">
+        {% include '_csrf.html' %}
+        <input type="hidden" name="full" value="1">
+        <button class="button" type="submit" {% if bootstrap_status == "running" %}disabled{% endif %}>Volledige herziening maken</button>
+      </form>
+    </details>
+  {% endif %}
+  </div>
+</section>
+{% endif %}
+
+
+<section class="notes-part" id="versies" aria-labelledby="versies-title">
+  <h2 id="versies-title">Versies</h2>
+  <p class="small muted">Elke wijziging bewaart de tekst van daarvoor. Zo zie je wat er veranderde, en kun je altijd terug.</p>
+  <ol class="version-history">
+    {% for v in history %}
+    <li>
+      <details>
+        <summary>
+          <span class="version-when">{{ ui.nl_date(v.created_at, time=True) }}</span>
+          <span class="version-what">{{ v.note or 'Wijziging' }}</span>
+          <span class="version-count small">{% if v.added %}<span class="add">+{{ v.added }}</span>{% endif %}{% if v.removed %}<span class="del">−{{ v.removed }}</span>{% endif %}</span>
+          {{ ui.icon('chevron-down', 'chev') }}
+        </summary>
+        {% if v.lines %}<pre class="diff" tabindex="0" aria-label="Wat er veranderde">{% for kind, line in v.lines %}<span class="{{ kind }}">{{ line }}</span>{% endfor %}{% if v.more %}<span class="hunk">en nog {{ v.more }} regels</span>{% endif %}</pre>{% else %}<p class="small muted">Geen verschil in de tekst.</p>{% endif %}
+        <form method="post" action="/profile/restore/{{ v.id }}" class="inline-form" data-pending-form>{% include '_csrf.html' %}<button class="button small" type="submit">Zet de tekst van vóór deze wijziging terug</button></form>
+      </details>
+    </li>
+    {% else %}
+    <li class="subtle">Nog geen eerdere versies.</li>
+    {% endfor %}
+  </ol>
+</section>
+
+<section class="section" id="bewerken" aria-labelledby="bewerken-title">
+  <details class="panel disclosure" {% if profile_error %}open{% endif %}>
+    <summary><h2 id="bewerken-title">Je hele profiel in één keer bewerken</h2>{{ ui.icon('chevron-down', 'chev') }}</summary>
+    <form method="post" action="/profile/save">
+      {% include '_csrf.html' %}
+      <p class="small muted">Voor gevorderden: je hele profieltekst in één vak. Meestal is het makkelijker om in Mijn cv of Wat ik zoek per onderdeel te werken. Een stuk begint met een kop als <code>## Werkvoorkeuren</code>. Alles onder <code>## Privé</code> blijft van jou en wordt nooit gebruikt voor matching of documenten.</p>
+      <textarea class="prose-edit prose-edit-full" id="profile-editor" name="content" aria-label="Profieltekst" spellcheck="true" data-autogrow>{{ profile_text or profile_md }}</textarea>
+      <div class="btn-row"><button class="button primary" type="submit">Opslaan als nieuwe versie</button><span class="small subtle" id="editor-stats">{{ editor_chars }} tekens · {{ editor_lines }} regels</span></div>
+    </form>
+  </details>
+</section>
+

@@ -57,20 +57,15 @@ def lost(markdown: str, previous: str) -> list[dict]:
     ]  # notes that moved under Open vragen did not fall away
 
 
-def notes_apart(markdown: str) -> str:
-    """Working notes move under Open vragen: kept, but never read as facts."""
+def notes_apart(markdown: str) -> tuple[str, str]:
+    """Working notes leave the profile: (profile without them, the notes as text for Notities)."""
     sections = profile.split_sections(markdown)
     moved = notes(sections)
     if not moved:
-        return markdown
+        return markdown, ""
     kept = [item for item in sections if item not in moved]
     block = "\n\n".join(f"### {item['heading']}\n{item['text']}" for item in moved)
-    target = next((item for item in kept if item["heading"] == "Open vragen"), None)
-    if target:
-        target["text"] = f"{target['text']}\n\n{block}".strip()
-    else:
-        kept.append({"heading": "Open vragen", "text": block, "level": 2})
-    return profile.join_sections(kept)
+    return profile.join_sections(kept), block
 
 
 def lost_back(markdown: str, previous: str) -> str:
@@ -90,7 +85,7 @@ def warnings(markdown: str, previous: str | None = None) -> list[dict]:
         found.append({
             "title": "Contactgegevens staan in je openbare profiel",
             "detail": f"Gevonden bij {', '.join(contact[:3])}. Alles buiten Privé gaat naar de AI. "
-            "Je telefoon en e-mail vul je in bij je sollicitatie, onder Jouw gegevens. Haal ze hier weg of zet ze onder ## Privé.",
+            "Je telefoon en e-mail vul je in bij je sollicitatie, onder Jouw gegevens. Haal ze hier weg of zet ze in Notities.",
         })
 
     found_notes = [item["heading"] for item in notes(sections)]
@@ -98,8 +93,8 @@ def warnings(markdown: str, previous: str | None = None) -> list[dict]:
         found.append({
             "title": "Werkaantekeningen worden gelezen als feiten over jou",
             "detail": f"{', '.join(found_notes[:5])}. De AI gebruikt dit voor je cv en brieven, ook wat je juist niet wilt claimen. "
-            "Onder Open vragen blijven ze bewaard, maar gaan ze niet in je documenten.",
-            "action": "/profile/aantekeningen-apart", "label": "Zet ze onder Open vragen",
+            "In Notities blijven ze bewaard, en daar leest de AI nooit mee.",
+            "action": "/profile/aantekeningen-apart", "label": "Verplaats ze naar Notities",
         })
 
     before = previous if previous is not None else previous_version()
