@@ -44,7 +44,10 @@ def render(name, path="/", cookies=None, role="admin", **context):
 
 
 def test_all_templates_compile():
+    from app.web import templates
+
     env = Environment(loader=FileSystemLoader(TEMPLATES), autoescape=select_autoescape())
+    env.filters.update(templates.env.filters)  # the app's own filters, such as prose
     for name in env.list_templates():
         env.get_template(name)
 

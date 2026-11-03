@@ -678,13 +678,40 @@ html.job-drawer-open { overflow: hidden; scrollbar-gutter: stable; }
 .subnav { position: sticky; top: 0; z-index: 5; display: flex; gap: 4px; overflow-x: auto; margin: 0 0 24px; padding: 8px 0; background: var(--paper); scrollbar-width: none; }
 .subnav a { flex: none; padding: 8px 12px; border-radius: 999px; color: var(--ink-2); font-size: var(--fs-sm); font-weight: 650; text-decoration: none; }
 .subnav a:hover { background: var(--sunk); color: var(--ink); }
-.profile-read { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.profile-read .panel { margin: 0; }
-.profile-read .panel.wide { grid-column: 1 / -1; }
-.profile-read h3 { display: flex; align-items: center; gap: 8px; }
-.profile-read .panel.private { background: var(--surface-2); border-style: dashed; }
-.profile-text { white-space: pre-wrap; color: var(--ink); line-height: 1.65; }
-.profile-text ul { margin: 0; padding-left: 20px; white-space: normal; }
+/* "Over jou": one card per part, closed to a single line you can scan, open to read. */
+.profile-read { display: grid; gap: 10px; }
+.profile-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
+.profile-card.private { background: var(--surface-2); border-style: dashed; }
+.profile-card > summary { display: flex; align-items: center; gap: 12px; padding: 16px 20px; cursor: pointer; list-style: none; }
+.profile-card > summary::-webkit-details-marker { display: none; }
+.profile-card > summary:hover .profile-card-title { color: var(--moss); }
+.profile-card > summary .chev { flex: none; color: var(--ink-3); }
+.profile-card-head { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.profile-card-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: var(--fs-md); }
+.profile-card-teaser { color: var(--ink-3); font-size: var(--fs-sm); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.profile-card[open] .profile-card-teaser { display: none; }
+.profile-card > :not(summary) { margin-left: 20px; margin-right: 20px; }
+.profile-card > :last-child { margin-bottom: 18px; }
+.profile-text { max-width: 68ch; color: var(--ink); line-height: 1.65; }
+.profile-text p { margin: 0 0 12px; }
+.profile-text ul, .profile-text ol { margin: 0 0 12px; padding-left: 22px; }
+.profile-text li { margin: 0 0 6px; }
+.profile-text li > ul { margin: 6px 0 0; }
+.profile-text strong { font-weight: 650; }
+.profile-edit { margin-top: 4px; border-top: 1px solid var(--line); padding-top: 12px; }
+.profile-edit > summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; color: var(--moss); font-size: var(--fs-sm); font-weight: 650; }
+.profile-edit > summary::-webkit-details-marker { display: none; }
+.profile-edit[open] > summary { margin-bottom: 10px; }
+.profile-edit form { display: grid; gap: 8px; max-width: 72ch; }
+
+/* Writing prose, not code: the page's own font, a comfortable measure, and a box that grows. */
+textarea.prose-edit {
+  width: 100%; max-width: 72ch; min-height: 160px; padding: 14px 16px; border: 1px solid var(--line-strong);
+  border-radius: var(--r); background: var(--surface); color: var(--ink); font: 16px/1.6 var(--font);
+  resize: vertical; field-sizing: content; max-height: 75vh;
+}
+textarea.prose-edit-full { min-height: 420px; }
+textarea.prose-edit:focus { border-color: var(--moss); outline: 2px solid var(--lime-soft); outline-offset: 0; }
 .prefs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 28px; }
 .prefs-grid h3 { font-size: var(--fs-base); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }

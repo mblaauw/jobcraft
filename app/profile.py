@@ -130,7 +130,7 @@ def write_profile(markdown: str, note: str) -> Path:
     return path
 
 
-def merge_sections(updates: dict[str, str]) -> None:
+def merge_sections(updates: dict[str, str], note: str = "snelle start") -> None:
     """Replace or add named profile sections, leaving every other section as it is."""
     sections = split_sections(read_profile())
     for heading, text in updates.items():
@@ -144,7 +144,7 @@ def merge_sections(updates: dict[str, str]) -> None:
             (f"## {item['heading']}\n" if item["heading"] else "") + item["text"]
             for item in sections
         ),
-        note="snelle start",
+        note=note,
     )
 
 

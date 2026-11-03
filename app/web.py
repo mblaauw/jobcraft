@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 from fastapi.templating import Jinja2Templates
 
-from . import config
+from . import config, profile_view
 from .util import LOCAL_TZ
 
 templates = Jinja2Templates(directory=str(config.TEMPLATES_DIR))
@@ -49,3 +49,5 @@ templates.env.globals["background_work"] = _background_work
 templates.env.globals["csrf_input"] = _csrf_input
 templates.env.globals["new_match_count"] = _new_match_count
 templates.env.filters["amsterdam"] = _amsterdam
+templates.env.filters["prose"] = profile_view.render
+templates.env.filters["teaser"] = profile_view.teaser
