@@ -1,6 +1,7 @@
 <section id="gegevens" aria-labelledby="contact-title">
   <h2 id="contact-title">Jouw gegevens</h2>
   <p class="small muted">Boven aan je cv en brief. Deze gegevens gaan niet naar de AI.</p>
+  {% if contact_from_cv %}<p class="small">{{ ui.icon('info') }} We namen ze over uit je cv. Kloppen ze? Sla ze dan op.</p>{% endif %}
   <form method="post" action="/jobs/{{ job['id'] }}/sollicitatie/gegevens" class="contact-form" data-pending-form>
     {% include '_csrf.html' %}
     <input type="hidden" name="tab" value="{{ tab }}">

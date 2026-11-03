@@ -17,6 +17,7 @@ from .. import (
     config,
     cv_ai,
     cv_model,
+    document_contact,
     geo,
     onboarding,
     private_notes,
@@ -270,6 +271,22 @@ def profile_notes_apart():
         profile.write_profile(updated, note="aantekeningen naar Notities")
         _assess_soon()
     return RedirectResponse(url="/profile?tab=notities&saved=notes#notities", status_code=303)
+
+
+@router.post("/profile/contact-apart")
+def profile_contact_apart():
+    """Phone, e-mail and LinkedIn go to Jouw gegevens, for documents only, and out of what the AI reads."""
+    found = profile_check.contact_apart(profile.read_profile())[1]  # before anything is removed
+    data = cv_model.load()
+    if data and (clean := cv_model.without_contact(data)) != data:
+        cv_model.save(clean, note="contactgegevens naar Jouw gegevens")  # or a later CV edit brings them back
+    current = profile.read_profile()
+    updated = profile_check.contact_apart(current)[0]
+    document_contact.adopt(found)
+    if updated != current:
+        profile.write_profile(updated, note="contactgegevens naar Jouw gegevens")
+        _assess_soon()
+    return RedirectResponse(url="/profile?saved=contact#overzicht", status_code=303)
 
 
 @router.post("/profile/onderdelen-terug")

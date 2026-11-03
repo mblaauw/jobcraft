@@ -21,12 +21,36 @@
     </div>
     {% if not latest %}<p class="banner small">{{ ui.icon('clock') }}<span>Je bekijkt versie {{ row['version'] }}. <a href="?tab={{ tab }}">Naar de nieuwste</a></span></p>{% endif %}
 
-    {% set warnings = (review.warnings or []) + (review.unsupported or []) %}
-    {% if warnings %}
+    {% if contact_missing %}
+    <section class="rail-check rail-contact" aria-labelledby="contact-missing-title">
+      <h2 id="contact-missing-title">{{ ui.icon('triangle-alert') }}Je naam of contactgegevens ontbreken</h2>
+      <p class="small">Zonder kan een werkgever je niet bellen of mailen. Vul ze hier in, dan zetten we ze bovenaan je cv en brief, zonder AI.</p>
+      {% include "_studio_contact.html" %}
+    </section>
+    {% endif %}
+
+    {% if contact_stale and not contact_missing and latest %}
+    <section class="rail-note" aria-label="Je gegevens">
+      <p class="small">{{ ui.icon('info') }} Je gegevens zijn veranderd sinds deze versie. Bovenaan staat misschien nog iets ouds.</p>
+      <form method="post" action="/jobs/{{ job['id'] }}/sollicitatie/gegevens/vernieuwen" data-pending-form>
+        {% include '_csrf.html' %}<input type="hidden" name="tab" value="{{ tab }}">
+        <button class="button small" id="studio-renew-contact" type="submit">Zet mijn gegevens erin</button>
+      </form>
+    </section>
+    {% endif %}
+
+    {% if check_points %}
     <section class="rail-check" aria-labelledby="check-title">
       <h2 id="check-title">{{ ui.icon('triangle-alert') }}Controleer dit voor je verstuurt</h2>
-      <p class="small">Dit konden we niet terugvinden in je gegevens. Klopt het niet, pas het dan aan.</p>
-      <ul>{% for item in warnings %}<li>{{ item }}</li>{% endfor %}</ul>
+      <p class="small">Dit staat er wel, maar niet in je gegevens. Een recruiter kan ernaar vragen.</p>
+      <ul>{% for item in check_points %}<li>{{ item }}</li>{% endfor %}</ul>
+      {% if latest %}
+      <form method="post" action="{{ base }}/toon" data-pending-form>
+        {% include '_csrf.html' %}<input type="hidden" name="tone" value="nagekeken">
+        <button class="button small" id="studio-fix-checks" type="submit">{{ ui.icon('refresh-cw') }}Herschrijf zonder deze punten</button>
+      </form>
+      <p class="small muted">Een nieuwe versie met AI; deze blijft bewaard. Klopt een punt toch, pas het dan zelf aan bij Tekst aanpassen.</p>
+      {% endif %}
     </section>
     {% endif %}
 
@@ -119,9 +143,11 @@
       </ul>
     </details>
 
+    {% if not contact_missing %}
     <details>
       <summary><h2>Jouw gegevens</h2></summary>
       {% include "_studio_contact.html" %}
     </details>
+    {% endif %}
   </aside>
 </div>

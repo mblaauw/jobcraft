@@ -8,7 +8,16 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
 
-from . import applications, career_position, profile, ranking, store
+from . import (
+    applications,
+    career_position,
+    document_contact,
+    onboarding,
+    profile,
+    ranking,
+    store,
+    tenancy,
+)
 
 MAX_TASKS = 5
 VISIT_KEY = "overview_last_visit"
@@ -142,3 +151,18 @@ def summary(task_list: list[dict], fresh: int) -> str:
         return "Niets dringends vandaag. Een goed moment om nieuwe vacatures te bekijken."
     text = " en ".join(parts)
     return f"Vandaag: {text}."
+
+
+def start_state() -> str:
+    """open: the quick start lacks its essentials; questions: only the optional questions are left."""
+    if tenancy.user_id() == tenancy.LEGACY_ID or store.meta_get("start_finished_at"):
+        return "done"  # the first account predates the quick start
+    if not onboarding.swipe_queue() and (int(store.meta_get("start_swipe_done") or 0) or onboarding.exchanges_saved()):
+        return "questions"
+    return "open"
+
+
+def first_name() -> str:
+    """The first name from Jouw gegevens; a username is not a name to greet someone by."""
+    words = document_contact.load()["name"].split()
+    return words[0] if len(words) >= 2 else ""

@@ -17,6 +17,7 @@ from . import (
     config,
     cv_model,
     cv_text,
+    document_contact,
     document_content,
     profile,
     runtime,
@@ -101,6 +102,8 @@ def source_text(choice: str, pasted: str = "", raw: bytes = b"", filename: str =
         text = cv_text.extract_text(raw, filename)
     else:
         text = pasted
+    if choice != "profiel":
+        document_contact.suggest(cv_text.contact_of(text))  # for the top of documents only
     text = cv_text.redact(text[:cv_text.MAX_CHARS], [tenancy.display_name()])
     if len(text.strip()) < 80:
         raise ValueError("Hier staat te weinig tekst in om een cv uit te halen.")

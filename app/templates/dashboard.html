@@ -2,8 +2,8 @@
 {% import "_ui.html" as ui %}
 {% block title %}Vandaag · Jobcraft{% endblock %}
 {% block content %}
-{% if start_open %}<section class="banner" aria-label="Snelle start">{{ ui.icon('clock') }}<span>Je snelle start is nog niet af. Je antwoorden zijn bewaard. <a href="/start">Ga verder waar je gebleven was</a></span></section>{% endif %}
-{% set name = (request.state.user.display_name or request.state.user.username) if request.state is defined and request.state.user else '' %}
+{% if start == 'open' %}<section class="banner" aria-label="Snelle start">{{ ui.icon('clock') }}<span>Je snelle start is nog niet af. Je antwoorden zijn bewaard. <a href="/start">Ga verder waar je gebleven was</a></span></section>{% endif %}
+{% set name = first_name or ((request.state.user.display_name or request.state.user.username) if request.state is defined and request.state.user else '') %}
 <div class="page-head greeting">
   <div>
     <h1>Hallo{% if name %} {{ name }}{% endif %}</h1>
@@ -100,6 +100,13 @@
       {% elif week.sent_week == 0 %}<p class="small muted">Drie sollicitaties per week houdt je zoektocht in beweging.</p>{% endif %}
       <a class="small" href="/sollicitaties">Naar je sollicitaties</a>
     </section>
+    {% if start == 'questions' %}
+    <section class="panel tip" aria-labelledby="questions-tip-title">
+      <h2 id="questions-tip-title">{{ ui.icon('message-circle') }}Drie korte vragen</h2>
+      <p>Over wat een formulier niet kan vragen. Het kost een minuut en helpt ons vacatures voor je te beoordelen.</p>
+      <p><a href="/start/vragen">Beantwoord ze</a></p>
+    </section>
+    {% endif %}
     {% if tip %}
     <section class="panel tip" aria-labelledby="tip-title">
       <h2 id="tip-title">{{ ui.icon('sparkles') }}Levert deze week het meeste op</h2>

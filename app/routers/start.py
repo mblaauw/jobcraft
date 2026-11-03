@@ -13,6 +13,7 @@ from .. import (
     config,
     cv_text,
     cv_uploads,
+    document_contact,
     feedback,
     geo,
     onboarding,
@@ -86,13 +87,15 @@ async def start_cv_upload(request: Request, cv: UploadFile = File(...)):
     filename = cv.filename or ""
     display_name = tenancy.display_name()
 
-    def read() -> dict:
-        return cv_text.read_cv(cv_text.extract_text(raw, filename), display_name)
+    def read() -> tuple[dict, dict]:
+        text = cv_text.extract_text(raw, filename)
+        return cv_text.read_cv(text, display_name), cv_text.contact_of(text)
 
     try:
-        found = await run_in_threadpool(read)
+        found, contact = await run_in_threadpool(read)
     except ValueError as exc:
         return _page(request, "start_cv.html", step, update=update, error=str(exc))
+    document_contact.suggest(contact)  # for the top of documents; it never reaches the AI
     token = ""
     can_store = tenancy.user_id() != tenancy.LEGACY_ID and filename.lower().endswith(".docx")
     if can_store and (cv_uploads.is_generated() or not (config.seed_dir() / "cv.docx").exists()):

@@ -96,7 +96,8 @@
     {{ ui.wait('We maken je plan' if doc_status.kind == 'plan' else 'We schrijven je sollicitatie', 'Duurt meestal ' ~ ('ongeveer een minuut.' if doc_status.kind == 'plan' else 'een tot twee minuten.'), doc_status.started_at or doc_status.updated_at or '') }}
     <a id="detail-apply" class="button block" href="{{ studio_url }}">Bekijk hoe ver het is</a>
     {% elif documents %}
-    <p class="small muted">Je cv en brief staan klaar. Open je sollicitatie om ze te bekijken, aan te passen of te downloaden.</p>
+    {% set kinds = documents | map(attribute='kind') | list %}
+    <p class="small muted">{% if 'resume' in kinds and 'motivatie' in kinds %}Je cv en brief staan klaar{% elif 'resume' in kinds %}Je cv staat klaar{% else %}Je brief staat klaar{% endif %}. Open je sollicitatie om te bekijken, aan te passen of te downloaden.</p>
     <a id="detail-apply" class="button primary block" href="{{ studio_url }}?tab=cv">{{ ui.icon('file-text') }}Open je sollicitatie</a>
     {% elif has_plan %}
     <p class="small muted">Je plan staat klaar. Kies je verhaal, dan schrijven we je cv en brief. Dat duurt een tot twee minuten en gaat door als je verder klikt.</p>

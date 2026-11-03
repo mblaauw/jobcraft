@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from . import config, profile, store
+from . import config, cv_text, profile, store
 
 PHONE = re.compile(r"(?<![\w.])\+?\d[\d ()\-]{8,}\d(?![\w.])")
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
@@ -68,6 +68,18 @@ def notes_apart(markdown: str) -> tuple[str, str]:
     return profile.join_sections(kept), block
 
 
+def contact_apart(markdown: str) -> tuple[str, dict]:
+    """Contact details leave the public profile: (profile without them, what was found)."""
+    found = cv_text.contact_of(markdown)
+    sections = profile.split_sections(markdown)
+    changed = False
+    for item in _public(sections):
+        text = cv_text.strip_contact(item["text"])
+        if text != item["text"].strip():
+            item["text"], changed = text, True
+    return (profile.join_sections(sections) if changed else markdown), found
+
+
 def lost_back(markdown: str, previous: str) -> str:
     """The parts that fell away, added back from the previous version."""
     missing = lost(markdown, previous)
@@ -85,7 +97,8 @@ def warnings(markdown: str, previous: str | None = None) -> list[dict]:
         found.append({
             "title": "Contactgegevens staan in je openbare profiel",
             "detail": f"Gevonden bij {', '.join(contact[:3])}. Alles buiten Privé gaat naar de AI. "
-            "Je telefoon en e-mail vul je in bij je sollicitatie, onder Jouw gegevens. Haal ze hier weg of zet ze in Notities.",
+            "Op je cv en brief staan ze wel: daarvoor bewaren we ze bij Jouw gegevens, waar de AI ze niet ziet.",
+            "action": "/profile/contact-apart", "label": "Zet ze bij Jouw gegevens",
         })
 
     found_notes = [item["heading"] for item in notes(sections)]
