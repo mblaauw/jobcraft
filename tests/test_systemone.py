@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from app import systemone
+from tests.test_jobs_page import client  # noqa: F401
 
 
 def test_questions_use_the_correct_criteria_shapes():
@@ -137,3 +138,18 @@ def test_good_or_excellent_is_a_sure_fit_and_the_middle_is_not():
     torn = {"type": "score", "score": 2.0, "confidence": 0.5,
             "probabilities": {"0": 0.1, "1": 0.2, "2": 0.4, "3": 0.2, "4": 0.1}}
     assert systemone.signals_from_answers({"fit": torn})["escalate"] is True
+
+
+def test_any_provider_key_works_and_opencode_is_preferred(monkeypatch):
+    monkeypatch.setenv("RUNWARE_API_KEY", "runware")
+    assert systemone.api_key() == "runware"
+    monkeypatch.setenv("SYSTEMONE_API_KEY", "opencode")
+    assert systemone.api_key() == "opencode" and systemone.enabled()
+
+
+def test_jev_tokens_leave_room_for_writing(client):  # noqa: F811
+    from app import store
+
+    store.record_usage(None, "systemone", 1_800_000, 0, 0.07, agent="jev")
+    store.record_usage(None, "documents", 1_000, 500, 0.0)
+    assert store.daily_usage_tokens() == 1_500

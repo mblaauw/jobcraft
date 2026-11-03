@@ -84,7 +84,7 @@ def _ask_system_one(job, state: str, questions: dict) -> dict:
         "systemone",
         int(usage.get("input_tokens") or 0),
         int(usage.get("output_tokens") or 0),
-        0.0,
+        float(usage.get("cost") or usage.get("cost_usd") or 0.0),  # OpenCode reports it; Runware does not
         agent="jev",
     )
     return data.get("answers") or {}

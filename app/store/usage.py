@@ -71,8 +71,10 @@ def daily_usage_tokens(owner: str | None = None) -> int:
     start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     with connect() as con:
         row = con.execute(
+            # Jev decisions cost a fraction of a cent per thousand; a full pass over all
+            # vacancies must not use up the day's room for CVs and letters.
             "SELECT COALESCE(SUM(input_tokens+output_tokens),0) AS tokens FROM usage_log "
-            "WHERE owner=? AND created_at >= ?",
+            "WHERE owner=? AND created_at >= ? AND kind <> 'systemone'",
             (owner or tenancy.user_id(), start),
         ).fetchone()
     return int(row["tokens"])

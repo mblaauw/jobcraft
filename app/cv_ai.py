@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -183,7 +184,8 @@ def coach(mgr, data: dict) -> list[dict]:
         ref="cv-coach",
     )
     targets = _targets(data)
-    sources = _compact(data) + "\n" + other
+    # Without the ids: a random id like "p3f40e2" must not make "40" a known number.
+    sources = re.sub(r"\[[a-z]+[0-9a-f]*\] ?", "", _compact(data)) + "\n" + other
     notes = []
     for note in result["notes"]:
         if note["kind"] not in KINDS or note["target"] not in targets or not note["text"].strip():
