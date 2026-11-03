@@ -379,7 +379,7 @@ def job_vote(job_id: int, vote: str = Form(...), url: str = Form("/jobs", alias=
         raise HTTPException(status_code=400, detail="unknown vote")
     store.set_job_vote(job_id, value)
     feedback.rebuild()
-    ranking.rerank_one(job_id)
+    ranking.after_vote(job_id)
     owner = tenancy.user_id()
     tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}")
     target = _jobs_return_target(url)
@@ -393,6 +393,7 @@ def job_status(job_id: int, status: str = Form(...), url: str = Form("/jobs", al
     if store.get_job(job_id) is None:
         raise HTTPException(status_code=404, detail="unknown job")
     store.update_job_status(job_id, status)
+    ranking.after_vote(job_id)  # saved and ignored teach the ranking as much as a vote
     if status == "applied":
         store.count_event("applications")
     return RedirectResponse(url=_jobs_return_target(url), status_code=303)

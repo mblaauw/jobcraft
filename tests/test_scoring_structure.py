@@ -25,7 +25,7 @@ def test_ranker_no_longer_imports_matching():
 
 
 @pytest.mark.parametrize(
-    "values", [(-1, 1, 1), (0, 0, 0), (float("nan"), 1, 1), (1, float("inf"), 1)]
+    "values", [(-1, 1, 1), (0, 0, 0, 0), (float("nan"), 1, 1), (1, float("inf"), 1)]
 )
 def test_invalid_weights_rejected(values):
     with pytest.raises(ValueError):
@@ -34,7 +34,7 @@ def test_invalid_weights_rejected(values):
 
 def test_configurable_weights_leave_paid_digest_unchanged(monkeypatch):
     before = matching.current_digest({}, "PUBLIC")
-    assert read_weights() == Weights(0.35, 0.40, 0.25)
+    assert read_weights() == Weights(0.10, 0.30, 0.25, 0.35)
     monkeypatch.setenv("MATCH_WEIGHT_RULE", ".8")
     assert read_weights().rule == 0.8
     assert matching.current_digest({}, "PUBLIC") == before

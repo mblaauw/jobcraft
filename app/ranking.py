@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import os
 
-from . import feedback, profile, store, tenancy
+from . import feedback, profile, store, taste, tenancy
 from . import geo as geo
 from .scoring.digests import current_digest as _current_digest
 from .scoring.digests import job_match_digest
@@ -73,6 +73,41 @@ def calibrated_fit(signals: dict | None, calibration: tuple[float, float]) -> fl
     return round(max(0.0, min(100.0, slope * fit + intercept)), 1)
 
 
+PARTS_KEY = "rank_parts"
+
+
+def _vote(job) -> int:
+    try:  # sqlite rows and plain dicts; a row without a vote counts as none
+        return int(job["vote"] or 0)
+    except (KeyError, IndexError):
+        return 0
+
+
+def blend(
+    rule: float,
+    fit: float | None,
+    llm: float | None,
+    taste_score: float | None,
+    vote: int,
+    weights=None,
+) -> float:
+    """Renormalized weights, so a missing part does not distort the rest; your own vote wins."""
+    weights = weights or read_weights()
+    components: list[tuple[float, float]] = [(weights.rule, rule)]
+    for weight, value in ((weights.fit, fit), (weights.llm, llm), (weights.taste, taste_score)):
+        if value is not None:
+            components.append((weight, value))
+    scale = max(weight for weight, _ in components)  # huge weights must not overflow
+    components = [(weight / scale, value) for weight, value in components] if scale else []
+    total = sum(weight for weight, _ in components)
+    rank = sum(weight * value for weight, value in components) / total if total else rule
+    if vote < 0:
+        rank = min(rank, 10.0)
+    elif vote > 0:
+        rank = max(rank, 80.0)
+    return round(max(0.0, min(100.0, rank)), 1)
+
+
 def rank_for(
     job,
     preferences: dict,
@@ -80,43 +115,43 @@ def rank_for(
     signals: dict | None = None,
     digest: str | None = None,
     calibration: tuple[float, float] = (1.0, 0.0),
+    taste_score: float | None = None,
 ) -> tuple[float, dict]:
     rule, notes = rule_score(job, preferences, feedback_data)
     fit = calibrated_fit(signals, calibration)
     llm = None
     if digest is not None and verdict_is_fresh(job, digest):
         llm = float(job["match_score"])
-    # Renormalized weights: components with different scales do not distort the
-    # blend just because one is missing for a given job.
-    weights = read_weights()
-    components: list[tuple[float, float]] = [(weights.rule, rule)]
-    if fit is not None:
-        components.append((weights.fit, fit))
-    if llm is not None:
-        components.append((weights.llm, llm))
-    scale = max(component[0] for component in components)
-    normalized = [(weight / scale, value) for weight, value in components] if scale else []
-    weight = sum(component[0] for component in normalized)
-    rank = sum(w * value for w, value in normalized) / weight if weight else rule
-    return round(max(0.0, min(100.0, rank)), 1), {
+    rank = blend(rule, fit, llm, taste_score, _vote(job))
+    return rank, {
         "rule": round(rule, 1),
         "fit": fit,
         "llm": llm,
+        "taste": taste_score,
         "notes": notes,
     }
 
 
-def rerank_one(job_id: int) -> float | None:
-    """Cheap immediate re-rank for one voted job; the full pass runs separately."""
-    job = store.get_job(job_id)
-    if not job:
-        return None
-    prefs = profile.read_preferences()
-    data = feedback.load()
+def after_vote(job_id: int) -> None:
+    """Re-rank everything at once without the slow parts: those were stored by the last full pass."""
+    try:
+        parts = {int(key): value for key, value in json.loads(store.meta_get(PARTS_KEY) or "{}").items()}
+    except ValueError:
+        parts = {}
+    if job_id not in parts:
+        rerank_all()
+        return
     digest = _current_digest()
-    rank, _ = rank_for(job, prefs, data, signals_of(job), digest)
-    store.set_rank_scores({job_id: rank})
-    return rank
+    jobs = [row for row in store.light_job_states() if row["id"] in parts]
+    tastes = taste.scores(jobs, profile.read_preferences(), lambda job: verdict_is_fresh(job, digest))
+    weights = read_weights()
+    scores = {}
+    for job in jobs:
+        rule, fit, llm = parts[job["id"]]
+        score = blend(rule, fit, llm, tastes.get(job["id"]), _vote(job), weights)
+        if score != job["rank_score"]:
+            scores[job["id"]] = score
+    store.set_rank_scores(scores)
 
 
 def rerank_all(
@@ -129,20 +164,27 @@ def rerank_all(
     prefs = preferences if preferences is not None else profile.read_preferences()
     data = feedback_data if feedback_data is not None else feedback.load()
     digest = digest or _current_digest(prefs)
-    refresh_travel()  # Spare the next list view this work.
-    jobs = store.list_jobs_for_matching()
-    calibration = fit_calibration(jobs, digest)
-    store.meta_set(
-        "fit_calibration",
-        json.dumps({"slope": calibration[0], "intercept": calibration[1]}),
-    )
-    scores: dict[int, float] = {}
-    for job in jobs:
-        rank, _ = rank_for(job, prefs, data, signals_of(job), digest, calibration)
-        scores[job["id"]] = rank
-    store.set_rank_scores(scores)
-    store.meta_set("queue_depth_digest", "")
-    depth = len(escalation_candidates(digest, 10000))
+    with geo.remembered_home():
+        refresh_travel()  # Spare the next list view this work.
+        jobs = store.list_jobs_for_matching()
+        calibration = fit_calibration(jobs, digest)
+        store.meta_set(
+            "fit_calibration",
+            json.dumps({"slope": calibration[0], "intercept": calibration[1]}),
+        )
+        tastes = taste.scores(jobs, prefs, lambda job: verdict_is_fresh(job, digest))
+        scores: dict[int, float] = {}
+        parts: dict[int, list] = {}
+        for job in jobs:
+            rank, detail = rank_for(
+                job, prefs, data, signals_of(job), digest, calibration, tastes.get(job["id"])
+            )
+            scores[job["id"]] = rank
+            parts[job["id"]] = [detail["rule"], detail["fit"], detail["llm"]]
+        store.set_rank_scores(scores)
+        store.meta_set(PARTS_KEY, json.dumps(parts, separators=(",", ":")))
+        store.meta_set("queue_depth_digest", "")
+        depth = len(escalation_candidates(digest, 10000))
     store.meta_set("queue_depth", str(depth))
     store.meta_set("queue_depth_digest", digest)
     return len(scores)

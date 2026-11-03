@@ -29,9 +29,18 @@ and `web_helpers.py` own HTTP, lifecycle, queued work and presentation respectiv
 bootstrap and account/admin routes. Every endpoint has an inventoried permission.
 
 `scoring/` contains acyclic rules, signals/travel, cache digest primitives and blend
-configuration. `MATCH_WEIGHT_RULE`, `MATCH_WEIGHT_FIT`, `MATCH_WEIGHT_LLM` default
-to `0.35`, `0.40`, `0.25`; missing components are renormalized and an all-unavailable
-configured blend falls back to rules. Feedback never enters paid verdict keys.
+configuration. `MATCH_WEIGHT_RULE`, `MATCH_WEIGHT_FIT`, `MATCH_WEIGHT_LLM`,
+`MATCH_WEIGHT_TASTE` default to `0.10`, `0.30`, `0.25`, `0.35`; missing components are
+renormalized and an all-unavailable configured blend falls back to rules. Feedback
+never enters paid verdict keys. Your own vote wins: a thumbs down caps that vacancy
+at 10, a thumbs up lifts it to at least 80.
+
+The taste part comes from a local meaning index (`job_index.py`): after each scan the
+worker turns every new vacancy into a vector with a static model2vec model on the CPU
+(`EMBED_MODEL`, baked into the image as float16 by `docker/fetch_model.py`), using only
+the words that set it apart. `taste.py` scores each vacancy by closeness to the
+functions sought and to the vacancies the account voted on, saved, ignored or had
+judged by the AI. A vote re-ranks everything in milliseconds without the model.
 
 `store/` groups persistence by tables. Connection contexts commit/rollback **and
 close**; each enables foreign keys, WAL and a 5000 ms busy timeout. Migration 6
