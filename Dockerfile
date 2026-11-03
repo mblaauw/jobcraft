@@ -22,9 +22,11 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-cache
 
 # The local meaning index (app/job_index.py): a pinned static model, stored as float16.
-# Downloaded once here so the running app never fetches anything.
+# Downloaded once here so the running app never fetches anything. The app runs as
+# the unprivileged app user, so the files must be world-readable.
 COPY docker/fetch_model.py /tmp/fetch_model.py
 RUN /app/.venv/bin/python /tmp/fetch_model.py /opt/models/potion-multilingual-128M \
+    && chmod -R a+rX /opt/models \
     && rm -rf /root/.cache/huggingface /tmp/fetch_model.py
 
 COPY app ./app
