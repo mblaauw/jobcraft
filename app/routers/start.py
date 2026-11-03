@@ -232,22 +232,7 @@ async def start_count(request: Request):
 async def start_choices_save(request: Request):
     form = await request.form()
     preferences = profile.read_preferences()
-    roles = onboarding.split_terms(str(form.get("roles") or ""))
-    tracks_changed = [t["name"] for t in preferences["tracks"]] != roles
-    preferences["tracks"] = onboarding.tracks_for(roles, preferences["tracks"])
-    preferences["keywords"]["veto"] = onboarding.split_terms(str(form.get("veto") or ""))
-    low, high = onboarding.HOURS.get(str(form.get("hours") or "any"), onboarding.HOURS["any"])
-    filters = preferences["hard_filters"]
-    filters.update(hours_min=low, hours_max=high)
-    for key, _label in onboarding.DEALBREAKERS:
-        filters[key] = form.get(key) == "1"
-    salary = str(form.get("salary") or "")
-    preferences["wishes"] = {
-        "salary_min": int(salary) if salary.isdigit() else None,
-        "remote": str(form.get("remote") or "any"),
-        "contracts": [str(item) for item in form.getlist("contract")],
-        "seniority": [str(item) for item in form.getlist("seniority")],
-    }
+    roles, tracks_changed = onboarding.apply_choices(preferences, form)
     profile.write_preferences(preferences)
     await run_in_threadpool(
         onboarding.save_home,

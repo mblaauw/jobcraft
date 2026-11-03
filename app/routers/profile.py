@@ -18,6 +18,7 @@ from .. import (
     cv_ai,
     cv_model,
     geo,
+    onboarding,
     profile,
     profile_check,
     store,
@@ -35,6 +36,11 @@ log = logging.getLogger("jobcraft")
 router = APIRouter(dependencies=[Depends(require_user)])
 
 
+TABS = ("cv", "zoek", "positie", "meer")
+# Parts of the profile text that say what someone looks for, edited on Wat ik zoek.
+WISH_HEADINGS = ("Zoekprofiel", "Werkvoorkeuren", "Energie en ritme", "Afknappers")
+
+
 def _assess_soon(kind: str = "match") -> None:
     """Votes and travel only rerank for free; a changed profile also earns new assessments."""
     if profile.profile_exists():
@@ -47,14 +53,24 @@ def profile_page(request: Request):
     query = request.query_params
     saved, error = query.get("saved", ""), query.get("error", "")
     tab = query.get("tab") or ("meer" if saved or error else "cv")
+    tab = tab if tab in TABS else "cv"
     data = cv_model.load()
+    current = profile.read_profile()
+    wishes = {}
+    if tab == "zoek":
+        wishes = {
+            "choices": onboarding.choices_context(profile.read_preferences()),
+            "wish_sections": [item for item in profile.split_sections(current) if item["heading"] in WISH_HEADINGS],
+        }
     return templates.TemplateResponse(
         request,
         "profile.html",
         _profile_context(
             saved=saved,
             error=error,
-            tab=tab if tab in ("cv", "positie", "meer") else "cv",
+            tab=tab,
+            **wishes,
+            elsewhere=(*cv_model.SECTIONS, *WISH_HEADINGS, onboarding.ROLES_HEADING),
             cv=data,
             cv_draft=cv_ai.draft(),
             cv_status=cv_ai.status(),
@@ -62,7 +78,7 @@ def profile_page(request: Request):
             cv_sources=cv_model.SOURCES,
             cv_problem=query.get("probleem", "")[:300],
             cv_saved=query.get("opgeslagen", ""),
-            has_profile_text=bool(profile.public_excerpt(profile.read_profile(), 400).strip()),
+            has_profile_text=bool(profile.public_excerpt(current, 400).strip()),
         ),
     )
 
@@ -173,8 +189,21 @@ def profile_home(
     _assess_soon("rerank")
     if coords is None and label != "Nog niet ingesteld":
         # Saved, but travel times stay unknown until coordinates are given.
-        return RedirectResponse(url="/profile?error=place#reisbereik", status_code=303)
-    return RedirectResponse(url="/profile?saved=home#reisbereik", status_code=303)
+        return RedirectResponse(url="/profile?tab=zoek&error=place#reisbereik", status_code=303)
+    return RedirectResponse(url="/profile?tab=zoek&saved=home#reisbereik", status_code=303)
+
+
+@router.post("/profile/zoek")
+async def profile_wishes(request: Request):
+    """Wat ik zoek: the choices that steer matching, saved together and ranked again soon."""
+    form = await request.form()
+    preferences = profile.read_preferences()
+    roles, tracks_changed = onboarding.apply_choices(preferences, form)
+    profile.write_preferences(preferences)
+    if roles:
+        profile.merge_sections({onboarding.ROLES_HEADING: ", ".join(roles)}, note="wat ik zoek")
+    _assess_soon("match" if tracks_changed else "rerank")
+    return RedirectResponse(url="/profile?tab=zoek&saved=zoek", status_code=303)
 
 
 
@@ -196,13 +225,15 @@ def profile_save(request: Request, content: str = Form(...)):
 
 
 @router.post("/profile/sectie")
-def profile_section(heading: str = Form(...), text: str = Form("")):
+def profile_section(heading: str = Form(...), text: str = Form(""), terug: str = Form("")):
     """One part of the profile at a time; the rest stays exactly as it was."""
     known = {item["heading"] for item in profile.split_sections(profile.read_profile())}
     if heading not in known or not heading:
         raise HTTPException(status_code=404, detail="unknown section")
     profile.merge_sections({heading: text.replace("\r\n", "\n").strip()}, note=f"aangepast: {heading}"[:80])
     _assess_soon()
+    if terug == "zoek":
+        return RedirectResponse(url="/profile?tab=zoek&saved=woorden#woorden", status_code=303)
     return RedirectResponse(url="/profile?saved=profile#overzicht", status_code=303)
 
 

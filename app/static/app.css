@@ -910,6 +910,16 @@ textarea.prose-edit:focus { border-color: var(--moss); outline: 2px solid var(--
   .board { grid-template-columns: repeat(5, minmax(240px, 80vw)); scroll-snap-type: x proximity; }
   .board-column { scroll-snap-align: start; }
 }
+/* On a phone the first vacancy belongs on the first screen: one search row, the rest folded. */
+@media (max-width: 760px) {
+  .jobs-matching > span:first-child { display: none; }
+  .js .jobs-filters.filters-fold { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 10px 12px; margin-bottom: 12px; }
+  .js .jobs-filters.filters-fold .field-search { grid-column: auto; }
+  .js .jobs-filters.filters-fold .field-search label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .js .jobs-filters.filters-fold .switch, .js .jobs-filters.filters-fold .travel-note { display: none; }
+  .js .jobs-filters.filters-fold .filters-more { align-self: center; }
+  .jobs-results-head span { font-size: var(--fs-xs); }
+}
 
 .nav-badge { margin-left: auto; min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--lime); color: #17310f; font-size: var(--fs-xs); font-weight: 700; text-align: center; }
 .nowrap, .nowrap td, .nowrap th { white-space: nowrap; overflow-wrap: normal; }

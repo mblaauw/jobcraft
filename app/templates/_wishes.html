@@ -1,0 +1,73 @@
+{# Wat ik zoek: everything that steers matching, in one place and all editable. #}
+{% set c = choices %}
+{% if saved in ('zoek', 'home', 'woorden') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Opgeslagen. Je vacatures worden binnen een minuut opnieuw gerangschikt.</span></p>{% endif %}
+{% if error == 'place' %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>We kennen “{{ preferences.home.label }}” niet, dus reistijden blijven onbekend. Kies een plaats uit de lijst.</span></p>{% endif %}
+
+{% macro radios(legend, name, options, current) %}<fieldset class="choice-group"><legend>{{ legend }}</legend><div class="choice-grid">{% for value, label in options %}<label class="choice"><input type="radio" name="{{ name }}" value="{{ value }}" {% if value|string == current|string %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}</div></fieldset>{% endmacro %}
+{% macro checks(legend, name, options, current) %}<fieldset class="choice-group"><legend>{{ legend }}</legend><div class="choice-grid">{% for value, label in options %}<label class="choice"><input type="checkbox" name="{{ name }}" value="{{ value }}" {% if value in current %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}</div></fieldset>{% endmacro %}
+
+<div class="wishes">
+<section class="wishes-part" id="voorkeuren" aria-labelledby="wishes-title">
+  <div class="wishes-head">
+    <h2 id="wishes-title">Wat je zoekt</h2>
+    <p class="start-count" role="status" aria-live="polite"><strong id="start-count">{{ c.count }}</strong> vacatures kunnen passen</p>
+  </div>
+  <form method="post" action="/profile/zoek" id="start-choices" class="form-stack" data-pending-form>
+    {% include '_csrf.html' %}
+    <div class="field"><label for="wish-roles">Functies die je zoekt</label><input id="wish-roles" name="roles" value="{{ c.roles }}" placeholder="Bijvoorbeeld projectleider, beleidsmedewerker"><span class="hint">Gescheiden door komma's.{% if preferences.tracks %} Jobcraft zoekt daarbij ook op: {{ preferences.tracks | map(attribute='keywords') | sum(start=[]) | unique | list | join(', ') | truncate(160) }}.{% endif %}</span></div>
+    {{ radios('Uren per week', 'hours', [('any','Maakt niet uit'),('tot24','Tot 24'),('24-32','24 tot 32'),('32-40','32 tot 40')], c.hours_choice) }}
+    {{ radios('Thuiswerken', 'remote', [('any','Maakt niet uit'),('hybrid','Deels thuis'),('remote','Vooral thuis'),('onsite','Op locatie')], preferences.wishes.remote) }}
+    {% set salary_options = [('', 'Geen wens')] %}{% for amount in c.salary_choices %}{% set _ = salary_options.append((amount, '€ ' ~ '{:,}'.format(amount).replace(',', '.'))) %}{% endfor %}
+    {{ radios('Salaris per maand, bruto, minimaal', 'salary', salary_options, preferences.wishes.salary_min or '') }}
+    {{ checks('Soort contract', 'contract', [('vast','Vast'),('tijdelijk','Tijdelijk'),('freelance','Freelance'),('stage','Stage of bijbaan')], preferences.wishes.contracts) }}
+    {{ checks('Niveau', 'seniority', [('junior','Starter of junior'),('medior','Medior'),('senior','Senior')], preferences.wishes.seniority) }}
+    <div class="field"><label for="wish-likes">Woorden die je graag ziet</label><input id="wish-likes" name="likes" value="{{ c.likes }}" placeholder="Bijvoorbeeld buiten, gastvrijheid"><span class="hint">Vacatures met deze woorden komen hoger. Gescheiden door komma's.</span></div>
+    <fieldset class="choice-group"><legend>Liever niet</legend><div class="choice-grid">{% for key, label in c.dealbreakers %}<label class="choice"><input type="checkbox" name="{{ key }}" value="1" {% if preferences.hard_filters[key] %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}</div>
+      <div class="field"><label for="wish-veto">Woorden die je liever niet ziet</label><input id="wish-veto" name="veto" value="{{ c.veto }}" placeholder="Gescheiden door komma's"></div>
+    </fieldset>
+    <p class="small muted">Vacatures die iets niet noemen, blijven gewoon meedoen. Een duim omhoog of omlaag bij een vacature leert Jobcraft ook wat je zoekt.</p>
+    <div class="btn-row"><button class="button primary" type="submit">Opslaan</button></div>
+  </form>
+</section>
+
+<section class="wishes-part" id="reisbereik" aria-labelledby="reisbereik-title">
+  <h2 id="reisbereik-title">Woonplaats en reisbereik</h2>
+  <form method="post" action="/profile/home" class="form-stack" data-pending-form>
+    {% include '_csrf.html' %}
+    <p class="small muted">Reistijden zijn schattingen vanaf je woonplaats. Vacatures buiten je bereik worden standaard verborgen.</p>
+    <div class="form-grid">
+      <div class="field"><label for="home-place">Woonplaats</label><input id="home-place" name="place" value="{{ preferences.home.label if preferences.home.label != 'Nog niet ingesteld' else '' }}" placeholder="Begin te typen, bijvoorbeeld Amersfoort" autocomplete="off" list="home-places"><datalist id="home-places">{% for place in place_labels %}<option value="{{ place }}"></option>{% endfor %}</datalist></div>
+      <div class="field"><label for="home-car">Auto beschikbaar</label><select id="home-car" name="car_available"><option value="0" {% if not preferences.home.car_available %}selected{% endif %}>Nee</option><option value="1" {% if preferences.home.car_available %}selected{% endif %}>Ja</option></select></div>
+      <div class="field"><label for="home-bike">Maximaal fietsen (e-bike)</label><input id="home-bike" name="bike_minutes" type="number" min="5" max="180" value="{{ preferences.home.bike_minutes }}" inputmode="numeric"><span class="hint">minuten, enkele reis</span></div>
+      <div class="field"><label for="home-transit">Maximaal met het OV</label><input id="home-transit" name="transit_minutes" type="number" min="5" max="240" value="{{ preferences.home.transit_minutes }}" inputmode="numeric"><span class="hint">minuten, enkele reis</span></div>
+      <details class="disclosure span-2" {% if error == 'place' %}open{% endif %}>
+        <summary><span class="small">Staat je plaats er niet tussen? Vul coördinaten in</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
+        <div class="form-grid">
+          <div class="field"><label for="home-lat">Breedtegraad</label><input id="home-lat" name="lat" type="number" step="0.0001" value="{{ preferences.home.lat or '' }}"></div>
+          <div class="field"><label for="home-lon">Lengtegraad</label><input id="home-lon" name="lon" type="number" step="0.0001" value="{{ preferences.home.lon or '' }}"></div>
+        </div>
+      </details>
+    </div>
+    <div class="btn-row"><button class="button primary" type="submit">Reisbereik opslaan</button></div>
+  </form>
+</section>
+
+{% if wish_sections %}
+<section class="wishes-part" id="woorden" aria-labelledby="words-title">
+  <h2 id="words-title">In je eigen woorden</h2>
+  <p class="small muted">Wat je in gesprekken vertelde over wat je zoekt en wat je energie geeft. De AI leest dit als het vacatures beoordeelt.</p>
+  {% for section in wish_sections %}
+  <details class="profile-card"{% if loop.first %} open{% endif %}>
+    <summary><span class="profile-card-head"><span class="profile-card-title">{{ section.heading }}</span><span class="profile-card-teaser">{{ section.text | teaser }}</span></span>{{ ui.icon('chevron-down', 'chev') }}</summary>
+    <form method="post" action="/profile/sectie" class="wishes-words" data-pending-form>
+      {% include '_csrf.html' %}
+      <input type="hidden" name="heading" value="{{ section.heading }}"><input type="hidden" name="terug" value="zoek">
+      <label class="visually-hidden" for="wish-section-{{ loop.index }}">{{ section.heading }}</label>
+      <textarea id="wish-section-{{ loop.index }}" class="prose-edit" name="text" data-autogrow spellcheck="true">{{ section.text }}</textarea>
+      <div class="btn-row"><button class="button small primary" type="submit">Opslaan</button></div>
+    </form>
+  </details>
+  {% endfor %}
+</section>
+{% endif %}
+</div>

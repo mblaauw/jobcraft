@@ -184,3 +184,65 @@ def ask_next(exchanges: list[dict]) -> bool:
     store.meta_set("start_questions", json.dumps(exchanges, ensure_ascii=False))
     return True
 
+
+
+def _words(raw: object) -> list[str]:
+    return split_terms(str(raw or ""))
+
+
+def apply_choices(preferences: dict, form) -> tuple[list[str], bool]:
+    """Write the choices from a form into preferences; returns the roles and whether they changed.
+
+    Shared by the quick start and Wat ik zoek, so both always mean the same thing.
+    """
+    roles = _words(form.get("roles"))
+    tracks_changed = [t["name"] for t in preferences["tracks"]] != roles
+    preferences["tracks"] = tracks_for(roles, preferences["tracks"])
+    low, high = HOURS.get(str(form.get("hours") or "any"), HOURS["any"])
+    filters = preferences["hard_filters"]
+    filters.update(hours_min=low, hours_max=high)
+    for key, _label in DEALBREAKERS:
+        filters[key] = form.get(key) == "1"
+    salary = str(form.get("salary") or "")
+    preferences["wishes"] = {
+        "salary_min": int(salary) if salary.isdigit() else None,
+        "remote": str(form.get("remote") or "any"),
+        "contracts": [str(item) for item in form.getlist("contract")],
+        "seniority": [str(item) for item in form.getlist("seniority")],
+    }
+    if "likes" in form:  # Wat ik zoek shows learned and typed words together, so it edits both
+        _keep_weighted(preferences, "likes", ("keywords", "boost"), _words(form.get("likes")))
+        _keep_weighted(preferences, "dislikes", ("keywords", "veto"), _words(form.get("veto")))
+    else:  # the quick start only shows the typed words
+        preferences["keywords"]["veto"] = _words(form.get("veto"))
+    return roles, tracks_changed
+
+
+def _keep_weighted(preferences: dict, tagged: str, plain: tuple[str, str], words: list[str]) -> None:
+    """Words learned in interviews keep their weight; new words become plain keywords."""
+    wanted = {word.lower(): word for word in words}
+    preferences[tagged] = [item for item in preferences.get(tagged) or [] if str(item.get("tag") or "").lower() in wanted]
+    known = {str(item.get("tag") or "").lower() for item in preferences[tagged]}
+    group, key = plain
+    preferences[group][key] = [word for low, word in wanted.items() if low not in known]
+
+
+def choices_context(preferences: dict) -> dict:
+    """What the wishes form needs to show the current choices."""
+    hard = preferences["hard_filters"]
+    return {
+        "roles": ", ".join(track["name"] for track in preferences["tracks"]),
+        "likes": ", ".join([str(item.get("tag")) for item in preferences.get("likes") or []] + preferences["keywords"]["boost"]),
+        "veto": ", ".join([str(item.get("tag")) for item in preferences.get("dislikes") or []] + preferences["keywords"]["veto"]),
+        "hours_choice": next(
+            (key for key, (low, high) in HOURS.items() if (hard["hours_min"], hard["hours_max"]) == (low, high)), "any"
+        ),
+        "salary_choices": SALARY_CHOICES,
+        "dealbreakers": DEALBREAKERS,
+        "count": catalogue_count(
+            [track["name"] for track in preferences["tracks"]],
+            preferences["keywords"]["veto"],
+            preferences["wishes"]["remote"],
+            preferences["wishes"]["seniority"],
+        ),
+    }

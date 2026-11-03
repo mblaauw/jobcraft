@@ -65,3 +65,12 @@
   .cv-nav { display: none; }
   .cv-role-form { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Wat ik zoek: three calm parts, the count beside the heading that it answers. */
+.wishes { max-width: 80ch; }
+.wishes-part { padding: 4px 0 28px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+.wishes-part:last-child { border-bottom: 0; }
+.wishes-part > h2, .wishes-head h2 { font-size: var(--fs-lg); margin: 0 0 12px; }
+.wishes-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.wishes-head .start-count { margin: 0 0 12px; }
+.wishes-words { display: grid; gap: 8px; margin: 0 20px 18px; }
