@@ -199,3 +199,16 @@ def test_adding_facts_does_not_invalidate_existing_signal_keys():
     assert first == systemone.signals_key(job, "", preferences=preferences)
     assert systemone.QUESTION_VERSION == "s1-account-categories-v1"
     assert set(systemone.QUESTIONS) == {*systemone.facts_questions(), *systemone.PERSONAL_IDS}
+
+
+def test_running_out_of_calls_never_wipes_a_fit(jev, monkeypatch):
+    job_id = add_job()
+    with tenancy.scope({"id": owner_id()}):
+        run()
+        assert ranking.signals_of(store.get_job(job_id))["fit"] is not None
+        profile.merge_sections({"Over mij": "Nieuw profiel"})  # the fit is due again
+        monkeypatch.setenv("SYSTEMONE_DAILY_LIMIT", "0")
+        jev.calls.clear()
+        run()
+        assert not jev.calls
+        assert ranking.signals_of(store.get_job(job_id))["fit"] is not None

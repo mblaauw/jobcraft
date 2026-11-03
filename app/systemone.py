@@ -265,6 +265,23 @@ def _fit_scale(questions: dict | None = None) -> int:
     return max(1, len(criteria) - 1)
 
 
+def _side_certainty(fit: dict, scale: int) -> float | None:
+    """How sure Jev is whether it fits at all: "goed" versus "uitstekend" is no doubt.
+
+    The chance on the likelier side of the middle grade; without probabilities, the
+    confidence Jev gives for its single answer.
+    """
+    try:
+        chances = {int(grade): float(chance) for grade, chance in (fit.get("probabilities") or {}).items()}
+    except (TypeError, ValueError):
+        chances = {}
+    if chances:
+        low = sum(chance for grade, chance in chances.items() if grade * 2 < scale)
+        high = sum(chance for grade, chance in chances.items() if grade * 2 > scale)
+        return max(low, high)
+    return float(fit["confidence"]) if "confidence" in fit else None
+
+
 def signals_from_answers(answers: dict, questions: dict | None = None) -> dict:
     fit = answers.get("fit") or {}
     category = answers.get("category") or {}
@@ -292,15 +309,20 @@ def signals_from_answers(answers: dict, questions: dict | None = None) -> dict:
         noul[key] = round(probability, 3)
         confidences.append(max(probability, 1 - probability))
 
-    confidence = round(min(confidences), 3) if confidences else 0.0
+    # How sure Jev is about the fit decides; a vacancy that says nothing about a company
+    # car must not send every job to the LLM. Without a fit there is nothing to rely on.
+    facts_confidence = round(min(confidences), 3) if confidences else 0.0
+    fit_confidence = _side_certainty(fit, scale) if fit_value is not None else None
+    confidence = round(fit_confidence, 3) if fit_confidence is not None else facts_confidence
     return {
         "version": question_version(questions if questions is not None else QUESTIONS),
         "fit": fit_value,
         "category": category.get("choice"),
         "category_probabilities": category.get("probabilities"),
         "confidence": confidence,
+        "facts_confidence": facts_confidence,
         "noul": noul,
-        "escalate": confidence < confidence_threshold(),
+        "escalate": fit_value is None or confidence < confidence_threshold(),
     }
 
 
