@@ -2,22 +2,6 @@
 {% import "_ui.html" as ui %}
 {% block title %}Profiel · Jobcraft{% endblock %}
 
-{# Minimal markdown for profile sections: bullet lists and paragraphs; wrapped lines join. #}
-{% macro prose(text) -%}
-{%- set ns = namespace(list=False, para=[]) -%}
-{%- for line in (text ~ '\n').splitlines() + [''] -%}
-  {%- set stripped = line.strip() -%}
-  {%- set bullet = stripped.startswith('- ') or stripped.startswith('* ') -%}
-  {%- if (bullet or not stripped) and ns.para %}<p>{{ ns.para | join(' ') }}</p>{% set ns.para = [] %}{% endif -%}
-  {%- if bullet -%}
-    {%- if not ns.list %}<ul>{% set ns.list = True %}{% endif %}<li>{{ stripped[2:] }}</li>
-  {%- else -%}
-    {%- if ns.list %}</ul>{% set ns.list = False %}{% endif -%}
-    {%- if stripped and not stripped.startswith('# ') %}{% set ns.para = ns.para + [stripped] %}{% endif -%}
-  {%- endif -%}
-{%- endfor -%}
-{%- if ns.list %}</ul>{% endif -%}
-{%- endmacro %}
 
 {% block content %}
 {% set legacy = request.state is defined and request.state.user and request.state.user.id == 'legacy' %}
@@ -71,16 +55,34 @@
   <div class="panel-head"><h2 id="overzicht-title">Over jou</h2>{% if bootstrapped_at %}<span class="small subtle">Laatst bijgewerkt {{ ui.nl_date(bootstrapped_at) }}</span>{% endif %}</div>
   {% set sections = (profile_sections or []) | rejectattr('heading', 'equalto', '') | list %}
   {% if sections %}
+  <p class="small muted">Dit weet Jobcraft over je. Het bepaalt welke vacatures je ziet en wat er in je cv en brieven komt. Klopt iets niet, pas dat stuk dan aan.</p>
   <div class="profile-read">
     {% for section in sections %}
       {% set private = section.heading.startswith('Privé') %}
       {% set open_q = section.heading == 'Open vragen' %}
-      <article class="panel{% if private %} private wide{% endif %}{% if section.text | length > 420 %} wide{% endif %}">
-        <h3>{% if private %}{{ ui.icon('lock') }}Privé{% elif open_q %}{{ ui.icon('message-circle') }}Nog open{% else %}{{ section.heading }}{% endif %}</h3>
-        {% if private %}<p class="small subtle">Alleen voor jou. Dit wordt nooit gebruikt voor matching, CV’s of brieven.</p>{% endif %}
+      <details class="profile-card{% if private %} private{% endif %}"{% if loop.first %} open{% endif %}>
+        <summary>
+          <span class="profile-card-head">
+            <span class="profile-card-title">{% if private %}{{ ui.icon('lock') }}Privé{% elif open_q %}{{ ui.icon('message-circle') }}Nog open{% else %}{{ section.heading }}{% endif %}</span>
+            <span class="profile-card-teaser">{{ section.text | teaser }}</span>
+          </span>
+          {{ ui.icon('chevron-down', 'chev') }}
+        </summary>
+        {% if private %}<p class="small subtle">Alleen voor jou. Dit wordt nooit gebruikt voor matching, cv’s of brieven.</p>{% endif %}
         {% if open_q %}<p class="small subtle">Hier gaat een volgend gesprek op in.</p>{% endif %}
-        <div class="profile-text">{{ prose(section.text) }}</div>
-      </article>
+        <div class="profile-text">{{ section.text | prose }}</div>
+        <details class="profile-edit">
+          <summary>{{ ui.icon('pencil') }}Pas dit stuk aan</summary>
+          <form method="post" action="/profile/sectie" data-pending-form>
+            {% include '_csrf.html' %}
+            <input type="hidden" name="heading" value="{{ section.heading }}">
+            <label class="visually-hidden" for="section-{{ loop.index }}">{{ section.heading }}</label>
+            <textarea id="section-{{ loop.index }}" class="prose-edit" name="text" data-autogrow spellcheck="true">{{ section.text }}</textarea>
+            <p class="small subtle">Een regel met <code>- </code> wordt een opsomming, <code>**zo**</code> wordt vet. De vorige versie blijft bewaard.</p>
+            <div class="btn-row"><button class="button primary small" type="submit">Opslaan</button></div>
+          </form>
+        </details>
+      </details>
     {% endfor %}
   </div>
   {% else %}
@@ -166,7 +168,7 @@
       <summary><span>Voorstel eerst aanpassen</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
       <form method="post" action="/profile/consolidate/save-draft">
         {% include '_csrf.html' %}
-        <div class="field"><label for="draft_profile">Profieltekst</label><textarea id="draft_profile" class="doc-edit" name="profile_md">{{ draft_profile_text }}</textarea></div>
+        <div class="field"><label for="draft_profile">Profieltekst</label><textarea id="draft_profile" class="prose-edit" name="profile_md" data-autogrow>{{ draft_profile_text }}</textarea></div>
         <details class="disclosure">
           <summary><span class="small">Voorkeuren als JSON (geavanceerd)</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
           <div class="field"><label for="draft_preferences">Voorkeuren (JSON)</label><textarea id="draft_preferences" class="doc-edit" name="preferences">{{ draft_preferences_text }}</textarea></div>
@@ -205,8 +207,8 @@
     <summary><h2 id="bewerken-title">Tekst zelf bewerken</h2>{{ ui.icon('chevron-down', 'chev') }}</summary>
     <form method="post" action="/profile/save">
       {% include '_csrf.html' %}
-      <p class="small muted">Koppen beginnen met <code>##</code>. Alles onder <code>## Privé</code> blijft van jou en wordt nooit gebruikt voor matching of documenten.</p>
-      <textarea class="doc-edit doc-edit-large" id="profile-editor" name="content" aria-label="Profieltekst" spellcheck="true">{{ profile_text or profile_md }}</textarea>
+      <p class="small muted">Voor grotere wijzigingen in één keer. Een stuk begint met een kop als <code>## Werkvoorkeuren</code>. Alles onder <code>## Privé</code> blijft van jou en wordt nooit gebruikt voor matching of documenten.</p>
+      <textarea class="prose-edit prose-edit-full" id="profile-editor" name="content" aria-label="Profieltekst" spellcheck="true" data-autogrow>{{ profile_text or profile_md }}</textarea>
       <div class="btn-row"><button class="button primary" type="submit">Opslaan als nieuwe versie</button><span class="small subtle" id="editor-stats">{{ editor_chars }} tekens · {{ editor_lines }} regels</span></div>
     </form>
   </details>

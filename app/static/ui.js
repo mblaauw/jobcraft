@@ -108,6 +108,18 @@
     if (status) status.textContent = "Document wordt gemaakt. Dit duurt meestal 10 tot 20 seconden.";
   });
 
+  // Text boxes that grow with what is in them, up to most of the screen.
+  const grow = (box) => {
+    box.style.height = "auto";
+    box.style.height = Math.min(box.scrollHeight + 2, window.innerHeight * 0.75) + "px";
+  };
+  document.querySelectorAll("textarea[data-autogrow]").forEach((box) => {
+    box.addEventListener("input", () => grow(box));
+    const details = box.closest("details");
+    if (details) details.addEventListener("toggle", () => { if (details.open) grow(box); });
+    if (box.offsetParent) grow(box);
+  });
+
   // Profile editor: live character and line count.
   const editor = document.getElementById("profile-editor");
   const stats = document.getElementById("editor-stats");

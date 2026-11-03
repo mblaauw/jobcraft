@@ -179,6 +179,17 @@ def profile_save(request: Request, content: str = Form(...)):
 
 
 
+@router.post("/profile/sectie")
+def profile_section(heading: str = Form(...), text: str = Form("")):
+    """One part of the profile at a time; the rest stays exactly as it was."""
+    known = {item["heading"] for item in profile.split_sections(profile.read_profile())}
+    if heading not in known or not heading:
+        raise HTTPException(status_code=404, detail="unknown section")
+    profile.merge_sections({heading: text.replace("\r\n", "\n").strip()}, note=f"aangepast: {heading}"[:80])
+    _assess_soon()
+    return RedirectResponse(url="/profile?saved=profile#overzicht", status_code=303)
+
+
 @router.post("/profile/restore/{version_id}")
 def profile_restore(version_id: int):
     versions = store.list_profile_versions(200)
