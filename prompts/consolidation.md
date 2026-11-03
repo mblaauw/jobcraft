@@ -40,6 +40,10 @@ Fact rules:
 - Keep every list concrete. The preferences object feeds deterministic job
   matching: keywords must be literal Dutch search words; vetoes are words that
   usually signal a bad fit.
+- Write for the person, in plain Dutch. Never mention where something came from:
+  no question numbers ("vraag 8"), no answer labels from the interview (love,
+  like, dont know, nope), and no bookkeeping words like "dossier",
+  "antwoordlog" or "vastgelegde feiten".
 
 ## Existing profile.md
 {{PROFILE_MD}}

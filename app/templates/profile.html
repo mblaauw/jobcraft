@@ -16,17 +16,20 @@
 
 <nav class="studio-tabs profile-tabs" aria-label="Je profiel" data-profile-tabs>
   <a href="?tab=cv"{% if tab == 'cv' %} aria-current="page"{% endif %}>Mijn cv{% if coach.open %} <span class="badge">{{ coach.open }}</span>{% endif %}</a>
+  <a href="?tab=zoek"{% if tab == 'zoek' %} aria-current="page"{% endif %}>Wat ik zoek</a>
   <a href="?tab=positie"{% if tab == 'positie' %} aria-current="page"{% endif %}>Hoe je overkomt</a>
-  <a href="?tab=meer"{% if tab == 'meer' %} aria-current="page"{% endif %}>Alles over jou</a>
+  <a href="?tab=meer"{% if tab == 'meer' %} aria-current="page"{% endif %}>Geavanceerd</a>
 </nav>
 
 {% if tab == 'cv' %}
 {% include "_cv.html" %}
+{% elif tab == 'zoek' %}
+{% include "_wishes.html" %}
 {% elif tab == 'positie' %}
 {% include "_profile_position.html" %}
 {% else %}
 <nav class="subnav" aria-label="Onderdelen van je profiel">
-  <a href="#overzicht">Over jou</a><a href="#voorkeuren">Wat telt bij matching</a><a href="#reisbereik">Reisbereik</a>{% if legacy or draft %}<a href="#bijwerken">Bijwerken{% if draft %} <span class="badge">1</span>{% endif %}</a>{% endif %}<a href="#bewerken">Tekst bewerken</a><a href="#versies">Versies</a>
+  <a href="#overzicht">Overige tekst</a>{% if legacy or draft %}<a href="#bijwerken">Bijwerken{% if draft %} <span class="badge">1</span>{% endif %}</a>{% endif %}<a href="#bewerken">Tekst bewerken</a><a href="#versies">Versies</a>
 </nav>
 
 {% if saved %}
@@ -61,10 +64,10 @@
 {% endif %}
 
 <section class="section" id="overzicht" aria-labelledby="overzicht-title">
-  <div class="panel-head"><h2 id="overzicht-title">Over jou</h2>{% if bootstrapped_at %}<span class="small subtle">Laatst bijgewerkt {{ ui.nl_date(bootstrapped_at) }}</span>{% endif %}</div>
-  {% set sections = (profile_sections or []) | selectattr('text') | list %}
+  <div class="panel-head"><h2 id="overzicht-title">Overige tekst over jou</h2>{% if bootstrapped_at %}<span class="small subtle">Laatst bijgewerkt {{ ui.nl_date(bootstrapped_at) }}</span>{% endif %}</div>
+  {% set sections = (profile_sections or []) | selectattr('text') | rejectattr('heading', 'in', elsewhere or []) | list %}
   {% if sections %}
-  <p class="small muted">Dit weet Jobcraft over je. Het bepaalt welke vacatures je ziet en wat er in je cv en brieven komt. Klopt iets niet, pas dat stuk dan aan.</p>
+  <p class="small muted">Wat Jobcraft verder over je weet, naast Mijn cv en Wat ik zoek. Ook dit bepaalt welke vacatures je ziet en wat er in je cv en brieven komt. Klopt iets niet, pas dat stuk dan aan.</p>
   {% if profile_warnings %}
   <div class="profile-warnings" role="status">
     {% for item in profile_warnings %}
@@ -110,63 +113,6 @@
     {% if draft %}<a class="button primary" href="#bijwerken">Bekijk het voorstel</a>{% else %}<a class="button primary" href="/start">Begin hier</a>{% endif %}
   </div>
   {% endif %}
-</section>
-
-<section class="section" id="voorkeuren" aria-labelledby="voorkeuren-title">
-  <p class="small"><a href="/start/keuzes">Pas je keuzes aan</a>: functies, uren, thuiswerken, salaris en contract.</p>
-  <div class="panel-head"><h2 id="voorkeuren-title">Wat telt bij matching</h2><span class="small subtle">Afgeleid uit je profiel; verandert mee met een overgenomen voorstel</span></div>
-  <div class="panel">
-    <div class="prefs-grid">
-      <div>
-        <h3>Richtingen</h3>
-        {% for track in preferences.tracks %}
-          <p class="small"><strong>{{ track.name }}</strong></p>
-          <div class="chips">{% for keyword in track.keywords %}<span class="chip chip-lime">{{ keyword }}</span>{% endfor %}</div>
-          {% if not loop.last %}<hr>{% endif %}
-        {% else %}<p class="small subtle">Nog geen richtingen. <a href="/start/keuzes">Kies welk werk je zoekt</a>.</p>{% endfor %}
-      </div>
-      <div>
-        <h3>Harde wensen</h3>
-        <ul class="filter-list">
-          {% if hf.hours_min or hf.hours_max %}<li class="on">{{ ui.icon('clock') }}{{ ui.num(hf.hours_min) if hf.hours_min else '?' }} tot {{ ui.num(hf.hours_max) if hf.hours_max else '?' }} uur per week</li>{% endif %}
-          {% for key, label in [('no_phone_main', 'Geen werk dat vooral bellen of verkopen is'), ('no_structural_evenings', 'Geen vaste avond- of weekenddiensten'), ('no_heavy_physical', 'Geen zwaar lichamelijk werk'), ('day_work_only', 'Alleen dagwerk'), ('wants_guidance', 'Een inwerkperiode of begeleiding')] %}
-            {% if hf.get(key) %}<li class="on">{{ ui.icon('check') }}{{ label }}</li>{% endif %}
-          {% endfor %}
-          {% if not (hf.hours_min or hf.hours_max or hf.no_phone_main or hf.no_structural_evenings or hf.get('no_heavy_physical') or hf.get('day_work_only') or hf.get('wants_guidance')) %}<li class="off">Geen harde wensen vastgelegd</li>{% endif %}
-        </ul>
-      </div>
-      <div>
-        <h3>Spreekt je aan</h3>
-        <div class="chips">{% for item in preferences.likes %}<span class="chip chip-ok">{{ item.tag }}</span>{% endfor %}{% for keyword in preferences.keywords.boost %}<span class="chip chip-ok">{{ keyword }}</span>{% endfor %}{% if not preferences.likes and not preferences.keywords.boost %}<span class="small subtle">Nog niets vastgelegd</span>{% endif %}</div>
-      </div>
-      <div>
-        <h3>Liever niet</h3>
-        <div class="chips">{% for item in preferences.dislikes %}<span class="chip chip-warn">{{ item.tag }}</span>{% endfor %}{% for keyword in preferences.keywords.veto %}<span class="chip chip-warn">{{ keyword }}</span>{% endfor %}{% if not preferences.dislikes and not preferences.keywords.veto %}<span class="small subtle">Nog niets vastgelegd</span>{% endif %}</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="reisbereik" aria-labelledby="reisbereik-title">
-  <div class="panel-head"><h2 id="reisbereik-title">Woonplaats en reisbereik</h2></div>
-  <form method="post" action="/profile/home" class="panel">
-    {% include '_csrf.html' %}
-    <p class="small muted">Reistijden zijn schattingen vanaf je woonplaats. Vacatures buiten je bereik worden standaard verborgen.</p>
-    <div class="form-grid">
-      <div class="field"><label for="home-place">Woonplaats</label><input id="home-place" name="place" value="{{ home.label if home.label != 'Nog niet ingesteld' else '' }}" placeholder="Begin te typen, bijvoorbeeld Amersfoort" autocomplete="off" list="home-places"><datalist id="home-places">{% for place in place_labels %}<option value="{{ place }}"></option>{% endfor %}</datalist></div>
-      <div class="field"><label for="home-car">Auto beschikbaar</label><select id="home-car" name="car_available"><option value="0" {% if not home.car_available %}selected{% endif %}>Nee</option><option value="1" {% if home.car_available %}selected{% endif %}>Ja</option></select></div>
-      <div class="field"><label for="home-bike">Maximaal fietsen (e-bike)</label><input id="home-bike" name="bike_minutes" type="number" min="5" max="180" value="{{ home.bike_minutes }}" inputmode="numeric"><span class="hint">minuten, enkele reis</span></div>
-      <div class="field"><label for="home-transit">Maximaal met het OV</label><input id="home-transit" name="transit_minutes" type="number" min="5" max="240" value="{{ home.transit_minutes }}" inputmode="numeric"><span class="hint">minuten, enkele reis</span></div>
-      <details class="disclosure span-2" {% if error == 'place' %}open{% endif %}>
-        <summary><span class="small">Staat je plaats er niet tussen? Vul coördinaten in</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
-        <div class="form-grid">
-          <div class="field"><label for="home-lat">Breedtegraad</label><input id="home-lat" name="lat" type="number" step="0.0001" value="{{ home.lat or '' }}"></div>
-          <div class="field"><label for="home-lon">Lengtegraad</label><input id="home-lon" name="lon" type="number" step="0.0001" value="{{ home.lon or '' }}"></div>
-        </div>
-      </details>
-    </div>
-    <div class="btn-row"><button class="button primary" type="submit">Reisbereik opslaan</button></div>
-  </form>
 </section>
 
 {% if legacy or draft %}
@@ -249,3 +195,4 @@
 </section>
 {% endif %}
 {% endblock %}
+{% block scripts %}{% if tab == 'zoek' %}<script src="/static/start.js" defer></script>{% endif %}{% endblock %}

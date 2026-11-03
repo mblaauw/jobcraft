@@ -244,7 +244,8 @@ details.stage > summary { cursor: pointer; border-bottom-color: var(--line-stron
   .position-sides { grid-template-columns: minmax(0, 1fr); gap: 24px; }
 }
 @media (max-width: 720px) {
-  .pipeline-step { padding: 8px; }
+  .pipeline { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pipeline-step { padding: 8px 10px; }
   .pipeline-step strong { font-size: var(--fs-lg); }
   .pipeline-step span { font-size: 11px; }
   .work-strip { padding: 0; }

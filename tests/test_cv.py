@@ -137,5 +137,5 @@ def test_without_a_cv_the_page_invites_one_and_tabs_still_work(client, monkeypat
     monkeypatch.setattr(runtime, "manager", SimpleNamespace(client=None))
     page = client.get("/profile").text
     assert "Zet je cv hier neer" in page and 'action="/profile/cv/inlezen"' in page
-    assert "Woonplaats en reisbereik" in client.get("/profile?tab=meer").text
+    assert "Woonplaats en reisbereik" in client.get("/profile?tab=zoek").text
     assert client.post("/profile/cv/over-mij", data={"tekst": "x"}).status_code == 409
