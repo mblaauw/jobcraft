@@ -41,25 +41,30 @@
   // Under a path prefix the proxy rewrites links in pages, but not addresses in JSON.
   const appRoot = new URL(document.querySelector('link[href*="static/app.css"]').href).pathname.split("static/")[0];
 
-  // The vacancy text improves once the AI has read it; swap it in without a reload.
-  const vacancy = document.querySelector("[data-vacancy-refresh]");
-  if (vacancy) {
-    let tries = 0;
-    const check = async () => {
-      const current = document.querySelector("[data-vacancy-refresh]");
-      if (!current || tries++ > 12) return;
-      try {
-        const response = await fetch(current.querySelector("[data-vacancy-link]").href);
-        if (response.ok) {
-          const page = new DOMParser().parseFromString(await response.text(), "text/html");
-          const next = page.querySelector("#vacancy-text");
-          if (next && !next.hasAttribute("data-vacancy-refresh")) { current.replaceWith(next); return; }
-        }
-      } catch (error) { /* The plain version stays on screen. */ }
-      setTimeout(check, 6000);
-    };
-    setTimeout(check, 6000);
+  // Parts that improve once the AI is done (a tidy vacancy text, an assessment) carry
+  // data-swap and a hidden link to their own address; swap the ready version in place.
+  // The job drawer calls this again after it renders a vacancy.
+  function watchSwaps() {
+    document.querySelectorAll("[data-swap]:not([data-swap-watched])").forEach((part) => {
+      part.setAttribute("data-swap-watched", "");
+      let tries = 0;
+      const check = async () => {
+        if (!part.isConnected || tries++ > 12) return;
+        try {
+          const response = await fetch(part.querySelector("[data-swap-link]").href, { cache: "no-store" });
+          if (response.ok) {
+            const page = new DOMParser().parseFromString(await response.text(), "text/html");
+            const next = page.getElementById(part.id);
+            if (next && !next.hasAttribute("data-swap")) { part.replaceWith(next); return; }
+          }
+        } catch (error) { /* What is on screen stays readable. */ }
+        setTimeout(check, 5000);
+      };
+      setTimeout(check, 5000);
+    });
   }
+  window.jobcraftWatchSwaps = watchSwaps;
+  watchSwaps();
 
   // Work in the background: visible on every page, announced when it is done.
   const strips = document.querySelectorAll("[data-work-strip]");
@@ -177,11 +182,13 @@
   }
 
   // How long running work has been going, so a wait never looks like a hang.
-  const clocks = document.querySelectorAll("[data-elapsed]");
-  if (clocks.length) {
+  // Also started by the job drawer, whose waits arrive after the page has loaded.
+  let clockTimer = null;
+  function startClocks() {
+    if (clockTimer || !document.querySelector("[data-elapsed]")) return;
     const opened = Date.now();
     const tick = () => {
-      clocks.forEach((clock) => {
+      document.querySelectorAll("[data-elapsed]").forEach((clock) => {
         const since = Date.parse(clock.dataset.elapsed);
         const seconds = Math.max(0, Math.round((Date.now() - (Number.isNaN(since) ? opened : since)) / 1000));
         const minutes = Math.floor(seconds / 60);
@@ -189,8 +196,10 @@
       });
     };
     tick();
-    window.setInterval(tick, 1000);
+    clockTimer = window.setInterval(tick, 1000);
   }
+  window.jobcraftStartClocks = startClocks;
+  startClocks();
 
   // Theme toggle on Account: persist the choice in a cookie and reload.
   const themeSelect = document.getElementById("theme-select");

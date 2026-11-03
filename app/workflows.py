@@ -19,6 +19,7 @@ from . import (
     feedback,
     insights,  # noqa: F401  (registers its task)
     job_index,
+    job_verdict,  # noqa: F401  (registers its task)
     matching,
     notifications,
     profile,

@@ -6,8 +6,8 @@
 {%- endmacro %}
 
 {% macro body(job, vacancy) %}
-<div class="vacancy" id="vacancy-text"{% if vacancy.pending %} data-vacancy-refresh{% endif %}>
-  {% if vacancy.pending %}<a hidden data-vacancy-link href="/jobs/{{ job['id'] }}/tekst"></a><p class="small muted v-reading"><span class="work-dot" aria-hidden="true"></span>We zetten deze tekst overzichtelijk voor je neer. Dat duurt even, je kunt alvast lezen.</p>{% endif %}
+<div class="vacancy" id="vacancy-text"{% if vacancy.pending %} data-swap{% endif %}>
+  {% if vacancy.pending %}<a hidden data-swap-link href="/jobs/{{ job['id'] }}/tekst"></a><p class="small muted v-reading"><span class="work-dot" aria-hidden="true"></span>We zetten deze tekst overzichtelijk voor je neer. Dat duurt even, je kunt alvast lezen.</p>{% endif %}
   {% if vacancy.summary %}<p class="v-summary">{{ vacancy.summary }}</p>{% endif %}
   {% if vacancy.facts %}
   <dl class="v-facts">{% for label, value in vacancy.facts %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}</dl>

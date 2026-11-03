@@ -7,7 +7,7 @@ import json
 import logging
 import uuid
 from datetime import UTC, datetime
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from . import (
     career_position,
@@ -166,3 +166,11 @@ def _jobs_return_target(url: str) -> str:
     )
     return url if not parts.scheme and not parts.netloc and valid_path else "/jobs"
 
+
+def _with_done(url: str, job_id: int, done: str) -> str:
+    """Back on the vacancy itself: say what just happened and land at its buttons."""
+    parts = urlsplit(url)
+    if parts.path != f"/jobs/{job_id}":
+        return url
+    query = [(key, value) for key, value in parse_qsl(parts.query) if key != "gedaan"] + [("gedaan", done)]
+    return parts._replace(query=urlencode(query), fragment="acties").geturl()

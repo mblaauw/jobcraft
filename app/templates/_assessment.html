@@ -1,0 +1,52 @@
+{# Why a vacancy does (not) fit. Also served on its own, so the page can swap it in once ready. #}
+{% import "_ui.html" as ui %}
+{% set n = (signals.get('noul') if signals else none) or {} %}
+<section class="panel job-assessment" id="detail-assessment" data-detail-section="assessment" aria-labelledby="detail-assessment-title"{% if verdict.pending %} data-swap{% endif %}>
+    <h2 id="detail-assessment-title">Waarom dit (niet) past</h2>
+    {% if job["match_score"] is not none and reason %}
+      {% if reason.why %}<p class="verdict-why">{{ reason.why }}</p>{% endif %}
+      {% if reason.concerns %}
+      <h3>Let op</h3>
+      <ul class="assess-list">{% for item in reason.concerns %}<li class="neg">{{ ui.icon('triangle-alert') }}<span>{{ item }}</span></li>{% endfor %}</ul>
+      {% endif %}
+      {% if reason.questions_for_employer %}
+      <h3>Vragen voor de werkgever</h3>
+      <ul class="assess-list">{% for item in reason.questions_for_employer %}<li class="q">{{ ui.icon('message-circle') }}<span>{{ item }}</span></li>{% endfor %}</ul>
+      {% endif %}
+    {% elif verdict.pending %}
+      <a hidden data-swap-link href="/jobs/{{ job['id'] }}/oordeel"></a>
+      <div class="wait" role="status">
+        <span class="work-dot" aria-hidden="true"></span>
+        <span class="wait-text"><strong>We beoordelen deze vacature voor je</strong><span>Dat duurt meestal tien tot dertig seconden. <span class="wait-elapsed" data-elapsed="{{ verdict.since }}"></span></span><span>De uitleg verschijnt hier vanzelf.</span></span>
+      </div>
+    {% elif verdict.failed %}
+      <p class="muted">Het beoordelen lukte deze keer niet. Open de vacature morgen opnieuw, dan proberen we het nog een keer.</p>
+    {% elif signals %}
+      <p class="muted">Deze vacature heeft alleen een snelle eerste beoordeling. Een uitgebreide uitleg kan nu niet worden gemaakt, bijvoorbeeld omdat je daglimiet voor AI is bereikt.</p>
+    {% else %}
+      <p class="muted">Nog niet beoordeeld. Een uitleg kan nu niet worden gemaakt, bijvoorbeeld omdat je daglimiet voor AI is bereikt. Open de vacature later opnieuw.</p>
+    {% endif %}
+    {% if signals %}
+    <h3>In het kort</h3>
+    <ul class="traits">
+      {% for key, yes, no in [('day_hours', 'Dagwerk', 'Geen vast dagwerk'), ('evening_weekend', 'Avond- of weekendwerk', None), ('outdoor_mobile', 'Veel buiten of op locatie', None), ('physically_heavy', 'Fysiek zwaar', None), ('phone_sales_main', 'Veel bellen of verkoop', None), ('guidance', 'Inwerkperiode', None), ('company_car', 'Bedrijfsauto', None)] %}
+        {% set p = n.get(key) %}
+        {% if p is not none and p > 0.5 %}<li class="chip {{ 'chip-warn' if key in ('evening_weekend', 'physically_heavy', 'phone_sales_main') else 'chip-ok' }}">{{ yes }}</li>
+        {% elif p is not none and no and p < 0.5 %}<li class="chip chip-warn">{{ no }}</li>{% endif %}
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% if signals or (reason and reason.rule_notes) %}
+    <details class="disclosure">
+      <summary><span class="small">Technische details</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
+      <dl class="stats small">
+        {% if job["match_score"] is not none %}<div><dt>Uitgebreide beoordeling</dt><dd>{{ "%.0f" | format(job["match_score"]) }}/100</dd></div>{% endif %}
+        {% if job["rank_score"] is not none %}<div><dt>Rangschikking</dt><dd>{{ "%.0f" | format(job["rank_score"]) }}/100</dd></div>{% endif %}
+        {% if signals %}<div><dt>Snelle beoordeling</dt><dd>{% if signals.get('fit') is not none %}{{ signals.get('fit') }}/100{% else %}—{% endif %}</dd></div><div><dt>Zekerheid</dt><dd>{% if signals.get('confidence') is not none %}{{ "%.0f" | format(signals.get('confidence') * 100) }}%{% else %}—{% endif %}</dd></div><div><dt>Categorie</dt><dd>{{ signals.get('category') or "—" }}</dd></div>{% endif %}
+        <div><dt>Bron</dt><dd>{{ job["source_id"] }}</dd></div>
+        <div><dt>Eerst gezien</dt><dd>{{ ui.nl_date(job["first_seen"]) }}</dd></div>
+      </dl>
+      {% if reason and reason.rule_notes %}<p class="small muted">Regels: {{ reason.rule_notes | join(", ") }}</p>{% endif %}
+    </details>
+    {% endif %}
+  </section>

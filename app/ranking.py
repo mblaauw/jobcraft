@@ -154,6 +154,18 @@ def after_vote(job_id: int) -> None:
     store.set_rank_scores(scores)
 
 
+def after_verdict(job_id: int, score: float) -> None:
+    """A fresh verdict for one job joins the stored parts, then everything re-blends cheaply."""
+    try:
+        parts = json.loads(store.meta_get(PARTS_KEY) or "{}")
+    except ValueError:
+        parts = {}
+    if str(job_id) in parts:
+        parts[str(job_id)][2] = score
+        store.meta_set(PARTS_KEY, json.dumps(parts, separators=(",", ":")))
+    after_vote(job_id)
+
+
 def rerank_all(
     preferences: dict | None = None,
     feedback_data: dict | None = None,

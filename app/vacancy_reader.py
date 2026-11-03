@@ -33,6 +33,7 @@ FACT_LABELS = (
 )
 _TOO_SHORT = 300
 READING_SHARE = 0.4
+COMMON_SHARE = 0.12  # a CV word found in more vacancies than this is too ordinary to underline
 
 
 class Section(BaseModel):
@@ -145,7 +146,7 @@ def view(job) -> dict:
     """Everything the page shows, with what is in this person's CV marked per line."""
     excerpt = profile.read_document_excerpt(12000) if profile.profile_exists() else ""
     tracks = [track.get("name", "") for track in profile.read_preferences().get("tracks", [])]
-    terms = vacancy_text.profile_terms(excerpt, tracks)
+    terms = vacancy_text.profile_terms(excerpt, tracks, lambda words: store.common_tokens(words, COMMON_SHARE))
     reading = usable(job)
     if reading:
         sections = reading["sections"]
