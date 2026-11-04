@@ -17,6 +17,7 @@ from .. import (
     document_edits,
     insights,
     job_import,
+    job_verdict,
     notifications,
     store,
     tenancy,
@@ -141,6 +142,13 @@ def job_insight(job_id: int, kind: str, url: str = Form("", alias="next")):
         separator = "&" if "?" in target else "?"
         target += f"{separator}inzicht_fout={problem}"
     return RedirectResponse(url=f"{target}#inzicht", status_code=303)
+
+
+@router.post("/jobs/{job_id}/oordeel/dieper")
+def job_deeper_assessment(job_id: int):
+    """The person's own escalation: a full assessment, whatever the quick one said."""
+    job_verdict.deeper(_job_or_404(job_id))
+    return RedirectResponse(url=f"/jobs/{job_id}#detail-assessment", status_code=303)
 
 
 # ---------------------------------------------------------- editing documents

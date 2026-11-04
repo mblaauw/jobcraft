@@ -175,6 +175,53 @@ def _system_one_round(preferences, feedback_data, digest_base, summary) -> None:
                 return
 
 
+def signal_one(
+    job,
+    preferences: dict | None = None,
+    feedback_data: dict | None = None,
+    digest_base: str | None = None,
+) -> dict | None:
+    """Jev for one vacancy, now: shared facts when known, then the personal fit.
+
+    None when Jev is off or the daily calls are spent; the caller then judges as before.
+    """
+    if not systemone.enabled():
+        return None
+    daily_limit = int(os.environ.get("SYSTEMONE_DAILY_LIMIT", "80"))
+    calls_left = max(0, daily_limit - store.daily_usage_calls("systemone"))
+    preferences = preferences if preferences is not None else profile.read_preferences()
+    feedback_data = feedback_data if feedback_data is not None else feedback.load()
+    digest_base = digest_base or current_digest(preferences)
+    excerpt = profile.read_public_excerpt(4000)
+    questions = systemone.questions_for(preferences)
+    fact_key = systemone.facts_key(job)
+    known = store.get_job_facts(job["id"])
+    facts = known["answers"] if known and known.get("key") == fact_key else None
+    if (facts is None) + 1 > calls_left:
+        return None
+    if facts is None:
+        facts = _ask_system_one(job, systemone.compose_facts_state(job), systemone.facts_questions())
+        store.save_job_facts(job["id"], fact_key, facts)
+    answers = dict(facts)
+    answers.update(
+        _ask_system_one(
+            job,
+            systemone.compose_state(job, excerpt, preferences=preferences),
+            systemone.personal_questions(questions),
+        )
+    )
+    signals = systemone.signals_from_answers(answers, questions)
+    rank, _ = ranking.rank_for(job, preferences, feedback_data, signals, digest_base)
+    store.update_job_signals(
+        job["id"],
+        rank,
+        json.dumps(signals, ensure_ascii=False),
+        systemone.signals_key(job, excerpt, preferences=preferences, questions=questions),
+        float(signals["confidence"]),
+    )
+    return signals
+
+
 def judge(mgr, job, preferences, profile_md, feedback_data, digest_base, summary=None) -> float:
     """One full LLM verdict, stored on the job; returns its score."""
     digest = job_match_digest(digest_base, job)

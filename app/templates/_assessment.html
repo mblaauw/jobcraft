@@ -21,6 +21,17 @@
       </div>
     {% elif verdict.failed %}
       <p class="muted">Het beoordelen lukte deze keer niet. Open de vacature morgen opnieuw, dan proberen we het nog een keer.</p>
+    {% elif route and route.outcome == 'act' %}
+      {% if route.code == 'sure' and grade %}
+      <p class="verdict-why">Volgens de snelle beoordeling past dit <strong>{{ grade }}</strong> bij je, en die is daar {{ "%.0f" | format((signals.get('confidence') or 0) * 100) }}% zeker van. Een uitgebreide uitleg is daarom niet gemaakt.</p>
+      {% else %}
+      <p class="verdict-why">Deze vacature staat laag in je lijst, dus een uitgebreide beoordeling is niet gemaakt.</p>
+      {% endif %}
+      {% if can_deepen %}
+      <form method="post" action="/jobs/{{ job['id'] }}/oordeel/dieper" data-pending-form>{% include '_csrf.html' %}<button id="detail-deeper" class="button small" type="submit">{{ ui.icon('message-circle') }}Beoordeel dieper</button></form>
+      {% else %}
+      <p class="muted small">Een uitgebreide beoordeling kan nu niet worden gemaakt, bijvoorbeeld omdat je daglimiet voor AI is bereikt.</p>
+      {% endif %}
     {% elif signals %}
       <p class="muted">Deze vacature heeft alleen een snelle eerste beoordeling. Een uitgebreide uitleg kan nu niet worden gemaakt, bijvoorbeeld omdat je daglimiet voor AI is bereikt.</p>
     {% else %}
