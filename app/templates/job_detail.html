@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui %}
 {% import "_vacancy.html" as vacancy_ui %}
 {% import "_insights.html" as insights %}
+{% import "_judge.html" as judge with context %}
 {% block title %}{{ job["title"] or "Vacature" }} · Jobcraft{% endblock %}
 {% block content %}
 {% set stamp_job = dict(job, signals=signals) %}
@@ -51,10 +52,10 @@
   <form method="post" action="/jobs/{{ job['id'] }}/vote" class="group vote-form">
     {% include '_csrf.html' %}
     <input type="hidden" name="next" value="{{ next_url }}">
-    <span class="label" id="detail-vote-label">Meer vacatures zoals deze?</span>
+    <span class="label" id="detail-vote-label">Past dit bij je?</span>
     {% set up = job['vote'] and job['vote'] > 0 %}{% set down = job['vote'] and job['vote'] < 0 %}
-    <button id="detail-vote-up" class="icon-button vote up" type="submit" name="vote" value="{{ 'clear' if up else 'up' }}" aria-pressed="{{ 'true' if up else 'false' }}" title="Ja, meer zoals deze" aria-label="{{ 'Wis: meer zoals deze' if up else 'Ja, meer zoals deze' }}">{{ ui.icon('thumbs-up') }}</button>
-    <button id="detail-vote-down" class="icon-button is-down vote down" type="submit" name="vote" value="{{ 'clear' if down else 'down' }}" aria-pressed="{{ 'true' if down else 'false' }}" title="Nee, minder zoals deze" aria-label="{{ 'Wis: minder zoals deze' if down else 'Nee, minder zoals deze' }}">{{ ui.icon('thumbs-down') }}</button>
+    <button id="detail-vote-up" class="icon-button vote up" type="submit" name="vote" value="{{ 'clear' if up else 'up' }}" aria-pressed="{{ 'true' if up else 'false' }}" title="Ja, dit past" aria-label="{{ 'Wis: dit past' if up else 'Ja, dit past' }}">{{ ui.icon('thumbs-up') }}</button>
+    <button id="detail-vote-down" class="icon-button is-down vote down" type="submit" name="vote" value="{{ 'clear' if down else 'down' }}" aria-pressed="{{ 'true' if down else 'false' }}" title="Nee, dit past niet" aria-label="{{ 'Wis: dit past niet' if down else 'Nee, dit past niet' }}">{{ ui.icon('thumbs-down') }}</button>
   </form>
 </div>
 {% set done = request.query_params.get('gedaan', '') %}
@@ -66,8 +67,10 @@
   'up': 'Genoteerd. Vacatures zoals deze komen hoger in je lijst.',
   'down': 'Genoteerd. Vacatures zoals deze zakken in je lijst.',
   'clear': 'Je stem is gewist.',
+  'reden': 'Dank je, je reden is bewaard.',
 }.get(done, '') %}
 {% if done_text %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>{{ done_text }}</span></p>{% endif %}
+{% if done in ('down', 'ignored') %}{{ judge.reasons(job, next_url) }}{% endif %}
 
 {% if request.query_params.get('verwijderd') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Het document is verwijderd.</span></p>{% endif %}
 {% if doc_error %}<div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Document maken is niet gelukt: {{ doc_error }}</span></div>{% endif %}

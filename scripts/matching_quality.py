@@ -102,7 +102,87 @@ def main(argv: list[str] | None = None) -> int:
         print(
             "\nNo paired Jev fit / LLM verdicts yet — run a match round that covers LLM-verified jobs."
         )
+    judged_report(owner)
     return 0
+
+
+POSITIVE = ("saved", "applied", "interview", "offer")
+ENOUGH, ENOUGH_GOOD = 40, 10
+
+
+def auc(rows, key: str) -> float | None:
+    """The chance a vacancy the person wanted scores above one they turned down."""
+    good = [row[key] for row in rows if row[key] is not None and row["good"]]
+    bad = [row[key] for row in rows if row[key] is not None and not row["good"]]
+    if not good or not bad:
+        return None
+    wins = sum((g > b) + 0.5 * (g == b) for g in good for b in bad)
+    return wins / (len(good) * len(bad))
+
+
+def judged_report(owner: str) -> None:
+    """The person's own judgements as the yardstick: votes, saved/applied and ignored."""
+    with store.connect() as con:
+        rows = con.execute(
+            "SELECT id, vote, status, rank_score, match_score, typed_signals FROM ("
+            + store.jobs._job_select(owner)
+            + ") WHERE vote != 0 OR status IN ('saved','applied','interview','offer','ignored')",
+            (owner,),
+        ).fetchall()
+        ranked = con.execute(
+            "SELECT id FROM (" + store.jobs._job_select(owner) + ") WHERE rank_score IS NOT NULL "
+            "ORDER BY rank_score DESC LIMIT 10",
+            (owner,),
+        ).fetchall()
+        reasons = con.execute(
+            "SELECT value FROM user_meta WHERE owner=? AND key LIKE 'judgement:%'", (owner,)
+        ).fetchall()
+    judged = []
+    for row in rows:
+        try:
+            signals = json.loads(row["typed_signals"] or "{}")
+        except ValueError:
+            signals = {}
+        judged.append({
+            "id": row["id"],
+            "good": row["vote"] > 0 or row["status"] in POSITIVE,
+            "matcher": row["match_score"],
+            "jev": signals.get("fit"),
+            "sure": signals.get("fit") is not None and not signals.get("escalate", True),
+        })
+    good = sum(row["good"] for row in judged)
+    print(f"\njudged by the person: {len(judged)} ({good} good, {len(judged) - good} not)")
+    if len(judged) < ENOUGH or good < ENOUGH_GOOD:
+        print(f"  too few to tune on: wait for {ENOUGH} judgements with at least {ENOUGH_GOOD} good")
+    records = []
+    for (value,) in reasons:
+        try:
+            records.append(json.loads(value))
+        except ValueError:
+            continue
+    # The stored rank already holds the vote, so measure the rank from before the answer.
+    before = [
+        {"rank_before": item["rank_before"], "good": item.get("answer") == "ja"}
+        for item in records
+        if item.get("answer") in ("ja", "nee") and item.get("rank_before") is not None
+    ]
+    value = auc(before, "rank_before")
+    print(f"  rank when asked AUC {value:.2f} over {len(before)}" if value is not None else "  rank when asked AUC -")
+    for key, name in (("jev", "Jev fit"), ("matcher", "matcher")):
+        value = auc(judged, key)
+        scored = sum(row[key] is not None for row in judged)
+        print(f"  {name:<10} AUC {value:.2f} over {scored}" if value is not None else f"  {name:<10} AUC -")
+    by_id = {row["id"]: row for row in judged}
+    top = [by_id[row["id"]] for row in ranked if row["id"] in by_id]
+    print(f"  top 10 now: {len(top)} judged, {sum(row['good'] for row in top)} of those good (votes move the rank)")
+    hidden = sum(row["good"] and row["sure"] and row["jev"] <= 50 for row in judged)
+    print(f"  wanted, but Jev was sure it did not fit: {hidden}")
+    counts: dict[str, int] = {}
+    for item in records:
+        if item.get("reason"):
+            counts[item["reason"]] = counts.get(item["reason"], 0) + 1
+    if counts:
+        print("  reasons for a no: " + ", ".join(f"{key} {n}" for key, n in sorted(counts.items(), key=lambda item: -item[1])))
 
 
 if __name__ == "__main__":

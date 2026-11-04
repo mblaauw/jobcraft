@@ -45,7 +45,14 @@ def _background_work() -> dict:
         return {"running": [], "done": []}
 
 
+def _judgement_reasons() -> dict:
+    from . import judgements
+
+    return judgements.REASONS
+
+
 templates.env.globals["background_work"] = _background_work
+templates.env.globals["judgement_reasons"] = _judgement_reasons
 templates.env.globals["csrf_input"] = _csrf_input
 templates.env.globals["new_match_count"] = _new_match_count
 templates.env.filters["amsterdam"] = _amsterdam

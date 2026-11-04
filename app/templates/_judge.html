@@ -1,0 +1,46 @@
+{# Quick judgements. No match score here: an answer should be the person's own, not ours repeated. #}
+{% macro reasons(job, next_url) %}
+<form method="post" action="/jobs/{{ job['id'] }}/reden" class="judge-reasons" data-pending-form>
+  {{ csrf_input(request) }}
+  <input type="hidden" name="next" value="{{ next_url }}">
+  <p class="small"><strong>Waarom past {{ job['title'] or 'deze vacature' }} niet?</strong> <span class="muted">Kies er een als je wilt. Zo zien we wat onze beoordeling nog mist.</span></p>
+  <div class="judge-reason-list">
+    {% for key, label in judgement_reasons().items() %}<button class="chip-button" type="submit" name="reason" value="{{ key }}">{{ label }}</button>{% endfor %}
+  </div>
+</form>
+{% endmacro %}
+
+{% macro round(state, ui) %}
+{% if state and (state.job or state.done or state.last_no) %}
+<section class="today-block judge-round" id="vijf" aria-labelledby="judge-title">
+  <div class="panel-head">
+    <h2 id="judge-title">Vijf voor vandaag</h2>
+    {% if state.job %}<span class="small subtle">Vacature {{ state.position }} van {{ state.size }}</span>{% endif %}
+  </div>
+  {% if state.last_no %}{{ reasons(state.last_no, '/') }}{% endif %}
+  {% if state.job %}
+  {% set job = state.job %}
+  <article class="panel judge-card">
+    <p class="judge-question">Zou je hierop reageren?</p>
+    <h3><a href="/jobs/{{ job['id'] }}?return_to={{ '/#vijf' | urlencode }}">{{ job['title'] or 'Zonder titel' }}</a></h3>
+    <ul class="meta small">
+      <li>{{ job['company'] or 'Onbekende organisatie' }}</li>
+      {% if job['location'] %}<li>{{ ui.icon('map-pin') }}<span>{{ job['location'] }}</span></li>{% endif %}
+      {{ ui.travel(job['travel']) }}
+      {% if job['hours'] %}<li>{{ ui.icon('clock') }}<span>{{ job['hours'] }}</span></li>{% endif %}
+    </ul>
+    {% if job.blurb %}<p class="small muted">{{ job.blurb.split() | join(' ') | truncate(260) }}</p>{% endif %}
+    <form method="post" action="/vandaag/oordeel/{{ job['id'] }}" class="judge-actions" data-pending-form>
+      {{ csrf_input(request) }}
+      <button class="button primary" type="submit" name="answer" value="ja">{{ ui.icon('thumbs-up') }}Ja</button>
+      <button class="button" type="submit" name="answer" value="nee">{{ ui.icon('thumbs-down') }}Nee</button>
+      <button class="button quiet" type="submit" name="answer" value="twijfel">Weet ik niet</button>
+    </form>
+  </article>
+  <p class="small subtle">Je antwoord zet vergelijkbare vacatures meteen hoger of lager. We kiezen er elke dag vijf waar je antwoord het meest van leert.</p>
+  {% else %}
+  <p class="panel judge-done small">{{ ui.icon('circle-check') }}<span>Klaar voor vandaag. Je lijst is weer wat scherper. Morgen staan er vijf nieuwe klaar.</span></p>
+  {% endif %}
+</section>
+{% endif %}
+{% endmacro %}
