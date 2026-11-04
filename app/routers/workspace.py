@@ -61,8 +61,6 @@ def board_update(
         raise HTTPException(status_code=400, detail="unknown status")
     store.update_job_status(job_id, status)
     applications.save_details(job_id, deadline, note, status)
-    if status == "applied":
-        store.count_event("applications")
     return RedirectResponse(url="/sollicitaties", status_code=303)
 
 

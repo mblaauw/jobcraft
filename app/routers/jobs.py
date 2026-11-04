@@ -387,6 +387,4 @@ def job_status(job_id: int, status: str = Form(...), url: str = Form("/jobs", al
     store.update_job_status(job_id, status)
     applications.record_status(job_id, status)  # the board counts days from here
     ranking.after_vote(job_id)  # saved and ignored teach the ranking as much as a vote
-    if status == "applied":
-        store.count_event("applications")
     return RedirectResponse(url=_with_done(_jobs_return_target(url), job_id, status), status_code=303)

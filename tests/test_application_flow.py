@@ -117,3 +117,13 @@ def test_a_username_saved_as_name_gives_way_to_the_name_on_the_cv(client):  # no
     profile.write_profile(CV_TOP + "\n## Over mij\nPlanner.\n", "test")
     document_contact.save({"name": "jan", "email": "jan@voorbeeld.nl"})
     assert document_contact.load()["name"] == "Jan de Vries" and today.first_name() == "Jan"
+
+
+def test_applications_are_counted_once_per_vacancy_not_per_click(client):  # noqa: F811
+    first, second = add_job("Hovenier"), add_job("Tuinman")
+    for status in ("applied", "new", "applied", "interview", "applied"):
+        client.post(f"/jobs/{first}/status", data={"status": status, "next": "/jobs"})
+    assert store.meta_get("counter:applications") == "1"
+    client.post(f"/sollicitaties/{second}", data={"status": "applied"})
+    client.post(f"/sollicitaties/{second}", data={"status": "applied", "note": "gebeld"})
+    assert store.meta_get("counter:applications") == "2"

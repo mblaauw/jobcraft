@@ -43,6 +43,8 @@ def save_details(job_id: int, deadline: str, note: str, status: str = "") -> Non
         clean = ""
     current = details(job_id)
     since = current.get("since") or {}
+    if status == "applied" and "applied" not in since:
+        store.count_event("applications")  # once per vacancy: a click back and forth is not a second application
     if status and status != current.get("status"):
         since[status] = date.today().isoformat()
     store.meta_set(
