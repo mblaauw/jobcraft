@@ -154,6 +154,20 @@ def after_vote(job_id: int) -> None:
     store.set_rank_scores(scores)
 
 
+def after_signals(job_id: int, signals: dict) -> None:
+    """A fresh quick assessment for one job joins the stored parts, then everything re-blends."""
+    try:
+        parts = json.loads(store.meta_get(PARTS_KEY) or "{}")
+        stored = json.loads(store.meta_get("fit_calibration") or "{}")
+        calibration = (float(stored.get("slope", 1.0)), float(stored.get("intercept", 0.0)))
+    except (ValueError, TypeError):
+        parts, calibration = {}, (1.0, 0.0)
+    if str(job_id) in parts:
+        parts[str(job_id)][1] = calibrated_fit(signals, calibration)
+        store.meta_set(PARTS_KEY, json.dumps(parts, separators=(",", ":")))
+    after_vote(job_id)
+
+
 def after_verdict(job_id: int, score: float) -> None:
     """A fresh verdict for one job joins the stored parts, then everything re-blends cheaply."""
     try:
@@ -219,6 +233,7 @@ def _decide(
     feedback_data: dict | None,
     thresholds: Thresholds,
     quick: bool,
+    wanted: bool = False,
 ) -> tuple[Route, float | None]:
     """The route for one stored job and the rank it was judged on; ranks a job without one."""
     signals = signals_of(job)
@@ -235,6 +250,7 @@ def _decide(
         fresh=verdict_is_fresh(job, digest),
         rank=rank,
         too_far=travel.get("in_range") is False and not travel.get("auto"),
+        wanted=wanted,
         quick=quick,
         thresholds=thresholds,
     )
@@ -246,9 +262,13 @@ def route_of(
     digest: str,
     preferences: dict | None = None,
     feedback_data: dict | None = None,
+    *,
+    wanted: bool = False,
 ) -> Route:
     """What happens next with this vacancy for this account, and why."""
-    return _decide(job, digest, preferences, feedback_data, read_thresholds(), systemone.enabled())[0]
+    return _decide(
+        job, digest, preferences, feedback_data, read_thresholds(), systemone.enabled(), wanted
+    )[0]
 
 
 def routed(

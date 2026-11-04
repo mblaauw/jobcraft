@@ -282,6 +282,18 @@ def _side_certainty(fit: dict, scale: int) -> float | None:
     return float(fit["confidence"]) if "confidence" in fit else None
 
 
+def fit_grade(signals: dict | None) -> str:
+    """The fit as the grade Jev chose from ("slecht" … "uitstekend"), for a page."""
+    if not signals or signals.get("fit") is None:
+        return ""
+    criteria = QUESTIONS["fit"]["criteria"]
+    try:
+        index = round(float(signals["fit"]) / 100 * (len(criteria) - 1))
+    except (TypeError, ValueError):
+        return ""
+    return str(criteria[max(0, min(len(criteria) - 1, index))])
+
+
 def signals_from_answers(answers: dict, questions: dict | None = None) -> dict:
     fit = answers.get("fit") or {}
     category = answers.get("category") or {}

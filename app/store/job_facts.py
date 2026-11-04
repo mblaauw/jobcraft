@@ -27,6 +27,18 @@ def load_job_facts() -> dict[int, dict]:
     return facts
 
 
+def get_job_facts(job_id: int) -> dict | None:
+    """The stored facts of one vacancy, for a single on-demand assessment."""
+    with connect() as con:
+        row = con.execute("SELECT value FROM meta WHERE key=?", (f"{_PREFIX}{job_id}",)).fetchone()
+    if not row:
+        return None
+    try:
+        return json.loads(row["value"])
+    except ValueError:
+        return None
+
+
 def save_job_facts(job_id: int, key: str, answers: dict) -> None:
     with connect() as con:
         con.execute(
