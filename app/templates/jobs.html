@@ -160,7 +160,7 @@
     <p class="small muted">Automatisch gevonden woorden uit vacatures die je hebt beoordeeld. Ze zijn niet hetzelfde als je voorkeuren in je profiel.</p>
   </details>
   {% endif %}
-  {% if match_summary %}<details class="card disclosure"><summary><span>Laatste beoordelingsronde</span>{{ ui.icon('chevron-down', 'chev') }}</summary><p class="small">{% if match_summary.finished_at %}Afgerond op {{ ui.nl_date(match_summary.finished_at, time=True) }}.{% else %}Bij deze ronde is geen tijdstip opgeslagen.{% endif %} {{ match_summary.matched }} uitgebreide en {{ match_summary.signals or 0 }} snelle beoordelingen.</p></details>{% endif %}
+  {% if match_summary %}<details class="card disclosure"><summary><span>Laatste beoordelingsronde</span>{{ ui.icon('chevron-down', 'chev') }}</summary><p class="small">{% if match_summary.finished_at %}Afgerond op {{ ui.nl_date(match_summary.finished_at, time=True) }}.{% else %}Bij deze ronde is geen tijdstip opgeslagen.{% endif %} {{ match_summary.matched }} uitgebreide en {{ match_summary.signals or 0 }} snelle beoordelingen{% if match_summary.sampled %}, waarvan {{ match_summary.sampled }} als steekproef{% endif %}.{% if match_summary.route_line %} Nu: {{ match_summary.route_line }}.{% endif %}</p></details>{% endif %}
 </div>
 
 <dialog class="job-drawer" id="job-drawer" aria-labelledby="job-drawer-title">

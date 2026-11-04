@@ -32,6 +32,7 @@ import httpx
 import yaml
 
 from . import ai_log, profile
+from .scoring.route import read_thresholds
 
 DEFAULT_URL = "https://api.runware.ai/v1/decisions"
 DEFAULT_MODEL = "typesafe:jev@1"
@@ -187,10 +188,8 @@ def enabled() -> bool:
 
 
 def confidence_threshold() -> float:
-    try:
-        return float(os.environ.get("SYSTEMONE_CONFIDENCE", "0.75"))
-    except ValueError:
-        return 0.75
+    """The one threshold the route uses; the stored escalate flag mirrors it."""
+    return read_thresholds().confidence
 
 
 def model_id() -> str:

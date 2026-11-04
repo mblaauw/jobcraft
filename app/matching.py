@@ -220,6 +220,7 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
         "cost_usd": 0.0,
         "signals": 0,
         "escalated": 0,
+        "sampled": 0,
         "errors": [],
     }
 
@@ -230,16 +231,20 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
     # Stage 2 — free deterministic rerank: votes and fresh signals apply instantly.
     ranking.rerank_all(preferences, feedback_data, digest_base)
 
-    # Stage 3 — LLM only where it adds value: promising and uncertain jobs.
+    # Stage 3 — LLM only where the route says so: promising and uncertain jobs, plus a
+    # small sample of sure fits inside the same batch, so the calibration stays honest.
     # Without a configured model the verdicts simply wait; nothing has failed.
     available = mgr is not None and getattr(mgr, "client", True) is not None
-    candidates = (
-        ranking.escalation_candidates(digest_base, limit, preferences, feedback_data)
-        if available
-        else []
-    )
+    candidates, sample = [], []
+    if available:
+        decided = ranking.routed(digest_base, preferences, feedback_data)
+        sample = ranking.calibration_sample(digest_base, preferences, feedback_data, decided)[:limit]
+        candidates = ranking.escalation_candidates(
+            digest_base, limit, preferences, feedback_data, decided
+        )[: max(0, limit - len(sample))]
     summary["escalated"] = len(candidates)
-    for job in candidates:
+    summary["sampled"] = len(sample)
+    for job in [*candidates, *sample]:
         try:
             judge(mgr, job, preferences, profile_md, feedback_data, digest_base, summary)
             summary["matched"] += 1
@@ -247,7 +252,8 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
             summary["failed"] += 1
             summary["errors"].append(f"job {job['id']}: {type(exc).__name__}")
 
-    # Blend the new LLM verdicts into the deterministic rank, then report the queue.
+    # Blend the new LLM verdicts into the deterministic rank, then report where things stand.
     ranking.rerank_all(preferences, feedback_data, digest_base)
     summary["remaining"] = ranking.queue_depth(digest_base)
+    summary["routes"] = ranking.route_counts(digest_base)
     return summary

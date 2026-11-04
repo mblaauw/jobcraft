@@ -36,6 +36,7 @@ from .. import (
 from ..auth import require_user
 from ..runtime import get_manager
 from ..scoring import reasons
+from ..scoring.route import LABELS as ROUTE_LABELS
 from ..util import LOCAL_TZ
 from ..web import templates
 from ..web_helpers import _jobs_return_target, _with_done
@@ -84,6 +85,10 @@ def jobs_page(
             summary = json.loads(raw)
         except ValueError:
             summary = None
+    if summary and isinstance(summary.get("routes"), dict):
+        summary["route_line"] = ", ".join(
+            f"{count} {ROUTE_LABELS[key]}" for key, count in summary["routes"].items() if count and key in ROUTE_LABELS
+        )
     ranking.refresh_travel()
     source_rows = store.list_sources()
     source_names = {row["id"]: row["name"] for row in source_rows}
