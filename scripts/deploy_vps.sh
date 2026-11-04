@@ -39,6 +39,10 @@ echo "== rsync to $HOST:~/$DIR =="
 ssh -o BatchMode=yes "$HOST" "mkdir -p ~/$DIR"
 rsync -az --stats "${EXCLUDES[@]}" ./ "$HOST:$DIR/"
 
+echo "== backup before restart =="
+# Same script as the daily backup; a failed backup stops the deploy.
+ssh -o BatchMode=yes "$HOST" "cd ~/$DIR && if [ -f data/app.db ]; then python3 deploy/backup.py --data data --dest ../$(basename "$DIR")-backups --label predeploy --keep 5; else echo 'no database yet'; fi"
+
 echo "== build + restart =="
 ssh -o BatchMode=yes "$HOST" "set -euo pipefail; cd ~/$DIR; test -s .env.local || { echo 'error: remote .env.local ontbreekt of is leeg' >&2; exit 1; }; chmod 600 .env.local; BUILD_LOG=\$(mktemp); if ! docker compose -f compose.yaml -f deploy/compose.vps.yml build > \"\$BUILD_LOG\" 2>&1; then tail -40 \"\$BUILD_LOG\"; rm -f \"\$BUILD_LOG\"; exit 1; fi; tail -3 \"\$BUILD_LOG\"; rm -f \"\$BUILD_LOG\"; docker compose -f compose.yaml -f deploy/compose.vps.yml up -d; for attempt in \$(seq 1 30); do sleep 2; if docker compose -f compose.yaml -f deploy/compose.vps.yml exec -T app curl -fsS -o /dev/null http://127.0.0.1:8080/healthz 2>/dev/null; then echo health=ok; docker compose -f compose.yaml -f deploy/compose.vps.yml ps; exit 0; fi; done; docker compose -f compose.yaml -f deploy/compose.vps.yml logs --tail=20; echo 'error: de app werd niet gezond' >&2; exit 1"
 
