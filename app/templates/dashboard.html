@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
+{% import "_judge.html" as judge with context %}
 {% block title %}Vandaag · Jobcraft{% endblock %}
 {% block content %}
 {% if start == 'open' %}<section class="banner" aria-label="Snelle start">{{ ui.icon('clock') }}<span>Je snelle start is nog niet af. Je antwoorden zijn bewaard. <a href="/start">Ga verder waar je gebleven was</a></span></section>{% endif %}
@@ -35,6 +36,7 @@
 
 <div class="today-grid">
   <div>
+    {{ judge.round(judge_round, ui) }}
     {% if tasks | length > 1 %}
     <section class="today-block" aria-labelledby="tasks-title">
       <h2 id="tasks-title">Daarna</h2>
@@ -72,7 +74,7 @@
           </div>
           <div class="pick-actions">
             <form method="post" action="/jobs/{{ job['id'] }}/status" data-pending-form>{% include '_csrf.html' %}<input type="hidden" name="next" value="/"><button class="button small" type="submit" name="status" value="saved">{{ ui.icon('bookmark') }}Bewaar</button></form>
-            <form method="post" action="/jobs/{{ job['id'] }}/vote" data-pending-form>{% include '_csrf.html' %}<input type="hidden" name="next" value="/"><button class="button small quiet" type="submit" name="vote" value="down" title="Minder passend: vergelijkbare vacatures zakken meteen">Niet voor mij</button></form>
+            <form method="post" action="/vandaag/oordeel/{{ job['id'] }}" data-pending-form>{% include '_csrf.html' %}<button class="button small quiet" type="submit" name="answer" value="nee" title="Minder passend: vergelijkbare vacatures zakken meteen">Niet voor mij</button></form>
           </div>
         </li>
         {% endfor %}
@@ -81,7 +83,7 @@
       {% else %}
       <div class="panel empty-state">
         <h3>{% if has_jobs %}Je bent bij{% else %}Nog geen vacatures{% endif %}</h3>
-        <p class="muted small">{% if has_jobs %}Alle nieuwe vacatures binnen je reisbereik heb je al bekeken. Er komen er twee keer per dag nieuwe bij.{% else %}Zodra er vacatures zijn opgehaald, zie je hier de best passende.{% endif %}</p>
+        <p class="muted small">{% if judge_round and judge_round.job %}Je laatste nieuwe vacature binnen je reisbereik staat hierboven bij Vijf voor vandaag. Er komen er twee keer per dag nieuwe bij.{% elif has_jobs %}Alle nieuwe vacatures binnen je reisbereik heb je al bekeken. Er komen er twee keer per dag nieuwe bij.{% else %}Zodra er vacatures zijn opgehaald, zie je hier de best passende.{% endif %}</p>
         <a class="button" href="/jobs/toevoegen">Zelf een vacature toevoegen</a>
       </div>
       {% endif %}

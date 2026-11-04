@@ -24,7 +24,7 @@ from . import (  # noqa: F401
     tasks,
     tenancy,
 )
-from .routers import admin_ai, cv, jobs, pages, start, studio, workspace
+from .routers import admin_ai, cv, jobs, judge, pages, start, studio, workspace
 from .routers import profile as profile_routes
 from .routers import sources as source_routes
 from .routers import tasks as task_routes
@@ -77,5 +77,5 @@ errors.install(app)
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.middleware("http")(errors.security_headers)
 app.include_router(auth.router)
-for group in (pages, source_routes, workspace, jobs, profile_routes, cv, task_routes, start, studio, admin_ai):
+for group in (pages, source_routes, workspace, jobs, judge, profile_routes, cv, task_routes, start, studio, admin_ai):
     app.include_router(group.router)

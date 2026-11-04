@@ -471,6 +471,25 @@ a.vacancy-score:hover { box-shadow: 0 0 0 4px var(--sunk); }
 .pick-actions { display: flex; gap: 6px; }
 .pick-actions form { margin: 0; }
 .link-row { display: flex; flex-wrap: wrap; gap: 6px 20px; }
+.judge-round { scroll-margin-top: 88px; } /* lands below the sticky top bar after an answer */
+.judge-card { margin: 0 0 8px; }
+.judge-question { margin: 0 0 4px; color: var(--ink-2); font-size: var(--fs-sm); font-weight: 650; }
+.judge-card h3 { font-size: var(--fs-md); margin: 0 0 4px; }
+.judge-card h3 a { color: var(--ink); text-decoration: none; }
+.judge-card h3 a:hover { color: var(--moss); text-decoration: underline; }
+.judge-card .meta { margin: 0 0 8px; }
+.judge-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.judge-actions .button { min-height: 44px; flex: 1 1 110px; justify-content: center; }
+.judge-reasons { margin: 0 0 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--sunk); }
+.judge-reasons p { margin: 0 0 8px; }
+.judge-reason-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-button {
+  min-height: 36px; padding: 4px 14px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface); color: var(--ink); font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer;
+}
+.chip-button:hover { border-color: var(--moss); color: var(--moss); }
+.chip-button:focus-visible { outline: 2px solid var(--moss); outline-offset: 2px; }
+.judge-done { display: flex; gap: 8px; align-items: center; margin: 0; }
 .today-side { display: grid; gap: 16px; }
 .today-side .panel { margin: 0; }
 .today-side h2 { display: flex; align-items: center; gap: 8px; font-size: var(--fs-md); margin: 0 0 12px; }

@@ -19,6 +19,7 @@ from .. import (
     auth,
     config,
     feedback,
+    judgements,
     profile,
     sources,
     store,
@@ -44,12 +45,17 @@ def dashboard(request: Request):
         return RedirectResponse(url="/start", status_code=303)
     columns = applications.board()
     task_list = today.tasks(columns)
-    matches, fresh = today.new_matches(5, today.last_visit())
+    start = today.start_state()
+    judge_round = judgements.today_round() if start != "open" else None
+    asked = judge_round["job"]["id"] if judge_round and judge_round["job"] else None
+    matches, fresh = today.new_matches(6, today.last_visit())
+    matches = [job for job in matches if job["id"] != asked][:5]  # not twice on one page
     return templates.TemplateResponse(
         request,
         "dashboard.html",
         {
-            "start": today.start_state(),
+            "start": start,
+            "judge_round": judge_round,
             "first_name": today.first_name(),
             "has_profile": profile.profile_exists(),
             "tasks": task_list,

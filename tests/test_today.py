@@ -75,6 +75,7 @@ def test_the_overview_triages_in_place(client, monkeypatch):  # noqa: F811
     from tests.test_jobs_page import add_job
 
     monkeypatch.setattr(profile, "profile_exists", lambda: True)
+    add_job("Boomverzorger", rank=90)  # asked in Vijf voor vandaag, so not listed again
     job_id = add_job("Hovenier")
     page = client.get("/").text
     assert "Nieuw en kansrijk" in page and f'action="/jobs/{job_id}/status"' in page

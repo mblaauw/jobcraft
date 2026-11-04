@@ -23,6 +23,7 @@ from .. import (
     geo,
     insights,
     job_verdict,
+    judgements,
     matching,
     notifications,
     profile,
@@ -373,10 +374,7 @@ def job_vote(job_id: int, vote: str = Form(...), url: str = Form("/jobs", alias=
     if value is None:
         raise HTTPException(status_code=400, detail="unknown vote")
     store.set_job_vote(job_id, value)
-    feedback.rebuild()
-    ranking.after_vote(job_id)
-    owner = tenancy.user_id()
-    tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}")
+    judgements.learn(job_id)
     return RedirectResponse(url=_with_done(_jobs_return_target(url), job_id, vote), status_code=303)
 
 
