@@ -47,6 +47,32 @@ for 77 of 261 eligible texts, but it never gives the summary and must-haves the
 LLM reading adds. A rule gate there saves little and loses something. Out of
 scope.
 
+## Live measurement, 2026-11-04 (after step 1 and 2 were deployed)
+
+Read-only run of `scripts/matching_quality.py` on the server, main account:
+
+| | |
+| --- | --- |
+| vacancies in matching | 4006 |
+| excluded (too far or handled) | 2962 |
+| fresh verdict | 129 |
+| act: Jev sure, above the floor | 740 |
+| act: below the floor | 112 |
+| escalate: Jev unsure | 58 |
+| wait: no quick assessment yet | 5 |
+| share above the floor that skips the LLM | 93% |
+| Jev fit vs verdict, 168 pairs | correlation 0.77, means 36 vs 58 |
+| rank vs verdict | correlation 0.75, top-20 overlap 65% |
+| judged by the person | 10, of which 1 good: too few to tune on |
+| wanted, but Jev was sure it did not fit | 0 (on 10 judgements) |
+
+Reading: the gate routes now, and hard: nineteen of twenty signalled vacancies
+above the floor never reach the matcher. Whether that is right cannot be said
+yet; the one number that would show harm needs forty judgements with ten good,
+and there are ten with one. Until then the threshold stays at 0.75 and the
+calibration sample keeps the pairs honest. Revisit when the judged report has
+enough to tune on.
+
 ## Goal
 
 One function decides, for one vacancy, what happens next, and says why. Every
