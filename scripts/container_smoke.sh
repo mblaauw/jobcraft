@@ -93,8 +93,16 @@ contains() {
   esac
 }
 contains static/app.css 'url("fonts/'
-contains static/start.js '/jobcraft/start/'
-contains static/job-drawer.js '/jobcraft/static/icons.svg'
+lacks() {
+  body=$(curl -fsS "$base/$1")
+  case "$body" in
+    *"$2"*) echo "error: $1 bevat nog $2" >&2; exit 1 ;;
+  esac
+}
+# Scripts take the prefix from the page they run in, so no root address may remain.
+contains static/start.js 'appRoot + "start/'
+lacks static/start.js 'fetch("/'
+contains static/job-drawer.js 'replace(/#i-'  # swaps only the icon, keeping the page's own address
 csrf=$(echo "$page" | grep -oE 'name="_csrf" value="[^"]+"' | sed -E 's/.*value="([^"]+)"/\1/')
 target=$(curl -sS -o /dev/null -b "$jar" -c "$jar" -w '%{redirect_url}' \
   --data-urlencode "_csrf=$csrf" --data-urlencode username=owner \
