@@ -1,7 +1,8 @@
 # One route per vacancy: making System 3 explicit
 
-Status: step 1 approved and built on 2026-11-04 (branch `route-gate`); step 2
-waits for the live measurement. Spike run on 2026-11-04 against the local data.
+Status: step 1 built on 2026-11-04 (branch `route-gate`, PR 82); step 2 built
+the same day on `route-open`, stacked on step 1, and waits for the live
+measurement before it ships. Spike run on 2026-11-04 against the local data.
 
 ## Why
 

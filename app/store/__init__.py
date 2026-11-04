@@ -30,7 +30,7 @@ from .ingestion import (
     touch_recent_detail as touch_recent_detail,
 )
 from .ingestion import upsert_job  # noqa: F401
-from .job_facts import delete_job_facts, load_job_facts, save_job_facts  # noqa: F401
+from .job_facts import delete_job_facts, get_job_facts, load_job_facts, save_job_facts  # noqa: F401
 from .job_list_filters import full_text_share_by_source  # noqa: F401
 from .job_state import (  # noqa: F401
     _set_job_state,
