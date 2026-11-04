@@ -8,19 +8,19 @@ the Jev/LLM verdicts stay cached.
 from __future__ import annotations
 
 import json
-import os
 
-from . import feedback, profile, store, taste, tenancy
+from . import feedback, profile, store, systemone, taste, tenancy
 from . import geo as geo
 from .scoring.digests import current_digest as _current_digest
 from .scoring.digests import job_match_digest
+from .scoring.route import HANDLED_STATUSES, OUTCOMES, Route, Thresholds, read_thresholds
+from .scoring.route import route as _route
 from .scoring.rules import rule_score
-from .scoring.signals import excluded_from_matching, signals_of
+from .scoring.signals import excluded_from_matching as excluded_from_matching
 from .scoring.signals import refresh_travel as refresh_travel
+from .scoring.signals import signals_of
 from .scoring.signals import travel_of as travel_of
 from .scoring.weights import read_weights
-
-MIN_RANK_FOR_LLM = float(os.environ.get("MATCH_MIN_RANK", "35"))
 
 
 def effective_fit(signals: dict | None) -> float | None:
@@ -196,10 +196,75 @@ def rerank_all(
         store.set_rank_scores(scores)
         store.meta_set(PARTS_KEY, json.dumps(parts, separators=(",", ":")))
         store.meta_set("queue_depth_digest", "")
-        depth = len(escalation_candidates(digest, 10000))
-    store.meta_set("queue_depth", str(depth))
-    store.meta_set("queue_depth_digest", digest)
+        decided = routed(digest, prefs, data)
+    _remember_routes(digest, decided)
     return len(scores)
+
+
+def _remember_routes(digest: str, decided: list) -> dict[str, int]:
+    """Queue depth and route counts from one routed pass, cached until the digest changes."""
+    counts = dict.fromkeys(OUTCOMES, 0)
+    for decision, _, _ in decided:
+        counts[decision.outcome] += 1
+    store.meta_set("queue_depth", str(counts["escalate"]))
+    store.meta_set("route_counts", json.dumps(counts))
+    store.meta_set("queue_depth_digest", digest)
+    return counts
+
+
+def _decide(
+    job,
+    digest: str,
+    preferences: dict | None,
+    feedback_data: dict | None,
+    thresholds: Thresholds,
+    quick: bool,
+) -> tuple[Route, float | None]:
+    """The route for one stored job and the rank it was judged on; ranks a job without one."""
+    signals = signals_of(job)
+    handled = bool(job["vote"]) or job["status"] in HANDLED_STATUSES
+    travel = {} if handled else travel_of(job)
+    rank = job["rank_score"]
+    if rank is None and signals is not None and signals.get("fit") is not None:
+        prefs = preferences if preferences is not None else profile.read_preferences()
+        data = feedback_data if feedback_data is not None else feedback.load()
+        rank = rank_for(job, prefs, data, signals, digest)[0]
+    decision = _route(
+        job,
+        signals,
+        fresh=verdict_is_fresh(job, digest),
+        rank=rank,
+        too_far=travel.get("in_range") is False and not travel.get("auto"),
+        quick=quick,
+        thresholds=thresholds,
+    )
+    return decision, rank
+
+
+def route_of(
+    job,
+    digest: str,
+    preferences: dict | None = None,
+    feedback_data: dict | None = None,
+) -> Route:
+    """What happens next with this vacancy for this account, and why."""
+    return _decide(job, digest, preferences, feedback_data, read_thresholds(), systemone.enabled())[0]
+
+
+def routed(
+    digest: str, preferences: dict | None = None, feedback_data: dict | None = None
+) -> list:
+    """(route, rank, job) for every vacancy in matching: one pass that every caller shares."""
+    thresholds = read_thresholds()
+    quick = systemone.enabled()
+    return [
+        (*_decide(job, digest, preferences, feedback_data, thresholds, quick), job)
+        for job in store.list_jobs_for_matching()
+    ]
+
+
+def _by_rank(rows) -> list:
+    return [job for _, job in sorted(rows, key=lambda item: item[0] if item[0] is not None else -1.0, reverse=True)]
 
 
 def escalation_candidates(
@@ -207,29 +272,51 @@ def escalation_candidates(
     limit: int,
     preferences: dict | None = None,
     feedback_data: dict | None = None,
+    decided: list | None = None,
 ) -> list:
-    """Jobs worth an expensive LLM verdict: promising, unvoted, uncertain."""
-    prefs = preferences if preferences is not None else profile.read_preferences()
-    data = feedback_data if feedback_data is not None else feedback.load()
-    candidates: list[tuple[float, object]] = []
-    for job in store.list_jobs_for_matching():
-        if excluded_from_matching(job):
-            continue
-        if verdict_is_fresh(job, digest):
-            continue
-        signals = signals_of(job)
-        rank = (
-            job["rank_score"]
-            if job["rank_score"] is not None
-            else rank_for(job, prefs, data, signals, digest)[0]
-        )
-        if rank < MIN_RANK_FOR_LLM:
-            continue
-        if signals is not None and not signals.get("escalate"):
-            continue
-        candidates.append((rank, job))
-    candidates.sort(key=lambda item: item[0], reverse=True)
-    return [job for _, job in candidates[:limit]]
+    """Jobs worth an expensive LLM verdict: the route says escalate, best rank first."""
+    decided = decided if decided is not None else routed(digest, preferences, feedback_data)
+    rows = [(rank, job) for decision, rank, job in decided if decision.outcome == "escalate"]
+    return _by_rank(rows)[:limit]
+
+
+def calibration_sample(
+    digest: str,
+    preferences: dict | None = None,
+    feedback_data: dict | None = None,
+    decided: list | None = None,
+    size: int | None = None,
+) -> list:
+    """A few sure fits judged anyway, so the calibration also sees jobs Jev was sure about.
+
+    Without them every paired verdict would come from the unsure band and the map from
+    Jev's scale to the matcher's would bend toward it.
+    """
+    size = read_thresholds().sample if size is None else size
+    if size <= 0:
+        return []
+    decided = decided if decided is not None else routed(digest, preferences, feedback_data)
+    rows = [(rank, job) for decision, rank, job in decided if decision.code == "sure"]
+    return _by_rank(rows)[:size]
+
+
+def routes(
+    digest: str, preferences: dict | None = None, feedback_data: dict | None = None
+) -> list[Route]:
+    """One route per vacancy in matching, for counting and measuring."""
+    return [decision for decision, _, _ in routed(digest, preferences, feedback_data)]
+
+
+def route_counts(digest: str) -> dict[str, int]:
+    """How many vacancies sit on each route now; cached by the last rerank for this digest."""
+    if store.meta_get("queue_depth_digest") == digest:
+        try:
+            cached = json.loads(store.meta_get("route_counts") or "")
+            if set(cached) == set(OUTCOMES):
+                return cached
+        except ValueError:
+            pass
+    return _remember_routes(digest, routed(digest))
 
 
 def queue_depth(digest: str) -> int:
@@ -239,7 +326,4 @@ def queue_depth(digest: str) -> int:
         cached = store.meta_get("queue_depth")
         if cached is not None:
             return int(cached)
-    depth = len(escalation_candidates(digest, 10000))
-    store.meta_set("queue_depth", str(depth))
-    store.meta_set("queue_depth_digest", digest)
-    return depth
+    return _remember_routes(digest, routed(digest))["escalate"]

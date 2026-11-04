@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 
-from . import feedback, ranking, store, tasks, tenancy, vacancy_reader, vacancy_text
+from . import feedback, profile, ranking, store, tasks, tenancy, vacancy_reader, vacancy_text
 from .scoring.digests import current_digest
 from .util import now_iso, now_local
 
@@ -108,7 +108,9 @@ def pick(skipped: set[int]) -> list[int]:
             chosen.append(row)
 
     take(rows[:1], 1)
-    unsure = [row for row in rows[:UNSURE_FROM] if (ranking.signals_of(row) or {}).get("escalate")]
+    # "Unsure" is what the route says, so this gate and the matcher's agree.
+    prefs, data = profile.read_preferences(), feedback.load()
+    unsure = [row for row in rows[:UNSURE_FROM] if ranking.route_of(row, digest, prefs, data).outcome == "escalate"]
     take(sorted(unsure, key=lambda row: (ranking.signals_of(row) or {}).get("confidence") or 0.0), 3)
     split = sorted((row for row in rows if _disagree(row, digest)), key=lambda row: -_disagree(row, digest))
     take(split, 5)

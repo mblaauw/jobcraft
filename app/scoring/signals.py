@@ -7,6 +7,7 @@ import json
 
 from .. import geo, store
 from ..contracts import JobRow
+from .route import HANDLED_STATUSES
 
 
 def signals_of(job: JobRow) -> dict | None:
@@ -81,7 +82,7 @@ def refresh_travel() -> int:
 
 def excluded_from_matching(job: JobRow) -> bool:
     """One shared skip rule for the Jev gate and LLM escalation."""
-    if job["vote"] or job["status"] in ("ignored", "applied", "interview", "offer", "rejected"):
+    if job["vote"] or job["status"] in HANDLED_STATUSES:
         return True
     travel = travel_of(job)
     return travel.get("in_range") is False and not travel.get("auto")

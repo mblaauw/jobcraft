@@ -96,10 +96,11 @@ def _run_match() -> None:
                 status = "budget"
                 break
             current = matching.match_jobs(runtime.manager)
-            for key in ("matched", "failed", "signals", "escalated", "cost_usd"):
+            for key in ("matched", "failed", "signals", "escalated", "sampled", "cost_usd"):
                 summary[key] = summary.get(key, 0) + current.get(key, 0)
             summary["errors"] = [*summary.get("errors", []), *current.get("errors", [])]
             summary["remaining"] = current.get("remaining", 0)
+            summary["routes"] = current.get("routes") or summary.get("routes") or {}
             if not (current.get("matched") or current.get("signals")):
                 break
         if summary:

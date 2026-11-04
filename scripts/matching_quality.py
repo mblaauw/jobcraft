@@ -103,7 +103,37 @@ def main(argv: list[str] | None = None) -> int:
             "\nNo paired Jev fit / LLM verdicts yet — run a match round that covers LLM-verified jobs."
         )
     judged_report(owner)
+    route_report(owner)
     return 0
+
+
+def route_report(owner: str) -> None:
+    """What the route decides for every vacancy now, and how often a sure Jev spares the LLM."""
+    from app import ranking
+    from app.scoring import route as routing
+    from app.scoring.digests import current_digest
+
+    with tenancy.scope({"id": owner}):
+        decisions = ranking.routes(current_digest())
+    outcomes: dict[str, int] = {}
+    codes: dict[str, int] = {}
+    for decision in decisions:
+        outcomes[decision.outcome] = outcomes.get(decision.outcome, 0) + 1
+        codes[decision.code] = codes.get(decision.code, 0) + 1
+    print(f"\nroutes now over {len(decisions)} vacancies:")
+    for key in routing.OUTCOMES:
+        if outcomes.get(key):
+            print(f"  {outcomes[key]:4d} {key:<9} {routing.LABELS[key]}")
+    sure, unsure = codes.get("sure", 0), codes.get("unsure", 0)
+    if sure + unsure:
+        print(
+            f"  above the rank floor with a quick assessment: {sure} sure, {unsure} unsure; "
+            f"{sure / (sure + unsure) * 100:.0f}% skip the LLM"
+        )
+    else:
+        print("  no vacancy above the rank floor has a quick assessment yet")
+    if codes.get("low_rank"):
+        print(f"  {codes['low_rank']} below the rank floor, never worth a verdict")
 
 
 POSITIVE = ("saved", "applied", "interview", "offer")
