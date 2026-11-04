@@ -93,7 +93,7 @@ contains() {
   esac
 }
 contains static/app.css 'url("fonts/'
-contains static/start.js '/jobcraft/start/'
+contains static/start.js 'appRoot + "start/'  # derives the prefix from the page, no proxy rewrite needed
 contains static/job-drawer.js '/jobcraft/static/icons.svg'
 csrf=$(echo "$page" | grep -oE 'name="_csrf" value="[^"]+"' | sed -E 's/.*value="([^"]+)"/\1/')
 target=$(curl -sS -o /dev/null -b "$jar" -c "$jar" -w '%{redirect_url}' \
