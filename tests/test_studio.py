@@ -252,16 +252,19 @@ def test_the_studio_walks_from_empty_to_plan_to_work(client, monkeypatch):  # no
     _plan(job_id)
     page = client.get(f"/jobs/{job_id}/sollicitatie").text
     assert "Plannen lopen vast" in page and "Onze aanrader" in page and "Welk resultaat?" in page
-    client.post(
+    written = client.post(
         f"/jobs/{job_id}/sollicitatie/schrijven",
         data={"invalshoek": "a", "antwoord_q1": "Twintig dossiers afgerond", "toelichting": "Ik ken de regio"},
+        follow_redirects=False,
     )
+    assert written.headers["location"] == f"/jobs/{job_id}/sollicitatie?tab=cv"  # lands on what was written
     plan = application_plan.load(job_id)
     assert plan["angle"] == "a" and plan["answers"]["q1"] == "Twintig dossiers afgerond"
     assert application_plan.stories()[0]["answer"] == "Twintig dossiers afgerond"
     assert "Twintig dossiers" in application_plan.person_source(plan)
     assert "Ik ken de regio" in application_plan.person_source(plan)
     store.meta_set(f"doc_status:{job_id}", json.dumps({"state": "done"}))
+    assert "Twintig dossiers afgerond</textarea>" in client.get(f"/jobs/{job_id}/sollicitatie?tab=plan").text  # still answered
     document_pipeline.save_version(
         dict(store.get_job(job_id)), "resume", CV,
         review={"score": 72, "first_impression": "Zes seconden", "fixes": ["Doe dit"], "warnings": ["Het getal 9"]},

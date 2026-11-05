@@ -184,7 +184,9 @@ async def write(request: Request, job_id: int):
     if kind not in ("both", "resume", "motivatie"):
         raise HTTPException(status_code=400, detail="unknown document kind")
     problem = await run_in_threadpool(_enqueue, job_id, kind)
-    return RedirectResponse(url=_here(job_id, "plan", probleem=problem), status_code=303)
+    # The wait shows on every tab; once done, the person lands on what was written.
+    tab = "plan" if problem else ("brief" if kind == "motivatie" else "cv")
+    return RedirectResponse(url=_here(job_id, tab, probleem=problem), status_code=303)
 
 
 def _renew(job: dict) -> int:
