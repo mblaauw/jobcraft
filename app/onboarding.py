@@ -7,6 +7,7 @@ import logging
 import re
 
 from . import geo, profile, ranking, runtime, store
+from .scoring.rules import GENERIC_ROLE_WORDS
 from .workflows import _budget_reached
 
 log = logging.getLogger("jobcraft")
@@ -35,7 +36,10 @@ def split_terms(raw: str) -> list[str]:
 
 def _keywords(role: str) -> list[str]:
     """The whole role plus its distinctive words, so 'Projectleider water' finds both."""
-    words = [word for word in re.findall(r"[\w-]+", role.lower()) if len(word) >= 5]
+    words = [
+        word for word in re.findall(r"[\w-]+", role.lower())
+        if len(word) >= 5 and word not in GENERIC_ROLE_WORDS
+    ]
     return list(dict.fromkeys([role.lower(), *words]))
 
 

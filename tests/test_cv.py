@@ -168,6 +168,18 @@ def test_an_id_with_digits_never_vouches_for_a_number(cv):
     assert cv_ai.coach(_manager([answer]), cv) == []
 
 
+def test_turning_the_profile_into_a_cv_leaves_the_interview_answers_out(client):  # noqa: F811
+    profile.write_profile(
+        "# Profiel\n\n## Werkervaring\nProjectcoördinator bij Stichting Groene Buurt sinds 2022, "
+        "40 buurtprojecten per jaar met 120 vrijwilligers.\n\n"
+        f"## {profile.ANSWERS_HEADING}\nWat wil je minder doen? Minder administratie, meer klimaatadaptatie.\n",
+        "test",
+    )
+    text = cv_ai.source_text("profiel")
+    assert "Groene Buurt" in text
+    assert "klimaatadaptatie" not in text and profile.ANSWERS_HEADING not in text
+
+
 def test_plan_cv_and_letter_calls_know_what_day_it_is(cv, monkeypatch):
     from datetime import datetime
 

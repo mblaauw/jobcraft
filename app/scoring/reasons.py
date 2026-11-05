@@ -6,7 +6,7 @@ import json
 import re
 
 from . import wishes
-from .rules import has_term
+from .rules import has_term, track_keywords
 
 _CONTRACT_LABELS = {
     "vast": "Vast contract",
@@ -35,7 +35,7 @@ def reason_line(job: dict, preferences: dict) -> str:
     )
     parts: list[str] = []
     for track in preferences.get("tracks", []):
-        if any(has_term(keyword, text) for keyword in track.get("keywords", []) if keyword):
+        if any(has_term(keyword, text) for keyword in track_keywords(track)):
             parts.append(f"past bij {track['name'].lower()}")
             break
     _delta, notes = wishes.adjust(text, job.get("title") or "", preferences.get("wishes"))
