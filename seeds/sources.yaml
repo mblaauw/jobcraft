@@ -109,6 +109,8 @@ sources:
     pages: 3
     link_pattern: "/vacatures/[a-z0-9-]{4,}$"
     default_location: Amsterdam
+    default_company: Gemeente Amsterdam
+    revision: 2
     per_page: 50
     enabled: true
     notes: "Gemeentelijke vacatures (groen, facilitair, openbare ruimte, ondersteuning); geen JSON-LD, dus h1 + paginatekst."

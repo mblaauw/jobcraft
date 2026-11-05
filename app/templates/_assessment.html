@@ -42,10 +42,12 @@
     <ul class="traits">
       {% for key, yes, no in [('day_hours', 'Dagwerk', 'Geen vast dagwerk'), ('evening_weekend', 'Avond- of weekendwerk', None), ('outdoor_mobile', 'Veel buiten of op locatie', None), ('physically_heavy', 'Fysiek zwaar', None), ('phone_sales_main', 'Veel bellen of verkoop', None), ('guidance', 'Inwerkperiode', None), ('company_car', 'Bedrijfsauto', None)] %}
         {% set p = n.get(key) %}
-        {# Structural evenings make "Dagwerk" misleading: the warning chip says it all. #}
+        {# Only what the quick assessment is fairly sure of, the same bar the ranking uses (0.75):
+           a coin-flip "Dagwerk" next to a verdict about evening work reads as a contradiction.
+           Possible evenings make "Dagwerk" misleading too. #}
         {% if key == 'day_hours' and (n.get('evening_weekend') or 0) > 0.5 %}
-        {% elif p is not none and p > 0.5 %}<li class="chip {{ 'chip-warn' if key in ('evening_weekend', 'physically_heavy', 'phone_sales_main') else 'chip-ok' }}">{{ yes }}</li>
-        {% elif p is not none and no and p < 0.5 %}<li class="chip chip-warn">{{ no }}</li>{% endif %}
+        {% elif p is not none and p >= 0.75 %}<li class="chip {{ 'chip-warn' if key in ('evening_weekend', 'physically_heavy', 'phone_sales_main') else 'chip-ok' }}">{{ yes }}</li>
+        {% elif p is not none and no and p <= 0.25 %}<li class="chip chip-warn">{{ no }}</li>{% endif %}
       {% endfor %}
     </ul>
     {% endif %}
@@ -63,3 +65,7 @@
     </details>
     {% endif %}
   </section>
+{% if standalone %}
+{# Served on its own once ready: the score at the top changed with it, so send that along. #}
+<template data-swap-also>{% include "_detail_stamp.html" %}</template>
+{% endif %}

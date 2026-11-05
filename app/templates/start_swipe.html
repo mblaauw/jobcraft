@@ -7,6 +7,7 @@
 <div class="page-head"><div>
   <h1>Zou je hierop reageren?</h1>
   <p class="lede">Vacature {{ position }} van {{ total }}.</p>
+  {% if short %}<p class="start-why">{% if scanning %}We halen nog vacatures op, dus er staan er nu minder klaar dan vijf. Later komen er meer bij.{% else %}Meer vacatures binnen je keuzes zijn er nu niet. Er komen er vanzelf bij.{% endif %}</p>{% endif %}
 </div></div>
 <article class="panel swipe-card">
   <h2>{{ job['title'] or 'Zonder titel' }}</h2>

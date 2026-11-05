@@ -272,6 +272,8 @@ def scan(limit_per_source: int | None = None) -> dict:
                     summary["sources"][source["id"]] = entry
                     continue
             except Exception as exc:
+                if STOPPING.is_set():  # cut off by a restart: this and the rest have not failed
+                    break
                 entry["status"] = "error"
                 entry["reason"] = f"{type(exc).__name__}: {exc}"[:300]
                 summary["errors"].append({"source": source["id"], "reason": entry["reason"]})

@@ -37,7 +37,8 @@ def test_opening_a_vacancy_assesses_it_and_the_explanation_swaps_in(client, monk
     assert _run() == 1
     assert store.get_job(job_id)["match_score"] == 72
     part = client.get(f"/jobs/{job_id}/oordeel").text
-    assert "Veel klantcontact en planning" in part and "Ook avondwerk." in part and "data-swap" not in part
+    assert "Veel klantcontact en planning" in part and "Ook avondwerk." in part
+    assert "data-swap" not in part.split("<template")[0]  # ready: the part no longer asks to be swapped
 
 
 def test_without_ai_nothing_is_asked_and_the_page_says_so(client, monkeypatch):  # noqa: F811

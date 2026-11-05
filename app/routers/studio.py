@@ -361,7 +361,7 @@ def job_assessment(request: Request, job_id: int):
     return templates.TemplateResponse(
         request,
         "_assessment.html",
-        {"job": job, "signals": ranking.signals_of(job), **job_verdict.context(job)},
+        {"job": job, "signals": ranking.signals_of(job), "standalone": True, **job_verdict.context(job)},
     )
 
 
