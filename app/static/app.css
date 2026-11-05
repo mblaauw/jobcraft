@@ -548,11 +548,12 @@ a.vacancy-score:hover { box-shadow: 0 0 0 4px var(--sunk); }
 .reach-count strong { color: var(--ink); font-size: var(--fs-lg); font-variant-numeric: tabular-nums; }
 .reach-modes { display: flex; flex-wrap: wrap; gap: 8px; }
 .reach-scale { display: grid; grid-template-columns: minmax(0, 1fr) 4.5em; align-items: center; column-gap: 14px; }
-.reach-bars { grid-column: 1; display: flex; align-items: flex-end; gap: 3px; height: 40px; padding: 0 9px; }
-.reach-bars span { flex: 1; height: max(3px, var(--h)); border-radius: 3px 3px 0 0; background: var(--line-strong); transition: background-color .15s; }
-.reach-bars span.is-in { background: var(--moss); }
 .reach-scale input[type="range"] { grid-column: 1; width: 100%; margin: 4px 0 0; accent-color: var(--moss); cursor: pointer; }
-.reach-scale output { grid-column: 2; grid-row: 2; font-weight: 700; font-variant-numeric: tabular-nums; }
+.reach-scale output { grid-column: 2; grid-row: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* Minute marks under the stops; the thumb is about 18px wide, so the ends sit 9px in. */
+.reach-ticks { grid-column: 1; position: relative; height: 1.4em; margin: 2px 0 0; color: var(--ink-3); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+.reach-ticks span { position: absolute; left: calc(9px + (100% - 18px) * var(--at)); transform: translateX(-50%); }
+@media (max-width: 520px) { .reach-ticks .is-minor { display: none; } }
 .reach-hint { margin: 0; color: var(--ink-2); font-size: var(--fs-sm); }
 .reach-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .reach-foot .switch { min-height: 36px; }

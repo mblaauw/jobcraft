@@ -20,7 +20,6 @@
   const count = document.querySelector("[data-reach-count]");
   const output = document.querySelector("[data-reach-minutes]");
   const hint = document.querySelector("[data-reach-hint]");
-  const bars = document.querySelectorAll(".reach-bars span");
   const number = new Intl.NumberFormat("nl-NL");
 
   function show() {
@@ -28,7 +27,6 @@
     output.textContent = minutes + " min";
     slider.setAttribute("aria-valuetext", minutes + " minuten");
     if (counts[minutes] !== undefined) count.textContent = number.format(counts[minutes]);
-    bars.forEach((bar) => bar.classList.toggle("is-in", Number(bar.dataset.minutes) <= minutes));
     const next = minutes + 15;
     if (counts[next] === undefined) {
       hint.textContent = "Dit is de ruimste stand.";
