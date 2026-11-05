@@ -92,7 +92,7 @@ def test_new_matches_skip_far_jobs_and_count_only_what_arrived_since_the_visit(c
     from tests.test_jobs_page import add_job
 
     best, far, other = add_job("Hovenier", rank=90), add_job("Boomverzorger", rank=95), add_job("Tuinman", rank=70)
-    store.set_job_travel(far, "test", json.dumps({"in_range": False}))
+    store.set_job_travel(far, "test", json.dumps({"transit_min": 999, "ebike_min": 999, "car_min": 999}))
     picks, fresh = today.new_matches(1, "2000-01-01")
     assert [item["id"] for item in picks] == [best] and picks[0]["is_new"] and fresh == 2
     assert today.new_matches(5, "2999-01-01")[1] == 0

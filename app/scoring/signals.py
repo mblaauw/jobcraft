@@ -31,12 +31,14 @@ def _job_value(job, key):
 
 
 def _home_key(settings: dict) -> str:
-    raw = json.dumps({"version": geo.TRAVEL_VERSION, "home": settings}, sort_keys=True)
+    """Stored times change with where you live, never with how far you would travel."""
+    where = {name: settings.get(name) for name in ("label", "lat", "lon")}
+    raw = json.dumps({"version": geo.TRAVEL_VERSION, "home": where}, sort_keys=True)
     return hashlib.sha256(raw.encode()).hexdigest()[:20]
 
 
-def _assess(job, settings: dict) -> dict:
-    return geo.assess(
+def _times(job, settings: dict) -> dict:
+    return geo.times(
         _job_value(job, "location"),
         _job_value(job, "lat"),
         _job_value(job, "lon"),
@@ -46,23 +48,26 @@ def _assess(job, settings: dict) -> dict:
     )
 
 
-def travel_of(job: JobRow) -> dict:
-    settings = geo.home()
+def travel_of(job: JobRow, settings: dict | None = None) -> dict:
+    """Stored minutes for this vacancy, judged against your budgets (or the ones given)."""
+    settings = settings if settings is not None else geo.home()
     home_key = _home_key(settings)
     job_id = _job_value(job, "id")
     key = store.travel_key(home_key, {name: _job_value(job, name) for name in store.TRAVEL_FIELDS})
+    found = None
     if job_id is not None:
         same_row = _job_value(job, "travel_key") == key
         cached = _job_value(job, "travel_json") if same_row else store.get_job_travel(job_id, key)
         if cached:
             try:
-                return json.loads(cached)
+                found = json.loads(cached)
             except ValueError:
-                pass
-    result = _assess(job, settings)
-    if job_id is not None:
-        store.set_job_travel(job_id, key, json.dumps(result, ensure_ascii=False))
-    return result
+                found = None
+    if found is None:
+        found = _times(job, settings)
+        if job_id is not None:
+            store.set_job_travel(job_id, key, json.dumps(found, ensure_ascii=False))
+    return geo.judge(found, settings)
 
 
 def refresh_travel() -> int:
@@ -72,7 +77,7 @@ def refresh_travel() -> int:
     entries = {
         job["id"]: (
             store.travel_key(home_key, job),
-            json.dumps(_assess(job, settings), ensure_ascii=False),
+            json.dumps(_times(job, settings), ensure_ascii=False),
         )
         for job in store.jobs_missing_travel(home_key)
     }

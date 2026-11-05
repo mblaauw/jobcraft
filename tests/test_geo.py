@@ -296,3 +296,66 @@ def test_the_reach_reads_as_you_set_it():
     assert geo.reach_line({"bike_minutes": 45, "transit_minutes": 45}) == "45 min e-bike of 45 min OV"
     assert geo.reach_line({"bike_minutes": 0, "transit_minutes": 0, "car_minutes": 30}) == "30 min auto"
     assert geo.reach_line({"bike_minutes": 0, "transit_minutes": 0}) == "geen manier van reizen gekozen"
+
+
+@pytest.mark.parametrize(
+    "place, low, high",
+    [("Rotterdam", 55, 80), ("Den Haag", 55, 80), ("Eindhoven", 90, 125), ("Zwolle", 75, 105), ("Utrecht", 40, 60), ("Amstelveen", 15, 35)],
+)
+def test_transit_goes_by_train_between_the_nearest_stations(place, low, high):
+    # Door to door from Amsterdam; the old guess put Eindhoven at 139 and Rotterdam at 81 minutes.
+    assert low <= geo.assess(place)["transit_min"] <= high
+
+
+def test_without_stations_transit_falls_back_to_buses(monkeypatch):
+    from app import commute
+
+    assert commute.load_stations(commute.STATIONS_FILE.with_name("missing.csv")) == []
+    monkeypatch.setattr(commute, "STATIONS", [])
+    commute._stations_near.cache_clear()
+    try:
+        assert geo.assess("Rotterdam")["transit_min"] == round(commute.bus_minutes(geo.assess("Rotterdam")["distance_km"]))
+    finally:
+        commute._stations_near.cache_clear()
+
+
+def test_stored_times_outlast_a_change_of_budget():
+    from app import store
+    from app.scoring import signals
+
+    near, far = add_job(1, location="Zaandam"), add_job(2, location="Utrecht")
+    assert ranking.refresh_travel() == 2
+    listed = {row["id"] for row in store.list_jobs_page(10, 0, within_travel=True)}
+    assert listed == {near}
+    profile.write_preferences({"home": {"label": "Amsterdam", "lat": 52.3676, "lon": 4.9041, "transit_minutes": 60}})
+    assert ranking.refresh_travel() == 0  # nothing to work out again
+    assert {row["id"] for row in store.list_jobs_page(10, 0, within_travel=True)} == {near, far}
+    assert ranking.travel_of(store.get_job(far))["in_range"] is True
+    # A list can try other budgets without saving them.
+    tight = {"bike_minutes": 0, "transit_minutes": 20, "car_minutes": 0}
+    assert {row["id"] for row in store.list_jobs_page(10, 0, within_travel=tight)} == set()
+    assert store.job_status_counts(reach=tight)["new"] == (2, 2)
+    assert ranking.travel_of(store.get_job(near), geo.home() | tight)["too_far"] is True
+    # Moving house does work them out again.
+    profile.write_preferences({"home": {"label": "Utrecht", "lat": 52.0907, "lon": 5.1214}})
+    assert ranking.refresh_travel() == 2
+    assert signals._home_key(geo.home()) != signals._home_key({"label": "Amsterdam", "lat": 52.3676, "lon": 4.9041})
+
+
+def test_the_sql_rule_agrees_with_the_python_rule():
+    from app import store
+
+    jobs = {
+        add_job(1, location="Haarlem"): None,
+        add_job(2, location="Groningen"): None,
+        add_job(3, location="Groningen", description="Volledig remote."): None,
+        add_job(4, location="Groningen", description="Met een bedrijfsauto naar klanten."): None,
+        add_job(5, location="Atlantis"): None,
+        add_job(6, location=""): None,
+    }
+    ranking.refresh_travel()
+    for budgets in ({}, {"bike_minutes": 0, "transit_minutes": 0}, {"car_minutes": 200}, {"bike_kind": "fiets", "bike_minutes": 60}):
+        settings = geo.home() | budgets
+        listed = {row["id"] for row in store.list_jobs_page(10, 0, within_travel=settings)}
+        for job_id in jobs:
+            assert (job_id in listed) is not ranking.travel_of(store.get_job(job_id), settings)["too_far"], (job_id, budgets)

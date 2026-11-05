@@ -16,15 +16,14 @@ import re
 from functools import lru_cache
 from pathlib import Path
 
+from .commute import bike_minutes, bus_minutes, car_minutes, haversine_km, transit_minutes
+
 BIKE_MINUTES = 30
 TRANSIT_MINUTES = 35
-BIKE_KMH = {"fiets": 15.0, "ebike": 20.0}
 BIKE_WORDS = {"fiets": "fiets", "ebike": "e-bike"}
-# Roads and cycle paths are longer than the straight line between two places.
-BIKE_ROUTE_FACTOR = 1.2
-CAR_ROUTE_FACTOR = 1.3
 IN_CITY_KM = 4.0
-TRAVEL_VERSION = "account-home-v4"
+# Stored estimates hold minutes per way of travelling, never a verdict on your budgets.
+TRAVEL_VERSION = "travel-times-v5"
 GAZETTEER_FILE = Path(__file__).with_name("data") / "places_nl.csv"
 # Names vacancies use for a place the catalogue lists under another name.
 ALIASES = {
@@ -75,8 +74,8 @@ for _alias, _place in ALIASES.items():
     if _place in PLACES and _alias not in PLACES:
         PLACES[_alias] = PLACES[_place]
         PLACE_LABELS[_alias] = PLACE_LABELS[_place]
-        if _place in RAIL_PLACES:
-            RAIL_PLACES.add(_alias)
+
+
 
 
 def _core_places(path: Path) -> set[str]:
@@ -174,28 +173,6 @@ def _norm(value: str | None) -> str:
     return re.sub(r"\s+", " ", (value or "").lower()).strip()
 
 
-def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    radius = 6371.0
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    dphi, dlambda = math.radians(lat2 - lat1), math.radians(lon2 - lon1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
-    return 2 * radius * math.asin(math.sqrt(min(1.0, max(0.0, a))))
-
-
-def _minutes(distance_km: float, rail: bool, bike_kind: str = "ebike") -> tuple[int, int, int]:
-    """Door-to-door minutes by bike, transit and car for a straight-line distance."""
-    bike = distance_km * BIKE_ROUTE_FACTOR / (BIKE_KMH[bike_kind] / 60.0)
-    transit = (
-        14 + distance_km * 0.9
-        if rail
-        else (12 + distance_km * 1.8 if distance_km <= 8 else 18 + distance_km * 1.1)
-    )
-    # Town streets first, then the motorway; five minutes to park and walk.
-    road = distance_km * CAR_ROUTE_FACTOR
-    car = 5 + min(road, 6.0) / 30 * 60 + max(0.0, road - 6.0) / 85 * 60
-    return round(bike), round(transit), round(car)
-
-
 _REMOTE_PLACE = re.compile(r"\b(?:remote|thuiswerk\w*|vanuit huis|home[- ]?based|op afstand)\b")
 
 
@@ -230,6 +207,30 @@ def budget(minutes: int, highest: int) -> int:
 def too_far(travel: dict) -> bool:
     """The one rule for hiding a vacancy on distance: an office out of reach, no way around it."""
     return travel.get("in_range") is False and not travel.get("auto") and not travel.get("remote")
+
+
+def _ways(settings: dict) -> list[tuple[str, int]]:
+    """(stored minutes key, budget) for each way this person travels."""
+    kind = settings.get("bike_kind") or "ebike"
+    ways = (
+        (f"{kind}_min", settings.get("bike_minutes", 0)),
+        ("transit_min", settings.get("transit_minutes", 0)),
+        ("car_min", settings.get("car_minutes", 0)),
+    )
+    return [(key, int(minutes)) for key, minutes in ways if minutes and minutes > 0]
+
+
+def too_far_sql(settings: dict, column: str = "travel_json") -> tuple[str, list]:
+    """The SQL twin of too_far over stored times, for the budgets in settings."""
+    ways = _ways(settings)
+    reachable = " OR ".join(f"json_extract({column},'$.{key}') <= ?" for key, _ in ways) or "0"
+    sql = (
+        f"(json_extract({column},'$.transit_min') IS NOT NULL"
+        f" AND COALESCE(json_extract({column},'$.remote'),0)=0"
+        f" AND COALESCE(json_extract({column},'$.auto'),0)=0"
+        f" AND NOT ({reachable}))"
+    )
+    return sql, [minutes for _, minutes in ways]
 
 
 def _contains_place(text: str, place: str) -> bool:
@@ -278,6 +279,98 @@ def _norm_lines(value: str) -> str:
     return "\n".join(_norm(line) for line in value.splitlines())
 
 
+def times(
+    location: str | None,
+    lat: float | None = None,
+    lon: float | None = None,
+    description: str | None = None,
+    title: str | None = None,
+    *,
+    home_settings: dict | None = None,
+) -> dict:
+    """Minutes to a vacancy by each way of travelling; they depend on where you live only."""
+    settings = home_settings if home_settings is not None else home()
+    text = f"{description or ''}\n{title or ''}"
+    result = {
+        "place": location or "onbekend",
+        "located": bool((location or "").strip()),
+        "distance_km": None,
+        "fiets_min": None,
+        "ebike_min": None,
+        "transit_min": None,
+        "car_min": None,
+        "in_city": False,
+        "auto": employer_transport(text),
+        "remote": fully_remote(location, text),
+        "source": "unknown",
+        "home": (settings["lat"], settings["lon"]) != (0, 0),
+    }
+    if not result["home"]:
+        return result
+    start = (settings["lat"], settings["lon"])
+    place = _find_place(location or "")
+    work, source = None, "unknown"
+    if lat is not None and lon is not None:
+        try:
+            if valid_coordinates(float(lat), float(lon)):
+                work, source = (float(lat), float(lon)), "coords"
+        except (ValueError, TypeError):
+            pass
+    if work is None and place:
+        work, source = PLACES[place], "place"
+    if work is None:
+        return result
+    distance = haversine_km(*start, *work)
+    in_city = source == "place" and distance < 1 and place == _find_place(settings["label"])
+    if in_city:
+        distance = IN_CITY_KM
+    transit = round(bus_minutes(distance)) if in_city else transit_minutes(start, work, distance)
+    return result | {
+        "place": PLACE_LABELS.get(place, "") or (location or "onbekend").title(),
+        "distance_km": round(distance, 1),
+        "fiets_min": bike_minutes(distance, "fiets"),
+        "ebike_min": bike_minutes(distance, "ebike"),
+        "transit_min": transit,
+        "car_min": car_minutes(distance),
+        "in_city": in_city,
+        "source": source,
+    }
+
+
+def judge(found: dict, settings: dict) -> dict:
+    """Stored times against this person's budgets: in reach, too far, and how to say it."""
+    kind = settings.get("bike_kind") or "ebike"
+    remote, auto = bool(found.get("remote")), bool(found.get("auto"))
+    result = found | {
+        "bike_min": found.get(f"{kind}_min"),
+        "in_range": None,
+        "too_far": False,
+        "car_available": bool(settings.get("car_minutes")),
+    }
+    if found.get("transit_min") is None:
+        if remote:
+            label = "volledig thuiswerk"
+        elif not found.get("home", True):
+            label = "Stel je woonplaats in via je profiel"
+        else:
+            label = "reistijd onbekend" if found.get("located") else "locatie onbekend"
+        return result | {"label": label}
+    in_range = any(found.get(key) is not None and found[key] <= budget for key, budget in _ways(settings))
+    times = f"~{result['bike_min']} min {BIKE_WORDS[kind]} / ~{found['transit_min']} min OV"
+    if settings.get("car_minutes", 0) > 0:
+        times += f" / ~{found['car_min']} min auto"
+    if in_range:
+        label = (f"in {settings['label']} · " if found.get("in_city") else "") + times
+    elif remote:
+        label = f"volledig thuiswerk · kantoor {times}"
+    elif auto:
+        label = f"buiten je reisbereik (~{found['transit_min']} min OV) · met bedrijfsauto"
+    else:
+        label = f"te ver · {times}"
+    result = result | {"in_range": in_range, "label": label}
+    return result | {"too_far": too_far(result)}
+
+
 def assess(
     location: str | None,
     lat: float | None = None,
@@ -288,74 +381,5 @@ def assess(
     home_settings: dict | None = None,
 ) -> dict:
     settings = home_settings if home_settings is not None else home()
-    text = f"{description or ''}\n{title or ''}"
-    auto = employer_transport(text)
-    remote = fully_remote(location, text)
-    result = {
-        "place": location or "onbekend",
-        "distance_km": None,
-        "bike_min": None,
-        "transit_min": None,
-        "car_min": None,
-        "in_range": None,
-        "auto": auto,
-        "remote": remote,
-        "too_far": False,
-        "source": "unknown",
-        "car_available": bool(settings.get("car_available")),
-        "label": "volledig thuiswerk" if remote else "locatie onbekend",
-    }
-    if (settings["lat"], settings["lon"]) == (0, 0):
-        return result | {"label": "volledig thuiswerk" if remote else "Stel je woonplaats in via je profiel"}
-    place = _find_place(location or "")
-    distance, source = None, "unknown"
-    if lat is not None and lon is not None:
-        try:
-            latitude, longitude = float(lat), float(lon)
-            if valid_coordinates(latitude, longitude):
-                distance = haversine_km(settings["lat"], settings["lon"], latitude, longitude)
-                source = "coords"
-        except (ValueError, TypeError):
-            pass
-    if distance is None and place:
-        distance = haversine_km(settings["lat"], settings["lon"], *PLACES[place])
-        source = "place"
-    if distance is None:
-        # A named place we cannot map is still a location; only the travel time is unknown.
-        if remote:
-            return result
-        return result | {"label": "reistijd onbekend"} if (location or "").strip() else result
-    in_city = source == "place" and distance < 1 and place == _find_place(settings["label"])
-    if in_city:
-        distance = IN_CITY_KM
-    kind = settings.get("bike_kind") or "ebike"
-    bike_min, transit_min, car_min = _minutes(distance, bool(place and place in RAIL_PLACES), kind)
-    budgets = (
-        (bike_min, settings["bike_minutes"]),
-        (transit_min, settings["transit_minutes"]),
-        (car_min, settings.get("car_minutes", 0)),
-    )
-    in_range = any(budget > 0 and minutes <= budget for minutes, budget in budgets)
-    prefix = f"in {settings['label']} · " if in_city else ""
-    times = f"~{bike_min} min {BIKE_WORDS[kind]} / ~{transit_min} min OV"
-    if settings.get("car_minutes", 0) > 0:
-        times += f" / ~{car_min} min auto"
-    if in_range:
-        label = f"{prefix}{times}"
-    elif remote:
-        label = f"volledig thuiswerk · kantoor {times}"
-    elif auto:
-        label = f"buiten je reisbereik (~{transit_min} min OV) · met bedrijfsauto"
-    else:
-        label = f"te ver · {times}"
-    result = result | {
-        "place": PLACE_LABELS.get(place, "") or (location or "onbekend").title(),
-        "distance_km": round(distance, 1),
-        "bike_min": bike_min,
-        "transit_min": transit_min,
-        "car_min": car_min,
-        "in_range": in_range,
-        "source": source,
-        "label": label,
-    }
-    return result | {"too_far": too_far(result)}
+    found = times(location, lat, lon, description, title, home_settings=settings)
+    return judge(found, settings)
