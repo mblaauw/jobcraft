@@ -30,6 +30,18 @@ DEALBREAKERS = (
 )
 
 
+def hours_from_text(text: str) -> str:
+    """The hours choice a CV states itself ("28 tot 32 uur"), or "" when it says none."""
+    found = re.search(r"(?<!\d)(\d{1,2})\s*(?:tot|-|–)\s*(\d{1,2})\s*uur", text or "")
+    if not found:
+        return ""
+    low, high = sorted((int(found.group(1)), int(found.group(2))))
+    # The bucket that holds the most of the stated range.
+    overlap = {key: min(high, top) - max(low, bottom) for key, (bottom, top) in HOURS.items() if bottom is not None}
+    best = max(overlap, key=overlap.get)
+    return best if overlap[best] > 0 else ""
+
+
 def split_terms(raw: str) -> list[str]:
     return list(dict.fromkeys(term.strip() for term in re.split(r"[,\n;]", raw) if term.strip()))[:15]
 

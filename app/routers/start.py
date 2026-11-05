@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from contextlib import suppress
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
@@ -11,6 +12,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from .. import (
     config,
+    cv_ai,
+    cv_model,
     cv_text,
     cv_uploads,
     document_contact,
@@ -130,6 +133,10 @@ async def start_cv_confirm(request: Request):
         preferences["tracks"] = onboarding.tracks_for(list(dict.fromkeys(map(str, roles))), preferences["tracks"])
     boost = preferences["keywords"]["boost"]
     preferences["keywords"]["boost"] = list(dict.fromkeys([*boost, *map(str, skills)]))
+    hours = onboarding.hours_from_text(" ".join(sections.values()))
+    filters = preferences["hard_filters"]
+    if hours and filters.get("hours_min") is None and filters.get("hours_max") is None:
+        filters.update(zip(("hours_min", "hours_max"), onboarding.HOURS[hours], strict=True))
     level = str(form.get("seniority") or "")
     if level in onboarding.LEVEL_WORDS:
         preferences["wishes"]["seniority"] = [level]
@@ -151,6 +158,9 @@ async def start_cv_confirm(request: Request):
             log.warning("plain base CV not created: %s", type(exc).__name__)
     if _update(form):
         return RedirectResponse(url="/account?uploaded=1", status_code=303)
+    if updates and cv_model.load() is None:  # Mijn cv and its coach, without asking twice
+        with suppress(ValueError):  # too little text for a CV; the profile has what there is
+            cv_ai.request("import", text=cv_ai.source_text("profiel"), source=cv_ai.START_SOURCE)
     store.meta_set("start_stage", "/start/verder")
     return RedirectResponse(url="/start/verder", status_code=303)
 
@@ -274,6 +284,8 @@ def start_swipe(request: Request):
         excerpt=" ".join((job["description"] or "").split())[:320],
         position=answered + 1,
         total=answered + len(queue),
+        short=answered + len(queue) < onboarding.SWIPE_COUNT,
+        scanning=store.meta_get("scan_status") == "running",
     )
 
 
