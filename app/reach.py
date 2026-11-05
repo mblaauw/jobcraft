@@ -6,7 +6,6 @@ count away. A reach from the list stays in the address until you save it as your
 
 from __future__ import annotations
 
-import itertools
 import json
 
 from . import geo
@@ -66,17 +65,15 @@ def from_query(query, home: dict) -> dict:
 
 
 def view(reach: dict, counts: list[int], visible: int) -> dict:
-    """What the slider needs: counts per stop, bar heights, and the next step's gain."""
-    by_stop = dict(zip(STOPS, counts[1:], strict=True))
+    """What the slider needs: counts per stop, where each stop sits, and the next step's gain."""
+    by_stop = dict(zip(STOPS, counts, strict=True))
     if not reach["changed"]:
         by_stop[reach["minutes"]] = visible  # your own reach, minutes per way and all
-    steps = [max(0, count - previous) for previous, count in itertools.pairwise(counts)]
-    tallest = max(steps) or 1
     return {
         **reach,
         "count": visible,
         "counts_json": json.dumps({str(stop): count for stop, count in by_stop.items()}),
-        "bars": [{"minutes": stop, "height": round(100 * step / tallest)} for stop, step in zip(STOPS, steps, strict=True)],
+        "ticks": [{"minutes": stop, "at": round(i / (len(STOPS) - 1), 4)} for i, stop in enumerate(STOPS)],
         "hint": hint(reach["minutes"], by_stop),
         "line": geo.reach_line(reach["settings"]),
     }

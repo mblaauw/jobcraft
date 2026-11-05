@@ -171,7 +171,7 @@ def jobs_page(
     reach_view = None
     if geo_home["configured"]:
         counts = store.reach_counts(
-            [shown["settings"] | reach.budgets(minutes, shown["modes"]) for minutes in (0, *reach.STOPS)],
+            [shown["settings"] | reach.budgets(minutes, shown["modes"]) for minutes in reach.STOPS],
             status or None, q or None, source or None, stale_active, list_filters,
         )
         near = {key: all_jobs - far for key, (all_jobs, far) in per_status.items()}

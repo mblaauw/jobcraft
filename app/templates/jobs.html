@@ -54,10 +54,10 @@
       {% for value, label, icon in reach_modes %}<label class="toggle-chip"><input type="checkbox" name="met" value="{{ value }}" {% if value in reach.modes %}checked{% endif %}>{{ ui.icon(icon) }}<span>{{ label }}</span></label>{% endfor %}
     </div>
     <div class="reach-scale">
-      <div class="reach-bars" aria-hidden="true">{% for bar in reach.bars %}<span style="--h: {{ bar.height }}%" data-minutes="{{ bar.minutes }}"{% if bar.minutes <= reach.minutes %} class="is-in"{% endif %}></span>{% endfor %}</div>
       <label class="visually-hidden" for="reach-minutes">Maximale reistijd in minuten</label>
       <input id="reach-minutes" type="range" name="reis" min="{{ reach_stops[0] }}" max="{{ reach_stops[-1] }}" step="15" value="{{ reach.minutes }}" data-reach-counts="{{ reach.counts_json }}" aria-valuetext="{{ reach.minutes }} minuten">
       <output for="reach-minutes" data-reach-minutes>{{ reach.minutes }} min</output>
+      <div class="reach-ticks" aria-hidden="true">{% for tick in reach.ticks %}<span style="--at: {{ tick.at }}"{% if tick.minutes in (45, 75, 105) %} class="is-minor"{% endif %}>{{ tick.minutes }}</span>{% endfor %}</div>
     </div>
     <input type="hidden" name="vanaf" value="{{ reach.base }}">
     <p class="reach-hint" id="reach-hint" data-reach-hint>{{ reach.hint }}</p>
