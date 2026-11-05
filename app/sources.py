@@ -25,7 +25,7 @@ import time
 
 import yaml
 
-from . import config, source_policy, store
+from . import config, source_policy, store, tasks
 from .adapters import registry
 from .adapters.common import _tally, make_job, page_text, split_company, strip_html  # noqa: F401
 from .adapters.defensie import (  # noqa: F401
@@ -238,8 +238,18 @@ def _record_health(summary: dict) -> None:
     store.meta_set("source_health", json.dumps(health, ensure_ascii=False))
 
 
+RANK_DURING_SCAN_SECONDS = 180.0
+
+
+def _rank_new_vacancies() -> None:
+    """Rank what came in so far, so nobody waits for the last source to see new vacancies."""
+    for owner in store.active_owners_with_profile():
+        tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}")
+
+
 def scan(limit_per_source: int | None = None) -> dict:
     sources = [source for source in load_sources() if source.get("enabled", True)]
+    ranked_at: float | None = None
     summary: dict = {
         "started_at": now_iso(),
         "finished_at": None,
@@ -267,6 +277,9 @@ def scan(limit_per_source: int | None = None) -> dict:
                 summary["errors"].append({"source": source["id"], "reason": entry["reason"]})
                 store.update_source_status(source["id"], "error")
             summary["sources"][source["id"]] = entry
+            if entry.get("new") and (ranked_at is None or time.monotonic() - ranked_at >= RANK_DURING_SCAN_SECONDS):
+                _rank_new_vacancies()  # at once after the first new ones, then at most every few minutes
+                ranked_at = time.monotonic()
             time.sleep(0.5)
     summary["finished_at"] = now_iso()
     if STOPPING.is_set():  # Sources that were cut off by a restart have not failed.
