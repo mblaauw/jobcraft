@@ -154,6 +154,7 @@ def init_db() -> None:
         _normalize_job_dates(con)
         _recover_raw_verdicts(con)
         _fill_search_text(con)
+        _fill_places_from_text(con)
         migrate(con)
 
 
@@ -192,7 +193,7 @@ def _backup_before_upgrade() -> None:
             if "meta" in tables
             else set()
         )
-        required = {"ownership_v1", "posted_at_normalized_v2", "raw_verdicts_v1", "search_text_v1"}
+        required = {"ownership_v1", "posted_at_normalized_v2", "raw_verdicts_v1", "search_text_v1", "places_from_text_v1"}
         if current < len(MIGRATIONS) or not required <= markers:
             _backup_database(source, current)
 
@@ -285,6 +286,22 @@ def _fill_search_text(con) -> None:
             con.execute("UPDATE jobs SET search_text=? WHERE id=?", (text, row["id"]))
     con.execute("INSERT INTO meta(key,value) VALUES ('search_text_v1','1')")
 
+
+
+def _fill_places_from_text(con) -> None:
+    """Vacancies stored without a place get the one their own text states, once."""
+    if con.execute("SELECT 1 FROM meta WHERE key='places_from_text_v1'").fetchone():
+        return
+    from .. import geo
+
+    rows = con.execute(
+        "SELECT id, description FROM jobs WHERE (location IS NULL OR TRIM(location)='') AND lat IS NULL"
+    ).fetchall()
+    for row in rows:
+        place = geo.place_in_text(row["description"])
+        if place:
+            con.execute("UPDATE jobs SET location=? WHERE id=?", (place, row["id"]))
+    con.execute("INSERT INTO meta(key,value) VALUES ('places_from_text_v1','1')")
 
 
 def _recover_raw_verdicts(con) -> None:

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import ipaddress
+import re
 import socket
 from urllib.parse import urljoin, urlsplit
 from urllib.robotparser import RobotFileParser
@@ -15,7 +16,7 @@ from urllib.robotparser import RobotFileParser
 import httpx
 from bs4 import BeautifulSoup
 
-from . import store, tenancy
+from . import geo, store, tenancy
 from .adapters.common import make_job, page_text, strip_html
 from .adapters.jsonld import jsonld_company, jsonld_jobs, jsonld_location
 from .source_http import USER_AGENT
@@ -129,6 +130,17 @@ def _private_url(url: str, description: str) -> str:
     return f"https://import.jobcraft.invalid/{owner}/{hashlib.sha256(description.encode()).hexdigest()[:20]}"
 
 
+def company_in_text(text: str) -> str:
+    """The employer of pasted text, when it names itself: "Stichting X, Amsterdam" as a
+    header line, or "Stichting X in Utrecht zoekt"."""
+    for line in [line.strip() for line in text.splitlines()[1:4] if 0 < len(line.strip()) <= 80]:
+        split = re.search(r"\s*[,·|]\s*", line)
+        if split and len(line[: split.start()].split()) <= 6 and geo.place_in_text(f"\nx, {line[split.end():]}"):
+            return line[: split.start()].strip()
+    seeks = re.match(r"\s*(.{2,60}?) in [^\n.,]{2,40}? (?:zoekt|is op zoek)\b", text)
+    return seeks.group(1).strip() if seeks else ""
+
+
 def add(fields: dict, url: str = "") -> int:
     """Store the vacancy for this account only and mark it as saved."""
     if url:  # With pasted text the link was never fetched, so it is unchecked until here.
@@ -140,7 +152,7 @@ def add(fields: dict, url: str = "") -> int:
         store.import_source(),
         _private_url(url, fields.get("description") or ""),
         fields.get("title") or "Vacature zonder titel",
-        company=fields.get("company") or "",
+        company=fields.get("company") or company_in_text(fields.get("description") or ""),
         location=fields.get("location") or "",
         description=fields.get("description") or "",
         posted_at=fields.get("posted_at") or "",
