@@ -166,3 +166,15 @@ def test_an_id_with_digits_never_vouches_for_a_number(cv):
     point = cv["roles"][0]["points"][0]["id"]
     answer = {"notes": [{"target": point, "kind": "sterker", "text": "Met getal.", "suggestion": "Maakte 40 offertes per week."}]}
     assert cv_ai.coach(_manager([answer]), cv) == []
+
+
+def test_plan_cv_and_letter_calls_know_what_day_it_is(cv, monkeypatch):
+    from datetime import datetime
+
+    from app.util import LOCAL_TZ
+
+    monkeypatch.setattr(application_plan, "now_local", lambda: datetime(2026, 11, 5, 9, 0, tzinfo=LOCAL_TZ))
+    manager = _manager([{"notes": []}])
+    cv_ai.coach(manager, cv)
+    prompt = manager.client.calls[0]["messages"][-1]["content"]
+    assert prompt.rstrip().endswith("Vandaag is 5 november 2026. Reken een periode tot 'heden' tot vandaag.")

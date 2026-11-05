@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from . import employer_research, profile, standards, store
 from .llm_client import LLMError
-from .util import now_iso, parse_json_object
+from .util import now_iso, now_local, parse_json_object
 
 STORIES = "doc_stories"
 MAX_STORIES = 20
@@ -103,10 +103,21 @@ def record_usage(usage: dict, agent: str) -> None:
     )
 
 
+_MONTHS = ("januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus",
+           "september", "oktober", "november", "december")
+
+
+def today_line() -> str:
+    """Without it a model counts "maart 2022 – heden" up to its own idea of now."""
+    today = now_local()
+    return f"Vandaag is {today.day} {_MONTHS[today.month - 1]} {today.year}. Reken een periode tot 'heden' tot vandaag."
+
+
 def call_json(mgr, prompt: str, *, agent: str, model: type[BaseModel], ref: str) -> dict:
     """One model call that must come back valid; a second try is told what was wrong."""
     schema: dict | None = schema_for(model)
     problem = ""
+    prompt = f"{prompt}\n\n{today_line()}"  # last, so the long fixed part of the prompt stays the same
     for attempt in range(3):
         request = prompt + (f"\n\nJe vorige antwoord was ongeldig: {problem} Geef het hele antwoord opnieuw." if problem else "")
         try:
