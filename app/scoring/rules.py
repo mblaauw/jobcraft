@@ -18,6 +18,24 @@ def _norm(value: str | None) -> str:
 
 
 
+# Words that name almost any job. Split off a role ("Medewerker communicatie") they match
+# nearly every vacancy, so only the whole role may contain them.
+GENERIC_ROLE_WORDS = frozenset({
+    "medewerker", "medewerkers", "manager", "adviseur", "specialist", "assistent",
+    "officer", "consultant", "coördinator", "coordinator", "stagiair", "stagiaire",
+    "trainee", "junior", "medior", "senior", "hoofd", "leider", "functie", "vacature",
+})
+
+
+def track_keywords(track: dict) -> list[str]:
+    """A track's search words, without generic job words; the whole role always counts."""
+    name = str(track.get("name") or "").strip().lower()
+    return [
+        keyword for keyword in track.get("keywords", [])
+        if keyword and (keyword.strip().lower() == name or keyword.strip().lower() not in GENERIC_ROLE_WORDS)
+    ]
+
+
 @lru_cache(maxsize=4096)
 def _short_term(term: str) -> re.Pattern:
     return re.compile(rf"(?<!\w){re.escape(term)}(?!\w)")
@@ -48,7 +66,7 @@ def rule_score(
     notes: list[str] = []
 
     for track in preferences.get("tracks", []):
-        keywords = [kw for kw in track.get("keywords", []) if kw]
+        keywords = track_keywords(track)
         hits = sum(1 for kw in keywords if has_term(kw, text))
         if hits:
             score += min(5, hits) * (2.0 * float(track.get("weight", 1.0)))
