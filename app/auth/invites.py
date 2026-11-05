@@ -22,12 +22,13 @@ from .constants import (
     CSRF_FIELD,
     MIN_PASSWORD_LENGTH,
     ROLE_USER,
+    SESSION_TTL_SECONDS,
     log,
     router,
 )
 from .security import current_user, require_admin
-from .sessions import _session_row, _set_session_cookie
-from .users import _get_user_by_username, _insert_user
+from .sessions import _create_session, _revoke_session, _session_row, _set_session_cookie
+from .users import _get_user_by_username, _insert_user, _mark_login
 from .views import _start_anonymous_session, _users_response
 
 INVITE_DAYS = 7
@@ -156,4 +157,10 @@ def invite_submit(
         _restore_invite(token, invitation)
         return _page(request, token, error="Deze gebruikersnaam is al in gebruik.", status_code=400, **keep)
     log.info("user created id=%s through an invitation", user_id)
-    return RedirectResponse(url="/login", status_code=303)
+    # They just chose this password: log them in instead of asking for it again.
+    _revoke_session(session["token_hash"])
+    token, _csrf = _create_session(user_id, SESSION_TTL_SECONDS, request.headers.get("user-agent"))
+    _mark_login(user_id)
+    response = RedirectResponse(url="/", status_code=303)
+    _set_session_cookie(response, token, SESSION_TTL_SECONDS)
+    return response

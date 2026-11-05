@@ -39,6 +39,7 @@ DRAFT_KEY = "cv_draft"
 COACH_KEY = "cv_coach"
 STALE_SECONDS = 10 * 60
 MAX_NOTES = 12
+START_SOURCE = "start"  # a CV confirmed in the quick start needs no second approval
 KINDS = ("vraag", "klopt_niet", "sterker", "niet_claimen")
 
 
@@ -248,7 +249,14 @@ def _task_import(task):
         if not waiting.get("text"):
             raise RuntimeError("nothing to read")
         read_back = read(get_manager(), waiting["text"])
-        store.meta_set(DRAFT_KEY, json.dumps({"data": cv_model.from_read(read_back), "source": waiting.get("source", ""), "created_at": now_iso()}, ensure_ascii=False))
+        data = cv_model.from_read(read_back)
+        if waiting.get("source") == START_SOURCE and cv_model.load() is None:
+            # Already checked in the quick start ("Klopt dit?"): straight into Mijn cv.
+            cv_model.save(data, note="cv uit de snelle start")
+            _set_status("done", "import")
+            request("coach")
+            return
+        store.meta_set(DRAFT_KEY, json.dumps({"data": data, "source": waiting.get("source", ""), "created_at": now_iso()}, ensure_ascii=False))
         _set_status("done", "import")
 
     return _scoped(task, work)
