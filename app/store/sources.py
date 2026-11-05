@@ -29,7 +29,9 @@ def set_user_source(source_id: str, enabled: bool, owner: str | None = None) -> 
 
 def load_source_configs() -> list[dict]:
     with connect() as con:
-        rows = con.execute("SELECT config_json, enabled FROM source_configs ORDER BY id").fetchall()
+        # Catalogue order (the order they were added in), not alphabetical: a slow source
+        # whose name sorts first must not hold up every other source on a first scan.
+        rows = con.execute("SELECT config_json, enabled FROM source_configs ORDER BY rowid").fetchall()
     configs = []
     for row in rows:
         try:
