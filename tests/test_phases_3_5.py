@@ -739,3 +739,61 @@ def test_pasted_text_names_its_employer_and_place(client):  # noqa: F811
     typed = client.post("/jobs/toevoegen", data={"description": text + "x", "company": "Eigen naam", "location": "Delft"}, follow_redirects=False)
     job = store.get_job(int(typed.headers["location"].rsplit("/", 1)[1]))
     assert (job["company"], job["location"]) == ("Eigen naam", "Delft")  # what someone typed wins
+
+
+def test_greenjobs_turns_national_on_existing_installations(client):  # noqa: F811
+    old = {"id": "greenjobs", "kind": "exenzo-json", "scope": "regional", "regions": ["Amsterdam"], "search": "Amsterdam"}
+    store.save_source_config(old, enabled=True)
+    greenjobs = {item["id"]: item for item in sources.load_sources()}["greenjobs"]
+    assert greenjobs["scope"] == "national" and greenjobs["regions"] == [] and not greenjobs["search"]
+    assert greenjobs["enabled"] is True and greenjobs["max_pages"] * greenjobs["per_page"] >= 300
+
+
+def _posting_page(title, place):
+    posting = {"@context": "https://schema.org", "@type": "JobPosting", "title": title,
+               "description": "<p>" + "Je werkt aan mooie dingen. " * 25 + "</p>",
+               "jobLocation": {"@type": "Place", "address": {"@type": "PostalAddress", "addressLocality": place}}}
+    return f'<html><head><script type="application/ld+json">{json.dumps(posting)}</script></head><body></body></html>'
+
+
+class FakeSite:
+    def __init__(self, pages):
+        self.pages = pages
+        self.asked = []
+
+    def get(self, url, **kwargs):
+        self.asked.append(url)
+        request = httpx.Request("GET", url)
+        if url not in self.pages:
+            return httpx.Response(404, request=request)
+        return httpx.Response(200, text=self.pages[url], request=request)
+
+
+def test_exenzo_fills_in_cut_off_texts_from_the_public_page(client, monkeypatch):  # noqa: F811
+    from app.adapters import exenzo
+
+    monkeypatch.setattr(exenzo.time, "sleep", lambda _: None)
+    api = "https://bord.api.exenzo.test/api/public/v1/jobs"
+    items = [{"title": f"Adviseur {n}", "slug": f"adviseur-{n}", "description": "Kort. " * 40, "city": "Utrecht"} for n in (1, 2)]
+
+    class Fake(FakeSite):
+        def get(self, url, **kwargs):
+            if url == api:
+                self.asked.append(url)
+                return httpx.Response(200, json={"total": 2, "data": items}, request=httpx.Request("GET", url))
+            return super().get(url, **kwargs)
+
+    site = "https://bord.test"
+    fake = Fake({f"{site}/vacature/adviseur-1": _posting_page("Adviseur 1", "Utrecht"), f"{site}/vacature/adviseur-2": _posting_page("Adviseur 2", "Utrecht")})
+    source = {"id": "bord", "base_url": "https://bord.api.exenzo.test", "public_site": site, "enrich_details": True, "detail_cap": 1}
+    store.sync_sources([{"id": "bord", "kind": "exenzo-json"}])
+    exenzo._scan_exenzo(fake, source, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    with store.connect() as con:
+        texts = {row["title"]: row["description"] for row in con.execute("SELECT title, description FROM jobs")}
+    assert "mooie dingen" in texts["Adviseur 1"] and texts["Adviseur 2"].startswith("Kort.")  # one page per round
+    fake.asked.clear()
+    exenzo._scan_exenzo(fake, source, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    with store.connect() as con:
+        texts = {row["title"]: row["description"] for row in con.execute("SELECT title, description FROM jobs")}
+    assert f"{site}/vacature/adviseur-1" not in fake.asked and "mooie dingen" in texts["Adviseur 1"]  # kept, not re-read
+    assert "mooie dingen" in texts["Adviseur 2"]
