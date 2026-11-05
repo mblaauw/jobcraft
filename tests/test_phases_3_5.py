@@ -799,3 +799,46 @@ def test_a_moved_personio_board_is_skipped_and_a_strange_feed_is_reported(client
     monkeypatch.setattr(ats, "load_employers", lambda: [{"name": "Raar", "system": "personio", "slug": "raar", "tld": "de"}])
     with pytest.raises(RuntimeError, match="raar"):
         ats._scan_ats(FakePersonio({"https://raar.jobs.personio.de/xml": odd}), {"id": "x"}, {"items": 0}, {"new": 0, "updated": 0})
+
+
+def _job_page(title, place):
+    import json as _json
+
+    posting = {"@context": "https://schema.org", "@type": "JobPosting", "title": title, "datePosted": "2026-11-01",
+               "description": "<p>" + "Je werkt aan mooie dingen. " * 25 + "</p>",
+               "jobLocation": {"@type": "Place", "address": {"@type": "PostalAddress", "addressLocality": place}}}
+    return f'<html><head><script type="application/ld+json">{_json.dumps(posting)}</script></head><body><h1>{title}</h1></body></html>'
+
+
+def test_sitemap_boards_read_job_pages_and_keep_only_dutch_ones(client, monkeypatch):  # noqa: F811
+    monkeypatch.setattr(ats.time, "sleep", lambda _: None)
+    host = "https://jobs.voorbeeld.test"
+    sitemap = f"""<?xml version="1.0"?><urlset>
+      <url><loc>{host}/jobs</loc></url><url><loc>{host}/jobs/101-planner</loc></url>
+      <url><loc>{host}/jobs/102-engineer</loc></url><url><loc>{host}/jobs/101-planner</loc></url>
+      <url><loc>{host}/jobs/101-planner/applications/new</loc></url></urlset>"""
+    hr = "https://voorbeeld.homerun.co"
+    pages = {
+        f"{host}/sitemap.xml": sitemap,
+        f"{host}/jobs/101-planner": _job_page("Planner", "Eindhoven"),
+        f"{host}/jobs/102-engineer": _job_page("Engineer", "Lisbon, Portugal"),
+        f"{hr}/sitemap.xml": f"<urlset><url><loc>{hr}</loc></url><url><loc>{hr}/redacteur-20-uur</loc></url><url><loc>{hr}/redacteur-20-uur/nl/apply</loc></url></urlset>",
+        f"{hr}/redacteur-20-uur": _job_page("Redacteur (20 uur)", "Amsterdam"),
+    }
+    monkeypatch.setattr(ats, "load_employers", lambda: [
+        {"name": "Voorbeeld", "system": "teamtailor", "slug": "voorbeeld", "host": host},
+        {"name": "Krant", "system": "homerun", "slug": "voorbeeld"},
+    ])
+    fake = FakePersonio(pages)
+    store.sync_sources([{"id": "ats-bedrijven", "kind": "ats-registry"}])
+    ats._scan_ats(fake, {"id": "ats-bedrijven"}, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    with store.connect() as con:
+        rows = {row["url"]: row for row in con.execute("SELECT * FROM jobs").fetchall()}
+    assert set(rows) == {f"{host}/jobs/101-planner", f"{hr}/redacteur-20-uur"}
+    planner = rows[f"{host}/jobs/101-planner"]
+    assert planner["title"] == "Planner" and planner["location"] == "Eindhoven" and planner["company"] == "Voorbeeld"
+    assert "mooie dingen" in planner["description"] and rows[f"{hr}/redacteur-20-uur"]["company"] == "Krant"
+    assert fake.asked.count(f"{host}/jobs/101-planner") == 1  # listed twice, read once
+    fake.asked.clear()
+    ats._scan_ats(fake, {"id": "ats-bedrijven"}, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    assert f"{host}/jobs/101-planner" not in fake.asked  # known and recent: only touched

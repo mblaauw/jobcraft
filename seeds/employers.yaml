@@ -1,8 +1,12 @@
 # Employer registry: one line per employer. Only public job-board APIs, no login.
 # Verified 2026-11-01: the board answered and listed vacancies in the Netherlands.
-# Add an employer with: {name, system, slug}. Systems: greenhouse, recruitee, personio.
+# Add an employer with: {name, system, slug}. Systems: greenhouse, recruitee, personio,
+# homerun, teamtailor.
 # Personio also takes tld (com or de, default com): use the one whose /xml and /job/<id>
 # answer without a redirect, and optionally detail_cap (job pages per round, default 40).
+# Teamtailor also takes host, for a board on the employer's own domain. Homerun and
+# Teamtailor list job pages in /sitemap.xml; each page has JobPosting JSON-LD, and
+# vacancies outside the Netherlands are left out after reading the page.
 employers:
   - {name: Adyen, system: greenhouse, slug: adyen}
   - {name: ChargePoint, system: greenhouse, slug: chargepoint}
@@ -39,5 +43,10 @@ employers:
   - {name: Motivaction, system: personio, slug: motivaction, tld: com}
   - {name: Ohpen, system: personio, slug: ohpen, tld: com}
   - {name: YourJobConsult, system: personio, slug: yourjobconsult, tld: com}
+  # Homerun and Teamtailor, verified 2026-11-05: sitemap 200 with job pages, JobPosting
+  # JSON-LD with place and full text, robots allows all (Teamtailor bars only /app/ and
+  # /jobs/internal/). Most guessed tenants do not exist (Homerun 302, Teamtailor 404).
+  - {name: De Correspondent, system: homerun, slug: decorrespondent}
+  - {name: Sendcloud, system: teamtailor, slug: sendcloud, host: "https://jobs.sendcloud.com"}
 # Recruitee boards on their own domain (Greenchoice, Effectory) redirect robots.txt, and
 # the scanner fails closed on that, so they stay out. Use boards on *.recruitee.com only.

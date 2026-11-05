@@ -1,8 +1,10 @@
-"""Employer registry: public Greenhouse, Recruitee and Personio boards, one request per employer.
+"""Employer registry: public Greenhouse, Recruitee, Personio, Homerun and Teamtailor boards.
 
 Adding an employer is one line in `seeds/employers.yaml`. Greenhouse and Recruitee
 return full vacancy text in one response. Personio's XML feed often leaves the text
-out; its server-rendered job pages fill it in, a capped number per board per round.
+out; its server-rendered job pages fill it in. Homerun and Teamtailor list their job
+pages in a sitemap, and each page carries JobPosting JSON-LD. Job pages are fetched
+a capped number per board per round, and not again within three days.
 """
 
 from __future__ import annotations
@@ -26,6 +28,7 @@ from .common import (
     safe_detail_get,
     strip_html,
 )
+from .jsonld import jsonld_jobs, jsonld_location
 
 EMPLOYERS_FILE = Path(__file__).resolve().parents[2] / "seeds" / "employers.yaml"
 _NETHERLANDS = re.compile(r"\b(?:netherlands|nederland|the hague)\b|, ?NL\b|\bNL-", re.I)
@@ -144,12 +147,61 @@ def _personio(client, employer: dict) -> list[dict]:
     return jobs
 
 
-SYSTEMS = {"greenhouse": _greenhouse, "recruitee": _recruitee, "personio": _personio}
+def _sitemap_board(client, sitemap: str, job_url: str) -> list[dict]:
+    """Boards whose sitemap lists the job pages and whose job pages carry JobPosting JSON-LD."""
+    response = client.get(sitemap)
+    response.raise_for_status()
+    urls = [url.strip() for url in re.findall(r"<loc>([^<]+)</loc>", response.text)]
+    return [{"url": url, "page": True} for url in dict.fromkeys(urls) if re.search(job_url, url)]
+
+
+def _homerun(client, employer: dict) -> list[dict]:
+    host = f"https://{employer['slug']}.homerun.co"
+    return _sitemap_board(client, f"{host}/sitemap.xml", rf"^{re.escape(host)}/[a-z0-9-]+$")
+
+
+def _teamtailor(client, employer: dict) -> list[dict]:
+    # Many employers run their Teamtailor board on their own domain ("host").
+    host = employer.get("host") or f"https://{employer['slug']}.teamtailor.com"
+    return _sitemap_board(client, f"{host}/sitemap.xml", rf"^{re.escape(host)}/jobs/\d+-[^/]+$")
+
+
+SYSTEMS = {
+    "greenhouse": _greenhouse,
+    "recruitee": _recruitee,
+    "personio": _personio,
+    "homerun": _homerun,
+    "teamtailor": _teamtailor,
+}
+
+
+def _from_page(client, item: dict, entry: dict, budget: list[int]) -> dict | None:
+    """A job known only by its URL: title, place and text from the page's JSON-LD."""
+    if budget[0] <= 0:
+        return None
+    budget[0] -= 1
+    page = safe_detail_get(client, item["url"], entry)
+    time.sleep(0.4)
+    found = jsonld_jobs(page.text) if page is not None and page.status_code < 400 else []
+    if not found:
+        return None
+    data = found[0]
+    location, lat, lon = jsonld_location(data)
+    if location and not dutch_office(location):
+        return None
+    return item | {
+        "title": str(data.get("title") or "").strip(),
+        "location": location,
+        "lat": lat,
+        "lon": lon,
+        "description": best_description(strip_html(data.get("description")), page.text),
+        "posted_at": str(data.get("datePosted") or ""),
+    }
 
 
 def _details(client, item: dict, entry: dict, summary: dict, budget: list[int]) -> str | None:
     """The job page's text when the feed had too little; None when a recent fetch made it known."""
-    description = item["description"]
+    description = item.get("description") or ""
     if not item.get("details") or len(description) >= SHORT_SUMMARY:
         return description
     if _skip_recent_detail(item["url"], entry, summary):
@@ -184,6 +236,12 @@ def _scan_ats(client, source, entry, summary, limit_per_source=None) -> None:
         budget = [int(employer.get("detail_cap") or DETAIL_CAP)]
         try:
             for item in found[: limit_per_source or len(found)]:
+                if item.get("page"):
+                    if not item["url"] or _skip_recent_detail(item["url"], entry, summary):
+                        continue
+                    item = _from_page(client, item, entry, budget)
+                    if item is None:
+                        continue
                 if not item["url"] or not item["title"]:
                     continue
                 description = _details(client, item, entry, summary, budget)
@@ -198,6 +256,8 @@ def _scan_ats(client, source, entry, summary, limit_per_source=None) -> None:
                     hours=item.get("hours") or "",
                     description=description,
                     posted_at=str(item["posted_at"]),
+                    lat=item.get("lat"),
+                    lon=item.get("lon"),
                 )
                 _, created = store.upsert_job(job)
                 _tally(entry, summary, created)
