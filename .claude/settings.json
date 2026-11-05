@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(scripts/check.sh*)",
+      "Bash(uv run pytest*)",
+      "Bash(uv run ruff*)",
+      "Bash(uv run python scripts/matching_quality.py*)",
+      "Bash(node --check *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git branch*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Read(./data/**)",
+      "Read(./seed/**)",
+      "Read(./.runtime/**)",
+      "Read(./docs/private/**)",
+      "Read(./bootstrap-accounts.json)",
+      "Edit(./.env)",
+      "Edit(./.env.local)",
+      "Edit(./data/**)",
+      "Edit(./seed/**)",
+      "Edit(./.runtime/**)",
+      "Edit(./docs/private/**)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)"
+    ]
+  }
+}
