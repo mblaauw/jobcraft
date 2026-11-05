@@ -8,7 +8,7 @@ import re
 import httpx
 from bs4 import BeautifulSoup
 
-from .. import store
+from .. import geo, store
 
 
 def detail_get(client, url: str, **kwargs):
@@ -109,7 +109,8 @@ def make_job(
         "url": url,
         "title": title.strip(),
         "company": (company or "").strip(),
-        "location": (location or "").strip(),
+        # Many boards leave the place out of their fields but state it in the text.
+        "location": (location or "").strip() or geo.place_in_text(description),
         "hours": hours,
         "description": description or "",
         "posted_at": store.normalize_posted_at(posted_at),

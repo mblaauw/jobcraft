@@ -170,3 +170,45 @@ def test_positive_availability_is_not_negated_by_later_experience_clause():
         )["auto"]
         is True
     )
+
+
+@pytest.mark.parametrize(
+    "text, place",
+    [
+        ("Het Scheepvaartmuseum in Amsterdam zoekt een Onderzoeker voor 16 uur per week", "Amsterdam"),
+        ("ELIA in Amsterdam is looking for an Events Intern", "Amsterdam"),
+        ("Design Museum Den Bosch in \u2018s-Hertogenbosch zoekt een Directie-assistent", "'s-Hertogenbosch"),
+        ("Functie\nStandplaats: Dordrecht\nUren: 16", "Dordrecht"),
+        ("Recruiter | Waterschap Scheldestromen Locatie Middelburg Opleiding MBO", "Middelburg"),
+        ("Fondsenwerver Vogelbescherming Nederland · Zeist Parttime Tijdelijk 32 uur", "Zeist"),
+        ("Projectcoördinator (32 uur)\nStichting Kunstwerk Oost, Amsterdam-Oost\n\nWie zijn wij", "Amsterdam"),
+        # Places that are only mentioned, not where the work is:
+        ("Wij werken voor klanten in heel Nederland, onder meer in Utrecht en Den Haag.", ""),
+        ("Doorgaan naar inhoud 10 november, Fokker Terminal Den Haag Bestel je tickets", ""),
+        ("De workshop vindt plaats op dinsdag 1 december in Amsterdam", ""),
+        ("Locatie thuis of op kantoor", ""),
+    ],
+)
+def test_a_vacancy_states_its_own_place(text, place):
+    assert geo.place_in_text(text).lower() == place.lower()
+
+
+def test_a_board_without_a_place_field_still_gets_one_from_the_text():
+    from app.adapters.common import make_job
+
+    job = make_job("test", "https://x.test/1", "Bedrijfsleider", description="Het Openluchttheater in Haarlem zoekt een Bedrijfsleider")
+    assert job["location"] == "Haarlem"
+    assert make_job("test", "https://x.test/2", "Gids", location="Leiden", description="X in Haarlem zoekt")["location"] == "Leiden"
+
+
+def test_stored_vacancies_without_a_place_get_one_once():
+    from app import store
+    from app.store import schema
+
+    stated = add_job(1, location="", description="Museum X in Utrecht zoekt een gids voor 24 uur")
+    silent = add_job(2, location="", description="Wij zoeken een gids.")
+    with store.connect() as con:
+        con.execute("DELETE FROM meta WHERE key='places_from_text_v1'")
+        schema._fill_places_from_text(con)
+    assert store.get_job(stated)["location"] == "Utrecht"
+    assert not store.get_job(silent)["location"]

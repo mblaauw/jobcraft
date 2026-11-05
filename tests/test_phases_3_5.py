@@ -729,3 +729,13 @@ def test_mail_without_a_public_address_has_no_dead_links(monkeypatch):
     assert "/jobs/1" not in message.as_string()
     monkeypatch.setenv("APP_BASE_URL", "https://jobs.test")
     assert "https://jobs.test/jobs/1" in digest.compose([job], "c@d.test").get_body(("plain",)).get_content()
+
+
+def test_pasted_text_names_its_employer_and_place(client):  # noqa: F811
+    text = "Projectcoördinator Kunst in de Wijk\nStichting Kunstwerk Oost, Amsterdam-Oost\n\n" + "Wij zoeken een coördinator. " * 12
+    response = client.post("/jobs/toevoegen", data={"description": text}, follow_redirects=False)
+    job = store.get_job(int(response.headers["location"].rsplit("/", 1)[1]))
+    assert (job["company"], job["location"]) == ("Stichting Kunstwerk Oost", "Amsterdam")
+    typed = client.post("/jobs/toevoegen", data={"description": text + "x", "company": "Eigen naam", "location": "Delft"}, follow_redirects=False)
+    job = store.get_job(int(typed.headers["location"].rsplit("/", 1)[1]))
+    assert (job["company"], job["location"]) == ("Eigen naam", "Delft")  # what someone typed wins
