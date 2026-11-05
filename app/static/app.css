@@ -942,6 +942,9 @@ textarea.prose-edit:focus { border-color: var(--moss); outline: 2px solid var(--
 }
 
 .nav-badge { margin-left: auto; min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--lime); color: #17310f; font-size: var(--fs-xs); font-weight: 700; text-align: center; }
+/* Work waiting, not good news: an outline instead of the lime of new matches. */
+.nav-badge.is-todo { background: transparent; color: var(--on-forest); box-shadow: inset 0 0 0 1.5px var(--on-forest-2); }
+.rail-nav a[aria-current="page"] .nav-badge.is-todo { color: var(--on-lime); box-shadow: inset 0 0 0 1.5px var(--on-lime); }
 .nowrap, .nowrap td, .nowrap th { white-space: nowrap; overflow-wrap: normal; }
 .doc-links .inline-form { display: inline-flex; gap: 4px; }
 .filters-more { display: none; }
