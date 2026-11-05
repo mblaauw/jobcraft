@@ -184,6 +184,36 @@ def _find_place(text: str) -> str | None:
     return max((match.group(0) for match in PLACE_PATTERN.finditer(text)), key=len, default=None)
 
 
+_PLACE_LABEL = re.compile(
+    r"(?<!\w)(?:(?:standplaats|werklocatie|locatie)\s*[:\-]?|(?:werkplek|plaats|vestiging)\s*[:\-])\s*([^\n|;]{2,60})"
+)
+_SEEKS_IN = re.compile(
+    r"(?<!\w)in ([^\n|;.,]{2,40}?) (?:zoekt|zoeken|is op zoek|zijn op zoek|is looking for|are looking for)(?!\w)"
+)
+_DOT_PLACE = re.compile(r"· ([^·|\n]{2,30}?) (?:parttime|fulltime|tijdelijk|vast|\d)")
+
+
+def place_in_text(text: str | None) -> str:
+    """The work place a vacancy states itself ("X in Utrecht zoekt", "Standplaats: Delft",
+    or "Organisatie, Plaats" as its header), never a place merely mentioned somewhere."""
+    text = (text or "").replace("\u2018", "'").replace("\u2019", "'")
+    candidates = [match.group(1) for match in _PLACE_LABEL.finditer(_norm_lines(text[:3000]))]
+    candidates += [match.group(1) for match in _SEEKS_IN.finditer(_norm(text[:400]))]
+    candidates += [match.group(1) for match in _DOT_PLACE.finditer(_norm(text[:600]))]
+    # A short header line such as "Stichting X, Amsterdam-Oost": only a bare place after the comma.
+    for line in [line for line in text.splitlines()[:3] if len(line) <= 80]:
+        candidates += [part for part in re.split(r"[,|·]", line)[1:] if 0 < len(part.split()) <= 2]
+    for candidate in candidates:
+        place = _find_place(candidate)
+        if place:
+            return PLACE_LABELS.get(place, "") or place.title()
+    return ""
+
+
+def _norm_lines(value: str) -> str:
+    return "\n".join(_norm(line) for line in value.splitlines())
+
+
 def assess(
     location: str | None,
     lat: float | None = None,
