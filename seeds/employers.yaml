@@ -1,6 +1,8 @@
 # Employer registry: one line per employer. Only public job-board APIs, no login.
 # Verified 2026-11-01: the board answered and listed vacancies in the Netherlands.
-# Add an employer with: {name, system, slug}. Systems: greenhouse, recruitee.
+# Add an employer with: {name, system, slug}. Systems: greenhouse, recruitee, personio.
+# Personio also takes tld (com or de, default com): use the one whose /xml and /job/<id>
+# answer without a redirect, and optionally detail_cap (job pages per round, default 40).
 employers:
   - {name: Adyen, system: greenhouse, slug: adyen}
   - {name: ChargePoint, system: greenhouse, slug: chargepoint}
@@ -31,5 +33,11 @@ employers:
   - {name: CM.com, system: recruitee, slug: cmcom}
   - {name: Helloprint, system: recruitee, slug: helloprint}
   - {name: Shypple, system: recruitee, slug: shypple}
+  # Personio boards, verified 2026-11-05: /xml answered 200 with Dutch positions, robots allows
+  # all, job pages are server-rendered with the full text (the feed's text is often empty).
+  - {name: Cadac Group, system: personio, slug: cadac-group, tld: com}
+  - {name: Motivaction, system: personio, slug: motivaction, tld: com}
+  - {name: Ohpen, system: personio, slug: ohpen, tld: com}
+  - {name: YourJobConsult, system: personio, slug: yourjobconsult, tld: com}
 # Recruitee boards on their own domain (Greenchoice, Effectory) redirect robots.txt, and
 # the scanner fails closed on that, so they stay out. Use boards on *.recruitee.com only.
