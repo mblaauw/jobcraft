@@ -178,3 +178,15 @@ def test_turning_the_profile_into_a_cv_leaves_the_interview_answers_out(client):
     text = cv_ai.source_text("profiel")
     assert "Groene Buurt" in text
     assert "klimaatadaptatie" not in text and profile.ANSWERS_HEADING not in text
+
+
+def test_plan_cv_and_letter_calls_know_what_day_it_is(cv, monkeypatch):
+    from datetime import datetime
+
+    from app.util import LOCAL_TZ
+
+    monkeypatch.setattr(application_plan, "now_local", lambda: datetime(2026, 11, 5, 9, 0, tzinfo=LOCAL_TZ))
+    manager = _manager([{"notes": []}])
+    cv_ai.coach(manager, cv)
+    prompt = manager.client.calls[0]["messages"][-1]["content"]
+    assert prompt.rstrip().endswith("Vandaag is 5 november 2026. Reken een periode tot 'heden' tot vandaag.")
