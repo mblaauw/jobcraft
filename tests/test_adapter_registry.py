@@ -20,6 +20,7 @@ def test_registry_includes_all_implemented_aliases():
         "hn-resource",
         "local-json",
         "ats-registry",
+        "getro-html",
     }
     assert registry["wp-posts"] is registry["wp-job-listings"]
 
