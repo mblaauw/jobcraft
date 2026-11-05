@@ -124,10 +124,10 @@ def test_job_filters_preserve_search_source_and_travel_and_show_empty_state():
         assert query["q"] == ["groen & buiten"]
         assert query["source"] == ["test"]
         assert query["within"] == ["0"]
-    assert html.select_one('.jobs-filters input[type="checkbox"][name="within"]') is not None
-    assert not html.select_one('.jobs-filters input[type="checkbox"][name="within"]').has_attr(
-        "checked"
-    )
+    # Without a home there is no reach to tune; the list keeps its state, Bron included.
+    assert html.select_one('.jobs-filters input[name="within"]')["value"] == "0"
+    assert html.select_one('.jobs-filters input[name="source"]')["value"] == "test"
+    assert not html.select_one(".jobs-filters select[name=source]") and not html.select_one(".reach")
     assert "Geen vacatures in dit overzicht" in html.get_text()
     assert html.select_one(".vacancy-list .empty-state")
     assert not html.select("table")

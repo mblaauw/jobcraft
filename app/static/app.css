@@ -509,16 +509,53 @@ a.vacancy-score:hover { box-shadow: 0 0 0 4px var(--sunk); }
 .jobs-matching form { margin: 0; }
 
 .jobs-filters {
-  display: grid; grid-template-columns: minmax(220px, 2fr) minmax(160px, 1fr) minmax(150px, auto) auto;
-  gap: 12px; align-items: end; padding: 16px; margin: 0 0 16px;
+  display: grid; gap: 14px; padding: 16px; margin: 0 0 16px;
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
 }
 .jobs-filters .field label { font-size: var(--fs-xs); color: var(--ink-2); font-weight: 600; }
-.jobs-filters .switch { padding-bottom: 0; }
-.jobs-filters .filters-submit { align-self: end; }
-.jobs-filters .travel-note { grid-column: 1 / -1; margin: -4px 0 0; color: var(--ink-3); font-size: var(--fs-xs); }
+.filters-top { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.filters-top .field-search { flex: 1 1 320px; }
+.filters-sort { border: 0; min-inline-size: 0; }
+.filters-sort label { position: relative; display: inline-flex; }
+.filters-sort input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.filters-sort span { display: inline-flex; align-items: center; min-height: 38px; padding: 7px 14px; border-radius: 999px; color: var(--ink-2); font-size: var(--fs-sm); font-weight: 650; white-space: nowrap; }
+.filters-sort input:checked + span { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / 12%); }
+.filters-sort input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 1px; }
+.jobs-filters .filters-submit { justify-self: start; }
 .js .jobs-filters .filters-submit { display: none; }
-.js .jobs-filters { grid-template-columns: minmax(220px, 2fr) minmax(160px, 1fr) minmax(150px, auto) auto; }
+.jobs-filters .travel-note { margin: 0; color: var(--ink-3); font-size: var(--fs-xs); }
+
+/* Toggle chips: real checkboxes, shown as pills that fill in when chosen. */
+.toggle-chip {
+  position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 12px;
+  border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--ink-2);
+  font-size: var(--fs-sm); font-weight: 600; cursor: pointer; user-select: none;
+}
+.toggle-chip input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.toggle-chip .icon { width: 16px; height: 16px; }
+.toggle-chip:hover { border-color: var(--moss); color: var(--ink); }
+.toggle-chip:has(input:checked) { background: var(--ok-soft); border-color: var(--moss); color: var(--ink); }
+.toggle-chip:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 1px; }
+.jobs-filters .chip-select { width: auto; min-height: 36px; padding: 4px 30px 4px 12px; border-radius: 999px; font-weight: 600; color: var(--ink-2); }
+.quick-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+/* Reach: the one control that decides most of what the list shows. */
+.reach { display: grid; gap: 10px; padding: 14px 16px; border-radius: var(--r-md, 12px); background: var(--surface-2); border: 1px solid var(--line); }
+.reach-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.reach-head h2 { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: var(--fs-sm); font-weight: 650; }
+.reach-head h2 .icon { width: 16px; height: 16px; color: var(--moss); }
+.reach-count { margin: 0; color: var(--ink-2); font-size: var(--fs-sm); }
+.reach-count strong { color: var(--ink); font-size: var(--fs-lg); font-variant-numeric: tabular-nums; }
+.reach-modes { display: flex; flex-wrap: wrap; gap: 8px; }
+.reach-scale { display: grid; grid-template-columns: minmax(0, 1fr) 4.5em; align-items: center; column-gap: 14px; }
+.reach-bars { grid-column: 1; display: flex; align-items: flex-end; gap: 3px; height: 40px; padding: 0 9px; }
+.reach-bars span { flex: 1; height: max(3px, var(--h)); border-radius: 3px 3px 0 0; background: var(--line-strong); transition: background-color .15s; }
+.reach-bars span.is-in { background: var(--moss); }
+.reach-scale input[type="range"] { grid-column: 1; width: 100%; margin: 4px 0 0; accent-color: var(--moss); cursor: pointer; }
+.reach-scale output { grid-column: 2; grid-row: 2; font-weight: 700; font-variant-numeric: tabular-nums; }
+.reach-hint { margin: 0; color: var(--ink-2); font-size: var(--fs-sm); }
+.reach-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.reach-foot .switch { min-height: 36px; }
 
 .jobs-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 0 0 14px; }
 .jobs-active-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
@@ -849,9 +886,6 @@ textarea.prose-edit:focus { border-color: var(--moss); outline: 2px solid var(--
   .task .button { grid-column: 2; justify-self: start; }
   .next-step { grid-template-columns: minmax(0, 1fr); padding: 22px; }
   .next-step h2 { font-size: var(--fs-lg); }
-  .jobs-filters, .js .jobs-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .jobs-filters .field-search { grid-column: 1 / -1; }
-  .jobs-filters .switch { grid-column: 1 / -1; }
   .jobs-matching { justify-content: flex-start; }
   .vacancy-row { grid-template-columns: auto minmax(0, 1fr); gap: 12px 14px; padding: 16px; align-items: start; }
   .vacancy-row .vacancy-score { --size: 50px; }
@@ -933,10 +967,8 @@ textarea.prose-edit:focus { border-color: var(--moss); outline: 2px solid var(--
 /* On a phone the first vacancy belongs on the first screen: one search row, the rest folded. */
 @media (max-width: 760px) {
   .jobs-matching > span:first-child { display: none; }
-  .js .jobs-filters.filters-fold { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 10px 12px; margin-bottom: 12px; }
-  .js .jobs-filters.filters-fold .field-search { grid-column: auto; }
+  .js .jobs-filters.filters-fold { gap: 8px; padding: 10px 12px; margin-bottom: 12px; }
   .js .jobs-filters.filters-fold .field-search label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .js .jobs-filters.filters-fold .switch, .js .jobs-filters.filters-fold .travel-note { display: none; }
   .js .jobs-filters.filters-fold .filters-more { align-self: center; }
   .jobs-results-head span { font-size: var(--fs-xs); }
 }
@@ -950,7 +982,8 @@ textarea.prose-edit:focus { border-color: var(--moss); outline: 2px solid var(--
 .filters-more { display: none; }
 @media (max-width: 900px) {
   .wide-only { display: none; }
-  .js .jobs-filters.filters-fold > .field:not(:first-of-type) { display: none; }
+  .js .jobs-filters.filters-fold .filters-sort, .js .jobs-filters.filters-fold .reach, .js .jobs-filters.filters-fold .quick-filters,
+  .js .jobs-filters.filters-fold > .travel-note { display: none; }
   .js .jobs-filters.filters-fold .filters-more { display: inline-flex; justify-self: start; }
   .job-head h1 { hyphens: auto; }
 }
