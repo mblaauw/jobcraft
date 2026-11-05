@@ -1,0 +1,21 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "jobcraft",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "APP_SKIP_LLM=1",
+        "APP_USER=owner",
+        "APP_PASSWORD=dev-local",
+        "uv",
+        "run",
+        "uvicorn",
+        "app.main:app",
+        "--port",
+        "8080"
+      ],
+      "port": 8080
+    }
+  ]
+}

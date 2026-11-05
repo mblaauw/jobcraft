@@ -8,7 +8,8 @@ under `data/` and is git-ignored; never commit `data/`, `seed/`, `.runtime/`,
 ## Commands
 
 - Run: `LLM_BASE_URL=... LLM_API_KEY=... APP_USER=owner APP_PASSWORD=dev-local uv run uvicorn app.main:app --port 8080`
-- Tests: `uv run pytest -q` · Lint: `uv run ruff check .` · Container: `docker build -t jobcraft:local .`
+- Checks: `scripts/check.sh` (ruff, JavaScript syntax, pytest; prints the revision first).
+  Pieces: `uv run pytest -q` · `uv run ruff check .` · Container: `docker build -t jobcraft:local .`
 - Quality check after matching changes: `uv run python scripts/matching_quality.py`
   (legacy account) or `--user <name>` for another account.
 
@@ -35,14 +36,32 @@ under `data/` and is git-ignored; never commit `data/`, `seed/`, `.runtime/`,
 
 ## Delegation (OpenCode agents)
 
-- Source/endpoint recon, inventories, "where is X" → `explore` when useful.
-- Diff review before a commit → `review` (cross-family, `openai/gpt-6.1-sol`).
-- Acceptance checks (tests, pages, PDFs) → `verifier`.
-- Implementation and integration stay in the primary; never run parallel writers on
-  overlapping files. Compare like-for-like tasks, not a long Build session with
-  a single discovery session, when judging delegation cost.
+Stock V2 roster only, as in the global config: `build` is the one writer, `plan`
+is read-only, `explore` and `general` are the subagents. Every agent runs the
+global default model; reasoning effort is chosen per session, not per agent.
+There is no `review`, `verifier` or `ux-designer` agent.
+
+- Source/endpoint recon, inventories, "where is X" → `explore`, in parallel when
+  the questions are independent.
+- Diff review before a commit → `explore` with the frozen HEAD or diff, the
+  requirement and the checks already run; it returns findings only. Up to three
+  rounds; a round without findings ends the review.
+- Acceptance → `scripts/check.sh`, run by the primary on the frozen revision
+  (the same gates as CI), plus `scripts/container_smoke.sh` when the image or
+  its startup path changed. After two failed correction rounds, change
+  diagnosis instead of retrying.
+- Cross-family review is optional and manual: a separate session on another
+  provider, started by the owner. Nothing in this repository depends on it.
+- Implementation and integration stay in the primary; `general` only for a
+  bounded unit on disjoint files. Never run parallel writers on overlapping
+  files. Compare like-for-like tasks, not a long Build session with a single
+  discovery session, when judging delegation cost.
 - Project skills: `vacature-analyse`, `cv-brief-standaarden`, `vacaturebron-recon`,
-  `career-gui-review`, `system-one-decisions`.
+  `career-gui-review`, `system-one-decisions`. They live in `.opencode/skills/`,
+  which the app also reads at runtime (`app/standards.py`) and the Docker image
+  copies; `.claude/skills` is a symlink to it so Claude Code loads the same
+  files. Do not move or duplicate them. Substantial flow/state design uses the
+  global `ux-design` skill, read-only.
 
 ## Sustained engineering delivery
 
@@ -52,10 +71,11 @@ on acceptance or a concrete budget/blocker/decision. Reuse the approved phase or
 issue list and one checkpoint; completing one task or PR does not require another
 `continue`. Give progress commentary and continue ready authorized work.
 
-For meaningful changes freeze the reviewed HEAD/diff while `review` and
-`verifier` work. Inspect complete/partial/blocked results, fix findings and
-recheck current bytes. UI increments also use `career-gui-review`; use the
-read-only `ux-designer` for substantial flow/state design, not automatic restyling.
+For meaningful changes freeze the reviewed HEAD/diff while `explore` reviews it
+and the check commands run. Inspect complete/partial/blocked results, fix
+findings and recheck current bytes. UI increments also use `career-gui-review`;
+use the `ux-design` skill for substantial flow/state design, not automatic
+restyling.
 
 Commit only owned non-personal files on a feature branch. Push/open PRs when
 authorized; native auto-merge requires independent review of current HEAD plus

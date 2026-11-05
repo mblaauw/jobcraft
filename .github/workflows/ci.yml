@@ -27,6 +27,6 @@ jobs:
           python-version: '3.13'
           enable-cache: true
       - run: uv sync --locked
-      - run: uv run --no-sync ruff check .
-      - run: node --check app/static/job-drawer.js
-      - run: uv run --no-sync pytest -q
+      - run: scripts/check.sh
+        env:
+          UV_RUN_FLAGS: --no-sync
