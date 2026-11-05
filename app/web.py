@@ -36,6 +36,12 @@ def _new_match_count() -> int:
     return notifications.badge_count()
 
 
+def _open_coach_count() -> int:
+    from . import cv_ai
+
+    return cv_ai.open_count()
+
+
 def _background_work() -> dict:
     from . import background_work
 
@@ -55,6 +61,7 @@ templates.env.globals["background_work"] = _background_work
 templates.env.globals["judgement_reasons"] = _judgement_reasons
 templates.env.globals["csrf_input"] = _csrf_input
 templates.env.globals["new_match_count"] = _new_match_count
+templates.env.globals["open_coach_count"] = _open_coach_count
 templates.env.filters["amsterdam"] = _amsterdam
 templates.env.filters["prose"] = profile_view.render
 templates.env.filters["teaser"] = profile_view.teaser

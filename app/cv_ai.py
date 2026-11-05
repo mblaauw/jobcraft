@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import sqlite3
 from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -206,6 +207,14 @@ def notes() -> dict:
     except ValueError:
         return {}
     return data if isinstance(data, dict) else {}
+
+
+def open_count() -> int:
+    """The coach's notes still waiting for an answer, for the navigation on every page."""
+    try:
+        return sum(1 for note in notes().get("notes", []) if note.get("state") == "open")
+    except (AttributeError, sqlite3.OperationalError):
+        return 0
 
 
 def save_notes(found: list[dict], digest: str) -> None:
