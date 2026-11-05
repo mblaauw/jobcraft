@@ -36,11 +36,10 @@ def client(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(
         main.geo,
-        "assess",
-        lambda location, *args, **kwargs: {
-            "in_range": False if location == "far" else None,
-            "label": "Reistijd onbekend",
-        },
+        "times",
+        lambda location, *args, **kwargs: {"transit_min": 99, "ebike_min": 99, "car_min": 60}
+        if location == "far"
+        else {"transit_min": None, "located": True},
     )
     # No lifespan: don't start the LLM client or initialise personal files.
     client = TestClient(main.app)
