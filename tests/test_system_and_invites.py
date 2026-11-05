@@ -38,14 +38,16 @@ def test_invitation_creates_one_normal_account_once(client):  # noqa: F811
     assert page.status_code == 200
     response = _submit(browser, path, csrf, username="nieuwe.gebruiker", password="lang-genoeg-wachtwoord")
     assert response.status_code == 303
-    assert response.headers["location"] == "/login"
+    assert response.headers["location"] == "/"  # logged in: no second time typing the new password
+    assert browser.get("/account", follow_redirects=False).status_code == 200
     with store.connect() as con:
         row = con.execute("SELECT role FROM users WHERE username='nieuwe.gebruiker'").fetchone()
     assert row["role"] == auth.ROLE_USER
     _again, page, _none = _anonymous_form(path)
     assert page.status_code == 404
     assert "verlopen of al gebruikt" in page.text
-    assert _submit(browser, path, csrf, username="tweede.poging", password="lang-genoeg-wachtwoord").status_code == 404
+    other, _login, other_csrf = _anonymous_form("/login")
+    assert _submit(other, path, other_csrf, username="tweede.poging", password="lang-genoeg-wachtwoord").status_code == 404
 
 
 def test_a_rejected_form_does_not_use_up_the_invitation(client):  # noqa: F811

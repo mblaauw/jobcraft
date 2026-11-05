@@ -1,0 +1,6 @@
+{# The score at the top of a vacancy; also sent along when the assessment is swapped in. #}
+{% import "_ui.html" as ui %}
+<div id="detail-stamp">
+  {{ ui.stamp(dict(job, signals=signals), big=True) }}
+  <p class="stamp-caption">{% if job['rank_score'] is none and job['match_score'] is none %}nog geen match{% elif job['match_score'] is none %}voorlopige match{% else %}match{% endif %}</p>
+</div>

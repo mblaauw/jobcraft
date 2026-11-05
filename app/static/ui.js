@@ -55,7 +55,14 @@
           if (response.ok) {
             const page = new DOMParser().parseFromString(await response.text(), "text/html");
             const next = page.getElementById(part.id);
-            if (next && !next.hasAttribute("data-swap")) { part.replaceWith(next); return; }
+            if (next && !next.hasAttribute("data-swap")) {
+              part.replaceWith(next);
+              // What changed with it elsewhere on the page, such as the score at the top.
+              page.querySelectorAll("template[data-swap-also]").forEach((extra) => {
+                extra.content.querySelectorAll("[id]").forEach((fresh) => document.getElementById(fresh.id)?.replaceWith(fresh));
+              });
+              return;
+            }
           }
         } catch (error) { /* What is on screen stays readable. */ }
         setTimeout(check, 5000);

@@ -476,3 +476,53 @@ def test_existing_accounts_see_what_is_new_on_the_overview(flow, monkeypatch):
     assert "/jobs/toevoegen" in page
     store_votes = flow.get("/jobs?within=0")
     assert store_votes.status_code == 200
+
+
+def test_a_confirmed_quick_start_cv_lands_in_mijn_cv_with_its_hours(flow, monkeypatch):
+    from test_studio import _manager
+
+    from app import cv_ai, cv_model, tasks
+
+    read_back = {
+        "summary": "Projectcoördinator in cultuur, 28 tot 32 uur.",
+        "roles": [{"title": "Projectcoördinator", "organisation": "Stichting Groene Buurt", "place": "Amsterdam",
+                   "period": "mrt 2022 – heden", "points": ["Coördineert 40 buurtprojecten per jaar."]}],
+        "education": [], "skills": ["Planning"], "languages": [], "extras": [], "interests": [],
+    }
+    monkeypatch.setattr(runtime, "manager", _manager([read_back, {"notes": []}]))
+    monkeypatch.setattr(cv_ai.config, "LLM_API_KEY", "test")
+    response = flow.post("/start/cv/confirm", data={
+        "role": ["Projectcoördinator"],
+        "section_summary": "Projectcoördinator in cultuur en duurzaamheid, zoekt 28 tot 32 uur per week in Amsterdam.",
+        "section_experience": "Projectcoördinator — Stichting Groene Buurt (2022 – heden)\n- Coördineert 40 buurtprojecten per jaar.",
+    }, follow_redirects=False)
+    assert response.headers["location"] == "/start/verder"
+    with store.connect() as con:
+        owner = con.execute("SELECT id FROM users WHERE username='test'").fetchone()["id"]
+    while task := tasks.claim_next():  # what the worker does with the queued CV tasks
+        if task["kind"] in ("cv_import", "cv_coach"):
+            (cv_ai._task_import if task["kind"] == "cv_import" else cv_ai._task_coach)(task)
+        tasks.finish(task["id"])
+    with tenancy.scope({"id": owner}):
+        assert profile.read_preferences()["hard_filters"]["hours_min"] == 24  # "28 tot 32 uur" -> 24 tot 32
+        data = cv_model.load()
+        assert data and data["roles"][0]["organisation"] == "Stichting Groene Buurt"  # no second approval
+        assert cv_ai.notes().get("notes") == []  # and the coach has read it
+        assert not cv_ai.draft()
+
+
+@pytest.mark.parametrize("text, choice", [("28 tot 32 uur", "24-32"), ("36-40 uur", "32-40"), ("16 tot 20 uur", "tot24"), ("fulltime", "")])
+def test_hours_a_cv_states_become_a_choice(text, choice):
+    assert onboarding.hours_from_text(text) == choice
+
+
+def test_a_short_swipe_round_says_why(flow):
+    from tests.test_jobs_page import add_job
+
+    store.meta_set("start_swipe", json.dumps([add_job("Planner")]))
+    store.meta_set("start_swipe_done", "0")
+    store.meta_set("scan_status", "running")
+    page = flow.get("/start/vacatures").text
+    assert "Vacature 1 van 1." in page and "We halen nog vacatures op" in page
+    store.meta_set("scan_status", "done")
+    assert "Meer vacatures binnen je keuzes zijn er nu niet" in flow.get("/start/vacatures").text
