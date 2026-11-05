@@ -5,7 +5,6 @@
 {% import "_judge.html" as judge with context %}
 {% block title %}{{ job["title"] or "Vacature" }} · Jobcraft{% endblock %}
 {% block content %}
-{% set stamp_job = dict(job, signals=signals) %}
 {% set next_url = detail_return or ('/jobs/' ~ job['id']) %}
 {% set running = doc_status and doc_status.state == "running" %}
 <div data-job-detail data-job-id="{{ job['id'] }}" data-job-vote="{{ job['vote'] or 0 }}" data-job-status="{{ job['status'] }}" data-job-score="{{ job['rank_score'] if job['rank_score'] is not none else '' }}" data-job-provisional="{{ 'true' if job['match_score'] is none else 'false' }}" data-document-state="{{ doc_status.state if doc_status else '' }}">
@@ -24,10 +23,7 @@
     {% if facts %}<ul class="traits">{% for fact in facts %}<li class="chip chip-lime">{{ fact }}</li>{% endfor %}</ul>{% endif %}
     {% if 'import.jobcraft.invalid' not in job['url'] %}<a id="detail-original" class="small" href="{{ job['url'] }}" target="_blank" rel="noopener">Bekijk de originele vacature {{ ui.icon('external-link', 'icon-sm') }}</a>{% endif %}
   </div>
-  <div>
-    {{ ui.stamp(stamp_job, big=True) }}
-    <p class="stamp-caption">{% if job['rank_score'] is none and job['match_score'] is none %}nog geen match{% elif job['match_score'] is none %}voorlopige match{% else %}match{% endif %}</p>
-  </div>
+  {% include "_detail_stamp.html" %}
 </header>
 
 {% set status = job['status'] %}

@@ -162,3 +162,26 @@ def test_after_signals_reblends_without_a_full_pass(client, monkeypatch):  # noq
     store.meta_set("fit_calibration", json.dumps({"slope": 1.0, "intercept": 0.0}))
     ranking.after_signals(job_id, SURE)
     assert store.get_job(job_id)["rank_score"] > 40
+
+
+def test_the_assessment_swapped_in_brings_the_new_score_along(client, monkeypatch):  # noqa: F811
+    from bs4 import BeautifulSoup
+
+    _ai(monkeypatch, VERDICT)
+    job_id = add_job("Planner")
+    _signals(job_id, UNSURE, rank=21)
+    page = BeautifulSoup(client.get(f"/jobs/{job_id}").text, "html.parser")
+    assert page.select_one("#detail-stamp strong").get_text().startswith("21")
+    assert not page.select("template[data-swap-also]")  # the full page has the score already
+    part = BeautifulSoup(client.get(f"/jobs/{job_id}/oordeel").text, "html.parser")
+    extra = part.select_one("template[data-swap-also] #detail-stamp")
+    assert extra is not None and "<strong>21<" in str(extra)  # bs4 gives no text inside a template
+
+
+def test_short_facts_only_show_what_the_quick_assessment_is_fairly_sure_of(client):  # noqa: F811
+    from bs4 import BeautifulSoup
+
+    job_id = add_job("Planner")
+    _signals(job_id, {**SURE, "noul": {"day_hours": 0.6, "outdoor_mobile": 0.55, "guidance": 0.9, "evening_weekend": 0.3}})
+    chips = [li.get_text() for li in BeautifulSoup(client.get(f"/jobs/{job_id}").text, "html.parser").select("#detail-assessment .traits li")]
+    assert chips == ["Inwerkperiode"]
