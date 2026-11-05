@@ -34,12 +34,13 @@
   <h2 id="reisbereik-title">Woonplaats en reisbereik</h2>
   <form method="post" action="/profile/home" class="form-stack" data-pending-form>
     {% include '_csrf.html' %}
-    <p class="small muted">Reistijden zijn schattingen vanaf je woonplaats. Vacatures buiten je bereik worden standaard verborgen.</p>
+    <p class="small muted">Reistijden zijn schattingen vanaf je woonplaats, enkele reis. Vacatures buiten je bereik worden standaard verborgen; volledig thuiswerk en werk met een bedrijfsauto blijven zichtbaar. Vul 0 in voor een manier waarop je niet reist.</p>
     <div class="form-grid">
       <div class="field"><label for="home-place">Woonplaats</label><input id="home-place" name="place" value="{{ preferences.home.label if preferences.home.label != 'Nog niet ingesteld' else '' }}" placeholder="Begin te typen, bijvoorbeeld Amersfoort" autocomplete="off" list="home-places"><datalist id="home-places">{% for place in place_labels %}<option value="{{ place }}"></option>{% endfor %}</datalist></div>
-      <div class="field"><label for="home-car">Auto beschikbaar</label><select id="home-car" name="car_available"><option value="0" {% if not preferences.home.car_available %}selected{% endif %}>Nee</option><option value="1" {% if preferences.home.car_available %}selected{% endif %}>Ja</option></select></div>
-      <div class="field"><label for="home-bike">Maximaal fietsen (e-bike)</label><input id="home-bike" name="bike_minutes" type="number" min="5" max="180" value="{{ preferences.home.bike_minutes }}" inputmode="numeric"><span class="hint">minuten, enkele reis</span></div>
-      <div class="field"><label for="home-transit">Maximaal met het OV</label><input id="home-transit" name="transit_minutes" type="number" min="5" max="240" value="{{ preferences.home.transit_minutes }}" inputmode="numeric"><span class="hint">minuten, enkele reis</span></div>
+      <div class="field"><label for="home-bike-kind">Je fiets</label><select id="home-bike-kind" name="bike_kind"><option value="ebike" {% if preferences.home.bike_kind != 'fiets' %}selected{% endif %}>E-bike</option><option value="fiets" {% if preferences.home.bike_kind == 'fiets' %}selected{% endif %}>Gewone fiets</option></select></div>
+      <div class="field"><label for="home-bike">Maximaal fietsen</label><input id="home-bike" name="bike_minutes" type="number" min="0" max="180" value="{{ preferences.home.bike_minutes }}" inputmode="numeric"><span class="hint">minuten</span></div>
+      <div class="field"><label for="home-transit">Maximaal met het OV</label><input id="home-transit" name="transit_minutes" type="number" min="0" max="240" value="{{ preferences.home.transit_minutes }}" inputmode="numeric"><span class="hint">minuten</span></div>
+      <div class="field"><label for="home-car">Maximaal met de auto</label><input id="home-car" name="car_minutes" type="number" min="0" max="180" value="{{ preferences.home.car_minutes }}" inputmode="numeric"><span class="hint">minuten, 0 als je geen auto hebt</span></div>
       <details class="disclosure span-2" {% if error == 'place' %}open{% endif %}>
         <summary><span class="small">Staat je plaats er niet tussen? Vul coördinaten in</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
         <div class="form-grid">

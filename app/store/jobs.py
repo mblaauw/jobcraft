@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 
-from .. import config, source_policy, tenancy
+from .. import config, geo, source_policy, tenancy
 from ..contracts import JobRow
 from .accounts import get_preferences
 from .connection import connect, stale_cutoff
@@ -208,7 +208,9 @@ def list_jobs(
         return con.execute(sql, tuple(params)).fetchall()
 
 
-TRAVEL_OUT_OF_RANGE = "json_extract(travel_json,'$.in_range') IS 0"
+def _too_far(reach: dict | None) -> tuple[str, list]:
+    """Hide on distance by the account's own budgets, or by the ones a list was given."""
+    return geo.too_far_sql(reach if reach is not None else geo.home())
 
 
 def job_status_counts(
@@ -217,18 +219,20 @@ def job_status_counts(
     include_stale: bool = False,
     list_filters: dict | None = None,
     only_unvoted: bool = False,
+    reach: dict | None = None,
 ) -> dict[str, tuple[int, int]]:
     """Per status: (unique jobs, unique jobs known to be outside the travel range)."""
     clauses, filters = _job_filters(
         None, query_text, source, include_stale, only_unvoted, list_filters
     )
+    far_sql, far_params = _too_far(reach)
     sql = (
-        f"SELECT status, COUNT(*) AS n, COALESCE(SUM({TRAVEL_OUT_OF_RANGE}),0) AS far FROM ("
+        f"SELECT status, COUNT(*) AS n, COALESCE(SUM({far_sql}),0) AS far FROM ("
         + _unique_jobs(clauses)
         + ") GROUP BY status"
     )
     with connect() as con:
-        rows = con.execute(sql, (tenancy.user_id(), *filters)).fetchall()
+        rows = con.execute(sql, (*far_params, tenancy.user_id(), *filters)).fetchall()
     return {row["status"]: (row["n"], row["far"]) for row in rows}
 
 
@@ -240,7 +244,7 @@ def list_jobs_page(
     source: str | None = None,
     sort: str = "rank",
     include_stale: bool = False,
-    within_travel: bool = False,
+    within_travel: bool | dict = False,
     only_unvoted: bool = False,
     list_filters: dict | None = None,
 ) -> list:
@@ -254,7 +258,10 @@ def list_jobs_page(
         outer.append("status=?")
         outer_params.append(status)
     if within_travel:
-        outer.append("NOT " + TRAVEL_OUT_OF_RANGE)
+        # True: the account's own reach; a dict: budgets this list was given.
+        far_sql, far_params = _too_far(within_travel if isinstance(within_travel, dict) else None)
+        outer.append("NOT " + far_sql)
+        outer_params.extend(far_params)
     sql = "SELECT id, dup_count FROM (" + _unique_jobs(clauses) + ")"
     if outer:
         sql += " WHERE " + " AND ".join(outer)
@@ -284,7 +291,9 @@ def list_jobs_page(
 def count_catalogue(include: list[str], exclude: list[str], exclude_titles: list[str]) -> int:
     """How many reachable jobs could fit; instant enough to follow each tap."""
     clauses, filters = _job_filters()
-    clauses.append("NOT " + TRAVEL_OUT_OF_RANGE)
+    far_sql, far_params = _too_far(None)
+    clauses.append("NOT " + far_sql)
+    filters.extend(far_params)
     if include:
         clauses.append("(" + " OR ".join("search_text LIKE ?" for _ in include) + ")")
         filters.extend(f"%{term.lower()}%" for term in include)

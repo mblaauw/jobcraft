@@ -242,15 +242,18 @@ def test_document_frequency_and_travel_are_cached(monkeypatch):
 
     calls = []
 
-    def assess(*args, **kwargs):
+    def times(*args, **kwargs):
         calls.append(args)
-        return {"in_range": True, "label": "fixture", "distance_km": 1.0}
+        return {"transit_min": 20, "ebike_min": 10, "distance_km": 1.0}
 
-    monkeypatch.setattr(ranking.geo, "assess", assess)
+    monkeypatch.setattr(ranking.geo, "times", times)
     job = store.get_job(1)
     first = ranking.travel_of(job)
     second = ranking.travel_of(job)
     assert first == second and len(calls) == 1
+    # Other budgets judge the same stored times again, without working them out anew.
+    profile.write_preferences({"home": {"transit_minutes": 15, "bike_minutes": 5}})
+    assert ranking.travel_of(store.get_job(1))["in_range"] is False and len(calls) == 1
     with store.connect() as con:
         con.execute("UPDATE jobs SET location='Utrecht' WHERE id=1")
     ranking.travel_of(store.get_job(1))

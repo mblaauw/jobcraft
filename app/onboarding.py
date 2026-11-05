@@ -6,7 +6,7 @@ import json
 import logging
 import re
 
-from . import geo, profile, ranking, runtime, store
+from . import geo, profile, ranking, reach, runtime, store
 from .scoring.rules import GENERIC_ROLE_WORDS
 from .workflows import _budget_reached
 
@@ -88,21 +88,40 @@ def minutes_from(raw: object) -> int:
     return int(raw) if str(raw).isdigit() else 30
 
 
-def save_home(place: str, minutes: int, car: bool) -> bool:
-    """Store the home and refresh travel estimates; False when the place is unknown."""
+TRAVEL_MODES = tuple((value, label) for value, label, _ in reach.MODES)
+DEFAULT_MODES = ("ebike", "ov")
+
+
+def modes_from(values: list[str]) -> list[str]:
+    modes = [value for value, _ in TRAVEL_MODES if value in values]
+    return modes or list(DEFAULT_MODES)
+
+
+def current_modes(home: dict) -> list[str]:
+    return reach.saved_modes(home) or list(DEFAULT_MODES)
+
+
+def longest_budget(home: dict) -> int:
+    return reach.longest(home) or 30
+
+
+def save_home(place: str, minutes: int, modes: list[str]) -> bool:
+    """Store the home and refresh travel estimates; False when the place is unknown.
+
+    One time budget for every way you travel; ticking nothing means e-bike and OV.
+    """
     key = " ".join(place.split()).lower()
     if key not in geo.PLACES:
         return False
     preferences = profile.read_preferences()
     lat, lon = geo.PLACES[key]
-    minutes = max(5, min(180, minutes))
+    modes = modes_from(modes)
     home = {
         "label": geo.PLACE_LABELS[key],
         "lat": lat,
         "lon": lon,
-        "bike_minutes": minutes,
-        "transit_minutes": minutes,
-        "car_available": car,
+        **reach.budgets(geo.budget(minutes, 180) or 30, modes),
+        "car_available": "auto" in modes,
     }
     if preferences["home"] != home:
         preferences["home"] = home

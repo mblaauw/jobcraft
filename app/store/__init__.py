@@ -77,6 +77,7 @@ from .meta import (  # noqa: F401
     meta_set,
     save_token_df,
 )
+from .reach import reach_counts as reach_counts
 from .recovery import recover_interrupted_work  # noqa: F401
 from .schema import (  # noqa: F401
     SCHEMA,

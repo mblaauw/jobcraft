@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import (
@@ -24,6 +25,7 @@ from .. import (
     profile,
     profile_check,
     profile_versions,
+    reach,
     store,
     tasks,
     tenancy,
@@ -32,7 +34,7 @@ from ..ai_budget import budget_reached
 from ..auth import require_user
 from ..runtime import get_manager
 from ..web import templates
-from ..web_helpers import _profile_context
+from ..web_helpers import _jobs_return_target, _profile_context
 
 log = logging.getLogger("jobcraft")
 
@@ -172,8 +174,9 @@ def profile_save_draft(request: Request, profile_md: str = Form(...), preference
 def profile_home(
     place: str = Form(""),
     bike_minutes: int = Form(30),
+    bike_kind: str = Form("ebike"),
     transit_minutes: int = Form(35),
-    car_available: str = Form(""),
+    car_minutes: int = Form(0),
     lat: str = Form(""),
     lon: str = Form(""),
 ):
@@ -196,9 +199,10 @@ def profile_home(
         "label": label,
         "lat": coords[0] if coords else 0.0,
         "lon": coords[1] if coords else 0.0,
-        "bike_minutes": max(5, min(180, bike_minutes)),
-        "transit_minutes": max(5, min(240, transit_minutes)),
-        "car_available": car_available == "1",
+        "bike_minutes": geo.budget(bike_minutes, 180),
+        "bike_kind": "fiets" if bike_kind == "fiets" else "ebike",
+        "transit_minutes": geo.budget(transit_minutes, 240),
+        "car_minutes": geo.budget(car_minutes, 180),
     }
     profile.write_preferences(preferences)
     _assess_soon("rerank")
@@ -206,6 +210,23 @@ def profile_home(
         # Saved, but travel times stay unknown until coordinates are given.
         return RedirectResponse(url="/profile?tab=zoek&error=place#reisbereik", status_code=303)
     return RedirectResponse(url="/profile?tab=zoek&saved=home#reisbereik", status_code=303)
+
+
+@router.post("/jobs/reisbereik")
+async def jobs_reach_save(request: Request):
+    """Keep the reach tried on the vacancy list as your own, then show the list with it."""
+    form = await request.form()
+    raw = str(form.get("reis") or "")
+    minutes = int(raw) if raw.isdigit() else reach.longest(geo.home()) or 30
+    picked = {part for value in form.getlist("met") for part in str(value).split(",")}
+    modes = [value for value, _, _ in reach.MODES if value in picked]
+    preferences = profile.read_preferences()
+    preferences["home"] |= reach.budgets(geo.budget(minutes, 180), modes)
+    profile.write_preferences(preferences)
+    _assess_soon("rerank")
+    target = urlsplit(_jobs_return_target(str(form.get("next") or "/jobs")))
+    kept = [(key, value) for key, value in parse_qsl(target.query) if key not in reach.LIST_PARAMS]
+    return RedirectResponse(url=target.path + ("?" + urlencode(kept) if kept else ""), status_code=303)
 
 
 @router.post("/profile/zoek")

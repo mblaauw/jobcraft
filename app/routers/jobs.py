@@ -28,6 +28,7 @@ from .. import (
     notifications,
     profile,
     ranking,
+    reach,
     store,
     tasks,
     tenancy,
@@ -41,6 +42,7 @@ from ..util import LOCAL_TZ
 from ..web import templates
 from ..web_helpers import _jobs_return_target, _with_done
 from ..workflows import _doc_status, _document_lock
+from . import job_list
 
 log = logging.getLogger("jobcraft")
 
@@ -63,9 +65,11 @@ def jobs_page(
     salaris: str = "",
     dagen: str = "",
     uren: str = "",
+    auto: str = "",
 ):
     sort = sort if sort in ("rank", "newest") else "rank"
     remote = "remote" if remote == "remote" else ""
+    auto = "1" if auto == "1" else ""
     contract = contract if contract in ("vast", "tijdelijk", "freelance") else ""
     salaris = "salaris" if salaris == "salaris" else ""
     dagen = dagen if dagen in ("1", "7", "30") else ""
@@ -76,6 +80,7 @@ def jobs_page(
         "salaris": salaris,
         "days": dagen,
         "hours": uren,
+        "auto": auto,
     }
     stale_active = stale == "1"
     raw = store.meta_get("match_summary")
@@ -93,8 +98,14 @@ def jobs_page(
     source_rows = store.list_sources()
     source_names = {row["id"]: row["name"] for row in source_rows}
     within_active = within != "0"  # reisbereik-filter staat standaard aan
+    geo_home = geo.home()
+    geo_home["configured"] = bool(
+        (geo_home.get("lat") or geo_home.get("lon"))
+        and geo.valid_coordinates(geo_home.get("lat") or 0, geo_home.get("lon") or 0)
+    )
+    shown = reach.from_query(request.query_params, geo_home)
     per_status = store.job_status_counts(
-        q or None, source or None, include_stale=stale_active, list_filters=list_filters
+        q or None, source or None, include_stale=stale_active, list_filters=list_filters, reach=shown["settings"]
     )
     status_totals = {
         key: all_jobs - far if within_active else all_jobs
@@ -118,7 +129,7 @@ def jobs_page(
         source or None,
         sort=sort,
         include_stale=stale_active,
-        within_travel=within_active,
+        within_travel=shown["settings"] if within_active else False,
         list_filters=list_filters,
     ):
         item = dict(row)
@@ -132,7 +143,7 @@ def jobs_page(
             if (item["source_id"] or "").startswith("import:")
             else source_names.get(item["source_id"], item["source_id"] or "Onbekende bron")
         )
-        item["travel"] = ranking.travel_of(item)
+        item["travel"] = ranking.travel_of(item, shown["settings"])
         item["signals"] = ranking.signals_of(item)
         item["reason_line"] = reasons.reason_line(item, preferences)
         item["facts"] = reasons.facts(item)
@@ -151,66 +162,24 @@ def jobs_page(
         "salaris": salaris,
         "dagen": dagen,
         "uren": uren,
+        "auto": auto,
     }
+    if shown["changed"]:
+        params |= {"reis": shown["minutes"], "met": ",".join(shown["modes"]) or "geen", "vanaf": shown["base"]}
     pager_base = "/jobs?" + urlencode(params)
-    total_status = sum(status_totals.values())
-    status_count_for = {
-        "": total_status,
-        "new": status_totals.get("new", 0),
-        "saved": status_totals.get("saved", 0),
-        "applied": status_totals.get("applied", 0),
-        "ignored": status_totals.get("ignored", 0),
-    }
-    status_links = [
-        {
-            "label": label,
-            "value": value,
-            "count": status_count_for[value],
-            "url": "/jobs?" + urlencode({**params, "status": value}),
-        }
-        for value, label in (
-            ("", "Alle"),
-            ("new", "Nieuw"),
-            ("saved", "Bewaard"),
-            ("applied", "Gereageerd"),
-            ("ignored", "Genegeerd"),
+    status_links, filter_chips = job_list.links(params, status_totals, source_names, within_active, stale_active)
+    reach_view = None
+    if geo_home["configured"]:
+        counts = store.reach_counts(
+            [shown["settings"] | reach.budgets(minutes, shown["modes"]) for minutes in (0, *reach.STOPS)],
+            status or None, q or None, source or None, stale_active, list_filters,
         )
-    ]
-    filter_chips = []
-    for key, label in (
-        ("q", f"Zoekterm: {q}"),
-        ("source", f"Bron: {source_names.get(source, source)}"),
-        ("remote", "Thuiswerken genoemd"),
-        ("contract", f"Contract: {contract}"),
-        ("salaris", "Salaris genoemd"),
-        ("dagen", f"Laatste {dagen} dagen"),
-        ("uren", f"Uren: {uren}"),
-    ):
-        if params[key]:
-            filter_chips.append({"label": label, "url": "/jobs?" + urlencode({**params, key: ""})})
-    if not within_active:
-        filter_chips.append(
-            {
-                "label": "Ook buiten reisbereik",
-                "url": "/jobs?" + urlencode({**params, "within": "1"}),
-            }
-        )
-    if stale_active:
-        filter_chips.append(
-            {
-                "label": "Verlopen vacatures",
-                "url": "/jobs?" + urlencode({**params, "stale": ""}),
-            }
-        )
+        near = {key: all_jobs - far for key, (all_jobs, far) in per_status.items()}
+        reach_view = reach.view(shown, counts, near.get(status, 0) if status else sum(near.values()))
 
     return_to = str(request.url.path)
     if request.url.query:
         return_to += f"?{request.url.query}"
-    geo_home = geo.home()
-    geo_home["configured"] = bool(
-        (geo_home.get("lat") or geo_home.get("lon"))
-        and geo.valid_coordinates(geo_home.get("lat") or 0, geo_home.get("lon") or 0)
-    )
     return templates.TemplateResponse(
         request,
         "jobs.html",
@@ -228,6 +197,10 @@ def jobs_page(
             "filter_chips": filter_chips,
             "reset_url": "/jobs?"
             + urlencode({"status": status, "sort": sort, "per_page": per_page}),
+            "reach": reach_view,
+            "reach_reset_url": "/jobs?" + urlencode({key: value for key, value in params.items() if key not in reach.LIST_PARAMS}),
+            "reach_modes": reach.MODES,
+            "reach_stops": reach.STOPS,
             "sort": sort,
             "list_filters": params,
             "excluded": excluded,

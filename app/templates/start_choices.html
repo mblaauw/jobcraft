@@ -14,11 +14,11 @@
   <div class="field"><label for="choice-roles">Functies die je zoekt</label><input id="choice-roles" name="roles" value="{{ roles }}" placeholder="Bijvoorbeeld projectleider, beleidsmedewerker"><span class="hint">Gescheiden door komma's. Leeg laten mag.</span></div>
   <div class="form-grid">
     <div class="field"><label for="choice-place">Woonplaats</label><input id="choice-place" name="place" list="start-places" autocomplete="off" value="{{ preferences.home.label if preferences.home.label != 'Nog niet ingesteld' else '' }}" placeholder="Begin te typen"><datalist id="start-places">{% for place in place_labels %}<option value="{{ place }}"></option>{% endfor %}</datalist><span class="hint" id="choice-place-note"></span></div>
-    <div class="field"><label for="choice-car">Auto beschikbaar</label><select id="choice-car" name="car"><option value="0">Nee</option><option value="1" {% if preferences.home.car_available %}selected{% endif %}>Ja</option></select></div>
   </div>
   {% macro radios(legend, name, options, current) %}<fieldset class="choice-group"><legend>{{ legend }}</legend><div class="choice-grid">{% for value, label in options %}<label class="choice"><input type="radio" name="{{ name }}" value="{{ value }}" {% if value|string == current|string %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}</div></fieldset>{% endmacro %}
   {% macro checks(legend, name, options, current) %}<fieldset class="choice-group"><legend>{{ legend }}</legend><div class="choice-grid">{% for value, label in options %}<label class="choice"><input type="checkbox" name="{{ name }}" value="{{ value }}" {% if value in current %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}</div></fieldset>{% endmacro %}
   {% set travel_options = [] %}{% for minutes in travel_choices %}{% set _ = travel_options.append((minutes, minutes ~ ' min')) %}{% endfor %}
+  {{ checks('Hoe reis je naar je werk?', 'vervoer', travel_modes, modes_current) }}
   {{ radios('Maximale reistijd, enkele reis', 'minutes', travel_options, travel_current) }}
   {{ radios('Uren per week', 'hours', [('any','Maakt niet uit'),('tot24','Tot 24'),('24-32','24 tot 32'),('32-40','32 tot 40')], hours_choice) }}
   {{ radios('Thuiswerken', 'remote', [('any','Maakt niet uit'),('hybrid','Deels thuis'),('remote','Vooral thuis'),('onsite','Op locatie')], preferences.wishes.remote) }}

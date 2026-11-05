@@ -94,6 +94,7 @@ USER = {
     ("POST", "/account/dagmail"),
     ("GET", "/jobs"),
     ("POST", "/jobs/match"),
+    ("POST", "/jobs/reisbereik"),
     ("GET", "/jobs/{job_id}"),
     ("POST", "/jobs/{job_id}/documents"),
     ("GET", "/jobs/{job_id}/documents/{document_id}/{fmt}"),

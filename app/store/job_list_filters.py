@@ -42,6 +42,9 @@ def list_filter_clauses(filters: dict | None) -> tuple[list[str], list]:
         if terms:
             clauses.append("(" + " OR ".join("search_text LIKE ?" for _ in terms) + ")")
             params.extend(f"%{term}%" for term in terms)
+    if (filters or {}).get("auto"):
+        # The travel estimate already read the text, negations ("geen bedrijfsauto") included.
+        clauses.append("json_extract(travel_json,'$.auto') = 1")
     days = (filters or {}).get("days")
     if days:
         cutoff = (datetime.now(UTC) - timedelta(days=int(days))).isoformat()

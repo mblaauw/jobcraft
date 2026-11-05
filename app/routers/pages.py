@@ -21,6 +21,7 @@ from .. import (
     feedback,
     judgements,
     profile,
+    ranking,
     sources,
     store,
     tasks,
@@ -43,6 +44,7 @@ def dashboard(request: Request):
         return RedirectResponse(url="/admin", status_code=303)
     if tenancy.user_id() != tenancy.LEGACY_ID and not profile.profile_exists():
         return RedirectResponse(url="/start", status_code=303)
+    ranking.refresh_travel()  # the picks below hide what is too far, so their times must be current
     columns = applications.board()
     task_list = today.tasks(columns)
     start = today.start_state()

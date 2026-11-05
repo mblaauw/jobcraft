@@ -31,53 +31,79 @@
 <div class="banner warn">{{ ui.icon('triangle-alert') }}<span>Niet alle bronnen konden worden opgehaald. <a href="/sources">Bekijk welke bronnen een probleem hebben</a></span></div>
 {% endif %}
 
-<form method="get" action="/jobs" class="jobs-filters{% if not filter_chips %} filters-fold{% endif %}" aria-label="Vacatures zoeken en filteren" data-autosubmit>
-  <div class="field field-search">
-    <label for="job-search">Zoeken</label>
-    <div class="input-icon">{{ ui.icon('search') }}<input id="job-search" type="search" name="q" value="{{ query or '' }}" placeholder="Functie, organisatie of trefwoord"></div>
+<form method="get" action="/jobs" class="jobs-filters{% if not filter_chips %} filters-fold{% endif %}" aria-label="Vacatures zoeken en filteren" data-autosubmit id="job-filters">
+  <div class="filters-top">
+    <div class="field field-search">
+      <label for="job-search">Zoeken</label>
+      <div class="input-icon">{{ ui.icon('search') }}<input id="job-search" type="search" name="q" value="{{ query or '' }}" placeholder="Functie, organisatie of trefwoord"></div>
+    </div>
+    <fieldset class="segmented filters-sort"><legend class="visually-hidden">Volgorde</legend>
+      {% for value, label in [('rank', 'Best passend'), ('newest', 'Nieuwste')] %}<label><input type="radio" name="sort" value="{{ value }}" {% if sort == value %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}
+    </fieldset>
+    <button class="button small filters-more" type="button" hidden>{{ ui.icon('sliders-horizontal') }}{% if reach %}Filters · {{ reach.minutes }} min reisbereik{% else %}Meer filters{% endif %}</button>
   </div>
-  <button class="button small filters-more" type="button" hidden>Meer filters</button>
-  <div class="field">
-    <label for="job-source">Bron</label>
-    <select id="job-source" name="source"><option value="">Alle bronnen</option>{% for s in sources %}<option value="{{ s['id'] }}" {% if source_filter == s['id'] %}selected{% endif %}>{{ s['name'] }}</option>{% endfor %}</select>
+
+  {% if reach %}
+  <section class="reach" role="group" aria-labelledby="reach-title" aria-describedby="reach-hint">
+    <div class="reach-head">
+    <h2 id="reach-title">{{ ui.icon('map-pin') }}Vanaf {{ geo_home.label }}, enkele reis</h2>
+    <p class="reach-count" role="status" aria-live="polite"><strong data-reach-count>{{ ui.number(reach.count) }}</strong> {{ 'vacature' if reach.count == 1 else 'vacatures' }} binnen bereik</p>
+    </div>
+    <div class="reach-modes" role="group" aria-label="Hoe je reist">
+      <input type="hidden" name="met" value="">
+      {% for value, label, icon in reach_modes %}<label class="toggle-chip"><input type="checkbox" name="met" value="{{ value }}" {% if value in reach.modes %}checked{% endif %}>{{ ui.icon(icon) }}<span>{{ label }}</span></label>{% endfor %}
+    </div>
+    <div class="reach-scale">
+      <div class="reach-bars" aria-hidden="true">{% for bar in reach.bars %}<span style="--h: {{ bar.height }}%" data-minutes="{{ bar.minutes }}"{% if bar.minutes <= reach.minutes %} class="is-in"{% endif %}></span>{% endfor %}</div>
+      <label class="visually-hidden" for="reach-minutes">Maximale reistijd in minuten</label>
+      <input id="reach-minutes" type="range" name="reis" min="{{ reach_stops[0] }}" max="{{ reach_stops[-1] }}" step="15" value="{{ reach.minutes }}" data-reach-counts="{{ reach.counts_json }}" aria-valuetext="{{ reach.minutes }} minuten">
+      <output for="reach-minutes" data-reach-minutes>{{ reach.minutes }} min</output>
+    </div>
+    <input type="hidden" name="vanaf" value="{{ reach.base }}">
+    <p class="reach-hint" id="reach-hint" data-reach-hint>{{ reach.hint }}</p>
+    <div class="reach-foot">
+      {# A hidden zero followed by the checked value makes both states explicit. #}
+      <input type="hidden" name="within" value="0">
+      <label class="switch"><input type="checkbox" name="within" value="1" {% if within == '1' %}checked{% endif %}> Verberg wat te ver is</label>
+      {% if reach.changed %}
+      <button class="button small primary" type="submit" form="reach-save">Bewaar als mijn reisbereik</button>
+      <a class="small" href="{{ reach_reset_url }}">Terug naar mijn reisbereik</a>
+      {% else %}
+      <a class="small" href="/profile?tab=zoek#reisbereik">Per vervoermiddel instellen</a>
+      {% endif %}
+    </div>
+    <p class="travel-note">Volledig thuiswerk en werk met een bedrijfsauto tellen altijd mee. Reistijden zijn schattingen vanaf het midden van je woonplaats.</p>
+  </section>
+  {% else %}
+  <input type="hidden" name="within" value="{{ within }}">
+  <p class="travel-note">Reistijden zijn nog onbekend. <a href="/profile?tab=zoek#reisbereik">Stel je woonplaats in</a> om vacatures buiten je bereik te verbergen.</p>
+  {% endif %}
+
+  <div class="quick-filters" role="group" aria-label="Snel filteren">
+    <label class="toggle-chip"><input type="checkbox" name="remote" value="remote" {% if list_filters.remote %}checked{% endif %}>{{ ui.icon('house') }}<span>Thuiswerken genoemd</span></label>
+    <label class="toggle-chip"><input type="checkbox" name="auto" value="1" {% if list_filters.auto %}checked{% endif %}>{{ ui.icon('car') }}<span>Met bedrijfsauto</span></label>
+    <label class="toggle-chip"><input type="checkbox" name="salaris" value="salaris" {% if list_filters.salaris %}checked{% endif %}><span>Salaris genoemd</span></label>
+    <label class="visually-hidden" for="job-contract">Contract</label>
+    <select id="job-contract" name="contract" class="chip-select"><option value="">Elk contract</option>{% for value, label in [('vast','Vast contract'),('tijdelijk','Tijdelijk'),('freelance','Freelance')] %}<option value="{{ value }}" {% if list_filters.contract == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <label class="visually-hidden" for="job-hours">Uren</label>
+    <select id="job-hours" name="uren" class="chip-select"><option value="">Alle uren</option>{% for value, label in [('tot24','Tot 24 uur'),('24-32','24 tot 32 uur'),('32-40','32 tot 40 uur')] %}<option value="{{ value }}" {% if list_filters.uren == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <label class="visually-hidden" for="job-days">Geplaatst</label>
+    <select id="job-days" name="dagen" class="chip-select"><option value="">Altijd geplaatst</option>{% for value, label in [('1','Laatste dag'),('7','Laatste week'),('30','Laatste maand')] %}<option value="{{ value }}" {% if list_filters.dagen == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
   </div>
-  <div class="field">
-    <label for="job-sort">Volgorde</label>
-    <select name="sort" id="job-sort"><option value="rank" {% if sort == 'rank' %}selected{% endif %}>Best passend</option><option value="newest" {% if sort == 'newest' %}selected{% endif %}>Nieuwste eerst</option></select>
-  </div>
-  <div class="field">
-    <label for="job-remote">Thuiswerken</label>
-    <select id="job-remote" name="remote"><option value="">Alle</option><option value="remote" {% if list_filters.remote %}selected{% endif %}>Genoemd in de vacature</option></select>
-  </div>
-  <div class="field">
-    <label for="job-contract">Contract</label>
-    <select id="job-contract" name="contract"><option value="">Alle</option>{% for value, label in [('vast','Vast'),('tijdelijk','Tijdelijk'),('freelance','Freelance')] %}<option value="{{ value }}" {% if list_filters.contract == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
-  </div>
-  <div class="field">
-    <label for="job-salary">Salaris</label>
-    <select id="job-salary" name="salaris"><option value="">Alle</option><option value="salaris" {% if list_filters.salaris %}selected{% endif %}>Bedrag genoemd</option></select>
-  </div>
-  <div class="field">
-    <label for="job-hours">Uren</label>
-    <select id="job-hours" name="uren"><option value="">Alle</option>{% for value, label in [('tot24','Tot 24'),('24-32','24 tot 32'),('32-40','32 tot 40')] %}<option value="{{ value }}" {% if list_filters.uren == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
-  </div>
-  <div class="field">
-    <label for="job-days">Geplaatst</label>
-    <select id="job-days" name="dagen"><option value="">Altijd</option>{% for value, label in [('1','Laatste dag'),('7','Laatste week'),('30','Laatste maand')] %}<option value="{{ value }}" {% if list_filters.dagen == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
-  </div>
-  {# A hidden zero followed by the checked value makes both states explicit. #}
-  <input type="hidden" name="within" value="0">
-  <label class="switch"><input type="checkbox" name="within" value="1" {% if within == '1' %}checked{% endif %}> Binnen reisbereik</label>
+  {% if source_filter %}<input type="hidden" name="source" value="{{ source_filter }}">{% endif %}
   <input type="hidden" name="status" value="{{ status_filter }}">
   <input type="hidden" name="per_page" value="{{ per_page }}">
   <input type="hidden" name="stale" value="{{ stale }}">
   <button class="button primary filters-submit" type="submit">{{ ui.icon('search') }}Zoeken</button>
-  {% if not geo_home.configured %}
-  <p class="travel-note">Reistijden zijn nog onbekend. <a href="/profile?tab=zoek#reisbereik">Stel je woonplaats in</a> om vacatures buiten je bereik te verbergen.</p>
-  {% else %}
-  <p class="travel-note">Reisbereik vanaf {{ geo_home.label if geo_home.label != 'Nog niet ingesteld' else 'je woonplaats' }}: {{ geo_home.bike_minutes }} min e-bike of {{ geo_home.transit_minutes }} min OV. <a href="/profile?tab=zoek#reisbereik">Aanpassen</a></p>
-  {% endif %}
 </form>
+{% if reach and reach.changed %}
+<form method="post" action="/jobs/reisbereik" id="reach-save" hidden>
+  {% include '_csrf.html' %}
+  <input type="hidden" name="reis" value="{{ reach.minutes }}">
+  <input type="hidden" name="met" value="{{ reach.modes | join(',') }}">
+  <input type="hidden" name="next" value="{{ return_to }}">
+</form>
+{% endif %}
 
 {% if filter_chips %}
 <div class="jobs-active-filters" aria-label="Actieve zoekfilters">

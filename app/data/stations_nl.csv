@@ -1,0 +1,396 @@
+name,lat,lon,kind
+'s-Hertogenbosch,51.69048,5.29362,ic
+'s-Hertogenbosch Oost,51.70055,5.31833,stop
+'t Harde,52.40917,5.89361,stop
+Aalten,51.92133,6.57863,stop
+Abcoude,52.27850,4.97700,stop
+Akkrum,53.04639,5.84361,stop
+Alkmaar,52.63778,4.73972,ic
+Alkmaar Noord,52.64389,4.76417,stop
+Almelo,52.35806,6.65389,ic
+Almelo de Riet,52.34195,6.66667,stop
+Almere Buiten,52.39417,5.27806,stop
+Almere Centrum,52.37503,5.21764,ic
+Almere Muziekwijk,52.36750,5.19028,stop
+Almere Oostvaarders,52.40333,5.30056,stop
+Almere Parkwijk,52.37667,5.24472,stop
+Almere Poort,52.34278,5.15194,stop
+Alphen a/d Rijn,52.12444,4.65778,ic
+Amersfoort Centraal,52.15389,5.37056,ic
+Amersfoort Schothorst,52.17482,5.40389,stop
+Amersfoort Vathorst,52.19278,5.43389,stop
+Amsterdam Amstel,52.34667,4.91778,ic
+Amsterdam Bijlmer ArenA,52.31222,4.94694,stop
+Amsterdam Centraal,52.37889,4.90028,ic
+Amsterdam Holendrecht,52.29844,4.95972,stop
+Amsterdam Lelylaan,52.35778,4.83389,stop
+Amsterdam Muiderpoort,52.36055,4.93111,stop
+Amsterdam RAI,52.33722,4.89028,stop
+Amsterdam Science Park,52.35526,4.94651,stop
+Amsterdam Sloterdijk,52.38889,4.83778,ic
+Amsterdam Zuid,52.33889,4.87236,ic
+Anna Paulowna,52.86722,4.81111,stop
+Apeldoorn,52.20917,5.97028,ic
+Apeldoorn De Maten,52.20528,6.00056,stop
+Apeldoorn Osseveld,52.21528,6.00444,stop
+Appingedam,53.32581,6.86196,stop
+Arkel,51.87194,4.99278,stop
+Arnemuiden,51.50167,3.66917,stop
+Arnhem Centraal,51.98500,5.89917,ic
+Arnhem Presikhaaf,51.98806,5.94389,stop
+Arnhem Velperpoort,51.98528,5.91944,stop
+Arnhem Zuid,51.95500,5.85194,stop
+Assen,52.99166,6.57083,ic
+Baarn,52.20833,5.28083,stop
+Bad Nieuweschans,53.18440,7.19937,stop
+Baflo,53.36090,6.51856,stop
+Barendrecht,51.85472,4.55333,stop
+Barneveld Centrum,52.14000,5.59028,stop
+Barneveld Noord,52.16139,5.59806,stop
+Barneveld Zuid,52.12885,5.60246,stop
+Bedum,53.30689,6.59305,stop
+Beek-Elsloo,50.94750,5.78667,stop
+Beesd,51.89944,5.19444,stop
+Beilen,52.85472,6.52111,stop
+Bergen op Zoom,51.49389,4.29611,stop
+Best,51.51000,5.38917,stop
+Beverwijk,52.47833,4.65667,stop
+Bilthoven,52.13000,5.20389,stop
+Blerick,51.37250,6.15500,stop
+Bloemendaal,52.40417,4.62750,stop
+Bodegraven,52.08139,4.74611,stop
+Borne,52.29889,6.74806,stop
+Boskoop,52.07778,4.64694,stop
+Boskoop Snijdelwijk,52.06766,4.64619,stop
+Boven-Hardinxveld,51.83222,4.87806,stop
+Bovenkarspel Flora,52.69611,5.25278,stop
+Bovenkarspel-Grootebroek,52.69500,5.23778,stop
+Boxmeer,51.64452,5.93903,stop
+Boxtel,51.58433,5.31912,stop
+Breda,51.59555,4.78000,ic
+Breda-Prinsenbeek,51.60639,4.72083,stop
+Breukelen,52.17149,4.99060,stop
+Brummen,52.09111,6.14694,stop
+Buitenpost,53.25645,6.14465,ic
+Bunde,50.89695,5.73667,stop
+Bunnik,52.06306,5.19444,stop
+Bussum Zuid,52.26583,5.16306,stop
+Capelle Schollevaar,51.95417,4.58417,stop
+Castricum,52.54583,4.65861,ic
+Chevremont,50.87611,6.05972,stop
+Coevorden,52.66361,6.73556,ic
+Cuijk,51.72668,5.87430,stop
+Culemborg,51.94667,5.22694,stop
+Daarlerveen,52.44077,6.57599,stop
+Dalen,52.69417,6.75806,stop
+Dalfsen,52.49833,6.25861,ic
+De Vink,52.14722,4.45639,stop
+De Westereen,53.24817,6.03463,stop
+Deinum,53.18881,5.72816,stop
+Delden,52.26000,6.71611,stop
+Delft,52.00667,4.35639,ic
+Delft Campus,51.99083,4.36472,stop
+Delfzijl,53.33366,6.92408,stop
+Delfzijl West,53.33208,6.90691,stop
+Den Dolder,52.14028,5.24278,stop
+Den Haag Centraal,52.08028,4.32500,ic
+Den Haag HS,52.06972,4.32250,ic
+Den Haag Laan v NOI,52.07861,4.34278,stop
+Den Haag Mariahoeve,52.09056,4.36944,stop
+Den Haag Moerwijk,52.05389,4.30861,stop
+Den Haag Ypenburg,52.05528,4.39222,stop
+Den Helder,52.95528,4.76111,ic
+Den Helder Zuid,52.93250,4.76417,stop
+Deurne,51.45583,5.78889,stop
+Deventer,52.25750,6.16056,ic
+Deventer Colmschate,52.25028,6.21444,stop
+Didam,51.93350,6.13241,stop
+Diemen,52.34515,4.96757,stop
+Diemen Zuid,52.33028,4.95583,stop
+Dieren,52.04500,6.10306,ic
+Doetinchem,51.95860,6.29621,stop
+Doetinchem De Huet,51.95914,6.25985,stop
+Dordrecht,51.80722,4.66833,ic
+Dordrecht Stadspolders,51.80194,4.71667,stop
+Dordrecht Zuid,51.79000,4.67139,stop
+Driebergen-Zeist,52.06528,5.25861,stop
+Driehuis,52.44250,4.63806,stop
+Dronryp,53.17781,5.63474,stop
+Dronten,52.53440,5.72089,stop
+Duiven,51.94333,6.01472,stop
+Duivendrecht,52.32333,4.93639,stop
+Echt,51.10056,5.87889,stop
+Ede Centrum,52.04361,5.66833,stop
+Ede-Wageningen,52.02778,5.67306,ic
+Eemshaven,53.45842,6.83200,stop
+Eijsden,50.77195,5.71000,stop
+Eindhoven Centraal,51.44333,5.48139,ic
+Eindhoven Strijp-S,51.45111,5.45583,stop
+Elst,51.91694,5.85500,stop
+Emmen,52.79000,6.89944,ic
+Emmen Zuid,52.74887,6.87478,ic
+Enkhuizen,52.69917,5.28639,stop
+Enschede,52.22250,6.89000,ic
+Enschede De Eschmarke,52.22139,6.95111,stop
+Enschede Kennispark,52.23750,6.83889,stop
+Ermelo,52.30167,5.61472,stop
+Etten-Leur,51.57500,4.63583,ic
+Eygelshoven,50.89056,6.04500,stop
+Eygelshoven Markt,50.89605,6.06025,stop
+Feanwâlden,53.23518,5.98866,stop
+Franeker,53.18245,5.54831,stop
+Gaanderen,51.93074,6.34860,stop
+Geldermalsen,51.88301,5.27127,stop
+Geldrop,51.41972,5.55056,stop
+Geleen Oost,50.96695,5.84306,stop
+Geleen-Lutterade,50.97556,5.82472,stop
+Gilze-Rijen,51.58361,4.92611,stop
+Glanerbrug,52.21861,6.97444,stop
+Goes,51.49805,3.89056,stop
+Goor,52.23028,6.58444,stop
+Gorinchem,51.83389,4.96833,stop
+Gouda,52.01750,4.70444,ic
+Gouda Goverwelle,52.01500,4.74083,stop
+Gramsbergen,52.60917,6.67583,stop
+Grijpskerk,53.25574,6.30978,stop
+Groningen,53.21056,6.56472,ic
+Groningen Europapark,53.20480,6.58542,stop
+Groningen Noord,53.23015,6.55632,stop
+Grou-Jirnsum,53.08889,5.82250,stop
+Haarlem,52.38778,4.63833,ic
+Haarlem Spaarnwoude,52.38278,4.67306,stop
+Halfweg-Zwanenburg,52.38594,4.74716,stop
+Hardenberg,52.57278,6.62861,ic
+Harderwijk,52.33750,5.61972,stop
+Hardinxveld Blauwe Zoom,51.82944,4.81556,stop
+Hardinxveld-Giessendam,51.83055,4.83583,stop
+Haren,53.17611,6.61722,stop
+Harlingen,53.17042,5.42519,stop
+Harlingen Haven,53.17492,5.41129,stop
+Heemskerk,52.49528,4.68694,stop
+Heemstede-Aerdenhout,52.35917,4.60667,ic
+Heerenveen,52.96139,5.91417,ic
+Heerhugowaard,52.66972,4.82278,stop
+Heerlen,50.89083,5.97500,ic
+Heerlen Woonboulevard,50.89667,5.95222,stop
+Heeze,51.38500,5.56944,stop
+Heiloo,52.59945,4.70056,stop
+Heino,52.42722,6.22111,stop
+Helmond,51.47556,5.66194,ic
+Helmond 't Hout,51.46794,5.63085,stop
+Helmond Brandevoort,51.46222,5.60722,stop
+Helmond Brouwhuis,51.47068,5.70177,stop
+Hemmen-Dodewaard,51.92221,5.67373,stop
+Hengelo,52.26167,6.79389,ic
+Hengelo Gezondheidspark,52.26167,6.76778,stop
+Hengelo Oost,52.26889,6.81944,stop
+Hillegom,52.30250,4.56556,stop
+Hilversum,52.22583,5.18194,ic
+Hilversum Media Park,52.23806,5.17389,stop
+Hilversum Sportpark,52.21611,5.18722,stop
+Hindeloopen,52.94649,5.42306,stop
+Hoensbroek,50.90556,5.93056,stop
+Hoevelaken,52.16652,5.45718,stop
+Hollandsche Rading,52.17778,5.17917,stop
+Holten,52.28389,6.42028,stop
+Hoofddorp,52.29333,4.70056,stop
+Hoogeveen,52.73389,6.47361,stop
+Hoogezand-Sappemeer,53.15982,6.77075,stop
+Hoogkarspel,52.69056,5.18389,stop
+Hoorn,52.64472,5.05556,ic
+Hoorn Kersenboogerd,52.65361,5.08556,stop
+Horst-Sevenum,51.42639,6.04222,stop
+Houten,52.03402,5.16821,stop
+Houten Castellum,52.01701,5.17949,stop
+Houthem-St. Gerlach,50.87333,5.79722,stop
+Hurdegaryp,53.21878,5.93454,stop
+IJlst,53.01466,5.61608,stop
+Kampen,52.55972,5.92167,stop
+Kampen Zuid,52.53310,5.91309,stop
+Kapelle-Biezelinge,51.48083,3.95611,stop
+Kerkrade Centrum,50.86167,6.05750,stop
+Kesteren,51.93139,5.58335,stop
+Klarenbeek,52.17805,6.08361,stop
+Klimmen-Ransdaal,50.86639,5.89056,stop
+Koog aan de Zaan,52.45861,4.80556,stop
+Koudum-Molkwerum,52.90282,5.41069,stop
+Krabbendijke,51.43333,4.11694,stop
+Krommenie-Assendelft,52.49511,4.75417,stop
+Kropswolde,53.16174,6.72209,stop
+Kruiningen-Yerseke,51.46500,4.03722,stop
+Lage Zwaluwe,51.69111,4.66306,stop
+Landgraaf,50.89639,6.01917,stop
+Lansingerland-Zoetermeer,52.04222,4.51722,stop
+Leerdam,51.89472,5.09139,stop
+Leeuwarden,53.19584,5.79222,ic
+Leeuwarden Camminghaburen,53.20218,5.84230,stop
+Leiden Centraal,52.16611,4.48167,ic
+Leiden Lammenschans,52.14695,4.49250,stop
+Lelystad Centrum,52.50778,5.47278,ic
+Lichtenvoorde-Groenlo,52.01188,6.59641,stop
+Lochem,52.16667,6.42639,stop
+Loppersum,53.33471,6.74726,stop
+Lunteren,52.08528,5.62444,stop
+Maarheeze,51.30499,5.62980,stop
+Maarn,52.06417,5.37000,stop
+Maarssen,52.13528,5.03361,stop
+Maastricht,50.85028,5.70556,ic
+Maastricht Noord,50.87087,5.71774,stop
+Maastricht Randwyck,50.83861,5.71722,stop
+Mantgum,53.12964,5.71320,stop
+Mariënberg,52.50945,6.57528,ic
+Martenshoek,53.16072,6.74030,stop
+Meerssen,50.88288,5.75100,ic
+Meppel,52.69083,6.19750,stop
+Middelburg,51.49472,3.61722,stop
+Mook-Molenhoek,51.76626,5.87913,stop
+Naarden-Bussum,52.28028,5.15694,stop
+Nieuw Amsterdam,52.71861,6.84861,ic
+Nieuw Vennep,52.25889,4.64556,stop
+Nieuwerkerk a/d IJssel,51.96528,4.61694,stop
+Nijkerk,52.22222,5.49389,stop
+Nijmegen,51.84361,5.85222,ic
+Nijmegen Dukenburg,51.82417,5.79556,stop
+Nijmegen Goffert,51.82730,5.82272,stop
+Nijmegen Heyendaal,51.82695,5.86750,stop
+Nijmegen Lent,51.86315,5.85963,stop
+Nijverdal,52.36611,6.46200,stop
+Nunspeet,52.37083,5.78528,stop
+Nuth,50.91945,5.89278,stop
+Obdam,52.67805,4.90722,stop
+Oisterwijk,51.58222,5.19417,stop
+Oldenzaal,52.30639,6.93472,stop
+Olst,52.33472,6.11306,ic
+Ommen,52.50945,6.41583,ic
+Oosterbeek,51.99500,5.84000,stop
+Opheusden,51.92616,5.63711,stop
+Oss,51.76556,5.53222,ic
+Oss West,51.75806,5.50556,stop
+Oudenbosch,51.58778,4.53333,stop
+Overveen,52.39111,4.60611,stop
+Purmerend,52.50306,4.95361,stop
+Purmerend Overwhere,52.51139,4.96833,stop
+Purmerend Weidevenne,52.49659,4.93563,stop
+Putten,52.26500,5.57528,stop
+Raalte,52.39167,6.27750,stop
+Ravenstein,51.79417,5.63583,stop
+Reuver,51.28322,6.07896,stop
+Rheden,52.01010,6.03140,stop
+Rhenen,51.95861,5.57833,stop
+Rijssen,52.31222,6.52028,stop
+Rijswijk,52.03972,4.31917,stop
+Rilland-Bath,51.42278,4.16111,stop
+Roermond,51.19305,5.99417,ic
+Roodeschool,53.42126,6.75870,stop
+Roosendaal,51.54028,4.45833,ic
+Rosmalen,51.71472,5.36806,stop
+Rotterdam Alexander,51.95195,4.55361,ic
+Rotterdam Blaak,51.92028,4.48889,stop
+Rotterdam Centraal,51.92500,4.46889,ic
+Rotterdam Lombardijen,51.88000,4.53139,stop
+Rotterdam Noord,51.94222,4.48167,stop
+Rotterdam Zuid,51.90445,4.51028,stop
+Ruurlo,52.08109,6.44927,stop
+Santpoort Noord,52.43389,4.63250,stop
+Santpoort Zuid,52.41972,4.63139,stop
+Sassenheim,52.21528,4.51722,stop
+Sauwerd,53.29113,6.54040,stop
+Schagen,52.78444,4.80528,stop
+Scheemda,53.16554,6.97778,stop
+Schiedam Centrum,51.92124,4.40899,stop
+Schin op Geul,50.85639,5.87222,stop
+Schinnen,50.93917,5.87444,stop
+Schiphol Airport,52.30944,4.76194,ic
+Sittard,51.00167,5.85861,ic
+Sliedrecht,51.82972,4.77833,stop
+Sliedrecht Baanhoek,51.82972,4.74333,stop
+Sneek,53.03287,5.65240,stop
+Sneek Noord,53.04093,5.66318,stop
+Soest,52.17333,5.31000,stop
+Soest Zuid,52.16528,5.30306,stop
+Soestdijk,52.18361,5.30000,stop
+Spaubeek,50.94327,5.85053,stop
+Stavoren,52.88655,5.36002,stop
+Stedum,53.32621,6.68756,stop
+Steenwijk,52.79151,6.11456,ic
+Susteren,51.06139,5.86306,stop
+Swalmen,51.23582,6.03228,stop
+Tegelen,51.33894,6.14253,stop
+Terborg,51.92245,6.36425,stop
+Tiel,51.88945,5.42222,stop
+Tiel Passewaaij,51.87389,5.39222,stop
+Tilburg,51.56055,5.08361,ic
+Tilburg Reeshof,51.57361,4.99444,stop
+Tilburg Universiteit,51.56499,5.05178,stop
+Twello,52.23778,6.09861,stop
+Uitgeest,52.52167,4.70167,stop
+Uithuizen,53.40996,6.67489,stop
+Uithuizermeeden,53.41458,6.72030,stop
+Usquert,53.40147,6.60938,stop
+Utrecht Centraal,52.08889,5.11028,ic
+Utrecht Leidsche Rijn,52.09896,5.06523,stop
+Utrecht Lunetten,52.06556,5.14417,stop
+Utrecht Maliebaan,52.08778,5.13139,stop
+Utrecht Overvecht,52.11000,5.12472,stop
+Utrecht Terwijde,52.10008,5.04395,stop
+Utrecht Vaartsche Rijn,52.07889,5.12167,stop
+Utrecht Zuilen,52.10305,5.09000,stop
+Valkenburg,50.86972,5.83222,ic
+Varsseveld,51.93726,6.45884,stop
+Veendam,53.10324,6.88475,stop
+Veenendaal Centrum,52.02000,5.54861,stop
+Veenendaal West,52.02806,5.53139,stop
+Veenendaal-De Klomp,52.04583,5.57389,stop
+Velp,51.99472,5.98028,stop
+Venlo,51.36361,6.17278,ic
+Venray,51.52657,6.01418,stop
+Vierlingsbeek,51.59193,5.99714,stop
+Vleuten,52.10306,5.00740,stop
+Vlissingen,51.44584,3.59528,ic
+Vlissingen Souburg,51.46472,3.59528,stop
+Voerendaal,50.88722,5.93028,stop
+Voorburg,52.06667,4.35944,stop
+Voorhout,52.22445,4.48444,stop
+Voorschoten,52.12528,4.43250,stop
+Voorst-Empe,52.15750,6.14361,stop
+Vorden,52.10719,6.31705,stop
+Vriezenveen,52.40203,6.60041,stop
+Vroomshoop,52.45719,6.56967,stop
+Vught,51.65556,5.29194,stop
+Waddinxveen,52.04417,4.64972,stop
+Waddinxveen Noord,52.05500,4.64833,stop
+Waddinxveen Triangel,52.02725,4.64910,stop
+Warffum,53.39084,6.56714,stop
+Weert,51.24861,5.70361,ic
+Weesp,52.31278,5.04306,stop
+Wehl,51.95781,6.21384,stop
+Westervoort,51.96286,5.96950,stop
+Wezep,52.45417,6.00250,stop
+Wierden,52.36139,6.59167,stop
+Wijchen,51.81167,5.73083,stop
+Wijhe,52.39028,6.14056,ic
+Winschoten,53.13924,7.03510,stop
+Winsum,53.33010,6.52029,stop
+Winterswijk,51.96773,6.71552,stop
+Winterswijk West,51.97453,6.70417,stop
+Woerden,52.08500,4.89361,stop
+Wolfheze,52.00555,5.79361,stop
+Wolvega,52.88083,6.00361,stop
+Workum,52.97249,5.45643,stop
+Wormerveer,52.48917,4.79222,stop
+Zaandam,52.43889,4.81361,ic
+Zaandam Kogerveld,52.45667,4.82028,stop
+Zaandijk Zaanse Schans,52.46917,4.80500,stop
+Zaltbommel,51.80889,5.26333,stop
+Zandvoort aan Zee,52.37528,4.53278,stop
+Zetten-Andelst,51.92006,5.72284,stop
+Zevenaar,51.92305,6.07194,stop
+Zevenbergen,51.64042,4.60904,stop
+Zoetermeer,52.04750,4.47722,stop
+Zoetermeer Oost,52.04639,4.49278,stop
+Zuidbroek,53.15961,6.86791,stop
+Zuidhorn,53.24863,6.40624,stop
+Zutphen,52.14528,6.19417,ic
+Zwijndrecht,51.81500,4.64167,stop
+Zwolle,52.50472,6.09194,ic
+Zwolle Stadshagen,52.52764,6.05146,stop

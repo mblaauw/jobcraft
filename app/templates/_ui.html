@@ -32,10 +32,10 @@
 {%- endmacro %}
 
 {% macro travel(t) -%}
-{% set state = 'ok' if t.in_range is true else ('warn' if t.in_range is false else 'unknown') %}
+{% set state = 'warn' if t.too_far or (t.too_far is not defined and t.in_range is false) else ('ok' if t.in_range is true or t.remote or t.auto else 'unknown') %}
 {# Without a home base every row would repeat the same hint; the page shows it once instead. #}
-{% if t.source != 'unknown' or t.label == 'locatie onbekend' %}
-<li class="travel {{ state }}">{{ icon('bike' if t.in_range is not false else 'triangle-alert') }}<span>{{ t.label }}</span></li>
+{% if t.source != 'unknown' or t.label == 'locatie onbekend' or t.remote %}
+<li class="travel {{ state }}">{{ icon('triangle-alert' if state == 'warn' else ('house' if t.remote and t.in_range is not true else ('car' if t.auto and t.in_range is false else 'bike'))) }}<span>{{ t.label }}</span></li>
 {% endif %}
 {%- endmacro %}
 
