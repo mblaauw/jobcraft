@@ -113,6 +113,26 @@ def test_each_coach_action_does_what_it_says(client, cv):  # noqa: F811
     assert application_plan.stories()[-1]["answer"] == "Ongeveer 25 per week"
     assert [note["state"] for note in cv_ai.notes()["notes"]] == ["done", "done", "done", "dismissed"]
     assert not cv_ai.view(data)["stale"]
+    assert "van de coach open" not in client.get("/jobs").text  # nothing left, so no count beside Profiel
+
+
+def test_the_navigation_shows_how_many_coach_notes_are_open(client, cv):  # noqa: F811
+    from app import auth, tenancy
+
+    notes = [
+        {"id": f"n{i}", "target": "summary", "kind": "vraag", "text": "Vraag?", "suggestion": "", "state": state}
+        for i, state in enumerate(["open", "open", "done", "dismissed", "open"])
+    ]
+    cv_ai.save_notes(notes, cv_model.digest(cv))
+    assert cv_ai.open_count() == 3
+    page = client.get("/jobs").text  # every page, not only the profile
+    assert 'class="nav-badge is-todo"' in page and "3<span class=\"visually-hidden\"> punten van de coach open" in page
+    store.meta_set(cv_ai.COACH_KEY, "geen json")
+    assert cv_ai.open_count() == 0
+    auth._insert_user("other", "other", "Ander", "user", "other-password-1")
+    cv_ai.save_notes(notes, cv_model.digest(cv))
+    with tenancy.scope({"id": "other"}):
+        assert cv_ai.open_count() == 0  # another account's coach is not yours
 
 
 def test_editing_parts_saves_and_reorders(client, cv):  # noqa: F811
