@@ -462,19 +462,22 @@ def test_drawer_focus_targets_are_stable_across_document_refreshes(client):
 
 
 def test_home_travel_settings_are_saved(client):
-    from app import profile
+    from app import geo, profile
 
     response = client.post(
         "/profile/home",
-        data={"place": "Utrecht", "bike_minutes": "40", "transit_minutes": "50"},
+        data={"place": "Den Bosch", "bike_minutes": "40", "bike_kind": "fiets", "transit_minutes": "0", "car_minutes": "2"},
         follow_redirects=False,
     )
     assert response.status_code == 303
     home = profile.read_preferences()["home"]
-    assert home["label"] == "Utrecht"
-    assert home["bike_minutes"] == 40
-    assert home["transit_minutes"] == 50
+    assert home["label"] == "'s-Hertogenbosch"
+    assert (home["bike_minutes"], home["bike_kind"], home["transit_minutes"]) == (40, "fiets", 0)
+    assert home["car_minutes"] == 5 and home["car_available"] is True  # at least five minutes
     assert home["lat"] != 0
+    page = client.get("/profile?tab=zoek").text
+    assert page.count('<option value="&#39;s-Hertogenbosch">') == 1 and 'name="car_minutes"' in page
+    assert geo.reach_line(home) == "40 min fiets of 5 min auto"
 
 
 def test_source_preference_toggle_is_saved(client):

@@ -75,7 +75,7 @@
   {% if not geo_home.configured %}
   <p class="travel-note">Reistijden zijn nog onbekend. <a href="/profile?tab=zoek#reisbereik">Stel je woonplaats in</a> om vacatures buiten je bereik te verbergen.</p>
   {% else %}
-  <p class="travel-note">Reisbereik vanaf {{ geo_home.label if geo_home.label != 'Nog niet ingesteld' else 'je woonplaats' }}: {{ geo_home.bike_minutes }} min e-bike of {{ geo_home.transit_minutes }} min OV. <a href="/profile?tab=zoek#reisbereik">Aanpassen</a></p>
+  <p class="travel-note">Reisbereik vanaf {{ geo_home.label if geo_home.label != 'Nog niet ingesteld' else 'je woonplaats' }}: {{ geo_home.reach }}. Volledig thuiswerk en werk met een bedrijfsauto tellen altijd mee. <a href="/profile?tab=zoek#reisbereik">Aanpassen</a></p>
   {% endif %}
 </form>
 

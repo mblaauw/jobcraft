@@ -251,7 +251,7 @@ def _decide(
         signals,
         fresh=verdict_is_fresh(job, digest),
         rank=rank,
-        too_far=travel.get("in_range") is False and not travel.get("auto"),
+        too_far=geo.too_far(travel),
         wanted=wanted,
         quick=quick,
         thresholds=thresholds,

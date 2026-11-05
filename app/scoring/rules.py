@@ -145,12 +145,15 @@ def rule_score(
     notes.extend(wish_notes)
 
     travel = ranking.travel_of(job)
-    if travel.get("in_range") is False and not travel.get("auto"):
+    if ranking.geo.too_far(travel):
         score -= 25.0
         notes.append(f"te ver: {travel['label']}")
     elif travel.get("in_range") is True:
         score += 4.0
         notes.append("binnen reisbereik (schatting)")
+    elif travel.get("remote"):
+        score += 4.0
+        notes.append("volledig thuiswerk")
     elif travel.get("auto"):
         notes.append("mobiel werk met auto")
 
