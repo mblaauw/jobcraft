@@ -220,6 +220,8 @@ def _remember_routes(digest: str, decided: list) -> dict[str, int]:
     counts = dict.fromkeys(OUTCOMES, 0)
     for decision, _, _ in decided:
         counts[decision.outcome] += 1
+    # Only changes are stored, so the history says when and why a vacancy moved route.
+    store.record_routes({job["id"]: f"{decision.outcome}:{decision.code}" for decision, _, job in decided})
     store.meta_set("queue_depth", str(counts["escalate"]))
     store.meta_set("route_counts", json.dumps(counts))
     store.meta_set("queue_depth_digest", digest)

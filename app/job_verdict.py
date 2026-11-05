@@ -95,6 +95,7 @@ def deeper(job) -> bool:
     if job["match_score"] is not None or not _can_ask():
         return False
     _set_wanted(job["id"], True)
+    store.record_job_event(job["id"], "deeper", "asked")
     return _enqueue(job, retry=True)
 
 
