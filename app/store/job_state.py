@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from .. import tenancy
 from .connection import connect, now
+from .job_events import _add as _add_event
 from .jobs import _job_select
 
 
@@ -124,8 +125,15 @@ def list_votes() -> dict:
 
 
 def update_job_status(job_id: int, status: str) -> None:
+    """Every status change lands here, so this is also where its history is kept."""
     with connect() as con:
+        row = con.execute(
+            "SELECT status FROM job_states WHERE owner=? AND job_id=?", (tenancy.user_id(), job_id)
+        ).fetchone()
+        previous = (row["status"] if row else None) or "new"
         _set_job_state(con, job_id, status=status)
+        if status != previous:
+            _add_event(con, job_id, "status", status, previous=previous)
 
 
 def update_job_match(job_id: int, score: float, reason: str, profile_hash: str) -> None:
@@ -133,3 +141,4 @@ def update_job_match(job_id: int, score: float, reason: str, profile_hash: str) 
         _set_job_state(
             con, job_id, match_score=score, match_reason=reason, profile_hash=profile_hash
         )
+        _add_event(con, job_id, "verdict", f"{score:g}")  # the score only; the reason stays in job_states

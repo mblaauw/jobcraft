@@ -185,6 +185,13 @@ Rollback lever: `SYSTEMONE_CONFIDENCE=1.01` makes every signalled job
   "no" would hide.
 - After deploy, run it on the VPS (read-only) and record the share in the
   project notes before touching any threshold.
+- Since m0007 the `job_events` table keeps each vacancy's history per account:
+  route changes (`outcome:code`, only when it changes), status changes with the
+  previous status, judgements and their reason codes, the "dieper" request and
+  each verdict score. Votes keep their own history in `feedback`. Values are
+  codes and numbers, never prose. The route a vacancy was on when it was
+  judged is the last `route` event before its `judgement`, so the gate can be
+  scored against what people said instead of against today's route.
 
 ### Accounts and privacy
 

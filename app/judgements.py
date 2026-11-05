@@ -52,6 +52,7 @@ def set_reason(job_id: int, reason: str) -> bool:
     if reason not in REASONS or not job or not ((job["vote"] or 0) < 0 or job["status"] == "ignored"):
         return False
     store.meta_set(_reason_key(job_id), json.dumps({**_record(job_id), "reason": reason, "reason_at": now_iso()}))
+    store.record_job_event(job_id, "reason", reason)
     state = _state()
     if state.get("last_no") == job_id:
         store.meta_set(ROUND_KEY, json.dumps({**state, "last_no": None}))
@@ -178,6 +179,7 @@ def answer(job_id: int, given: str) -> None:
         "rank_before": job["rank_score"] if job else None,
         "at": now_iso(),
     }))
+    store.record_job_event(job_id, "judgement", given, {"asked": job_id in (state.get("ids") or [])})
     if vote:
         store.set_job_vote(job_id, vote)
         learn(job_id)

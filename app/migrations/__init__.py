@@ -9,6 +9,7 @@ from . import (
     m0004_tasks,
     m0005_user_sources,
     m0006_foreign_keys,
+    m0007_job_events,
 )
 
-MIGRATIONS = [m0001_baseline, m0002_state_tables, m0003_files_to_db, m0004_tasks, m0005_user_sources, m0006_foreign_keys]
+MIGRATIONS = [m0001_baseline, m0002_state_tables, m0003_files_to_db, m0004_tasks, m0005_user_sources, m0006_foreign_keys, m0007_job_events]
