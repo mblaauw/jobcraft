@@ -91,3 +91,26 @@ def test_new_vacancies_are_ranked_during_a_scan_not_only_after_it(monkeypatch):
     monkeypatch.setattr(sources.tasks, "enqueue", lambda kind, owner, dedupe_key: enqueued.append((kind, owner)))
     sources.scan()
     assert enqueued == [("rerank", "a"), ("rerank", "b")] * 2
+
+
+def test_a_restart_during_a_scan_marks_no_source_as_failed(monkeypatch):
+    import pytest
+
+    from app import sources
+    from app.source_http import STOPPING
+
+    def stopping(client, source, entry, summary, limit):
+        STOPPING.set()
+        raise RuntimeError("De server stopt; de scan is onderbroken.")
+
+    marked = []
+    monkeypatch.setattr(sources.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(sources, "registry", lambda: {"stop": stopping})
+    monkeypatch.setattr(sources, "load_sources", lambda: [{"id": "a", "kind": "stop"}, {"id": "b", "kind": "stop"}])
+    monkeypatch.setattr(store, "update_source_status", lambda source_id, status: marked.append((source_id, status)))
+    try:
+        with pytest.raises(RuntimeError, match="herstart"):
+            sources.scan()
+    finally:
+        STOPPING.clear()
+    assert marked == []
