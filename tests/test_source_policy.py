@@ -24,12 +24,12 @@ def test_regional_boundary_is_inclusive(monkeypatch):
 
 
 def test_legacy_sql_metadata_fallback_does_not_overwrite_config():
-    original = {"id": "greenjobs", "kind": "local-json", "file": "custom.json", "enabled": False}
+    original = {"id": "vca-vacaturebank", "kind": "local-json", "file": "custom.json", "enabled": False}
     store.save_source_config(original)
-    loaded = {item["id"]: item for item in sources.load_sources()}["greenjobs"]
+    loaded = {item["id"]: item for item in sources.load_sources()}["vca-vacaturebank"]
     assert loaded["scope"] == "regional" and loaded["regions"] == ["Amsterdam"]
     assert loaded["file"] == "custom.json" and loaded["enabled"] is False
-    assert {item["id"]: item for item in store.load_source_configs()}["greenjobs"] == original
+    assert {item["id"]: item for item in store.load_source_configs()}["vca-vacaturebank"] == original
     assert (
         source_policy.effective_metadata({**original, "scope": "national", "regions": []})["scope"]
         == "national"
@@ -39,15 +39,15 @@ def test_legacy_sql_metadata_fallback_does_not_overwrite_config():
 def test_one_override_does_not_whitelist_the_rest_and_owners_are_isolated():
     ids = [add_job(i) for i in range(3)]
     with store.connect() as con:
-        for job_id, source in zip(ids, ["greenjobs", "national", "other"], strict=True):
+        for job_id, source in zip(ids, ["vca-vacaturebank", "national", "other"], strict=True):
             con.execute("UPDATE jobs SET source_id=? WHERE id=?", (source, job_id))
     with tenancy.scope({"id": "a", "username": "a"}):
         profile.write_preferences({"home": {"label": "Eindhoven", "lat": 51.4416, "lon": 5.4697}})
         store.set_user_source("other", False)
         assert {job["id"] for job in store.list_jobs()} == {ids[1]}
         assert {job["id"] for job in store.list_jobs_for_matching()} == {ids[1]}
-        assert not store.effective_user_sources()["greenjobs"]["selected"]
-        store.set_user_source("greenjobs", True)
+        assert not store.effective_user_sources()["vca-vacaturebank"]["selected"]
+        store.set_user_source("vca-vacaturebank", True)
         assert {job["id"] for job in store.list_jobs()} == {ids[0], ids[1]}
     with tenancy.scope({"id": "b", "username": "b"}):
         assert {job["id"] for job in store.list_jobs()} == set(ids)
