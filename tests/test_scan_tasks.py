@@ -58,3 +58,36 @@ def test_scheduled_scan_sets_running_status_and_honors_no_fanout(monkeypatch):
     assert seen == ["running"]
     assert store.meta_get("scan_status") == "done"
     assert tasks.latest("match", owner="a") is None
+
+
+def test_sources_are_scanned_in_catalogue_order_not_alphabetically():
+    for source_id in ("zuid", "academisch", "midden"):
+        store.save_source_config({"id": source_id, "kind": "rss"})
+    store.save_source_config({"id": "zuid", "kind": "rss", "revision": 2})  # an update keeps its place
+    order = [entry["id"] for entry in store.load_source_configs()]
+    assert [source_id for source_id in order if source_id in {"zuid", "academisch", "midden"}] == ["zuid", "academisch", "midden"]
+
+
+def test_new_vacancies_are_ranked_during_a_scan_not_only_after_it(monkeypatch):
+    from app import sources
+
+    def adapter(new):
+        def scan(client, source, entry, summary, limit):
+            entry["new"] += new
+        return scan
+
+    clock = iter([0.0, 10.0, 500.0, 510.0])
+    monkeypatch.setattr(sources.time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(sources.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(sources, "registry", lambda: {"one": adapter(3), "none": adapter(0)})
+    monkeypatch.setattr(sources, "load_sources", lambda: [
+        {"id": "a", "kind": "one"},  # first new ones: rank at once (clock 0)
+        {"id": "b", "kind": "one"},  # 10 s later: too soon
+        {"id": "c", "kind": "none"},  # nothing new: no reason
+        {"id": "d", "kind": "one"},  # minutes later: rank again (clock 500)
+    ])
+    monkeypatch.setattr(store, "active_owners_with_profile", lambda: ["a", "b"])
+    enqueued = []
+    monkeypatch.setattr(sources.tasks, "enqueue", lambda kind, owner, dedupe_key: enqueued.append((kind, owner)))
+    sources.scan()
+    assert enqueued == [("rerank", "a"), ("rerank", "b")] * 2
