@@ -32,7 +32,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(main.feedback, "rebuild", lambda: None)
     monkeypatch.setattr(main.ranking, "rerank_all", lambda: None)
     monkeypatch.setattr(
-        main.geo, "home", lambda: {"label": "Amsterdam", "bike_minutes": 30, "transit_minutes": 35}
+        main.geo, "home", lambda: {"label": "Amsterdam", "lat": 52.37, "lon": 4.9, "bike_minutes": 30, "transit_minutes": 35}
     )
     monkeypatch.setattr(
         main.geo,
@@ -525,3 +525,61 @@ def test_search_finds_all_words_in_any_order_and_inside_compounds(client):
     assert store.list_jobs_page(10, query_text="verpleegkundige")[0]["title"] == "Wijkverpleegkundige"
     assert store.list_jobs_page(10, query_text="100%") == []
     assert store.list_jobs_page(10, query_text="dat_") == []
+
+
+def test_the_reach_panel_tries_other_minutes_and_keeps_them_on_request(client):
+    import json
+
+    from app import profile
+
+    near, far = add_job("Hovenier"), add_job("Boomverzorger", location="far")
+    html = soup(client.get("/jobs"))
+    assert not html.select_one("select[name=source]")  # sources are an admin matter
+    panel = html.select_one(".reach")
+    assert panel.select_one("[data-reach-count]").get_text() == "1"
+    counts = json.loads(panel.select_one("#reach-minutes")["data-reach-counts"])
+    assert counts["30"] == 1 and counts["105"] == 2  # the far one is 99 minutes away
+    assert panel.select_one("#reach-minutes")["value"] == "30"
+    assert [box["value"] for box in panel.select("input[name=met][checked]")] == ["ebike", "ov"]
+    assert "Bewaar als mijn reisbereik" not in panel.get_text() and "Met 15 minuten meer komen er geen" in panel.get_text()
+    # Untouched controls, sent along with a search, keep your own reach.
+    base = panel.select_one("input[name=vanaf]")["value"]
+    same = soup(client.get(f"/jobs?q=&met=&met=ebike&met=ov&reis=30&vanaf={base}"))
+    assert "Bewaar als mijn reisbereik" not in same.get_text()
+    wider = soup(client.get(f"/jobs?met=&met=ebike&met=ov&reis=105&vanaf={base}"))
+    assert {f"job-{near}", f"job-{far}"} <= {row["id"] for row in wider.select("article.vacancy-row")}
+    assert "Bewaar als mijn reisbereik" in wider.get_text() and "Ander reisbereik" in wider.select_one(".jobs-active-filters").get_text()
+    for link in wider.select(".status-tabs a"):
+        assert "reis=105" in link["href"] and "met=ebike%2Cov" in link["href"]
+    chip = next(a for a in wider.select(".jobs-active-filters a.chip") if "Ander reisbereik" in a.get_text())
+    assert "reis=" not in chip["href"] and "met=" not in chip["href"]
+    saving = wider.select_one("form#reach-save")
+    assert saving["action"] == "/jobs/reisbereik" and saving.select_one("input[name=_csrf]")
+    response = client.post(
+        "/jobs/reisbereik",
+        data={"reis": "105", "met": "ebike,ov", "next": "/jobs?q=groen&reis=105&met=ebike%2Cov&vanaf=x", "_csrf": saving.select_one("input[name=_csrf]")["value"]},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303 and response.headers["location"] == "/jobs?q=groen"
+    home = profile.read_preferences()["home"]
+    assert (home["bike_minutes"], home["bike_kind"], home["transit_minutes"], home["car_minutes"]) == (105, "ebike", 105, 0)
+    # No ways of travelling at all: only work you need not travel to.
+    none = soup(client.get(f"/jobs?met=&reis=60&vanaf={base}"))
+    assert none.select_one("[data-reach-count]").get_text() == "1"  # the unknown place stays
+
+
+def test_company_car_quick_filter_reads_the_travel_estimate(client, monkeypatch):
+    from app import geo
+
+    monkeypatch.setattr(
+        geo, "times", lambda location, *args, **kwargs: {"transit_min": 99, "auto": "bedrijfsauto" in (kwargs.get("description") or "")}
+    )
+    car, other = add_job("Monteur", location="far"), add_job("Planner", location="far")
+    with store.connect() as con:
+        con.execute("UPDATE jobs SET description='Je krijgt een bedrijfsauto.' WHERE id=?", (car,))
+    html = soup(client.get("/jobs?auto=1&within=0"))
+    assert {row["id"] for row in html.select("article.vacancy-row")} == {f"job-{car}"}
+    assert html.select_one("input[name=auto][checked]") and "Met bedrijfsauto" in html.select_one(".jobs-active-filters").get_text()
+    # Far, but the car takes you there: it stays in the default list too.
+    assert {row["id"] for row in soup(client.get("/jobs")).select("article.vacancy-row")} == {f"job-{car}"}
+    assert other

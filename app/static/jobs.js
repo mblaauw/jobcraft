@@ -11,6 +11,39 @@
   }
 })();
 
+// Reach slider: counts for every stop come with the page, so sliding answers at once;
+// letting go applies the new reach to the list.
+(function () {
+  const slider = document.getElementById("reach-minutes");
+  if (!slider) return;
+  const counts = JSON.parse(slider.dataset.reachCounts || "{}");
+  const count = document.querySelector("[data-reach-count]");
+  const output = document.querySelector("[data-reach-minutes]");
+  const hint = document.querySelector("[data-reach-hint]");
+  const bars = document.querySelectorAll(".reach-bars span");
+  const number = new Intl.NumberFormat("nl-NL");
+
+  function show() {
+    const minutes = Number(slider.value);
+    output.textContent = minutes + " min";
+    slider.setAttribute("aria-valuetext", minutes + " minuten");
+    if (counts[minutes] !== undefined) count.textContent = number.format(counts[minutes]);
+    bars.forEach((bar) => bar.classList.toggle("is-in", Number(bar.dataset.minutes) <= minutes));
+    const next = minutes + 15;
+    if (counts[next] === undefined) {
+      hint.textContent = "Dit is de ruimste stand.";
+      return;
+    }
+    const gain = counts[next] - counts[minutes];
+    hint.textContent = gain <= 0
+      ? "Met 15 minuten meer komen er geen vacatures bij."
+      : "Met 15 minuten meer " + (gain === 1 ? "komt er 1 vacature" : "komen er " + number.format(gain) + " vacatures") + " bij.";
+  }
+
+  slider.addEventListener("input", show);
+  slider.addEventListener("change", () => slider.form.requestSubmit());
+})();
+
 (function () {
   const listURL = window.location.href;
   const progress = document.getElementById("jobs-progress");
