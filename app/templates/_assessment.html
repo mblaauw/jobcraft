@@ -25,7 +25,7 @@
       {% if route.code == 'sure' and grade %}
       <p class="verdict-why">Volgens de snelle beoordeling past dit <strong>{{ grade }}</strong> bij je, en die is daar {{ "%.0f" | format((signals.get('confidence') or 0) * 100) }}% zeker van. Een uitgebreide uitleg is daarom niet gemaakt.</p>
       {% else %}
-      <p class="verdict-why">Deze vacature staat laag in je lijst, dus een uitgebreide beoordeling is niet gemaakt.</p>
+      <p class="verdict-why">{% if grade %}Volgens de snelle beoordeling past dit <strong>{{ grade }}</strong> bij je. {% endif %}Deze vacature staat laag in je lijst, dus een uitgebreide beoordeling is niet gemaakt.</p>
       {% endif %}
       {% if can_deepen %}
       <form method="post" action="/jobs/{{ job['id'] }}/oordeel/dieper" data-pending-form>{% include '_csrf.html' %}<button id="detail-deeper" class="button small" type="submit">{{ ui.icon('message-circle') }}Beoordeel dieper</button></form>
@@ -42,7 +42,9 @@
     <ul class="traits">
       {% for key, yes, no in [('day_hours', 'Dagwerk', 'Geen vast dagwerk'), ('evening_weekend', 'Avond- of weekendwerk', None), ('outdoor_mobile', 'Veel buiten of op locatie', None), ('physically_heavy', 'Fysiek zwaar', None), ('phone_sales_main', 'Veel bellen of verkoop', None), ('guidance', 'Inwerkperiode', None), ('company_car', 'Bedrijfsauto', None)] %}
         {% set p = n.get(key) %}
-        {% if p is not none and p > 0.5 %}<li class="chip {{ 'chip-warn' if key in ('evening_weekend', 'physically_heavy', 'phone_sales_main') else 'chip-ok' }}">{{ yes }}</li>
+        {# Structural evenings make "Dagwerk" misleading: the warning chip says it all. #}
+        {% if key == 'day_hours' and (n.get('evening_weekend') or 0) > 0.5 %}
+        {% elif p is not none and p > 0.5 %}<li class="chip {{ 'chip-warn' if key in ('evening_weekend', 'physically_heavy', 'phone_sales_main') else 'chip-ok' }}">{{ yes }}</li>
         {% elif p is not none and no and p < 0.5 %}<li class="chip chip-warn">{{ no }}</li>{% endif %}
       {% endfor %}
     </ul>

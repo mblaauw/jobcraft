@@ -39,8 +39,21 @@ def test_a_low_ranked_vacancy_says_so_and_buys_nothing(client, monkeypatch):  # 
     job_id = add_job("Planner")
     _signals(job_id, UNSURE, rank=20)
     page = client.get(f"/jobs/{job_id}").text
-    assert "staat laag in je lijst" in page and 'id="detail-deeper"' in page
+    assert "past dit <strong>redelijk</strong> bij je. Deze vacature staat laag in je lijst" in page
+    assert 'id="detail-deeper"' in page
     assert tasks.claim_next() is None
+
+
+def test_structural_evenings_hide_the_day_work_chip(client, monkeypatch):  # noqa: F811
+    _ai(monkeypatch, VERDICT)
+    evenings = add_job("Planner")
+    _signals(evenings, {**SURE, "noul": {"day_hours": 0.9, "evening_weekend": 0.9}})
+    page = client.get(f"/jobs/{evenings}").text
+    assert "Avond- of weekendwerk" in page and ">Dagwerk<" not in page
+    days = add_job("Teamleider", 2)
+    _signals(days, {**SURE, "noul": {"day_hours": 0.9, "evening_weekend": 0.1}})
+    page = client.get(f"/jobs/{days}").text
+    assert ">Dagwerk<" in page and "Avond- of weekendwerk" not in page
 
 
 def test_an_unsure_vacancy_is_assessed_as_before(client, monkeypatch):  # noqa: F811
