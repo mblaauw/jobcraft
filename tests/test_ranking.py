@@ -89,3 +89,29 @@ def test_digest_does_not_depend_on_feedback(monkeypatch):
 
     monkeypatch.setattr(matching.feedback, "load", explode)
     assert matching.current_digest(prefs) == first
+
+
+def test_a_generic_job_word_split_off_a_role_earns_nothing():
+    from app.scoring import reasons
+
+    # Stored the way earlier accounts have it, with "medewerker" as a word of its own.
+    track = {"id": "t", "name": "Medewerker communicatie en programma", "weight": 4.0,
+             "keywords": ["medewerker communicatie en programma", "medewerker", "communicatie", "programma"]}
+    prefs = {**_prefs(), "tracks": [track]}
+    feedback_data = {"counts": {"up": 0, "down": 0}}
+    unrelated = _job(title="Administratief medewerker", description="Medewerker administratie, facturen verwerken.")
+    related = _job(title="Medewerker communicatie", description="Je schrijft de nieuwsbrief en social media.")
+    plain = _job(title="Boekhouder", description="Facturen verwerken.")
+    assert matching.rule_score(unrelated, prefs, feedback_data)[0] == matching.rule_score(plain, prefs, feedback_data)[0]
+    assert matching.rule_score(related, prefs, feedback_data)[0] > matching.rule_score(plain, prefs, feedback_data)[0]
+    assert "past bij" not in reasons.reason_line(unrelated, prefs).lower()
+    # A role that is only the generic word still finds itself.
+    only = {"id": "m", "name": "Medewerker", "weight": 4.0, "keywords": ["medewerker"]}
+    assert matching.rule_score(unrelated, {**_prefs(), "tracks": [only]}, feedback_data)[0] > matching.rule_score(plain, prefs, feedback_data)[0]
+
+
+def test_a_new_role_gets_no_generic_words_of_its_own():
+    from app import onboarding
+
+    [track] = onboarding.tracks_for(["Medewerker communicatie en programma"], [])
+    assert "medewerker" not in track["keywords"] and "communicatie" in track["keywords"]
