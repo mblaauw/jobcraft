@@ -99,7 +99,8 @@ def request(kind: str, text: str = "", source: str = "") -> str:
 def source_text(choice: str, pasted: str = "", raw: bytes = b"", filename: str = "") -> str:
     """The text to read, without name and contact details. Raises ValueError with a message."""
     if choice == "profiel":
-        text = profile.public_excerpt(profile.read_profile(), 20000)
+        # The answers people gave to help matching were promised to stay out of CVs.
+        text = profile.read_document_excerpt(20000)
     elif choice == "bestand":
         text = cv_text.extract_text(raw, filename)
     else:
