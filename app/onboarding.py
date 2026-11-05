@@ -88,21 +88,48 @@ def minutes_from(raw: object) -> int:
     return int(raw) if str(raw).isdigit() else 30
 
 
-def save_home(place: str, minutes: int, car: bool) -> bool:
-    """Store the home and refresh travel estimates; False when the place is unknown."""
+TRAVEL_MODES = (("fiets", "Fiets"), ("ebike", "E-bike"), ("ov", "OV"), ("auto", "Auto"))
+DEFAULT_MODES = ("ebike", "ov")
+
+
+def modes_from(values: list[str]) -> list[str]:
+    modes = [value for value, _ in TRAVEL_MODES if value in values]
+    return modes or list(DEFAULT_MODES)
+
+
+def current_modes(home: dict) -> list[str]:
+    modes = [home.get("bike_kind") or "ebike"] if home.get("bike_minutes") else []
+    modes += ["ov"] if home.get("transit_minutes") else []
+    modes += ["auto"] if home.get("car_minutes") else []
+    return modes or list(DEFAULT_MODES)
+
+
+def longest_budget(home: dict) -> int:
+    return max(home.get("bike_minutes") or 0, home.get("transit_minutes") or 0, home.get("car_minutes") or 0) or 30
+
+
+def save_home(place: str, minutes: int, modes: list[str]) -> bool:
+    """Store the home and refresh travel estimates; False when the place is unknown.
+
+    One time budget for every way you travel; ticking nothing means e-bike and OV.
+    """
     key = " ".join(place.split()).lower()
     if key not in geo.PLACES:
         return False
     preferences = profile.read_preferences()
     lat, lon = geo.PLACES[key]
-    minutes = max(5, min(180, minutes))
+    minutes = geo.budget(minutes, 180) or 30
+    modes = modes_from(modes)
+    cycling = "ebike" in modes or "fiets" in modes
     home = {
         "label": geo.PLACE_LABELS[key],
         "lat": lat,
         "lon": lon,
-        "bike_minutes": minutes,
-        "transit_minutes": minutes,
-        "car_available": car,
+        "bike_minutes": minutes if cycling else 0,
+        "bike_kind": "ebike" if "ebike" in modes or not cycling else "fiets",
+        "transit_minutes": minutes if "ov" in modes else 0,
+        "car_minutes": minutes if "auto" in modes else 0,
+        "car_available": "auto" in modes,
     }
     if preferences["home"] != home:
         preferences["home"] = home

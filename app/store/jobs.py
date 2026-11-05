@@ -208,7 +208,10 @@ def list_jobs(
         return con.execute(sql, tuple(params)).fetchall()
 
 
-TRAVEL_OUT_OF_RANGE = "json_extract(travel_json,'$.in_range') IS 0"
+# The SQL twin of geo.too_far; estimates from before "too_far" fall back to in_range.
+TRAVEL_OUT_OF_RANGE = (
+    "COALESCE(json_extract(travel_json,'$.too_far'),json_extract(travel_json,'$.in_range')=0) IS 1"
+)
 
 
 def job_status_counts(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from .util import now_iso
 
@@ -44,9 +44,25 @@ class HomeBase(BaseModel):
     label: str = "Nog niet ingesteld"
     lat: float = Field(default=0, ge=-90, le=90, allow_inf_nan=False)
     lon: float = Field(default=0, ge=-180, le=180, allow_inf_nan=False)
+    # Minutes one way for each way of travelling; 0 means you do not travel that way.
     bike_minutes: int = 30
+    bike_kind: Literal["fiets", "ebike"] = "ebike"
     transit_minutes: int = 35
+    car_minutes: int = 0
     car_available: bool = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def car_budget_from_older_settings(cls, data):
+        # Before car_minutes existed, having a car meant: as far as you would go by OV.
+        if isinstance(data, dict) and "car_minutes" not in data and data.get("car_available"):
+            data = {**data, "car_minutes": data.get("transit_minutes", 35)}
+        return data
+
+    @model_validator(mode="after")
+    def car_follows_its_budget(self):
+        self.car_available = self.car_minutes > 0
+        return self
 
 
 class Wishes(BaseModel):

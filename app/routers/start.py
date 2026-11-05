@@ -207,11 +207,13 @@ def start_choices(request: Request):
         ),
         travel_choices=onboarding.TRAVEL_CHOICES,
         travel_current=min(
-            onboarding.TRAVEL_CHOICES, key=lambda value: abs(value - preferences["home"]["transit_minutes"])
+            onboarding.TRAVEL_CHOICES, key=lambda value: abs(value - onboarding.longest_budget(preferences["home"]))
         ),
+        travel_modes=onboarding.TRAVEL_MODES,
+        modes_current=onboarding.current_modes(preferences["home"]),
         salary_choices=onboarding.SALARY_CHOICES,
         dealbreakers=onboarding.DEALBREAKERS,
-        place_labels=sorted(geo.PLACE_LABELS.values(), key=str.casefold),
+        place_labels=sorted(set(geo.PLACE_LABELS.values()), key=str.casefold),
         count=onboarding.catalogue_count(
             [track["name"] for track in preferences["tracks"]],
             preferences["keywords"]["veto"],
@@ -228,7 +230,7 @@ async def start_count(request: Request):
         onboarding.save_home,
         str(form.get("place") or ""),
         onboarding.minutes_from(form.get("minutes")),
-        form.get("car") == "1",
+        [str(mode) for mode in form.getlist("vervoer")],
     )
     count = onboarding.catalogue_count(
         onboarding.split_terms(str(form.get("roles") or "")),
@@ -251,7 +253,7 @@ async def start_choices_save(request: Request):
         onboarding.save_home,
         str(form.get("place") or ""),
         onboarding.minutes_from(form.get("minutes")),
-        form.get("car") == "1",
+        [str(mode) for mode in form.getlist("vervoer")],
     )
     if roles or not profile.profile_exists():
         profile.merge_sections({onboarding.ROLES_HEADING: ", ".join(roles) or "Staat nog open."})

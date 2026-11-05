@@ -207,6 +207,7 @@ def jobs_page(
     if request.url.query:
         return_to += f"?{request.url.query}"
     geo_home = geo.home()
+    geo_home["reach"] = geo.reach_line(geo_home)
     geo_home["configured"] = bool(
         (geo_home.get("lat") or geo_home.get("lon"))
         and geo.valid_coordinates(geo_home.get("lat") or 0, geo_home.get("lon") or 0)

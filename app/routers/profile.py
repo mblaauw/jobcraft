@@ -172,8 +172,9 @@ def profile_save_draft(request: Request, profile_md: str = Form(...), preference
 def profile_home(
     place: str = Form(""),
     bike_minutes: int = Form(30),
+    bike_kind: str = Form("ebike"),
     transit_minutes: int = Form(35),
-    car_available: str = Form(""),
+    car_minutes: int = Form(0),
     lat: str = Form(""),
     lon: str = Form(""),
 ):
@@ -196,9 +197,10 @@ def profile_home(
         "label": label,
         "lat": coords[0] if coords else 0.0,
         "lon": coords[1] if coords else 0.0,
-        "bike_minutes": max(5, min(180, bike_minutes)),
-        "transit_minutes": max(5, min(240, transit_minutes)),
-        "car_available": car_available == "1",
+        "bike_minutes": geo.budget(bike_minutes, 180),
+        "bike_kind": "fiets" if bike_kind == "fiets" else "ebike",
+        "transit_minutes": geo.budget(transit_minutes, 240),
+        "car_minutes": geo.budget(car_minutes, 180),
     }
     profile.write_preferences(preferences)
     _assess_soon("rerank")
