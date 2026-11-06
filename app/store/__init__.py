@@ -33,10 +33,10 @@ from .documents import (  # noqa: F401
     get_document,
     list_documents,
 )
+from .ingestion import fetched_within, known_job_urls, source_urls_seen_longest_ago, upsert_job  # noqa: F401
 from .ingestion import (
     record_detail_fetch as record_detail_fetch,
 )
-from .ingestion import source_urls_seen_longest_ago, upsert_job  # noqa: F401
 from .ingestion import (
     touch_recent_detail as touch_recent_detail,
 )

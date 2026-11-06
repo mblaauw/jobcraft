@@ -71,6 +71,7 @@ def test_configured_sources_use_known_adapters():
         "local-json",
         "ats-registry",
         "getro-html",
+        "eures-json",
         "manual",
         "browser-import",
     }
