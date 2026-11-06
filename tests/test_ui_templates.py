@@ -68,15 +68,29 @@ def test_navigation_marks_only_current_section_and_has_skip_link():
         assert "deepseek" not in html.footer.get_text()
 
 
-def test_admin_navigation_is_settings_only():
+def test_an_administrator_without_a_profile_sees_beheer_and_jij_only():
     html = render("base.html", "/admin")
     labels = [link.get_text(strip=True) for link in html.select(".rail-nav a")]
-    assert labels == ["Bronnen", "Account", "Gebruikers", "Systeem"]
+    assert labels == ["Systeem", "Gebruikers", "Bronnen", "AI", "Account"]
+    assert [title.get_text(strip=True) for title in html.select(".rail-group-title")] == ["Beheer", "Jij"]
     active = html.select('.top [aria-current="page"]')
-    assert len(active) == 1
-    assert active[0]["href"] == "/admin"
+    assert len(active) == 1 and active[0]["href"] == "/admin"
     assert not html.select(".tabbar")
     assert html.select_one(".brand")["href"] == "/admin"
+
+
+def test_an_owner_who_is_also_an_administrator_sees_both_groups():
+    html = render("base.html", "/jobs", account_has_profile=lambda user: True)
+    labels = [link.get_text(strip=True) for link in html.select(".rail-nav a")]
+    assert labels[:4] == ["Vandaag", "Vacatures", "Sollicitaties", "Profiel"]
+    assert "Systeem" in labels and labels[-1] == "Account"
+    assert html.select(".tabbar") and html.select_one(".brand")["href"] == "/"
+
+
+def test_a_job_seeker_sees_zoeken_without_a_title_and_jij():
+    html = render("base.html", "/", role="user")
+    assert [title.get_text(strip=True) for title in html.select(".rail-group-title")] == ["Jij"]
+    assert "Systeem" not in [link.get_text(strip=True) for link in html.select(".rail-nav a")]
 
 
 def test_job_filters_preserve_search_source_and_travel_and_show_empty_state():
