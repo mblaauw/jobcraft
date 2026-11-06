@@ -1,10 +1,18 @@
-"""exenzo source adapter."""
+"""exenzo source adapter.
+
+The public API cuts descriptions off at 300 characters. With `enrich_details` the
+board's public job page (JobPosting JSON-LD) fills in the text: at most `detail_cap`
+pages per round, and a page read before is not read again for two weeks.
+"""
 from __future__ import annotations
 
 import time
 
 from .. import store
-from .common import _tally, make_job, strip_html
+from .common import SHORT_SUMMARY, _tally, best_description, make_job, safe_detail_get, strip_html
+from .jsonld import jsonld_jobs
+
+DETAIL_DAYS = 14
 
 
 def normalize_exenzo(source: dict, item: dict) -> dict | None:
@@ -36,6 +44,16 @@ def normalize_exenzo(source: dict, item: dict) -> dict | None:
 
 
 
+def _full_text(client, url: str, entry: dict) -> str | None:
+    page = safe_detail_get(client, url, entry)
+    time.sleep(0.4)
+    if page is None or page.status_code >= 400:
+        return None
+    found = jsonld_jobs(page.text)
+    text = best_description(strip_html(found[0].get("description")) if found else "", page.text)
+    return text if len(text) >= SHORT_SUMMARY else None
+
+
 def _scan_exenzo(client, source, entry, summary, limit_per_source=None) -> None:
     base = source["base_url"].rstrip("/")
     path = source.get("path", "/api/public/v1/jobs")
@@ -43,6 +61,7 @@ def _scan_exenzo(client, source, entry, summary, limit_per_source=None) -> None:
     max_pages = int(source.get("max_pages", 3))
     limit = limit_per_source or per_page * max_pages
     collected = 0
+    budget = int(source.get("detail_cap", 60)) if source.get("enrich_details") else 0
     for page_number in range(1, max_pages + 1):
         params: dict = {"limit": per_page, "page": page_number}
         if source.get("search"):
@@ -57,6 +76,16 @@ def _scan_exenzo(client, source, entry, summary, limit_per_source=None) -> None:
             job = normalize_exenzo(source, item)
             if not job:
                 continue
+            if source.get("enrich_details") and len(job["description"]) < SHORT_SUMMARY:
+                if store.touch_recent_detail(job["url"], DETAIL_DAYS * 86400):
+                    _tally(entry, summary, False)  # read in full not long ago; keep that text
+                    collected += 1
+                    continue
+                if budget > 0:
+                    budget -= 1
+                    full = _full_text(client, job["url"], entry)
+                    if full:
+                        job = make_job(**{**_job_args(job), "description": full})
             _, created = store.upsert_job(job)
             _tally(entry, summary, created)
             collected += 1
@@ -67,6 +96,11 @@ def _scan_exenzo(client, source, entry, summary, limit_per_source=None) -> None:
         time.sleep(0.5)
     store.update_source_status(source["id"], "ok")
 
+
+
+def _job_args(job: dict) -> dict:
+    keys = ("source_id", "url", "title", "company", "location", "hours", "description", "posted_at", "lat", "lon")
+    return {key: job[key] for key in keys}
 
 
 scan = _scan_exenzo

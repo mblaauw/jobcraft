@@ -754,7 +754,7 @@ PERSONIO_FEED = b"""<?xml version="1.0" encoding="UTF-8"?>
 </workzag-jobs>"""
 
 
-class FakePersonio:
+class FakeSite:
     def __init__(self, pages):
         self.pages = pages
         self.asked = []
@@ -772,7 +772,7 @@ def test_personio_boards_read_the_feed_and_fill_in_text_from_job_pages(client, m
     monkeypatch.setattr(ats, "load_employers", lambda: [{"name": "Voorbeeld", "system": "personio", "slug": "voorbeeld", "detail_cap": 1}])
     monkeypatch.setattr(ats.time, "sleep", lambda _: None)
     page = "<html><body><main><h1>Adviseur</h1><p>" + "Je adviseert klanten over hun gebouwen. " * 20 + "</p></main></body></html>"
-    fake = FakePersonio({f"{PERSONIO}/xml": PERSONIO_FEED, f"{PERSONIO}/job/11": page, f"{PERSONIO}/job/12": page})
+    fake = FakeSite({f"{PERSONIO}/xml": PERSONIO_FEED, f"{PERSONIO}/job/11": page, f"{PERSONIO}/job/12": page})
     store.sync_sources([{"id": "ats-bedrijven", "kind": "ats-registry"}])
     entry = {"status": "ok", "new": 0, "updated": 0, "items": 0}
     ats._scan_ats(fake, {"id": "ats-bedrijven"}, entry, {"new": 0, "updated": 0})
@@ -794,20 +794,18 @@ def test_a_moved_personio_board_is_skipped_and_a_strange_feed_is_reported(client
     monkeypatch.setattr(ats.time, "sleep", lambda _: None)
     store.sync_sources([{"id": "x", "kind": "ats-registry"}])
     monkeypatch.setattr(ats, "load_employers", lambda: [{"name": "Weg", "system": "personio", "slug": "weg"}])
-    ats._scan_ats(FakePersonio({}), {"id": "x"}, {"items": 0}, {"new": 0, "updated": 0})  # 404: no failure
+    ats._scan_ats(FakeSite({}), {"id": "x"}, {"items": 0}, {"new": 0, "updated": 0})  # 404: no failure
     odd = b'<?xml version="1.0"?><!DOCTYPE x [<!ENTITY a "aaaa">]><workzag-jobs/>'
     monkeypatch.setattr(ats, "load_employers", lambda: [{"name": "Raar", "system": "personio", "slug": "raar", "tld": "de"}])
     with pytest.raises(RuntimeError, match="raar"):
-        ats._scan_ats(FakePersonio({"https://raar.jobs.personio.de/xml": odd}), {"id": "x"}, {"items": 0}, {"new": 0, "updated": 0})
+        ats._scan_ats(FakeSite({"https://raar.jobs.personio.de/xml": odd}), {"id": "x"}, {"items": 0}, {"new": 0, "updated": 0})
 
 
 def _job_page(title, place):
-    import json as _json
-
     posting = {"@context": "https://schema.org", "@type": "JobPosting", "title": title, "datePosted": "2026-11-01",
                "description": "<p>" + "Je werkt aan mooie dingen. " * 25 + "</p>",
                "jobLocation": {"@type": "Place", "address": {"@type": "PostalAddress", "addressLocality": place}}}
-    return f'<html><head><script type="application/ld+json">{_json.dumps(posting)}</script></head><body><h1>{title}</h1></body></html>'
+    return f'<html><head><script type="application/ld+json">{json.dumps(posting)}</script></head><body><h1>{title}</h1></body></html>'
 
 
 def test_sitemap_boards_read_job_pages_and_keep_only_dutch_ones(client, monkeypatch):  # noqa: F811
@@ -829,7 +827,7 @@ def test_sitemap_boards_read_job_pages_and_keep_only_dutch_ones(client, monkeypa
         {"name": "Voorbeeld", "system": "teamtailor", "slug": "voorbeeld", "host": host},
         {"name": "Krant", "system": "homerun", "slug": "voorbeeld"},
     ])
-    fake = FakePersonio(pages)
+    fake = FakeSite(pages)
     store.sync_sources([{"id": "ats-bedrijven", "kind": "ats-registry"}])
     ats._scan_ats(fake, {"id": "ats-bedrijven"}, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
     with store.connect() as con:
@@ -842,3 +840,41 @@ def test_sitemap_boards_read_job_pages_and_keep_only_dutch_ones(client, monkeypa
     fake.asked.clear()
     ats._scan_ats(fake, {"id": "ats-bedrijven"}, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
     assert f"{host}/jobs/101-planner" not in fake.asked  # known and recent: only touched
+
+
+def test_greenjobs_turns_national_on_existing_installations(client):  # noqa: F811
+    old = {"id": "greenjobs", "kind": "exenzo-json", "scope": "regional", "regions": ["Amsterdam"], "search": "Amsterdam"}
+    store.save_source_config(old, enabled=True)
+    greenjobs = {item["id"]: item for item in sources.load_sources()}["greenjobs"]
+    assert greenjobs["scope"] == "national" and greenjobs["regions"] == [] and not greenjobs["search"]
+    assert greenjobs["enabled"] is True and greenjobs["max_pages"] * greenjobs["per_page"] >= 300
+
+
+def test_exenzo_fills_in_cut_off_texts_from_the_public_page(client, monkeypatch):  # noqa: F811
+    from app.adapters import exenzo
+
+    monkeypatch.setattr(exenzo.time, "sleep", lambda _: None)
+    api = "https://bord.api.exenzo.test/api/public/v1/jobs"
+    items = [{"title": f"Adviseur {n}", "slug": f"adviseur-{n}", "description": "Kort. " * 40, "city": "Utrecht"} for n in (1, 2)]
+
+    class Fake(FakeSite):
+        def get(self, url, **kwargs):
+            if url == api:
+                self.asked.append(url)
+                return httpx.Response(200, json={"total": 2, "data": items}, request=httpx.Request("GET", url))
+            return super().get(url, **kwargs)
+
+    site = "https://bord.test"
+    fake = Fake({f"{site}/vacature/adviseur-1": _job_page("Adviseur 1", "Utrecht"), f"{site}/vacature/adviseur-2": _job_page("Adviseur 2", "Utrecht")})
+    source = {"id": "bord", "base_url": "https://bord.api.exenzo.test", "public_site": site, "enrich_details": True, "detail_cap": 1}
+    store.sync_sources([{"id": "bord", "kind": "exenzo-json"}])
+    exenzo._scan_exenzo(fake, source, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    with store.connect() as con:
+        texts = {row["title"]: row["description"] for row in con.execute("SELECT title, description FROM jobs")}
+    assert "mooie dingen" in texts["Adviseur 1"] and texts["Adviseur 2"].startswith("Kort.")  # one page per round
+    fake.asked.clear()
+    exenzo._scan_exenzo(fake, source, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    with store.connect() as con:
+        texts = {row["title"]: row["description"] for row in con.execute("SELECT title, description FROM jobs")}
+    assert f"{site}/vacature/adviseur-1" not in fake.asked and "mooie dingen" in texts["Adviseur 1"]  # kept, not re-read
+    assert "mooie dingen" in texts["Adviseur 2"]
