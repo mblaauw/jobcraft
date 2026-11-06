@@ -49,18 +49,21 @@ sources:
     notes: "Vacature CPT; REST body is leeg, inhoud komt van de vacaturepagina."
 
   - id: greenjobs
-    scope: regional
-    regions: [Amsterdam]
+    scope: national
+    regions: []
     name: Greenjobs.nl (Exenzo API)
     kind: exenzo-json
     base_url: https://greenjobs.api.exenzo.com
     path: /api/public/v1/jobs
     public_site: https://greenjobs.nl
     per_page: 100
-    max_pages: 3
-    search: Amsterdam
+    max_pages: 4
+    search: ""
+    enrich_details: true
+    detail_cap: 60
+    revision: 2
     enabled: true
-    notes: "Duurzame/groene vacaturebank met coördinaten (lat/lon) per vacature; search=Amsterdam om de regio te pakken. Publieke URL: greenjobs.nl/vacature/{slug}."
+    notes: "Duurzame/groene vacaturebank met coördinaten (lat/lon) per vacature. Landelijk sinds 2026-11-05 (268 vacatures; met search=Amsterdam waren het er 45): het reisbereik verbergt wat te ver is. De API kapt teksten af op 300 tekens; de publieke vacaturepagina (geen robots.txt, JobPosting JSON-LD met 5.000+ tekens) vult ze aan, 60 per ronde, elke pagina hooguit eens per twee weken. Publieke URL: greenjobs.nl/vacature/{slug}. Andere borden op *.api.exenzo.com geprobeerd (techniek, zorg, bouw, horeca e.d.): allemaal 404."
 
   - id: baneninhetgroen
     scope: regional
@@ -153,8 +156,12 @@ sources:
     kind: getro-html
     base_url: https://impactjobs.doen.nl
     path: /jobs
-    enabled: false
-    notes: "Getro-board: vacaturedata zit in de Next.js-payload; aparte adapter nodig. Nog niet gebouwd."
+    detail_cap: 40
+    recheck: 60
+    delay: 1.0
+    revision: 2
+    enabled: true
+    notes: "Getro-board (141 impactvacatures op 2026-11-05). De zoek-API van Getro (api.getro.com) verbiedt alle crawlers in robots.txt, dus alleen de eigen pagina's: /jobs geeft de 20 nieuwste in __NEXT_DATA__, elke vacaturepagina de volledige vacature (tekst, plaatsen, status). Wat van de lijst valt, wordt via de eigen pagina opnieuw gelezen zolang het actief is. robots.txt van het bord: geen regels voor *; 1 seconde tussen pagina's, hooguit 40 per ronde."
 
   - id: ivn
     name: IVN Natuureducatie

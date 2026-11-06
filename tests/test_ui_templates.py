@@ -246,3 +246,20 @@ def test_admin_sources_hide_personal_preference_toggle():
     user_html = render("sources.html", "/sources", role="user", **context)
     assert "Voor mij aan" in user_html.get_text()
     assert "Voor iedereen uitzetten" not in user_html.get_text()
+
+
+def test_admins_see_why_a_source_failed_and_job_seekers_do_not():
+    source = {"id": "bron-a", "name": "Bron A", "enabled": True, "last_status": "error", "last_scan_at": "2026-11-05T06:30:00+00:00", "notes": "", "kind": "ats-registry"}
+    context = {
+        "sources": [source],
+        "user_sources": {"bron-a": {"selected": True, "reason": ""}},
+        "jobs_by_source": {"bron-a": 1},
+        "health": {"bron-a": {"failures": 2, "items": 0, "reason": "RuntimeError: Niet bereikbaar: board-x", "history": []}},
+        "scan_status": "idle",
+        "summary": None,
+        "counts": {"total": 1},
+    }
+    admin = render("sources.html", "/sources", **context)
+    assert "2 rondes achter elkaar mislukt" in admin.get_text()
+    assert admin.select_one(".source-reason").get_text() == "RuntimeError: Niet bereikbaar: board-x"
+    assert "Niet bereikbaar" not in render("sources.html", "/sources", role="user", **context).get_text()

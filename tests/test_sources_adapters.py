@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from xml.etree import ElementTree
 
+import pytest
+from test_jobs_page import client  # noqa: F401
+
 from app import sources
 
 SAMPLE_FEED_ITEM = """<source><items><item>
@@ -67,7 +70,7 @@ def test_configured_sources_use_known_adapters():
         "hn-resource",
         "local-json",
         "ats-registry",
-        "getro-html",  # documented placeholder, disabled until the adapter exists
+        "getro-html",
         "manual",
         "browser-import",
     }
@@ -103,3 +106,61 @@ def test_parse_hn_cards_extracts_title_employer_and_labels():
     assert card["employer"] == "Justis"
     assert card["labels"]["Locatie"] == "Den Haag (Rijnstraat)"
     assert card["labels"]["Aantal uren"] == "32 - 36 uur"
+
+
+def test_getro_board_reads_new_jobs_and_keeps_live_ones_from_expiring(client, monkeypatch):  # noqa: F811
+    import json as _json
+
+    import httpx
+
+    from app import store
+    from app.adapters import getro
+
+    monkeypatch.setattr(getro.time, "sleep", lambda _: None)
+    base = "https://bord.test"
+
+    def page(state):
+        return f'<html><script id="__NEXT_DATA__" type="application/json">{_json.dumps({"props": {"pageProps": {"initialState": state}}})}</script></html>'
+
+    def job(slug, status="active", place="The Hague, Netherlands"):
+        return {"jobs": {"currentJob": {"title": f"Vacature {slug}", "status": status, "locations": [{"name": place}],
+                                        "postedAt": "2026-11-04T13:15:34Z", "organization": {"name": "Oscar", "slug": "oscar"},
+                                        "description": "<p>" + "Je bouwt mee aan een circulaire stad. " * 20 + "</p>"}}}
+
+    listing = {"jobs": {"total": 3, "found": [{"slug": s, "organization": {"slug": "oscar"}} for s in ("1-a", "2-b", "3-c")]}}
+    pages = {f"{base}/jobs": page(listing), f"{base}/companies/oscar/jobs/1-a": page(job("1-a")),
+             f"{base}/companies/oscar/jobs/2-b": page(job("2-b", place="Berlin, Germany")),
+             f"{base}/companies/oscar/jobs/3-c": page(job("3-c", status="closed"))}
+
+    asked: list[str] = []
+
+    class Site:
+        def get(self, url, **kwargs):
+            asked.append(url)
+            request = httpx.Request("GET", url)
+            return httpx.Response(200, text=pages[url], request=request) if url in pages else httpx.Response(404, request=request)
+
+    source = {"id": "impact", "kind": "getro-html", "base_url": base}
+    store.sync_sources([source])
+    getro._scan_getro(Site(), source, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    with store.connect() as con:
+        rows = con.execute("SELECT url, title, company, location, description FROM jobs").fetchall()
+    assert [(row["title"], row["company"], row["location"]) for row in rows] == [("Vacature 1-a", "Oscar", "The Hague")]
+    assert "circulaire stad" in rows[0]["description"]
+    # It drops off the list, but its own page says it is still open: it is read again, not expired.
+    pages[f"{base}/jobs"] = page({"jobs": {"total": 0, "found": []}})
+    with store.connect() as con:
+        con.execute("UPDATE meta SET value='2000-01-01T00:00:00+00:00' WHERE key LIKE 'detail_fetched:%'")
+        con.execute("UPDATE jobs SET last_seen='2000-01-01T00:00:00+00:00'")
+    asked.clear()
+    getro._scan_getro(Site(), source, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    assert f"{base}/companies/oscar/jobs/1-a" in asked
+    with store.connect() as con:
+        assert con.execute("SELECT last_seen FROM jobs").fetchone()[0] > "2026"
+    # A list that says it has jobs but names none means the page changed: report it.
+    pages[f"{base}/jobs"] = page({"jobs": {"total": 5, "found": []}})
+    with pytest.raises(RuntimeError):
+        getro._scan_getro(Site(), source, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    pages[f"{base}/jobs"] = "<html>geen data</html>"
+    with pytest.raises(ValueError):
+        getro._scan_getro(Site(), source, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
