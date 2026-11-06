@@ -14,8 +14,15 @@ from typing import Any
 from . import store, tenancy
 
 LLM_KINDS = ("match", "consolidate", "document")
+# Whole rounds that are safe to start over, so a restart puts them back in the queue once.
+RESUMABLE_KINDS = ("scan", "match")
+INTERRUPTED = "Onderbroken door een herstart."
 HEARTBEAT_INTERVAL = 30.0
 log = logging.getLogger("jobcraft.tasks")
+
+
+class Interrupted(RuntimeError):
+    """Raised by a handler that was cut off by a restart: the work did not fail, it did not finish."""
 
 
 def enqueue(
@@ -186,6 +193,8 @@ def handler(kind: str) -> Callable[[Callable[[dict], dict | None]], Callable[[di
 
 
 def run_one(*, resolve_owner: Callable[[str], dict | None] | None = None) -> bool:
+    if _STOP.is_set() and _WORKERS:  # a round requeued at shutdown waits for the next start
+        return False
     task = claim_next()
     if task is None:
         return False
@@ -204,6 +213,8 @@ def run_one(*, resolve_owner: Callable[[str], dict | None] | None = None) -> boo
         with tenancy.scope(principal):
             result = function(task)
         finish(task["id"], result if isinstance(result, dict) else {})
+    except Interrupted:
+        interrupted(task["id"])
     except Exception as exc:
         fail(task["id"], f"{type(exc).__name__}: {exc}")
     finally:
@@ -262,26 +273,58 @@ def stop_workers() -> None:
         _HEARTBEAT_THREAD = None
 
 
+def _close_interrupted(con: sqlite3.Connection, row: sqlite3.Row, *, resume: bool = True) -> bool:
+    """End a running task that a restart cut off.
+
+    A scan or match round goes back in the queue once, with its attempts carried over,
+    so the second interruption stays an error and a round that keeps dying does not
+    loop. The old row says what happened; only a real failure keeps status 'error'.
+    A stale heartbeat is not a restart: its handler may still be running, so nothing
+    is queued beside it.
+    """
+    again = resume and row["kind"] in RESUMABLE_KINDS and int(row["attempts"] or 0) < 2
+    con.execute(
+        "UPDATE tasks SET status=?, error=?, finished_at=? WHERE id=? AND status='running'",
+        (
+            "interrupted" if again else "error",
+            INTERRUPTED + (" Staat opnieuw in de wachtrij." if again else " Probeer opnieuw."),
+            store.now(),
+            row["id"],
+        ),
+    )
+    if again:
+        con.execute(
+            "INSERT INTO tasks(owner, kind, payload_json, dedupe_key, attempts, created_at) "
+            "VALUES (?,?,?,?,?,?) "
+            "ON CONFLICT(dedupe_key) WHERE status IN ('queued','running') DO NOTHING",
+            (row["owner"], row["kind"], row["payload_json"], row["dedupe_key"], row["attempts"], store.now()),
+        )
+    return again
+
+
+def interrupted(task_id: int) -> bool:
+    """A handler reported that a restart cut it off; True when the round is queued again."""
+    with store.connect() as con:
+        row = con.execute("SELECT * FROM tasks WHERE id=? AND status='running'", (task_id,)).fetchone()
+        return bool(row) and _close_interrupted(con, row)
+
+
 def recover_interrupted() -> int:
     """Only at startup while holding the exclusive data-directory process lock."""
     with store.connect() as con:
-        cursor = con.execute(
-            "UPDATE tasks SET status='error', error=?, finished_at=? WHERE status='running'",
-            ("Onderbroken door een herstart. Probeer opnieuw.", store.now()),
-        )
-    return cursor.rowcount
+        rows = con.execute("SELECT * FROM tasks WHERE status='running'").fetchall()
+        for row in rows:
+            _close_interrupted(con, row)
+    return len(rows)
 
 
 def recover_stale(timeout_seconds: int = 120) -> int:
     cutoff = (datetime.now(UTC) - timedelta(seconds=timeout_seconds)).isoformat()
     with store.connect() as con:
         rows = con.execute(
-            "SELECT id FROM tasks WHERE status='running' AND heartbeat_at < ?",
+            "SELECT * FROM tasks WHERE status='running' AND heartbeat_at < ?",
             (cutoff,),
         ).fetchall()
         for row in rows:
-            con.execute(
-                "UPDATE tasks SET status='error', error=?, finished_at=? WHERE id=?",
-                ("Onderbroken door een herstart. Probeer opnieuw.", store.now(), row["id"]),
-            )
+            _close_interrupted(con, row, resume=False)
     return len(rows)

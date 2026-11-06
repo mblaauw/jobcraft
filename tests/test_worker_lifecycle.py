@@ -101,7 +101,7 @@ def test_restart_recovers_even_recent_running_tasks_but_preserves_queue():
     tasks.claim_next()
     queued = tasks.enqueue("match", owner="a")
     assert tasks.recover_interrupted() == 1
-    assert tasks.get(running)["status"] == "error"
+    assert tasks.get(running)["status"] == "interrupted"  # and queued again, see test_tasks
     assert tasks.get(queued, owner="a")["status"] == "queued"
     assert tasks.enqueue("scan", owner=None, dedupe_key="scan") != running
 
