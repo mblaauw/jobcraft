@@ -87,6 +87,19 @@ def _list_users() -> list:
 
 
 
+def _sessions_by_user() -> dict[str, list[str | None]]:
+    """The user agent of every live session, per account: one query for the whole users page."""
+    with closing(store.connect()) as con:
+        rows = con.execute(
+            "SELECT user_id, user_agent FROM auth_sessions WHERE user_id IS NOT NULL AND revoked=0 AND expires_at > ?",
+            (now_iso(),),
+        ).fetchall()
+    agents: dict[str, list[str | None]] = {}
+    for row in rows:
+        agents.setdefault(row["user_id"], []).append(row["user_agent"])
+    return agents
+
+
 def _session_count(user_id: str) -> int:
     with closing(store.connect()) as con:
         row = con.execute(

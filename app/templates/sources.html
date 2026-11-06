@@ -16,9 +16,6 @@
       {% if admin and status and status != 'ok' %}<li class="warn-text">{% if h and h.failures > 1 %}{{ h.failures }} rondes achter elkaar mislukt{% else %}laatste ronde mislukt{% endif %}</li>{% if h and h.reason %}<li class="subtle source-reason">{{ h.reason }}</li>{% endif %}{% endif %}
       {% if admin and h and status == 'ok' and not h['items'] %}<li class="warn-text">laatste ronde niets gevonden</li>{% endif %}
       {% if admin and h and h.dropped %}<li class="warn-text">veel minder dan normaal</li>{% endif %}
-      {% if admin and full_text and full_text.get(s['id']) is not none %}<li>{{ full_text[s['id']] }}% met volledige tekst</li>{% endif %}
-      {% if admin and h and h.history and h.history | length > 1 %}<li class="subtle">laatste rondes: {{ h.history[-5:] | join(', ') }}</li>{% endif %}
-      {% if admin and h and h.skipped %}<li>{{ h.skipped }} pagina's overgeslagen</li>{% endif %}
     </ul>
     {% if not admin and selection.reason %}<p class="why">{{ selection.reason }}</p>{% endif %}
   </div>
@@ -37,10 +34,15 @@
     </form>
     {% endif %}
   </div>
-  {% if admin and (s["notes"] or s["kind"]) %}
+  {% if admin %}
   <details>
-    <summary>Technische notitie</summary>
-    <p>{{ kind_labels.get(s["kind"], s["kind"]) }}{% if s["notes"] %}: {{ s["notes"] }}{% endif %}</p>
+    <summary>Details</summary>
+    <ul class="meta">
+      <li>{{ kind_labels.get(s["kind"], s["kind"]) }}{% if s["notes"] %}: {{ s["notes"] }}{% endif %}</li>
+      {% if full_text and full_text.get(s['id']) is not none %}<li>{{ full_text[s['id']] }}% met volledige tekst</li>{% endif %}
+      {% if h and h.history and h.history | length > 1 %}<li>laatste rondes: {{ h.history[-5:] | join(', ') }}</li>{% endif %}
+      {% if h and h.skipped %}<li>{{ h.skipped }} pagina's overgeslagen</li>{% endif %}
+    </ul>
   </details>
   {% endif %}
 </li>

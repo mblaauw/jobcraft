@@ -824,8 +824,23 @@ textarea.prose-edit:focus { border-color: var(--moss); outline: 2px solid var(--
 
 .account-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
 .one-time pre.doc { font: 600 18px/1.4 var(--mono); padding: 14px 16px; background: var(--lime-soft); border: 1px dashed var(--moss); user-select: all; }
-.user-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-.user-actions form { margin: 0; }
+.users-tabs { margin-top: 14px; }
+/* An action that puts someone out is asked once, by name, in a panel the page lands on. */
+.confirm-panel { border-color: var(--moss); outline: none; }
+.confirm-panel:focus-visible { box-shadow: 0 0 0 3px var(--lime-soft); }
+.confirm-panel p { max-width: 60ch; }
+.confirm-panel .btn-row { margin-top: 12px; }
+/* The per-account menu opens in place, so nothing is clipped by the scrolling table. */
+.row-menu > summary { gap: 4px; white-space: nowrap; }
+.row-menu > summary .chev { width: 16px; height: 16px; }
+.row-menu-pop { display: grid; gap: 2px; min-width: 200px; margin-top: 6px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); box-shadow: var(--shadow); }
+.row-menu-pop form { margin: 0; }
+.row-menu-pop button { display: flex; width: 100%; min-height: 40px; padding: 8px 10px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink); font: inherit; font-size: var(--fs-sm); font-weight: 550; text-align: left; cursor: pointer; }
+.row-menu-pop button:hover { background: var(--sunk); }
+.row-menu-pop button.danger { color: var(--danger); }
+.row-menu-note { padding: 8px 10px; color: var(--ink-3); font-size: var(--fs-xs); }
+.table .card-actions { text-align: right; }
+.table .card-actions .row-menu { display: inline-block; text-align: left; }
 
 /* -------------------------------------------------------------------- auth */
 
@@ -914,6 +929,18 @@ textarea.prose-edit:focus { border-color: var(--moss); outline: 2px solid var(--
   .auth-side { padding: 22px 24px; }
   .auth-side h2, .auth-side p, .auth-stamps { display: none; }
   .table-scroll .table { min-width: 560px; }
+  /* A table that becomes one card per row on a phone: each cell names its column. */
+  .table-scroll .table.cards { min-width: 0; }
+  .table.cards thead { display: none; }
+  .table.cards tbody, .table.cards tr { display: block; }
+  .table.cards tr { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .table.cards tr:last-child { border-bottom: 0; }
+  .table.cards td { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 8px; padding: 4px 0; border: 0; }
+  .table.cards td[data-label]::before { content: attr(data-label); color: var(--ink-3); font-size: var(--fs-xs); font-weight: 600; padding-top: 2px; }
+  .table.cards td.nowrap { white-space: normal; }
+  .table.cards td.card-title { display: block; padding-bottom: 8px; }
+  .table.cards td.card-actions { display: block; padding-top: 8px; text-align: left; }
+  .table.cards .row-menu-pop { min-width: 0; }
   .job-drawer-header { padding: 10px 8px 0 16px; }
   .job-drawer-body { padding: 16px 16px 40px; }
 }

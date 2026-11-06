@@ -18,7 +18,7 @@
   </dl>
 </section>
 {% if not own %}
-<p class="banner">{{ ui.icon('lock') }}<span>De inhoud bevat persoonlijke gegevens van deze gebruiker en staat daarom niet op deze pagina. Op de server staat hij in <code>{{ file }}</code>.</span></p>
+<p class="banner">{{ ui.icon('lock') }}<span>De inhoud bevat persoonlijke gegevens van {{ account }} en staat daarom niet op deze pagina. Op de server staat hij in het AI-logboek van dat account, in het bestand van {{ ui.nl_date(day) }}.</span></p>
 {% else %}
 {% for message in call.input %}
 <section class="panel"><h2>Invoer: {{ {'system': 'instructies', 'user': 'opdracht', 'assistant': 'eerder antwoord'}.get(message.role, message.role) }}</h2><pre class="doc log-text" tabindex="0">{{ message.content }}</pre></section>

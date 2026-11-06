@@ -112,7 +112,7 @@ def _build_app() -> FastAPI:
             "display_name": "Actor",
             "role": auth.ROLE_ADMIN,
         }
-        return auth.users_deactivate(request, "last-admin")
+        return auth.users_deactivate(request, "last-admin", bevestig="1")
 
     return app
 
@@ -493,7 +493,7 @@ def test_deactivated_user_loses_existing_sessions(env):
     token = csrf_of(env.client.get("/users").text)
     response = env.client.post(
         f"/users/{user_id(env, 'test-user')}/deactivate",
-        data={"_csrf": token},
+        data={"_csrf": token, "bevestig": "1"},
         follow_redirects=False,
     )
     assert response.status_code == 200 and "gedeactiveerd" in response.text
@@ -666,7 +666,7 @@ def test_admin_can_reset_a_password_once(env):
 
     token = csrf_of(env.client.get("/users").text)
     reset = env.client.post(
-        f"/users/{member_id}/reset-password", data={"_csrf": token}, follow_redirects=False
+        f"/users/{member_id}/reset-password", data={"_csrf": token, "bevestig": "1"}, follow_redirects=False
     )
     assert reset.status_code == 200
     new_password = one_time_password(reset.text)

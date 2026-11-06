@@ -15,7 +15,7 @@ from .credentials import verify_password
 from .security import csrf_token
 from .sessions import _create_session
 from .timestamps import _label_ts
-from .users import _get_user_by_id, _list_users, _session_count
+from .users import _get_user_by_id, _list_users, _session_count, _sessions_by_user
 
 
 def _login_response(
@@ -106,12 +106,45 @@ ACTIVITY_LABELS = {
     "password_reset": "Wachtwoord opnieuw ingesteld door beheerder",
     "deactivated": "Gedeactiveerd door beheerder",
     "activated": "Geactiveerd door beheerder",
-    "sessions_revoked": "Overal anders uitgelogd",
+    "sessions_revoked": "Overal uitgelogd",
 }
 ACTIVITY_PERIODS = {"dag": 1, "week": 7, "maand": 31}
 
+# What an administrator is asked before an action that puts someone out: title, what happens, the button.
+CONFIRMATIONS = {
+    "reset-password": (
+        "Nieuw wachtwoord voor {name}?",
+        "{name} krijgt een eenmalig wachtwoord dat je persoonlijk doorgeeft, en wordt op alle apparaten uitgelogd. Het oude wachtwoord werkt daarna niet meer.",
+        "Ja, nieuw wachtwoord",
+    ),
+    "deactivate": (
+        "{name} deactiveren?",
+        "{name} kan niet meer inloggen en wordt op alle apparaten uitgelogd. Er gaat niets verloren; activeren kan later weer.",
+        "Ja, deactiveren",
+    ),
+    "uitloggen": (
+        "{name} overal uitloggen?",
+        "{name} moet op elk apparaat opnieuw inloggen. Het wachtwoord blijft hetzelfde.",
+        "Ja, overal uitloggen",
+    ),
+}
 
-def _user_admin_view(row, last: dict | None = None, failed: int = 0) -> dict:
+
+def _confirmation(action: str, row) -> dict:
+    title, text, button = CONFIRMATIONS[action]
+    name = row["display_name"] or row["username"]
+    return {
+        "action": action,
+        "id": row["id"],
+        "title": title.format(name=name),
+        "text": text.format(name=name),
+        "button": button,
+        "danger": action == "deactivate",
+    }
+
+
+def _user_admin_view(row, last: dict | None = None, failed: int = 0, agents: list | None = None) -> dict:
+    agents = agents or []
     return {
         "id": row["id"],
         "username": row["username"],
@@ -123,7 +156,8 @@ def _user_admin_view(row, last: dict | None = None, failed: int = 0) -> dict:
         "last_ip": (last or {}).get("ip") or "",
         "last_browser": browser_label((last or {}).get("user_agent")) if last else "",
         "failed_today": failed,
-        "sessions": _session_count(row["id"]),
+        "sessions": len(agents),
+        "browsers": sorted({browser_label(agent) for agent in agents}),
     }
 
 
@@ -178,19 +212,24 @@ def _users_response(
     new_password: str = "",
     created_username: str = "",
     invite_link: str = "",
+    confirm: dict | None = None,
     status_code: int = 200,
 ):
     rows = _list_users()
-    last, failed = store.last_logins(), store.failed_per_user(days=1)
+    last, failed, agents = store.last_logins(), store.failed_per_user(days=1), _sessions_by_user()
     return templates.TemplateResponse(
         request,
         "users.html",
         {
-            "users": [_user_admin_view(row, last.get(row["id"]), failed.get(row["id"], 0)) for row in rows],
+            "users": [
+                _user_admin_view(row, last.get(row["id"]), failed.get(row["id"], 0), agents.get(row["id"]))
+                for row in rows
+            ],
             "current_user_id": user["id"],
             "active_admins": sum(1 for row in rows if row["role"] == ROLE_ADMIN and row["active"]),
             "error": error,
             "notice": notice,
+            "confirm": confirm,
             "new_password": new_password,
             "created_username": created_username,
             "invite_link": invite_link,
