@@ -90,19 +90,26 @@ def _ask_system_one(job, state: str, questions: dict) -> dict:
     return data.get("answers") or {}
 
 
-def _system_one_round(preferences, feedback_data, digest_base, summary) -> None:
-    """Spend the daily calls on the most promising jobs first.
+def _systemone_calls_left() -> int:
+    """Jev calls are logged at $0, so the dollar budget cannot limit them; the daily count does."""
+    daily_limit = int(os.environ.get("SYSTEMONE_DAILY_LIMIT", "80"))
+    return max(0, daily_limit - store.daily_usage_calls("systemone"))
+
+
+def _system_one_round(preferences, feedback_data, digest_base, summary) -> str:
+    """Spend one batch of the daily calls on the most promising jobs first.
 
     Facts about a vacancy are asked once for all accounts and survive profile edits; the
-    personal fit is only asked for the jobs ranked highest for this account.
+    personal fit is only asked for the jobs ranked highest for this account. Returns
+    "covered" when every job above the fit line has its answer, "spent" when the batch
+    ran out before that, and "failed" when Jev kept failing.
     """
     excerpt = profile.read_public_excerpt(4000)
     questions = systemone.questions_for(preferences)
     batch = int(os.environ.get("SYSTEMONE_BATCH", "40"))
-    # Jev calls are logged at $0, so the dollar budget cannot limit them.
-    daily_limit = int(os.environ.get("SYSTEMONE_DAILY_LIMIT", "80"))
-    calls_left = min(batch, max(0, daily_limit - store.daily_usage_calls("systemone")))
+    calls_left = min(batch, _systemone_calls_left())
     fit_top = int(os.environ.get("SYSTEMONE_FIT_TOP", "200"))
+    top_waiting = False
 
     ranking.rerank_all(preferences, feedback_data, digest_base)
     jobs = sorted(
@@ -131,6 +138,8 @@ def _system_one_round(preferences, feedback_data, digest_base, summary) -> None:
         if facts is not None and not wants_fit and job["signals_key"] == f"facts:{fact_key}":
             continue
         needed = (facts is None) + (wants_fit and bool(calls_left))
+        if wants_fit and calls_left <= 0:
+            top_waiting = True  # the batch ran out above the fit line: another batch is worth it
         if facts is None and calls_left <= 0:
             continue
         if wants_fit and calls_left <= 0 and ranking.signals_of(job):
@@ -172,7 +181,8 @@ def _system_one_round(preferences, feedback_data, digest_base, summary) -> None:
             consecutive_failures += 1
             if consecutive_failures >= 3:
                 summary["errors"].append("systemone gestopt na 3 opeenvolgende fouten")
-                return
+                return "failed"
+    return "spent" if top_waiting else "covered"
 
 
 def signal_one(
@@ -187,8 +197,7 @@ def signal_one(
     """
     if not systemone.enabled():
         return None
-    daily_limit = int(os.environ.get("SYSTEMONE_DAILY_LIMIT", "80"))
-    calls_left = max(0, daily_limit - store.daily_usage_calls("systemone"))
+    calls_left = _systemone_calls_left()
     preferences = preferences if preferences is not None else profile.read_preferences()
     feedback_data = feedback_data if feedback_data is not None else feedback.load()
     digest_base = digest_base or current_digest(preferences)
@@ -272,8 +281,14 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
     }
 
     # Stage 1 — System One gate: shared job facts once, personal fit only where it counts.
+    # Batches keep going while the best-ranked vacancies still wait and the day's calls
+    # allow, so a scan that brings in thousands does not leave the top of the list unassessed.
     if systemone.enabled():
-        _system_one_round(preferences, feedback_data, digest_base, summary)
+        for _ in range(max(1, int(os.environ.get("SYSTEMONE_ROUNDS", "20")))):
+            before = summary["signals"]
+            outcome = _system_one_round(preferences, feedback_data, digest_base, summary)
+            if outcome != "spent" or summary["signals"] == before or _systemone_calls_left() <= 0:
+                break  # covered, failed, a batch that answered nothing, or the day's calls are spent
 
     # Stage 2 — free deterministic rerank: votes and fresh signals apply instantly.
     ranking.rerank_all(preferences, feedback_data, digest_base)

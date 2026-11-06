@@ -27,6 +27,7 @@ from .. import (
     tenancy,
     today,
 )
+from ..auth.users import _list_users
 from ..web import templates
 
 log = logging.getLogger("jobcraft")
@@ -94,7 +95,22 @@ def _last_scan(sources: list) -> str | None:
     return max(moments, default=None)
 
 
-def _attention(health: dict, worker: dict, sources: list) -> list[dict]:
+def _top_gaps() -> list[dict]:
+    """Per account with a profile: how much of the top of its list still waits for Jev.
+
+    Account names are account data, not what the person does; a tenth of the top is noise.
+    """
+    names = {row["id"]: (row["display_name"] or row["username"]) for row in _list_users()}
+    gaps = []
+    for owner in store.active_owners_with_profile():
+        with tenancy.scope({"id": owner}):
+            gap = ranking.top_wait()
+        if gap and gap["of"] and gap["waiting"] >= max(1, gap["of"] // 10):
+            gaps.append({"name": names.get(owner, "een account"), **gap})
+    return gaps
+
+
+def _attention(health: dict, worker: dict, sources: list, gaps: list | None = None) -> list[dict]:
     """What an administrator should look at, each line linking to where it is fixed."""
     items: list[dict] = []
     if worker.get("separate") and not worker.get("alive"):
@@ -118,6 +134,9 @@ def _attention(health: dict, worker: dict, sources: list) -> list[dict]:
     for row in store.failed_attempts(days=1):
         if row["n"] >= 5:
             items.append({"level": "warn", "text": f"{row['n']} mislukte inlogpogingen op {row['names']} namen vanaf {row['ip'] or 'onbekend adres'}", "href": "/users/activiteit", "label": "Inlogactiviteit"})
+    for gap in gaps or ():
+        text = f"{gap['name']}: {gap['waiting']} van de {gap['of']} best gerangschikte vacatures wachten nog op een snelle beoordeling"
+        items.append({"level": "info", "text": text, "href": "/admin/ai", "label": "AI"})
     return items
 
 
@@ -160,7 +179,7 @@ def admin_page(request: Request):
     return templates.TemplateResponse(
         request,
         "admin.html",
-        {"runs": runs, "people": people, "ai": ai, "attention": _attention(health, worker, sources_rows)},
+        {"runs": runs, "people": people, "ai": ai, "attention": _attention(health, worker, sources_rows, _top_gaps())},
     )
 
 
