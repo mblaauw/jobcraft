@@ -287,13 +287,13 @@ sources:
   - id: onderwijsvacatures
     name: Onderwijsvacatures
     kind: sitemap-jsonld
-    revision: 2
+    revision: 3
     base_url: https://onderwijsvacatures.nl
     sitemap_url: https://onderwijsvacatures.nl/sitemap-vacatures.xml
     url_pattern: "/vacature"
-    per_page: 40
-    enabled: false
-    notes: "Recon 2026-11-01: robots staat toe, maar artikel 7 van de voorwaarden houdt rechten op teksten en databestanden voor. Niet aanzetten zonder toestemming van de site. Niet getest."
+    per_page: 100
+    enabled: true
+    notes: "Recon 2026-11-01: robots staat toe, maar artikel 7 van de voorwaarden houdt rechten op teksten en databestanden voor. Sinds 2026-11-06 aan als PoC (afspraak nodig); JSON-LD met plaats. Op een bestaande installatie zet een admin hem aan."
 
   # Proof of concept (2026-11-06): the owner chose to add these boards for own use
   # while agreements with the suppliers follow. Each note records the site's terms,
@@ -541,3 +541,86 @@ sources:
     revision: 2
     enabled: true
     notes: "Recon 2026-11-06: Getro-bord van een Nederlandse investeerder, ~130 vacaturelijsten bij scale-ups; alleen vacatures in Nederland blijven over."
+
+  # Boards without JobPosting data: h1 as title, the page text, and place or employer
+  # from the <title> through `title_pattern` (named groups `place` and `company`).
+  - id: meesterbaan
+    name: Meesterbaan (onderwijs)
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.meesterbaan.nl
+    sitemap_url: https://www.meesterbaan.nl/SitemapVacatures.xml
+    url_pattern: "/vacature/[0-9]+/"
+    html_fallback: true
+    title_pattern: "^Vacature .+ - (?P<company>(?:(?! - ).)+) - (?P<place>(?:(?! - ).)+)$"
+    per_page: 2200
+    enabled: true
+    notes: "Recon 2026-11-06: ~2.000 onderwijsvacatures; geen JSON-LD, titel 'Vacature X - School - Plaats'. Voorwaarden verbieden uitdrukkelijk geautomatiseerd ophalen (scraping, crawling) en noemen de vacaturedatabase een databank. PoC, afspraak nodig."
+
+  - id: ntvg
+    name: NTvG vacatures (artsen)
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://vacatures.ntvg.nl
+    sitemap_url: https://vacatures.ntvg.nl/sitemap.xml
+    url_pattern: "/vacatures/[a-z-]+/.+-[0-9]+\\.html$"
+    html_fallback: true
+    title_pattern: " in (?P<place>[^(|]+?) \\("
+    per_page: 1600
+    enabled: true
+    notes: "Recon 2026-11-06: ~1.400 vacatures voor artsen en specialisten; geen JSON-LD, plaats in de titel ('X in Leiden (BKV)'). Voorwaarden niet nagelezen. PoC."
+
+  - id: yer
+    name: YER (hbo/wo-werving)
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.yer.nl
+    sitemap_url: https://www.yer.nl/vacancy-sitemap.xml
+    url_pattern: "/vacatures/v-[0-9]+"
+    html_fallback: true
+    default_company: YER
+    per_page: 1000
+    enabled: true
+    notes: "Recon 2026-11-06: ~870 vacatures; geen JSON-LD en geen vaste plaats op de pagina, dus de reistijd blijft vaak onbekend. Disclaimer: vermenigvuldigen alleen met toestemming. PoC, afspraak nodig."
+
+  - id: goededoelen-nederland
+    name: Goede Doelen Nederland vacaturebank
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://goededoelennederland.nl
+    sitemap_url: https://goededoelennederland.nl/sitemaps-1-section-jobs-1-sitemap.xml
+    url_pattern: "/vacatures/[a-z0-9%-]+$"
+    html_fallback: true
+    per_page: 150
+    enabled: true
+    notes: "Recon 2026-11-06: ~110 vacatures bij goede doelen; geen JSON-LD, plaats meestal alleen in de tekst. Disclaimer: kopiëren en elk ander gebruik alleen met schriftelijke toestemming. PoC, afspraak nodig."
+
+  - id: olvg
+    scope: regional
+    regions: [Amsterdam]
+    name: OLVG
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://werkenbijolvg.nl
+    sitemap_url: https://werkenbijolvg.nl/ub-ats-job-sitemap.xml
+    url_pattern: "/vacatures/[a-z0-9-]+-[0-9]+/$"
+    html_fallback: true
+    default_company: OLVG
+    default_location: Amsterdam
+    per_page: 150
+    enabled: true
+    notes: "Recon 2026-11-06: ~95 ziekenhuisvacatures; geen JSON-LD. Disclaimer: kopiëren en verveelvoudigen alleen met schriftelijke toestemming. PoC, afspraak nodig."
+
+  - id: driessen
+    name: Driessen (publieke sector en onderwijs)
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.driessen.nl
+    sitemap_url: https://www.driessen.nl/vacature/sitemap.xml
+    url_pattern: "/vacature/[a-z0-9-]+-[0-9]+$"
+    html_fallback: true
+    title_pattern: "^Vacature .+ in (?P<place>[^|]+?) \\|"
+    default_company: Driessen
+    per_page: 200
+    enabled: true
+    notes: "Recon 2026-11-06: ~120 detacheringsvacatures bij overheid en onderwijs; geen JSON-LD, plaats (soms een provincie) in de titel. Disclaimer: geen kopieerbepaling gevonden."
