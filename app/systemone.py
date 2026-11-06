@@ -220,6 +220,27 @@ def compose_state(job, profile_excerpt: str = "", *, preferences: dict | None = 
     return "\n".join(parts)
 
 
+def usage_with_cost(raw: dict | None) -> dict:
+    """The provider's usage block with the call's cost under one name, `cost_usd`.
+
+    Each provider reports it differently: OpenCode as `cost` (0 on the free model),
+    Runware under `cost_details.upstream_inference_cost`. Everything that books a
+    Jev call reads `cost_usd`, so the shape is settled here and nowhere else.
+    """
+    usage = dict(raw or {})
+    details = usage.get("cost_details") if isinstance(usage.get("cost_details"), dict) else {}
+    for value in (usage.get("cost_usd"), usage.get("cost"), details.get("upstream_inference_cost")):
+        try:
+            cost = float(value)
+        except (TypeError, ValueError):
+            continue
+        break
+    else:
+        cost = 0.0
+    usage["cost_usd"] = cost
+    return usage
+
+
 def decide(
     state: str, questions: dict | None = None, model: str | None = None
 ) -> tuple[dict, dict, int]:
@@ -248,16 +269,17 @@ def decide(
     if response.status_code >= 400:
         raise SystemOneError(f"HTTP {response.status_code}: {response.text[:200]}")
     data = response.json()
+    usage = usage_with_cost(data.get("usage"))
     ai_log.record(
         "systemone",
         str(payload["model"]),
         [{"role": "user", "content": state}],
         json.dumps(data.get("answers") or data, ensure_ascii=False),
-        usage=data.get("usage") or {},
+        usage=usage,
         duration_ms=latency_ms,
         limit=3000,  # Every vacancy passes through here; full prompts would swamp the log.
     )
-    return data, data.get("usage") or {}, latency_ms
+    return data, usage, latency_ms
 
 
 def _fit_scale(questions: dict | None = None) -> int:

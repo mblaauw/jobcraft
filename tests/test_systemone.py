@@ -123,6 +123,49 @@ def test_decide_posts_the_expected_contract(monkeypatch):
     assert data["answers"]["category"]["choice"] == "groen_buiten"
 
 
+def _decide_with_usage(monkeypatch, usage: dict) -> tuple[dict, dict]:
+    booked: dict = {}
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        return _FakeResponse({"answers": {}, "usage": usage})
+
+    def fake_record(agent, model, messages, output, usage=None, **kwargs):
+        booked.update(usage or {})
+
+    monkeypatch.setenv("RUNWARE_API_KEY", "test-key")
+    monkeypatch.setattr(systemone.httpx, "post", fake_post)
+    monkeypatch.setattr(systemone.ai_log, "record", fake_record)
+    _data, returned, _latency = systemone.decide("state")
+    return returned, booked
+
+
+def test_opencode_cost_is_booked_as_cost_usd(monkeypatch):
+    usage = {"input_tokens": 434, "output_tokens": 34, "cost": 0.0000182, "opencode": {"billing_source": "paid"}}
+    returned, booked = _decide_with_usage(monkeypatch, usage)
+    assert returned["cost_usd"] == pytest.approx(0.0000182)
+    assert booked["cost_usd"] == pytest.approx(0.0000182)
+    assert returned["input_tokens"] == 434
+
+
+def test_runware_cost_details_are_booked_as_cost_usd(monkeypatch):
+    usage = {
+        "input_tokens": 1006,
+        "output_tokens": 288,
+        "cost_details": {"upstream_inference_cost": 4.2252e-05, "upstream_inference_prompt_cost": 4.2252e-05},
+    }
+    returned, booked = _decide_with_usage(monkeypatch, usage)
+    assert returned["cost_usd"] == pytest.approx(4.2252e-05)
+    assert booked["cost_usd"] == pytest.approx(4.2252e-05)
+
+
+def test_a_usage_block_without_cost_books_zero(monkeypatch):
+    returned, booked = _decide_with_usage(monkeypatch, {"input_tokens": 500, "output_tokens": 90})
+    assert returned["cost_usd"] == 0.0
+    assert booked["cost_usd"] == 0.0
+    assert systemone.usage_with_cost(None) == {"cost_usd": 0.0}
+    assert systemone.usage_with_cost({"cost": "not a number", "cost_details": None})["cost_usd"] == 0.0
+
+
 def test_disabled_without_key(monkeypatch):
     monkeypatch.delenv("RUNWARE_API_KEY", raising=False)
     assert systemone.enabled() is False
