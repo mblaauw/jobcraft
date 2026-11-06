@@ -12,6 +12,12 @@ services:
         aliases:
           - jobcraft
 
+  # This host has 11 GB and few other tenants. A scan over ~19k vacancies with the
+  # embedding child (1.8 GB) started beside it was killed at the shared-host 3 GB on
+  # 2026-11-06, which to the app looks like a restart and loses the hours it ran.
+  worker:
+    mem_limit: 5120m
+
 networks:
   proxy:
     external: true
