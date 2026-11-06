@@ -17,12 +17,14 @@
 {% set user = request.state.user if request.state is defined and request.state.user else None %}
 {% set path = request.url.path %}
 {% set is_admin = user and user.role == 'admin' %}
-{% set primary = [] if is_admin else [('/', 'Vandaag', 'house'), ('/jobs', 'Vacatures', 'briefcase-business'), ('/sollicitaties', 'Sollicitaties', 'list-checks')] + [('/profile', 'Profiel', 'user-round')] %}
-{% set secondary = [('/sources', 'Bronnen', 'rss'), ('/account', 'Account', 'settings-2')] if is_admin else [('/account', 'Account', 'settings-2')] %}
+{# Zoeken is for job seekers, Beheer for administrators; an owner who is both sees both. #}
+{% set seeker = user and (not is_admin or (account_has_profile(user) if account_has_profile is defined else false)) %}
+{% set primary = [('/', 'Vandaag', 'house'), ('/jobs', 'Vacatures', 'briefcase-business'), ('/sollicitaties', 'Sollicitaties', 'list-checks'), ('/profile', 'Profiel', 'user-round')] if seeker else [] %}
+{% set beheer = [('/admin', 'Systeem', 'activity'), ('/users', 'Gebruikers', 'users'), ('/sources', 'Bronnen', 'rss'), ('/admin/ai', 'AI', 'sparkles')] if is_admin else [] %}
+{% set secondary = beheer + [('/account', 'Account', 'settings-2')] %}
 {% set new_matches = new_match_count() if (primary and new_match_count is defined) else 0 %}
 {% set open_coach = open_coach_count() if (primary and open_coach_count is defined) else 0 %}
-{% if is_admin %}{% set secondary = secondary + [('/users', 'Gebruikers', 'users'), ('/admin', 'Systeem', 'activity')] %}{% endif %}
-{% set home_href = '/admin' if is_admin else '/' %}
+{% set home_href = '/' if primary else '/admin' %}
 {% set work = background_work() if (user and background_work is defined) else {'running': [], 'done': []} %}
 {% macro work_strip() -%}
 <div class="work-strip" data-work-strip{% if work.running %} data-work-running{% endif %} aria-live="polite">
@@ -44,12 +46,20 @@
           {% endfor %}
         </div>
         {% endif %}
+        {% if beheer %}
         <div class="rail-group">
-          <p class="rail-group-title">Instellingen</p>
+          <p class="rail-group-title">Beheer</p>
           <div class="rail-nav">
-            {% for href, label, icon in secondary %}
+            {% for href, label, icon in beheer %}
             <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}{{ label }}</a>
             {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        <div class="rail-group">
+          <p class="rail-group-title">Jij</p>
+          <div class="rail-nav">
+            <a href="/account" {% if is_active('/account') %}aria-current="page"{% endif %}>{{ ui.icon('settings-2') }}Account</a>
           </div>
         </div>
       </nav>

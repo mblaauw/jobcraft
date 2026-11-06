@@ -6,15 +6,16 @@
 <div class="page-head">
   <div>
     <h1>Account</h1>
-    <p class="lede">Je inloggegevens en het basis-CV waarop Jobcraft je sollicitaties bouwt.</p>
+    <p class="lede">{% if seeker %}Je inloggegevens en het basis-CV waarop Jobcraft je sollicitaties bouwt.{% else %}Je inloggegevens en de apparaten waarop je bent ingelogd.{% endif %}</p>
   </div>
 </div>
 
 {% if request.query_params.get('changed') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je wachtwoord is gewijzigd. Op je andere apparaten ben je uitgelogd.</span></p>{% endif %}
+{% if request.query_params.get('uitgelogd') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Op je andere apparaten ben je uitgelogd. Hier blijf je ingelogd.</span></p>{% endif %}
 {% if error %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ error }}</span></p>{% endif %}
 
 
-{% if account.id != 'legacy' %}
+{% if seeker and account.id != 'legacy' %}
 <section class="panel" aria-labelledby="cv-title">
   <h2 id="cv-title">Je cv</h2>
   {% if request.query_params.get('uploaded') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je cv is ingelezen en je profiel is bijgewerkt. Nieuwe sollicitaties gebruiken het meteen.</span></p>{% endif %}
@@ -37,9 +38,10 @@
       <div><dt>Rol</dt><dd>{{ 'Beheerder' if account.role == 'admin' else 'Gebruiker' }}</dd></div>
       <div><dt>Laatst ingelogd</dt><dd>{{ account.last_login_label }}</dd></div>
       <div><dt>Account sinds</dt><dd>{{ account.created_label }}</dd></div>
+      <div><dt>Ingelogd op</dt><dd>{{ devices }} {{ 'apparaat' if devices == 1 else 'apparaten' }}</dd></div>
     </dl>
     <div class="btn-row">
-      {% if account.role == 'admin' %}<a class="button" href="/users">{{ ui.icon('users') }}Gebruikers beheren</a>{% endif %}
+      {% if devices > 1 %}<form method="post" action="/account/uitloggen-overal" class="inline-form auth-inline-form">{{ csrf_input(request) }}<button class="button" type="submit">{{ ui.icon('log-out') }}Overal anders uitloggen</button></form>{% endif %}
       <form method="post" action="/logout" class="inline-form auth-inline-form">{{ csrf_input(request) }}<button class="button" type="submit">{{ ui.icon('log-out') }}Uitloggen</button></form>
     </div>
   </section>
@@ -57,6 +59,7 @@
   </section>
 </div>
 
+{% if seeker %}
 <section class="panel" aria-labelledby="digest-title">
   <h2 id="digest-title">Dagelijkse mail</h2>
   {% if digest.smtp %}
@@ -93,6 +96,7 @@
 </section>
 
 <p class="small"><a href="/sources">Kies zelf welke vacaturesites je wilt zien</a></p>
+{% endif %}
 <section class="panel" aria-labelledby="theme-title">
   <h2 id="theme-title">Weergave</h2>
   <div class="field">

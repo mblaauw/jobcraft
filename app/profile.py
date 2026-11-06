@@ -7,7 +7,7 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from . import config, store
+from . import config, store, tenancy
 from .preference_models import (  # noqa: F401
     HardFilters,
     HomeBase,
@@ -58,6 +58,20 @@ def ensure_dirs() -> None:
     config.profile_dir().mkdir(parents=True, exist_ok=True)
     config.user_path(HISTORY_DIR).mkdir(parents=True, exist_ok=True)
     config.user_path(DRAFTS_DIR).mkdir(parents=True, exist_ok=True)
+
+
+def seeker(user: dict) -> bool:
+    """Whether an account looks for work: the original workspace and every plain user do;
+    an administrator only when a profile exists. Scoped to that account, so it also works
+    before the request runs as them (the redirect after sign-in)."""
+    role = dict(user).get("role", "")  # a sqlite row or a plain dict
+    if user["id"] == tenancy.LEGACY_ID or role != "admin":
+        return True
+    try:
+        with tenancy.scope({"id": user["id"], "username": user["username"], "role": role}):
+            return profile_exists()
+    except Exception:
+        return False
 
 
 def profile_exists() -> bool:

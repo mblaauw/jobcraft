@@ -91,6 +91,7 @@ USER = {
     ("GET", "/jobs/{job_id}/documents/{document_id}/bewerken"),
     ("POST", "/jobs/{job_id}/documents/{document_id}/bewerken"),
     ("POST", "/account/export"),
+    ("POST", "/account/uitloggen-overal"),
     ("POST", "/account/verwijderen"),
     ("POST", "/account/dagmail"),
     ("GET", "/jobs"),
