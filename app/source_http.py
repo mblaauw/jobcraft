@@ -71,7 +71,7 @@ class PoliteClient:
                 self.sleep(max(0, previous + delay - self.clock()))
             _last_request[key] = self.clock()
 
-    def _request(self, url: str, *, headers=None, delay=None) -> httpx.Response:
+    def _request(self, url: str, *, headers=None, delay=None, payload=None) -> httpx.Response:
         origin = str(httpx.URL(url).copy_with(path="/", query=None, fragment=None)).rstrip("/")
         for attempt in range(self.retries + 1):
             self._wait(origin, self.delay if delay is None else delay)
@@ -79,7 +79,10 @@ class PoliteClient:
             outgoing = httpx.Headers(headers or {})
             outgoing["User-Agent"] = USER_AGENT
             try:
-                response = self.client.get(url, headers=outgoing, follow_redirects=False)
+                if payload is None:
+                    response = self.client.get(url, headers=outgoing, follow_redirects=False)
+                else:
+                    response = self.client.post(url, headers=outgoing, json=payload, follow_redirects=False)
             except httpx.RequestError:
                 if attempt == self.retries:
                     raise
@@ -172,6 +175,16 @@ class PoliteClient:
             self.cache_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True
         )[64:]:
             path.unlink(missing_ok=True)
+
+    def post_json(self, url: str, payload: dict) -> httpx.Response:
+        """A public JSON search endpoint: same robots, pacing and retries, no cache or redirects."""
+        parsed = httpx.URL(url)
+        if parsed.scheme != "https" or parsed.userinfo:
+            raise ValueError("Only public HTTPS source URLs are supported")
+        policy = self._robots(url)
+        if not policy.can_fetch(USER_AGENT, url):
+            raise httpx.RequestError("Robots policy disallows this source URL", request=httpx.Request("POST", url))
+        return self._request(url, delay=max(self.delay, policy.crawl_delay(USER_AGENT) or 0), payload=payload)
 
     def get(self, url: str, *, params=None, headers=None) -> httpx.Response:
         target = str(httpx.URL(url, params=params)) if params is not None else str(httpx.URL(url))

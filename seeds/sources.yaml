@@ -624,3 +624,15 @@ sources:
     per_page: 200
     enabled: true
     notes: "Recon 2026-11-06: ~120 detacheringsvacatures bij overheid en onderwijs; geen JSON-LD, plaats (soms een provincie) in de titel. Disclaimer: geen kopieerbepaling gevonden."
+
+  - id: eures
+    name: EURES (werk.nl en andere vacatures in Nederland)
+    kind: eures-json
+    revision: 2
+    location_codes: [nl]
+    period: LAST_THREE_DAYS
+    per_page: 50
+    pages: 20
+    detail_cap: 300
+    enabled: true
+    notes: "Recon 2026-11-06: ~300.000 vacatures in Nederland (vooral werk.nl/UWV), ~17.000 nieuwe per dag. Zoek-API geeft de nieuwste; per nieuwe vacature het detail (volledige tekst, plaats, eigen pagina van de werkgever). Staat die eigen pagina al via een andere bron binnen, dan wordt hij overgeslagen. robots.txt: crawl-delay 10, dus hooguit ~300 nieuwe per ronde (~55 minuten). Voorwaarden: geen screen scraping of geautomatiseerd ophalen; de API is voor EURES-partners. PoC, afspraak nodig."

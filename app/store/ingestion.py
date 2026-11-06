@@ -19,19 +19,23 @@ def record_detail_fetch(url: str) -> None:
         )
 
 
-def touch_recent_detail(url: str, max_age_seconds: int = 3 * 86400) -> bool:
-    """Touch known rich jobs without extending their last real detail-fetch time."""
+def fetched_within(url: str, max_age_seconds: int) -> bool:
+    """Whether this page was read within the given time, whatever came of it."""
     key = "detail_fetched:" + hashlib.sha256(url.encode()).hexdigest()
     with connect() as con:
         stamp = con.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
-        if stamp is None:
-            return False
-        try:
-            age = (datetime.now(UTC) - datetime.fromisoformat(stamp[0])).total_seconds()
-        except (ValueError, TypeError):
-            return False
-        if not 0 <= age < max_age_seconds:
-            return False
+    try:
+        age = (datetime.now(UTC) - datetime.fromisoformat(stamp[0])).total_seconds() if stamp else -1
+    except (ValueError, TypeError):
+        return False
+    return 0 <= age < max_age_seconds
+
+
+def touch_recent_detail(url: str, max_age_seconds: int = 3 * 86400) -> bool:
+    """Touch known rich jobs without extending their last real detail-fetch time."""
+    if not fetched_within(url, max_age_seconds):
+        return False
+    with connect() as con:
         cursor = con.execute(
             "UPDATE jobs SET last_seen=? WHERE url=? AND description IS NOT NULL AND TRIM(description)<>''",
             (now(), url),
@@ -46,6 +50,18 @@ def source_urls_seen_longest_ago(source_id: str, limit: int) -> list[str]:
             "SELECT url FROM jobs WHERE source_id=? ORDER BY last_seen ASC LIMIT ?", (source_id, limit)
         ).fetchall()
     return [row["url"] for row in rows]
+
+
+def known_job_urls(urls: list[str]) -> set[str]:
+    """Which of these vacancy URLs another source already brought in."""
+    urls = [url for url in urls if url]
+    if not urls:
+        return set()
+    with connect() as con:
+        rows = con.execute(
+            f"SELECT url FROM jobs WHERE url IN ({','.join('?' for _ in urls)})", urls
+        ).fetchall()
+    return {row["url"] for row in rows}
 
 
 def upsert_job(job: dict) -> tuple[int, bool]:
