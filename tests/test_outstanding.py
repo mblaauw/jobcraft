@@ -93,6 +93,31 @@ def test_one_line_summary_gives_way_to_the_page_text(client, monkeypatch):  # no
     assert row["company"] == "Rijk"
 
 
+def test_a_plain_text_address_or_the_source_default_gives_the_place(client, monkeypatch):  # noqa: F811
+    monkeypatch.setattr("app.adapters.jsonld.time.sleep", lambda _: None)
+    text = "Je begeleidt collega's op je eigen locatie. Je werkt samen met een collega. " * 10
+
+    def page(address):
+        ld = {"@type": "JobPosting", "title": "Verpleegkundige", "description": text}
+        if address:
+            ld["jobLocation"] = {"@type": "Place", "address": address}
+        return f'<html><script type="application/ld+json">{json.dumps(ld)}</script><body></body></html>'
+
+    client_pages = Pages(
+        {
+            "https://z.test/sitemap.xml": "<urlset><loc>https://z.test/vacatures/1</loc><loc>https://z.test/vacatures/2</loc></urlset>",
+            "https://z.test/vacatures/1": page("Wognum"),
+            "https://z.test/vacatures/2": page(None),
+        }
+    )
+    store.sync_sources([{"id": "z", "kind": "sitemap-jsonld"}])
+    entry, summary = _entry()
+    _scan_sitemap_jsonld(client_pages, {"id": "z", "sitemap_url": "https://z.test/sitemap.xml", "default_location": "Hoorn"}, entry, summary)
+    with store.connect() as con:
+        places = {row["url"][-1]: row["location"] for row in con.execute("SELECT url, location FROM jobs WHERE source_id='z'")}
+    assert places == {"1": "Wognum", "2": "Hoorn"}  # never the village Een from "met een collega"
+
+
 def test_rich_structured_text_is_kept(client, monkeypatch):  # noqa: F811
     from app.adapters.common import best_description
 
