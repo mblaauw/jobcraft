@@ -81,6 +81,7 @@ def test_route_counts_cover_every_outcome(client, monkeypatch):  # noqa: F811
     add("Klaar", 85, UNSURE, fresh=True)
     add("Weg", 85, UNSURE, vote=-1)
     assert ranking.route_counts(DIGEST) == {"excluded": 1, "verdict": 1, "wait": 1, "act": 1, "escalate": 1}
+    assert ranking.top_wait() == {"waiting": 1, "of": 4}  # the excluded one is not in anyone's top
     store.meta_set("match_summary", json.dumps({"matched": 1, "signals": 0, "sampled": 1, "routes": ranking.route_counts(DIGEST)}))
     page = client.get("/jobs").text
     assert "waarvan 1 als steekproef" in page

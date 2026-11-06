@@ -215,11 +215,21 @@ def rerank_all(
     return len(scores)
 
 
+TOP_OF_LIST = 200  # the vacancies a person actually scrolls through
+
+
 def _remember_routes(digest: str, decided: list) -> dict[str, int]:
     """Queue depth and route counts from one routed pass, cached until the digest changes."""
     counts = dict.fromkeys(OUTCOMES, 0)
     for decision, _, _ in decided:
         counts[decision.outcome] += 1
+    # How much of the top still waits for Jev: new vacancies land there with an optimistic
+    # rank, so an administrator should see when the quick assessment is not keeping up.
+    top = _by_rank([(rank, decision) for decision, rank, _ in decided if decision.outcome != "excluded"])[:TOP_OF_LIST]
+    store.meta_set(
+        "top_wait",
+        json.dumps({"waiting": sum(1 for decision in top if decision.outcome == "wait"), "of": len(top)}),
+    )
     # Only changes are stored, so the history says when and why a vacancy moved route.
     store.record_routes({job["id"]: f"{decision.outcome}:{decision.code}" for decision, _, job in decided})
     store.meta_set("queue_depth", str(counts["escalate"]))
@@ -339,6 +349,15 @@ def route_counts(digest: str) -> dict[str, int]:
         except ValueError:
             pass
     return _remember_routes(digest, routed(digest))
+
+
+def top_wait() -> dict | None:
+    """Of the best-ranked vacancies, how many still wait for a quick assessment; None before any rerank."""
+    try:
+        gap = json.loads(store.meta_get("top_wait") or "")
+    except ValueError:
+        return None
+    return gap if isinstance(gap, dict) and "waiting" in gap and "of" in gap else None
 
 
 def queue_depth(digest: str) -> int:
