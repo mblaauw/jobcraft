@@ -39,6 +39,15 @@ def touch_recent_detail(url: str, max_age_seconds: int = 3 * 86400) -> bool:
         return bool(cursor.rowcount)
 
 
+def source_urls_seen_longest_ago(source_id: str, limit: int) -> list[str]:
+    """A source's vacancies that have gone longest without being seen, oldest first."""
+    with connect() as con:
+        rows = con.execute(
+            "SELECT url FROM jobs WHERE source_id=? ORDER BY last_seen ASC LIMIT ?", (source_id, limit)
+        ).fetchall()
+    return [row["url"] for row in rows]
+
+
 def upsert_job(job: dict) -> tuple[int, bool]:
     stamp = now()
     job = {**job, "posted_at": normalize_posted_at(job.get("posted_at"))}

@@ -34,6 +34,7 @@ ALIASES = {
     "haarlemmermeer": "hoofddorp",
     "westland": "naaldwijk",
     "velsen": "ijmuiden",
+    "the hague": "den haag",
 }
 
 

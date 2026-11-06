@@ -48,7 +48,7 @@
 
 {% block content %}
 {% set admin = request.state.user.role == 'admin' %}
-{% set kind_labels = {"wp-posts": "WordPress", "wp-job-listings": "WordPress", "html-fondsen": "HTML (fondsen)", "html-listing": "HTML-lijst", "sitemap-jsonld": "Sitemap + JSON-LD", "rss": "RSS-feed", "exenzo-json": "Exenzo-API", "defensie-cms": "Defensie feed + API", "hn-resource": "Overheid component-API", "local-json": "JSON-import", "manual": "Handmatig", "browser-import": "Browser-import", "getro-html": "Getro (gepland)"} %}
+{% set kind_labels = {"wp-posts": "WordPress", "wp-job-listings": "WordPress", "html-fondsen": "HTML (fondsen)", "html-listing": "HTML-lijst", "sitemap-jsonld": "Sitemap + JSON-LD", "rss": "RSS-feed", "exenzo-json": "Exenzo-API", "defensie-cms": "Defensie feed + API", "hn-resource": "Overheid component-API", "local-json": "JSON-import", "manual": "Handmatig", "browser-import": "Browser-import", "getro-html": "Getro-bord"} %}
 {% set active = sources | selectattr('enabled') | list %}
 {% set inactive = sources | rejectattr('enabled') | list %}
 <div class="page-head">

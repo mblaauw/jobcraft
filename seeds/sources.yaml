@@ -156,8 +156,12 @@ sources:
     kind: getro-html
     base_url: https://impactjobs.doen.nl
     path: /jobs
-    enabled: false
-    notes: "Getro-board: vacaturedata zit in de Next.js-payload; aparte adapter nodig. Nog niet gebouwd."
+    detail_cap: 40
+    recheck: 60
+    delay: 1.0
+    revision: 2
+    enabled: true
+    notes: "Getro-board (141 impactvacatures op 2026-11-05). De zoek-API van Getro (api.getro.com) verbiedt alle crawlers in robots.txt, dus alleen de eigen pagina's: /jobs geeft de 20 nieuwste in __NEXT_DATA__, elke vacaturepagina de volledige vacature (tekst, plaatsen, status). Wat van de lijst valt, wordt via de eigen pagina opnieuw gelezen zolang het actief is. robots.txt van het bord: geen regels voor *; 1 seconde tussen pagina's, hooguit 40 per ronde."
 
   - id: ivn
     name: IVN Natuureducatie
