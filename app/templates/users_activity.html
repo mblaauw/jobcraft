@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}Inlogactiviteit · Jobcraft{% endblock %}
+{% block title %}Inlogactiviteit · Gebruikers · Jobcraft{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
-    <p class="small"><a href="/users">Terug naar Gebruikers</a></p>
-    <h1>Inlogactiviteit</h1>
+    <h1>Gebruikers</h1>
     <p class="lede">Wie wanneer inlogde, vanaf welk adres en met welke browser, en wat beheerders met accounts deden. Niets over wat iemand in Jobcraft doet. Regels verdwijnen na {{ retention_days }} dagen.</p>
+    {% set users_tab = 'activiteit' %}{% include '_users_tabs.html' %}
   </div>
 </div>
 

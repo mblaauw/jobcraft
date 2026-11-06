@@ -104,6 +104,8 @@
 
 /* ---------------------------------------------------------------- admin */
 
+.route-group { margin-top: 18px; }
+.route-group h3 { margin: 0; font-size: var(--fs-xs); color: var(--ink-2); text-transform: uppercase; letter-spacing: .04em; }
 .route-list { display: grid; margin-top: 8px; }
 .route-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .route-what { display: grid; }

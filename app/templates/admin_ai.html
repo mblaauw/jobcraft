@@ -14,15 +14,20 @@
   <p class="small muted">Leeg betekent de standaard. De keuze geldt meteen voor nieuwe aanroepen, ook in de worker.</p>
   <form method="post" action="/admin/ai/modellen" id="routes-form" data-pending-form>{% include '_csrf.html' %}</form>
   <datalist id="known-models">{% for name in available %}<option value="{{ name }}"></option>{% endfor %}</datalist>
-  <div class="route-list">
-    {% for role in roles %}
-    <div class="route-row">
-      <div class="route-what"><label for="model-{{ role.id }}"><strong>{{ role.label }}</strong></label><span class="small muted">{{ role.about }}</span></div>
-      <input class="input" id="model-{{ role.id }}" form="routes-form" name="model_{{ role.id }}" value="{{ role.chosen }}" placeholder="{{ role.default }}" list="known-models" autocomplete="off" spellcheck="false">
-      <form method="post" action="/admin/ai/test" data-pending-form>{% include '_csrf.html' %}<input type="hidden" name="role" value="{{ role.id }}"><button class="button small" type="submit">Test</button></form>
+  {% for stage in stages %}
+  <div class="route-group">
+    <h3>{{ stage.label }}</h3>
+    <div class="route-list">
+      {% for role in stage.roles %}
+      <div class="route-row">
+        <div class="route-what"><label for="model-{{ role.id }}"><strong>{{ role.label }}</strong></label><span class="small muted">{{ role.about }}</span></div>
+        <input class="input" id="model-{{ role.id }}" form="routes-form" name="model_{{ role.id }}" value="{{ role.chosen }}" placeholder="{{ role.default }}" list="known-models" autocomplete="off" spellcheck="false">
+        <form method="post" action="/admin/ai/test" data-pending-form>{% include '_csrf.html' %}<input type="hidden" name="role" value="{{ role.id }}"><button class="button quiet small" type="submit" aria-label="Test {{ role.label | lower }}">Test</button></form>
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
+  {% endfor %}
   <div class="btn-row"><button class="button primary" type="submit" form="routes-form">Modelkeuze opslaan</button></div>
   <p class="small muted">Test werkt met de opgeslagen keuze en kost één heel kleine aanroep. De snelle beoordeling (Jev) loopt via Runware en stel je in met <code>SYSTEMONE_MODEL</code>.</p>
 </section>

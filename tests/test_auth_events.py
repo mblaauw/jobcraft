@@ -42,8 +42,8 @@ def test_admin_actions_name_the_administrator(env):  # noqa: F811
     login(env.client, "admin", env.password("admin"))
     target = user_id(env, "test-user")
     page = env.client.get("/users").text
-    env.client.post(f"/users/{target}/reset-password", data={"_csrf": csrf_of(page)}, follow_redirects=False)
-    env.client.post(f"/users/{target}/deactivate", data={"_csrf": csrf_of(page)}, follow_redirects=False)
+    env.client.post(f"/users/{target}/reset-password", data={"_csrf": csrf_of(page), "bevestig": "1"}, follow_redirects=False)
+    env.client.post(f"/users/{target}/deactivate", data={"_csrf": csrf_of(page), "bevestig": "1"}, follow_redirects=False)
     env.client.post(f"/users/{target}/activate", data={"_csrf": csrf_of(page)}, follow_redirects=False)
     rows = events(env, user_id=target)
     assert [row["kind"] for row in rows] == ["password_reset", "deactivated", "activated"]
@@ -146,7 +146,7 @@ def test_an_inactive_account_and_a_rate_limited_attempt_are_failures_too(env, mo
     admin = env.other_client()
     login(admin, "admin", env.password("admin"))
     target = user_id(env, "test-user")
-    admin.post(f"/users/{target}/deactivate", data={"_csrf": csrf_of(admin.get("/users").text)}, follow_redirects=False)
+    admin.post(f"/users/{target}/deactivate", data={"_csrf": csrf_of(admin.get("/users").text), "bevestig": "1"}, follow_redirects=False)
     login(env.client, "test-user", "wat-dan-ook")
     assert events(env, kind="login_failed")[-1]["user_id"] == target  # known account, still a failure
     monkeypatch.setattr(auth_routes, "_rate_limit_wait", lambda key: 30.0)

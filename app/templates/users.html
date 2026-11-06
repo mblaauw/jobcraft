@@ -6,12 +6,26 @@
   <div>
     <h1>Gebruikers</h1>
     <p class="lede">Wie toegang heeft tot deze werkruimte. Je ziet alleen accountgegevens, nooit de profielen, gesprekken of documenten van anderen.</p>
+    {% set users_tab = 'accounts' %}{% include '_users_tabs.html' %}
   </div>
   <a class="button primary page-actions" href="#nieuw">{{ ui.icon('plus') }}Account toevoegen</a>
 </div>
 
 {% if notice %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>{{ notice }}</span></p>{% endif %}
 {% if error %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ error }}</span></p>{% endif %}
+
+{% if confirm %}
+<section class="panel confirm-panel" aria-labelledby="confirm-title" tabindex="-1" autofocus>
+  <h2 id="confirm-title">{{ confirm.title }}</h2>
+  <p>{{ confirm.text }}</p>
+  <form method="post" action="/users/{{ confirm.id }}/{{ confirm.action }}" class="btn-row">
+    {{ csrf_input(request) }}
+    <input type="hidden" name="bevestig" value="1">
+    <button class="button {{ 'danger' if confirm.danger else 'primary' }}" type="submit">{{ confirm.button }}</button>
+    <a class="button" href="/users">Annuleren</a>
+  </form>
+</section>
+{% endif %}
 
 {% if new_password %}
 <section class="panel" aria-labelledby="one-time-password">
@@ -33,32 +47,38 @@
 {% endif %}
 
 <section class="panel panel-flush" aria-labelledby="accounts-title">
-  <div class="panel-head padded"><h2 id="accounts-title">Accounts</h2><span class="small subtle">{{ users | length }} accounts, {{ active_admins }} actieve beheerder(s) · <a href="/users/activiteit">Inlogactiviteit</a></span></div>
+  <div class="panel-head padded"><h2 id="accounts-title">Accounts</h2><span class="small subtle">{{ users | length }} accounts, {{ active_admins }} actieve beheerder(s)</span></div>
   <div class="table-scroll" role="region" aria-label="Accounts" tabindex="0">
-    <table class="table">
-      <thead><tr><th>Gebruiker</th><th>Rol</th><th>Status</th><th>Laatst ingelogd</th><th><span class="visually-hidden">Acties</span></th></tr></thead>
+    <table class="table cards">
+      <thead><tr><th>Gebruiker</th><th>Rol</th><th>Status</th><th>Laatst ingelogd</th><th>Apparaten</th><th><span class="visually-hidden">Acties</span></th></tr></thead>
       <tbody>
         {% for user in users %}
+        {% set self = user.id == current_user_id %}
         <tr>
-          <td><strong>{{ user.display_name }}</strong>{% if user.id == current_user_id %} <span class="chip chip-lime">jij</span>{% endif %}<br><span class="subtle small">{{ user.username }}</span></td>
-          <td class="nowrap">{{ 'Beheerder' if user.role == 'admin' else 'Gebruiker' }}</td>
-          <td>{% if user.active %}<span class="chip chip-ok">actief</span>{% else %}<span class="chip chip-warn">gedeactiveerd</span>{% endif %}{% if user.sessions %}<br><span class="small subtle">{{ user.sessions }} sessie(s)</span>{% endif %}</td>
-          <td class="small">{{ user.last_login_label }}{% if user.last_ip %}<br><span class="subtle">vanaf <code>{{ user.last_ip }}</code>, {{ user.last_browser }}</span>{% endif %}{% if user.failed_today %}<br><span class="warn-text">{{ user.failed_today }} mislukte poging{{ 'en' if user.failed_today != 1 }} in 24 uur</span>{% endif %}<br><span class="subtle">sinds {{ user.created_label }}</span></td>
-          <td>
-            <div class="user-actions">
-              <form method="post" action="/users/{{ user.id }}/reset-password">{{ csrf_input(request) }}<button class="button small" type="submit">Nieuw wachtwoord</button></form>
-              {% if user.active %}
-                {% if user.id == current_user_id %}
-                  <span class="small subtle">Je kunt je eigen account niet deactiveren.</span>
-                {% elif user.role == 'admin' and active_admins <= 1 %}
-                  <span class="small subtle">Laatste actieve beheerder.</span>
+          <td class="card-title"><strong>{{ user.display_name }}</strong>{% if self %} <span class="chip chip-lime">jij</span>{% endif %}<br><span class="subtle small">{{ user.username }} · sinds {{ user.created_label }}</span></td>
+          <td class="nowrap" data-label="Rol">{{ 'Beheerder' if user.role == 'admin' else 'Gebruiker' }}</td>
+          <td data-label="Status"><span>{% if user.active %}<span class="chip chip-ok">actief</span>{% else %}<span class="chip chip-warn">gedeactiveerd</span>{% endif %}{% if user.failed_today %}<br><span class="small warn-text">{{ user.failed_today }} mislukte poging{{ 'en' if user.failed_today != 1 }} in 24 uur</span>{% endif %}</span></td>
+          <td class="small" data-label="Laatst ingelogd"><span>{{ user.last_login_label }}{% if user.last_ip %}<br><span class="subtle">vanaf <code>{{ user.last_ip }}</code>, {{ user.last_browser }}</span>{% endif %}</span></td>
+          <td class="small" data-label="Apparaten"><span>{% if user.sessions %}ingelogd op {{ user.sessions }} apparaat{{ 'en' if user.sessions != 1 }}<br><span class="subtle">{{ user.browsers | join(', ') }}</span>{% else %}<span class="subtle">nu nergens ingelogd</span>{% endif %}</span></td>
+          <td class="card-actions">
+            <details class="row-menu">
+              <summary class="button small" aria-label="Acties voor {{ user.display_name }}">Acties{{ ui.icon('chevron-down', 'chev') }}</summary>
+              <div class="row-menu-pop">
+                <form method="post" action="/users/{{ user.id }}/reset-password">{{ csrf_input(request) }}<button type="submit">Nieuw wachtwoord</button></form>
+                {% if user.sessions and not self %}<form method="post" action="/users/{{ user.id }}/uitloggen">{{ csrf_input(request) }}<button type="submit">Overal uitloggen</button></form>{% endif %}
+                {% if user.active %}
+                  {% if self %}
+                    <span class="row-menu-note">Je kunt je eigen account niet deactiveren.</span>
+                  {% elif user.role == 'admin' and active_admins <= 1 %}
+                    <span class="row-menu-note">Laatste actieve beheerder.</span>
+                  {% else %}
+                    <form method="post" action="/users/{{ user.id }}/deactivate">{{ csrf_input(request) }}<button class="danger" type="submit">Deactiveren</button></form>
+                  {% endif %}
                 {% else %}
-                  <form method="post" action="/users/{{ user.id }}/deactivate">{{ csrf_input(request) }}<button class="button small danger" type="submit">Deactiveren</button></form>
+                  <form method="post" action="/users/{{ user.id }}/activate">{{ csrf_input(request) }}<button type="submit">Activeren</button></form>
                 {% endif %}
-              {% else %}
-                <form method="post" action="/users/{{ user.id }}/activate">{{ csrf_input(request) }}<button class="button small" type="submit">Activeren</button></form>
-              {% endif %}
-            </div>
+              </div>
+            </details>
           </td>
         </tr>
         {% endfor %}

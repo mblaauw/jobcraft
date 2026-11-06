@@ -50,6 +50,7 @@ from .users import (
 from .views import (
     _account_response,
     _activity_response,
+    _confirmation,
     _login_response,
     _password_problem,
     _start_anonymous_session,
@@ -280,8 +281,15 @@ def users_create(
 
 
 
+def _ask_first(request: Request, admin: dict, action: str, target, confirmed: str):
+    """An action that puts someone out is asked once, naming the person; the answer posts again with bevestig=1."""
+    if confirmed == "1":
+        return None
+    return _users_response(request, user=admin, confirm=_confirmation(action, target))
+
+
 @router.post("/users/{user_id}/deactivate", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
-def users_deactivate(request: Request, user_id: str):
+def users_deactivate(request: Request, user_id: str, bevestig: str = Form("")):
     admin = require_admin(request)
     target = _get_user_by_id(user_id)
     if target is None:
@@ -290,6 +298,8 @@ def users_deactivate(request: Request, user_id: str):
         return _users_response(
             request, user=admin, error="Je kunt je eigen account niet deactiveren.", status_code=400
         )
+    if asked := _ask_first(request, admin, "deactivate", target, bevestig):
+        return asked
     outcome = _deactivate_without_losing_last_admin(target["id"])
     if outcome == "last_admin":
         return _users_response(
@@ -320,12 +330,32 @@ def users_activate(request: Request, user_id: str):
 
 
 
-@router.post("/users/{user_id}/reset-password", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
-def users_reset_password(request: Request, user_id: str):
+@router.post("/users/{user_id}/uitloggen", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
+def users_sign_out_everywhere(request: Request, user_id: str, bevestig: str = Form("")):
+    """Every device of that account signs out; the password stays. For a lost phone, not a lost password."""
     admin = require_admin(request)
     target = _get_user_by_id(user_id)
     if target is None:
         raise HTTPException(status_code=404, detail="Onbekende gebruiker.")
+    if asked := _ask_first(request, admin, "uitloggen", target, bevestig):
+        return asked
+    if target["id"] == admin["id"]:  # the device in hand stays, as on the Account page
+        revoked = _revoke_other_sessions(target["id"], getattr(request.state, "auth_session_id", None))
+    else:
+        revoked = _revoke_sessions_for(target["id"])
+    log.info("sessions revoked by admin for user id=%s, %d sessions", target["id"], revoked)
+    activity.record(request, "sessions_revoked", user_id=target["id"], actor_id=admin["id"])
+    return _users_response(request, user=admin, notice=f"{target['username']} is overal uitgelogd.")
+
+
+@router.post("/users/{user_id}/reset-password", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
+def users_reset_password(request: Request, user_id: str, bevestig: str = Form("")):
+    admin = require_admin(request)
+    target = _get_user_by_id(user_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail="Onbekende gebruiker.")
+    if asked := _ask_first(request, admin, "reset-password", target, bevestig):
+        return asked
     password = secrets.token_urlsafe(18)
     _set_password(target["id"], password)
     revoked = _revoke_sessions_for(target["id"])

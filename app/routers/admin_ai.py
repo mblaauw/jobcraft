@@ -37,6 +37,10 @@ def ai_page(request: Request):
         owner = ""
     chosen = model_routes.routes()
     overview = store.usage_overview()
+    roles = {
+        role: {"id": role, "label": label, "about": about, "chosen": chosen.get(role, ""), "default": config.role_model(role)}
+        for role, label, about in model_routes.ROLES
+    }
     return templates.TemplateResponse(
         request,
         "admin_ai.html",
@@ -45,16 +49,7 @@ def ai_page(request: Request):
             # Many gateways report no price: then dollars say nothing and tokens are the brake.
             "priced": any(row["cost"] for row in overview["kinds"]),
             "token_limit": int(os.environ.get("AI_DAILY_TOKEN_LIMIT", "500000") or 0),
-            "roles": [
-                {
-                    "id": role,
-                    "label": label,
-                    "about": about,
-                    "chosen": chosen.get(role, ""),
-                    "default": config.role_model(role),
-                }
-                for role, label, about in model_routes.ROLES
-            ],
+            "stages": [{"label": label, "roles": [roles[role] for role in ids]} for label, ids in model_routes.STAGES],
             "available": model_routes.available_models(),
             "calls": ai_log.recent(150, agent=agent, owner=owner, model=model),
             "labels": {role: label for role, label, _about in model_routes.ROLES} | {"systemone": "Snelle beoordeling (Jev)"},
@@ -113,7 +108,7 @@ def ai_call(request: Request, owner: str, day: str, offset: int):
         {
             "call": readable(call, tenancy.user_id()),
             "own": owner == tenancy.user_id(),
-            "file": str(ai_log._directory(owner) / f"{day}.jsonl"),
+            "day": day,
             "account": _account_names().get(owner, owner),
             "label": {role: label for role, label, _about in model_routes.ROLES}.get(call.get("agent"), call.get("agent")),
         },

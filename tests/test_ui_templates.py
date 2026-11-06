@@ -277,3 +277,27 @@ def test_admins_see_why_a_source_failed_and_job_seekers_do_not():
     assert "2 rondes achter elkaar mislukt" in admin.get_text()
     assert admin.select_one(".source-reason").get_text() == "RuntimeError: Niet bereikbaar: board-x"
     assert "Niet bereikbaar" not in render("sources.html", "/sources", role="user", **context).get_text()
+
+
+def test_a_healthy_source_shows_one_line_and_keeps_its_detail_behind_the_row():
+    source = {"id": "bron-a", "name": "Bron A", "enabled": True, "last_status": "ok", "last_scan_at": "2026-11-05T06:30:00+00:00", "notes": "Leest de feed.", "kind": "rss"}
+    context = {
+        "sources": [source],
+        "user_sources": {"bron-a": {"selected": True, "reason": ""}},
+        "jobs_by_source": {"bron-a": 12},
+        "full_text": {"bron-a": 80},
+        "health": {"bron-a": {"failures": 0, "items": 12, "reason": "", "history": [10, 11, 12], "skipped": 3, "dropped": False}},
+        "scan_status": "idle",
+        "summary": None,
+        "counts": {"total": 12},
+    }
+    admin = render("sources.html", "/sources", **context)
+    row = admin.select_one(".source-row")
+    visible = row.select_one("ul.meta").get_text(" ", strip=True)
+    assert visible == "12 vacatures opgehaald 5 nov 06:30" or visible.startswith("12 vacatures opgehaald")
+    assert "volledige tekst" not in visible and "laatste rondes" not in visible
+    detail = row.select_one("details").get_text(" ", strip=True)
+    assert detail.startswith("Details")
+    assert "RSS-feed: Leest de feed." in detail and "80% met volledige tekst" in detail
+    assert "laatste rondes: 10, 11, 12" in detail and "3 pagina's overgeslagen" in detail
+    assert "Details" not in render("sources.html", "/sources", role="user", **context).get_text()

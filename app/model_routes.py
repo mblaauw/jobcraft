@@ -30,6 +30,12 @@ ROLES = (
     ("writer", "Profiel samenvatten", "Maakt het profiel uit gesprekken."),
 )
 _ROLE_IDS = {role[0] for role in ROLES}
+# The same tasks in the order a person meets them: reading vacancies, writing an application, the profile.
+STAGES = (
+    ("Vacatures lezen en beoordelen", ("vacancy_reader", "matcher", "job_gap", "job_prep")),
+    ("Sollicitatie schrijven", ("doc_researcher", "doc_strategist", "cv_writer", "letter_writer", "doc_critic")),
+    ("Profiel", ("cv_reader", "onboarding", "interviewer", "writer", "career_coach", "cv_coach")),
+)
 _MODEL_ID = re.compile(r"[\w./:@-]{1,120}")
 _CACHE_SECONDS = 600
 _available: tuple[float, list[str]] = (0.0, [])

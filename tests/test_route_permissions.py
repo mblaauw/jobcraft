@@ -38,6 +38,7 @@ ADMIN = {
     ("POST", "/users/{user_id}/deactivate"),
     ("POST", "/users/{user_id}/activate"),
     ("POST", "/users/{user_id}/reset-password"),
+    ("POST", "/users/{user_id}/uitloggen"),
     ("POST", "/sources/scan"),
     ("POST", "/sources/schedule"),
     ("POST", "/sources/{source_id}/toggle"),

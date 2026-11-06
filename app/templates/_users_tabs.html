@@ -1,0 +1,5 @@
+{# The two faces of Gebruikers: the accounts, and who signed in when. #}
+<nav class="status-tabs users-tabs" aria-label="Gebruikers">
+  <a href="/users"{% if users_tab == 'accounts' %} aria-current="page"{% endif %}>Accounts</a>
+  <a href="/users/activiteit"{% if users_tab == 'activiteit' %} aria-current="page"{% endif %}>Inlogactiviteit</a>
+</nav>
