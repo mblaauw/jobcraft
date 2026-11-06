@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
@@ -69,7 +70,7 @@ def test_fail_and_stale_recovery():
             "UPDATE tasks SET heartbeat_at='2000-01-01T00:00:00+00:00' WHERE id=?", (stale,)
         )
     assert tasks.recover_stale() == 1
-    assert tasks.latest("scan")["status"] == "error"
+    assert tasks.latest("scan")["status"] == "error"  # not queued again: its handler may still run
 
 
 def test_user_source_preferences_are_owner_scoped():
@@ -164,3 +165,52 @@ def test_concurrent_claim_obeys_per_owner_and_shared_scan_exclusion():
     assert len(claimed) == 3
     assert {row["owner"] for row in claimed} == {"a", "b", None}
     assert len({row["id"] for row in claimed}) == 3
+
+
+def test_an_interrupted_scan_goes_back_in_the_queue_once():
+    first = tasks.enqueue("scan", owner=None, dedupe_key="scan")
+    tasks.claim_next()
+    assert tasks.recover_interrupted() == 1
+    old = tasks.get(first)
+    assert old["status"] == "interrupted" and "opnieuw in de wachtrij" in old["error"]
+    again = tasks.latest("scan", key="scan")
+    assert again["id"] != first and again["status"] == "queued" and again["attempts"] == 1
+    assert tasks.enqueue("scan", owner=None, dedupe_key="scan") == again["id"]  # dedupes onto it
+    assert tasks.failure_kinds() == []  # an interruption is not a failure
+    tasks.claim_next()
+    assert tasks.recover_interrupted() == 1
+    second = tasks.get(again["id"])
+    assert second["status"] == "error" and "Probeer opnieuw" in second["error"]
+    assert tasks.latest("scan", key="scan")["id"] == again["id"]  # no third run on its own
+    assert [row["kind"] for row in tasks.failure_kinds()] == ["scan"]
+
+
+def test_a_match_round_keeps_owner_and_payload_and_other_work_is_not_requeued():
+    tasks.enqueue("match", owner="a", payload={"why": "scan"}, dedupe_key="match:a")
+    document = tasks.enqueue("document", owner="b", payload={"job_id": 1})
+    assert tasks.claim_next() and tasks.claim_next()
+    assert tasks.recover_interrupted() == 2
+    again = tasks.latest("match", owner="a", key="match:a")
+    assert again["status"] == "queued" and again["owner"] == "a"
+    assert json.loads(again["payload_json"]) == {"why": "scan"}
+    assert tasks.get(document, owner="b")["status"] == "error"
+    assert [row["kind"] for row in tasks.failure_kinds()] == ["document"]
+
+
+def test_a_handler_cut_off_by_a_restart_requeues_its_round(monkeypatch):
+    def cut_off(task):
+        raise tasks.Interrupted("De scan is onderbroken door een herstart.")
+
+    monkeypatch.setitem(tasks._HANDLERS, "scan", cut_off)
+    first = tasks.enqueue("scan", owner=None, dedupe_key="scan")
+    assert tasks.run_one() is True
+    assert tasks.get(first)["status"] == "interrupted"
+    assert tasks.latest("scan", key="scan")["status"] == "queued"
+    tasks._STOP.set()
+    tasks._WORKERS.append(threading.current_thread())  # as during a worker shutdown
+    try:
+        assert tasks.run_one() is False  # a round requeued at shutdown waits for the next start
+    finally:
+        tasks._STOP.clear()
+        tasks._WORKERS.clear()
+    assert tasks.latest("scan", key="scan")["status"] == "queued"

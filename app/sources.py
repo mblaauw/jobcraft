@@ -285,6 +285,6 @@ def scan(limit_per_source: int | None = None) -> dict:
             time.sleep(0.5)
     summary["finished_at"] = now_iso()
     if STOPPING.is_set():  # Sources that were cut off by a restart have not failed.
-        raise RuntimeError("De scan is onderbroken door een herstart.")
+        raise tasks.Interrupted("De scan is onderbroken door een herstart.")
     _record_health(summary)
     return summary

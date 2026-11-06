@@ -51,6 +51,9 @@ def _run_scan() -> dict:
             for owner in store.active_owners_with_profile():
                 tasks.enqueue("match", owner=owner, dedupe_key=f"match:{owner}")
         return summary
+    except tasks.Interrupted:  # not a failure: the round goes back in the queue once
+        store.meta_set("scan_status", "interrupted")
+        raise
     except Exception as exc:
         log.exception("scan failed")
         store.meta_set("scan_status", f"error: {exc}"[:400])
