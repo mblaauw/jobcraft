@@ -57,6 +57,8 @@ def jsonld_location(data: dict) -> tuple[str, float | None, float | None]:
     if not isinstance(location, dict):
         return "", None, None
     address = location.get("address") or {}
+    if isinstance(address, str):  # schema.org allows plain text: "address": "Wognum"
+        address = {"addressLocality": address.strip()}
     if not isinstance(address, dict):
         address = {}
     label = ", ".join(
@@ -110,6 +112,7 @@ def _scan_sitemap_jsonld(client, source, entry, summary, limit_per_source=None) 
         if not title:
             continue
         location, lat, lon = jsonld_location(data)
+        location = location or source.get("default_location", "")
         description = best_description(strip_html(data.get("description")), page.text)
         job = make_job(
             source["id"],

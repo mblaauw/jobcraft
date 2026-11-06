@@ -294,3 +294,250 @@ sources:
     per_page: 40
     enabled: false
     notes: "Recon 2026-11-01: robots staat toe, maar artikel 7 van de voorwaarden houdt rechten op teksten en databestanden voor. Niet aanzetten zonder toestemming van de site. Niet getest."
+
+  # Proof of concept (2026-11-06): the owner chose to add these boards for own use
+  # while agreements with the suppliers follow. Each note records the site's terms,
+  # so those talks have a list. robots.txt, crawl-delay and pacing still apply.
+
+  # Staffing agencies: large, mostly operational work; sitemap -> JobPosting JSON-LD.
+  - id: randstad
+    name: Randstad
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.randstad.nl
+    sitemap_url: https://www.randstad.nl/job-sitemap.xml
+    url_pattern: "/vacatures/[0-9]+/"
+    per_page: 3500
+    enabled: true
+    notes: "Recon 2026-11-06: ~2.900 vacatures, volledige JSON-LD met plaats en salaris. Voorwaarden: disclaimer verbiedt verveelvoudigen van de verzameling; gebruikersvoorwaarden verbieden vacatures zonder toestemming te herverkopen of aan derden te verstrekken. PoC, afspraak nodig."
+
+  - id: randstad-professional
+    name: Randstad Professional (vh. Yacht)
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.randstadprofessional.nl
+    sitemap_url: https://www.randstadprofessional.nl/job-sitemap.xml
+    url_pattern: "/vacatures/[0-9]+/"
+    per_page: 800
+    enabled: true
+    notes: "Recon 2026-11-06: ~550 hbo/wo-opdrachten en vacatures, JSON-LD met 3.000-5.000 tekens. Voorwaarden: zoals Randstad (databankrecht, geen verstrekking aan derden). PoC, afspraak nodig."
+
+  - id: tempo-team
+    name: Tempo-Team
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.tempo-team.nl
+    sitemap_url: https://www.tempo-team.nl/job-sitemap.xml
+    url_pattern: "/vacatures/[0-9]+/"
+    per_page: 3500
+    enabled: true
+    notes: "Recon 2026-11-06: ~2.900 vacatures, JSON-LD met plaats en salaris. Voorwaarden: verbieden vacatures zonder toestemming te herverkopen of te verstrekken; disclaimer verbiedt verveelvoudigen. PoC, afspraak nodig."
+
+  - id: unique
+    name: Unique
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.unique.nl
+    sitemap_url: https://www.unique.nl/sitemap.xml
+    child_pattern: vacature
+    url_pattern: "/vacature/[a-z0-9-]+-[0-9]+$"
+    per_page: 1000
+    enabled: true
+    notes: "Recon 2026-11-06: ~770 vacatures met JSON-LD. Voorwaarden (pdf 2021): opslaan, verzamelen en verveelvoudigen alleen met schriftelijke toestemming. PoC, afspraak nodig."
+
+  - id: manpower
+    name: Manpower
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.manpower.nl
+    sitemap_url: https://www.manpower.nl/sitemap.xml
+    url_pattern: "/nl/vacatures/[0-9]+/"
+    per_page: 1400
+    enabled: true
+    notes: "Recon 2026-11-06: ~1.220 vacatures (de Engelse /en/jobs-kopie wordt overgeslagen). JSON-LD heeft maar een korte samenvatting; de tekst komt van de pagina. Voorwaarden niet nagelezen. PoC."
+
+  - id: timing
+    name: Timing
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.timing.nl
+    sitemap_url: https://www.timing.nl/sitemap/vacature/sitemap.xml
+    url_pattern: "/vacature/"
+    per_page: 1700
+    enabled: true
+    notes: "Recon 2026-11-06: ~1.500 vacatures (vooral logistiek en productie), JSON-LD met plaats. Algemene voorwaarden: geen kopieerbepaling gevonden."
+
+  - id: brunel
+    name: Brunel
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.brunel.net
+    sitemap_url: https://www.brunel.net/nl-nl/sitemap-jobs.xml
+    url_pattern: "/nl-nl/jobs/"
+    per_page: 1100
+    enabled: true
+    notes: "Recon 2026-11-06: ~930 vacatures in de Nederlandse sitemap (techniek, IT, juridisch), JSON-LD; niet elke vacature heeft een plaats. Algemene voorwaarden (pdf) gaan over opdrachten, geen kopieerbepaling op de site gevonden."
+
+  - id: tmi
+    name: TMI (zorg)
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.tmi.nl
+    sitemap_url: https://www.tmi.nl/vacancy-sitemap.xml
+    url_pattern: "/vacatures/[a-z0-9-]+/$"
+    per_page: 700
+    enabled: true
+    notes: "Recon 2026-11-06: ~600 zorgvacatures met JSON-LD; robots vraagt crawl-delay 10, dus de eerste ronde duurt ongeveer 1,7 uur. Ook vacatures op de Caribische eilanden. Disclaimer: algemeen voorbehoud van intellectuele eigendom."
+
+  - id: harveynash
+    name: Harvey Nash
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.harveynash.nl
+    sitemap_url: https://www.harveynash.nl/sitemap.xml
+    url_pattern: "/vacatures/[0-9]+-"
+    per_page: 100
+    enabled: true
+    notes: "Recon 2026-11-06: ~40 IT- en projectvacatures met volledige JSON-LD. Geen voorwaarden op de site gevonden."
+
+  # Employers' own career sites: sitemap -> JobPosting JSON-LD.
+  - id: werkenbij-ns
+    name: NS
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.werkenbijns.nl
+    sitemap_url: https://www.werkenbijns.nl/sitemap.xml
+    url_pattern: "/vacatures/[a-z0-9-]+-[0-9]+$"
+    per_page: 300
+    enabled: true
+    notes: "Recon 2026-11-06: ~200 vacatures, JSON-LD met plaats. Disclaimer van ns.nl: geen kopieerbepaling gevonden."
+
+  - id: parnassia
+    name: Parnassia Groep (ggz)
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.werkenbijparnassiagroep.nl
+    sitemap_url: https://www.werkenbijparnassiagroep.nl/sitemap.vacancy.xml
+    url_pattern: "/vacature/[0-9]+/"
+    per_page: 700
+    enabled: true
+    notes: "Recon 2026-11-06: ~570 vacatures met JSON-LD, maar zonder plaats: de reistijd blijft onbekend. Disclaimer: geen kopieerbepaling gevonden."
+
+  - id: amsterdamumc
+    scope: regional
+    regions: [Amsterdam]
+    name: Amsterdam UMC
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://werkenbij.amsterdamumc.org
+    sitemap_url: https://werkenbij.amsterdamumc.org/sitemap.xml
+    url_pattern: "/nl/vacatures/[a-z-]+/[a-z0-9-]+$"
+    per_page: 200
+    enabled: true
+    notes: "Recon 2026-11-06: ~120 vacatures met JSON-LD en plaats. Geen voorwaarden op de vacaturesite gevonden."
+
+  - id: arkin
+    scope: regional
+    regions: [Amsterdam]
+    name: Arkin (ggz)
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.werkenbijarkin.nl
+    sitemap_url: https://www.werkenbijarkin.nl/sitemap.vacancy.xml
+    url_pattern: "/vacature/[0-9]+/"
+    per_page: 250
+    default_location: Amsterdam
+    enabled: true
+    notes: "Recon 2026-11-06: ~190 vacatures met JSON-LD (onderdelen als Mentrum als werkgever), zonder plaats; Amsterdam is de standaard. Disclaimer van arkin.nl: verveelvoudigen alleen met schriftelijke toestemming. PoC, afspraak nodig."
+
+  - id: omring
+    scope: regional
+    regions: [Hoorn]
+    name: Omring (zorg, West-Friesland)
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.werkenbijomring.nl
+    sitemap_url: https://www.werkenbijomring.nl/sitemap.xml
+    url_pattern: "/vacatures/[0-9]+-[^/]+$"
+    per_page: 550
+    enabled: true
+    notes: "Recon 2026-11-06: ~450 vacatures met JSON-LD. Disclaimer van omring.nl: niets mag worden verveelvoudigd of opgeslagen. PoC, afspraak nodig."
+
+  - id: radboudumc
+    scope: regional
+    regions: [Nijmegen]
+    name: Radboudumc
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.werkenbijradboudumc.nl
+    sitemap_url: https://www.werkenbijradboudumc.nl/sitemap.xml
+    url_pattern: "/vacatures/.+-[0-9]+$"
+    per_page: 150
+    enabled: true
+    notes: "Recon 2026-11-06: ~80 vacatures met JSON-LD. Disclaimer: niets mag worden verveelvoudigd of opgeslagen. PoC, afspraak nodig."
+
+  - id: achmea
+    name: Achmea
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.werkenbijachmea.nl
+    sitemap_url: https://www.werkenbijachmea.nl/sitemap.xml
+    url_pattern: "/vacatures/[a-z0-9-]+$"
+    per_page: 150
+    enabled: true
+    notes: "Recon 2026-11-06: ~60 vacatures met JSON-LD. Disclaimer van achmea.nl: verveelvoudigen alleen met toestemming. PoC, afspraak nodig."
+
+  - id: eneco
+    name: Eneco
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.werkenbijeneco.nl
+    sitemap_url: https://www.werkenbijeneco.nl/sitemap.xml
+    url_pattern: "/vacatures/[a-z0-9-]+-[0-9]+$"
+    per_page: 120
+    enabled: true
+    notes: "Recon 2026-11-06: ~60 vacatures met JSON-LD. Disclaimer van eneco.nl: reproduceren alleen met toestemming. PoC, afspraak nodig."
+
+  - id: prorail
+    name: ProRail
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://www.werkenbijprorail.nl
+    sitemap_url: https://www.werkenbijprorail.nl/sitemap.xml
+    url_pattern: "/vacatures/[a-z-]+/[a-z0-9-]+$"
+    per_page: 100
+    enabled: true
+    notes: "Recon 2026-11-06: ~50 vacatures met JSON-LD. Disclaimer van prorail.nl: vermenigvuldigen alleen met toestemming. PoC, afspraak nodig."
+
+  - id: vodafoneziggo
+    name: VodafoneZiggo
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://careers.vodafoneziggo.com
+    sitemap_url: https://careers.vodafoneziggo.com/sitemap_vacancies.xml
+    url_pattern: "/vacatures/[a-z0-9-]+-[0-9]+$"
+    per_page: 100
+    enabled: true
+    notes: "Recon 2026-11-06: ~40 vacatures met JSON-LD (korte tekst, aangevuld van de pagina). Disclaimer: geen kopieerbepaling gevonden."
+
+  - id: bol
+    name: bol
+    kind: sitemap-jsonld
+    revision: 2
+    base_url: https://careers.bol.com
+    sitemap_url: https://careers.bol.com/sitemap.xml
+    url_pattern: "/nl/vacatures/[a-z0-9-]+/[0-9]+/$"
+    per_page: 100
+    enabled: true
+    notes: "Recon 2026-11-06: ~45 vacatures met JSON-LD (Utrecht); de Engelse kopieën worden overgeslagen. Geen voorwaarden op de vacaturesite gevonden."
+
+  - id: peak-portfolio
+    name: Peak portfolio (Getro-bord)
+    kind: getro-html
+    base_url: https://jobs.peak.capital
+    detail_cap: 40
+    recheck: 60
+    delay: 1.0
+    revision: 2
+    enabled: true
+    notes: "Recon 2026-11-06: Getro-bord van een Nederlandse investeerder, ~130 vacaturelijsten bij scale-ups; alleen vacatures in Nederland blijven over."
