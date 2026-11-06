@@ -16,6 +16,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from .. import store
 from ..web import templates
+from . import activity
 from .constants import (
     _USERNAME_RE,
     ANONYMOUS_TTL_SECONDS,
@@ -161,6 +162,7 @@ def invite_submit(
     _revoke_session(session["token_hash"])
     token, _csrf = _create_session(user_id, SESSION_TTL_SECONDS, request.headers.get("user-agent"))
     _mark_login(user_id)
+    activity.record(request, "invite_used", user_id=user_id)
     response = RedirectResponse(url="/", status_code=303)
     _set_session_cookie(response, token, SESSION_TTL_SECONDS)
     return response

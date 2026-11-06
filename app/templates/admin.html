@@ -37,6 +37,8 @@
         {% for row in overview.days %}<tr><td>{{ ui.nl_date(row.day) }}</td><td class="num">{{ ui.number(row.calls) }}</td><td class="num">{{ ui.number(row.tokens) }}</td>{% if priced %}<td class="num">${{ "%.4f" | format(row.cost) }}</td>{% endif %}</tr>{% else %}<tr><td colspan="4" class="subtle">Nog geen gebruik.</td></tr>{% endfor %}
       </tbody></table>
     </div>
+    <h3>Inloggen, 24 uur</h3>
+    <p class="small">{{ logins.get('login_ok', 0) + logins.get('invite_used', 0) }} geslaagd, {{ logins.get('login_failed', 0) }} mislukt. <a href="/users/activiteit">Inlogactiviteit</a></p>
     <h3>Mislukt werk, 7 dagen</h3>
     {% if failures %}<ul class="list small">{% for item in failures %}<li><span>{{ item.kind }}: {{ item.n }} keer</span><span class="subtle">{{ ui.nl_date(item['last'], time=True) }}</span></li>{% endfor %}</ul><p class="small muted">De oorzaak staat in het logboek van de worker. Hier staat bewust niets wat over iemand kan gaan.</p>{% else %}<p class="small muted">Niets mislukt.</p>{% endif %}
   </section>

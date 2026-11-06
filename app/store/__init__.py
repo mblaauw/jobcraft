@@ -15,6 +15,15 @@ from .accounts import (  # noqa: F401
     set_preferences,
     set_profile,
 )
+from .auth_events import (  # noqa: F401
+    auth_counts,
+    failed_attempts,
+    failed_per_user,
+    last_logins,
+    list_auth_events,
+    prune_auth_events,
+    record_auth_event,
+)
 from .connection import connect, now, stale_cutoff  # noqa: F401
 from .documents import (  # noqa: F401
     add_document,

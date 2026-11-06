@@ -3,6 +3,7 @@ import sqlite3
 import pytest
 
 from app import store
+from app.migrations import MIGRATIONS
 from app.migrations import m0006_foreign_keys as migration
 
 
@@ -60,7 +61,7 @@ def test_migration_enforces_relationships_preserves_ids_indexes_and_sequence():
     con = legacy_database()
     try:
         store.migrate(con)
-        assert con.execute("PRAGMA user_version").fetchone()[0] == 7
+        assert con.execute("PRAGMA user_version").fetchone()[0] == len(MIGRATIONS)
         assert not con.execute("PRAGMA foreign_key_check").fetchall()
         assert con.execute("SELECT id FROM documents").fetchone()[0] == 1
         assert con.execute("SELECT 1 FROM sqlite_master WHERE name='messages_owner'").fetchone()
@@ -76,7 +77,7 @@ def test_migration_enforces_relationships_preserves_ids_indexes_and_sequence():
                 con.execute(sql)
         con.rollback()
         store.migrate(con)
-        assert con.execute("PRAGMA user_version").fetchone()[0] == 7
+        assert con.execute("PRAGMA user_version").fetchone()[0] == len(MIGRATIONS)
     finally:
         con.close()
 

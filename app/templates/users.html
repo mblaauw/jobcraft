@@ -33,7 +33,7 @@
 {% endif %}
 
 <section class="panel panel-flush" aria-labelledby="accounts-title">
-  <div class="panel-head padded"><h2 id="accounts-title">Accounts</h2><span class="small subtle">{{ users | length }} accounts, {{ active_admins }} actieve beheerder(s)</span></div>
+  <div class="panel-head padded"><h2 id="accounts-title">Accounts</h2><span class="small subtle">{{ users | length }} accounts, {{ active_admins }} actieve beheerder(s) · <a href="/users/activiteit">Inlogactiviteit</a></span></div>
   <div class="table-scroll" role="region" aria-label="Accounts" tabindex="0">
     <table class="table">
       <thead><tr><th>Gebruiker</th><th>Rol</th><th>Status</th><th>Laatst ingelogd</th><th><span class="visually-hidden">Acties</span></th></tr></thead>
@@ -43,7 +43,7 @@
           <td><strong>{{ user.display_name }}</strong>{% if user.id == current_user_id %} <span class="chip chip-lime">jij</span>{% endif %}<br><span class="subtle small">{{ user.username }}</span></td>
           <td class="nowrap">{{ 'Beheerder' if user.role == 'admin' else 'Gebruiker' }}</td>
           <td>{% if user.active %}<span class="chip chip-ok">actief</span>{% else %}<span class="chip chip-warn">gedeactiveerd</span>{% endif %}{% if user.sessions %}<br><span class="small subtle">{{ user.sessions }} sessie(s)</span>{% endif %}</td>
-          <td class="small">{{ user.last_login_label }}<br><span class="subtle">sinds {{ user.created_label }}</span></td>
+          <td class="small">{{ user.last_login_label }}{% if user.last_ip %}<br><span class="subtle">vanaf <code>{{ user.last_ip }}</code>, {{ user.last_browser }}</span>{% endif %}{% if user.failed_today %}<br><span class="warn-text">{{ user.failed_today }} mislukte poging{{ 'en' if user.failed_today != 1 }} in 24 uur</span>{% endif %}<br><span class="subtle">sinds {{ user.created_label }}</span></td>
           <td>
             <div class="user-actions">
               <form method="post" action="/users/{{ user.id }}/reset-password">{{ csrf_input(request) }}<button class="button small" type="submit">Nieuw wachtwoord</button></form>

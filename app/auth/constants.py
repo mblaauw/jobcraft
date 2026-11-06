@@ -96,6 +96,20 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions(user_id);
+
+CREATE TABLE IF NOT EXISTS auth_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    user_id TEXT,
+    username TEXT,
+    ip TEXT,
+    user_agent TEXT,
+    actor_id TEXT
+);
+
+CREATE INDEX IF NOT EXISTS auth_events_at ON auth_events(at);
+CREATE INDEX IF NOT EXISTS auth_events_user ON auth_events(user_id, id);
 """
 
 
