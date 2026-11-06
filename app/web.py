@@ -42,6 +42,16 @@ def _open_coach_count() -> int:
     return cv_ai.open_count()
 
 
+def _has_profile(user: dict) -> bool:
+    """Whether the signed-in account looks for work; the rail must never take a page down."""
+    from . import profile
+
+    try:
+        return profile.seeker(user)
+    except Exception:
+        return False
+
+
 def _background_work() -> dict:
     from . import background_work
 
@@ -61,6 +71,7 @@ templates.env.globals["background_work"] = _background_work
 templates.env.globals["judgement_reasons"] = _judgement_reasons
 templates.env.globals["csrf_input"] = _csrf_input
 templates.env.globals["new_match_count"] = _new_match_count
+templates.env.globals["account_has_profile"] = _has_profile
 templates.env.globals["open_coach_count"] = _open_coach_count
 templates.env.filters["amsterdam"] = _amsterdam
 templates.env.filters["prose"] = profile_view.render

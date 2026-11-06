@@ -7,7 +7,7 @@ import sqlite3
 
 from fastapi import Request
 
-from .. import config, store
+from .. import config, profile, store
 from ..web import templates
 from .activity import browser_label
 from .constants import ANONYMOUS_TTL_SECONDS, MIN_PASSWORD_LENGTH, ROLE_ADMIN
@@ -86,6 +86,8 @@ def _account_response(request: Request, *, user: dict, error: str = "", status_c
         "account.html",
         {
             "account": _account_view(row) if row is not None else user,
+            "seeker": profile.seeker(user),
+            "devices": _session_count(user["id"]),
             "error": error,
             "has_cv": (config.seed_dir() / config.seed_files()["cv"]).is_file(),
             "cv_generated": _cv_generated(),
@@ -104,6 +106,7 @@ ACTIVITY_LABELS = {
     "password_reset": "Wachtwoord opnieuw ingesteld door beheerder",
     "deactivated": "Gedeactiveerd door beheerder",
     "activated": "Geactiveerd door beheerder",
+    "sessions_revoked": "Overal anders uitgelogd",
 }
 ACTIVITY_PERIODS = {"dag": 1, "week": 7, "maand": 31}
 

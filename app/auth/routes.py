@@ -7,6 +7,7 @@ import uuid
 from fastapi import Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from .. import profile
 from . import activity
 from .bootstrap import (
     _bootstrap_credentials_lock,
@@ -18,7 +19,6 @@ from .constants import (
     ANONYMOUS_TTL_SECONDS,
     CSRF_FIELD,
     MIN_PASSWORD_LENGTH,
-    ROLE_ADMIN,
     ROLE_USER,
     ROLES,
     SESSION_TTL_SECONDS,
@@ -58,7 +58,8 @@ from .views import (
 
 
 def _default_home(user) -> str:
-    return "/admin" if user and user["role"] == ROLE_ADMIN else "/"
+    """Vandaag for anyone with a profile; Systeem for an administrator who only administers."""
+    return "/" if user and profile.seeker(user) else "/admin"
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -203,6 +204,16 @@ def account_password(
     activity.record(request, "password_changed", user_id=row["id"])
     return RedirectResponse(url="/account?changed=1", status_code=303)
 
+
+
+@router.post("/account/uitloggen-overal", dependencies=[Depends(require_user)])
+def account_logout_everywhere(request: Request):
+    """Every other device signs out; this one stays."""
+    user = require_user(request)
+    revoked = _revoke_other_sessions(user["id"], getattr(request.state, "auth_session_id", None))
+    log.info("sessions revoked by the user id=%s, %d other sessions", user["id"], revoked)
+    activity.record(request, "sessions_revoked", user_id=user["id"])
+    return RedirectResponse(url="/account?uitgelogd=1", status_code=303)
 
 
 @router.get("/users", response_class=HTMLResponse, dependencies=[Depends(require_admin)])

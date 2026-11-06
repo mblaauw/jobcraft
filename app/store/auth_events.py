@@ -16,6 +16,7 @@ KINDS = (
     "password_reset",
     "deactivated",
     "activated",
+    "sessions_revoked",
 )
 AGENT_LIMIT = 200
 DEFAULT_RETENTION_DAYS = 90
