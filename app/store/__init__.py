@@ -1,6 +1,7 @@
 """SQLite persistence facade, grouped by owned tables."""
 
 from .accounts import (  # noqa: F401
+    account_counts,
     active_owners_with_profile,
     add_profile_version,
     append_answer,

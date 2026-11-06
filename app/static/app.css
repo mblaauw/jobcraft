@@ -359,6 +359,7 @@ a.chip:hover { background: var(--line); color: var(--ink); }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 20px; }
 .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
 details > summary { cursor: pointer; list-style: none; }
 details > summary::-webkit-details-marker { display: none; }
@@ -370,6 +371,13 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .disclosure > summary:hover { color: var(--moss); }
 .disclosure[open] > summary { margin-bottom: 12px; }
 
+.stat-lead { font-size: var(--fs-xl, 1.6rem); font-weight: 650; margin: 0 0 8px; }
+.ok-text { color: var(--ok); }
+.attention { list-style: none; padding: 0; margin: 0; }
+.attention li { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line); font-size: var(--fs-sm); }
+.attention li:first-child { border-top: 0; }
+.attention li.warn .icon { color: var(--clay); }
+.attention li.info .icon { color: var(--ink-3); }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 0 24px; margin: 0; }
 .stats div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); min-width: 0; }
 .stats dt { color: var(--ink-2); margin: 0; }
@@ -880,7 +888,7 @@ textarea.prose-edit:focus { border-color: var(--moss); outline: 2px solid var(--
   .main { padding: 24px 16px calc(96px + env(safe-area-inset-bottom)); }
   h1 { font-size: 28px; }
   .page-head { margin-bottom: 20px; align-items: flex-start; }
-  .grid.two, .form-grid, .account-grid, .profile-read, .prefs-grid { grid-template-columns: minmax(0, 1fr); }
+  .grid.two, .grid.three, .form-grid, .account-grid, .profile-read, .prefs-grid { grid-template-columns: minmax(0, 1fr); }
   .pick { grid-template-columns: auto minmax(0, 1fr); }
   .pick-actions { grid-column: 2; }
   .task { grid-template-columns: 26px minmax(0, 1fr); }

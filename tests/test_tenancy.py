@@ -431,7 +431,9 @@ def test_admin_shows_tokens_and_the_daily_limit_when_no_prices_are_known(isolate
     credentials = json.loads((config.RUNTIME_DIR / "bootstrap-accounts.json").read_text())["accounts"]
     admin = TestClient(main.app)
     login(admin, "admin", credentials["admin"]["password"])
-    page = admin.get("/admin").text
+    page = admin.get("/admin/ai").text
     assert "1.108.960" in page and "2.000.000 tokens" in page
     assert "<th>Kosten</th>" not in page and "meldt geen prijzen" in page
+    home = admin.get("/admin").text
+    assert "1.108.960 tokens" in home and "55% van 2.000.000" in home
     admin.close()

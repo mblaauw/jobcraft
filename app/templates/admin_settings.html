@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Instellingen · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Instellingen</h1>
+    <p class="lede">Wat deze installatie doet en bewaart. Wat je hier niet kunt wijzigen, staat in de omgeving van de server; de naam staat erbij.</p>
+  </div>
+</div>
+
+{% if request.query_params.get('opgeslagen') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Planning opgeslagen.</span></p>{% endif %}
+
+<div class="grid two">
+  <section class="panel" aria-labelledby="schedule-title">
+    <h2 id="schedule-title">Automatisch ophalen</h2>
+    <form method="post" action="/sources/schedule" class="form-stack">
+      {{ csrf_input(request) }}
+      <input type="hidden" name="next" value="/admin/instellingen">
+      <label class="switch-row"><input type="checkbox" name="enabled" value="1" {% if schedule_enabled %}checked{% endif %}> Dagelijks automatisch ophalen</label>
+      <div class="field"><label for="schedule-times">Tijden</label><input id="schedule-times" name="times" value="{{ schedule_times }}" aria-describedby="schedule-help"><span class="hint" id="schedule-help">Uren als HH:MM, door komma's gescheiden, bijvoorbeeld 07:30,17:30.</span></div>
+      <div><button class="button" type="submit">Planning opslaan</button></div>
+    </form>
+    <p class="small muted">{% if schedule_last_fire %}Laatste geplande ronde: {{ ui.nl_date(schedule_last_fire, time=True) }}.{% else %}Nog geen geplande ronde gedraaid.{% endif %} Handmatig ophalen kan op <a href="/sources">Bronnen</a>.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="mail-title">
+    <h2 id="mail-title">Dagelijkse mail</h2>
+    {% if smtp %}<p>Mail is ingesteld. Iedereen kiest op de eigen accountpagina of de ochtendmail komt.</p>{% else %}<p>Niet ingesteld: er gaat geen ochtendmail uit. Zet <code>SMTP_HOST</code> en <code>SMTP_FROM</code> in de omgeving.</p>{% endif %}
+    <p class="small muted">Verstuurtijd <code>DIGEST_TIME</code>: {{ digest_time }}.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="limits-title">
+    <h2 id="limits-title">AI-limieten</h2>
+    <dl class="stats">
+      <div><dt>Tokens per account per dag</dt><dd>{% if token_limit %}{{ ui.number(token_limit) }}{% else %}geen{% endif %}</dd></div>
+      <div><dt>Dollars per account per dag</dt><dd>{% if budget %}${{ "%.2f" | format(budget) }}{% else %}geen{% endif %}</dd></div>
+      <div><dt>Snelle beoordelingen per dag</dt><dd>{{ ui.number(jev_limit) }}</dd></div>
+    </dl>
+    <p class="small muted"><code>AI_DAILY_TOKEN_LIMIT</code>, <code>MATCH_DAILY_BUDGET_USD</code> en <code>SYSTEMONE_DAILY_LIMIT</code>. Welk model welke taak doet, kies je op <a href="/admin/ai">AI</a>.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="retention-title">
+    <h2 id="retention-title">Bewaartermijnen</h2>
+    <dl class="stats">
+      <div><dt>AI-logboek per account</dt><dd>{{ ai_log_days }} dagen</dd></div>
+      <div><dt>Inlogactiviteit</dt><dd>{{ auth_log_days }} dagen</dd></div>
+      <div><dt>Reservekopieën</dt><dd>de laatste 5, bij elke update</dd></div>
+    </dl>
+    <p class="small muted"><code>AI_LOG_DAYS</code> en <code>AUTH_LOG_DAYS</code>.</p>
+  </section>
+</div>
+
+<details class="panel disclosure">
+  <summary><h2>Bestanden</h2>{{ ui.icon('chevron-down', 'chev') }}</summary>
+  <ul class="list small">
+    {% for label, path in paths.items() %}<li><span>{{ label }}</span><code>{{ path }}</code></li>{% endfor %}
+  </ul>
+</details>
+{% endblock %}

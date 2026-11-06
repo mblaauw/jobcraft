@@ -119,7 +119,8 @@ def test_the_system_page_counts_sign_ins_and_the_account_page_tells_people(clien
     token = csrf_of(failed.get("/login").text)
     failed.post("/login", data={"username": "test", "password": "fout", "_csrf": token}, follow_redirects=False)
     admin = _full_app_client("admin", _bootstrap_password("admin"))
-    assert "2 geslaagd, 1 mislukt" in admin.get("/admin").text  # the fixture's own sign-in counts too
+    home = admin.get("/admin").text  # the fixture's own sign-in counts too
+    assert "<dt>Keer ingelogd</dt><dd>2</dd>" in home and "<dt>Mislukte pogingen</dt><dd>1</dd>" in home
 
 
 def test_events_are_in_the_export_and_gone_with_the_account(client):  # noqa: F811

@@ -142,6 +142,19 @@ def list_answers(owner: str | None = None) -> list:
 
 
 
+def account_counts() -> dict[str, int]:
+    """Active accounts, and how many job seekers among them have no profile yet.
+
+    Administrators are left out of the second number: they are not expected to have one."""
+    with connect() as con:
+        active = con.execute("SELECT COUNT(*) AS n FROM users WHERE active=1").fetchone()["n"]
+        without = con.execute(
+            "SELECT COUNT(*) AS n FROM users u WHERE u.active=1 AND u.id!='legacy' AND u.role!='admin' "
+            "AND NOT EXISTS (SELECT 1 FROM profiles p WHERE p.owner=u.id)"
+        ).fetchone()["n"]
+    return {"active": int(active or 0), "without_profile": int(without or 0)}
+
+
 def active_owners_with_profile() -> list[str]:
     with connect() as con:
         rows = con.execute(

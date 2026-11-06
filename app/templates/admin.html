@@ -1,69 +1,56 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}Systeem · Jobcraft{% endblock %}
+{% block title %}Overzicht · Jobcraft{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
-    <h1>Systeem</h1>
-    <p class="lede">Technische stand van de gedeelde werkruimte.</p>
+    <h1>Overzicht</h1>
+    <p class="lede">Draait het, wie gebruikt het, wat kost het.</p>
   </div>
-  <a class="button" id="admin-ai-link" href="/admin/ai">AI-modellen en logboek</a>
 </div>
 
-{% if worker and worker.separate %}
-{% if worker.alive %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>De worker draait. Laatst gezien {{ ui.nl_date(worker.seen, time=True) }}.</span></p>
-{% else %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>De worker draait niet{% if worker.seen %} (laatst gezien {{ ui.nl_date(worker.seen, time=True) }}){% endif %}. Scans en beoordelingen staan in de wachtrij tot hij weer start.</span></p>{% endif %}
-{% endif %}
-<div class="grid two">
-  <section class="panel" aria-labelledby="usage-title">
-    <h2 id="usage-title">AI-gebruik</h2>
+<div class="grid three">
+  <section class="panel" aria-labelledby="runs-title">
+    <h2 id="runs-title">Draait</h2>
+    <p class="stat-lead {{ 'ok-text' if runs.ok else 'warn-text' }}">{{ 'Ja' if runs.ok else 'Nee' }}</p>
     <dl class="stats">
-      <div><dt>Model</dt><dd>{{ model }}</dd></div>
-      <div><dt>Bronnen actief</dt><dd>{{ enabled_count }} van {{ sources | length }}</dd></div>
-      <div><dt>Laatste geslaagde ophaalronde</dt><dd>{% if last_scan %}{{ ui.nl_date(last_scan, time=True) }}{% else %}—{% endif %}</dd></div>
-      <div><dt>Daglimiet per account</dt><dd>{% if token_limit %}{{ ui.number(token_limit) }} tokens{% else %}geen{% endif %}</dd></div>
+      <div><dt>Worker</dt><dd>{% if not runs.separate %}in dit proces{% elif runs.alive %}{{ ui.nl_date(runs.seen, time=True) }}{% elif runs.seen %}niet gezien sinds {{ ui.nl_date(runs.seen, time=True) }}{% else %}nooit gezien{% endif %}</dd></div>
+      <div><dt>Laatste ronde</dt><dd>{% if runs.last_scan %}{{ ui.nl_date(runs.last_scan, time=True) }}{% else %}nog geen{% endif %}</dd></div>
+      <div><dt>In de wachtrij</dt><dd>{{ runs.open }}</dd></div>
     </dl>
-    <p class="small muted">Cijfers voor deze hele installatie, de afgelopen 14 dagen. {% if priced %}Snelle beoordelingen (Jev) staan als $0 geboekt: de echte kosten staan op het Runware-dashboard.{% else %}De AI-dienst meldt geen prijzen, dus hier staan alleen tokens. De daglimiet per account houdt het verbruik in de hand.{% endif %}</p>
-    <div class="table-scroll" role="region" aria-label="AI-gebruik per soort" tabindex="0">
-      <table class="table nowrap"><thead><tr><th>Soort</th><th>Aanroepen</th><th>Tokens</th>{% if priced %}<th>Kosten</th>{% endif %}</tr></thead><tbody>
-        {% for row in overview.kinds %}<tr><td>{{ row.kind }}</td><td class="num">{{ ui.number(row.calls) }}</td><td class="num">{{ ui.number(row.tokens) }}</td>{% if priced %}<td class="num">${{ "%.4f" | format(row.cost) }}</td>{% endif %}</tr>{% else %}<tr><td colspan="4" class="subtle">Nog geen gebruik.</td></tr>{% endfor %}
-      </tbody></table>
-    </div>
   </section>
-  <section class="panel" aria-labelledby="days-title">
-    <h2 id="days-title">Per dag</h2>
-    <div class="table-scroll" role="region" aria-label="AI-gebruik per dag" tabindex="0">
-      <table class="table nowrap"><thead><tr><th>Dag</th><th>Aanroepen</th><th>Tokens</th>{% if priced %}<th>Kosten</th>{% endif %}</tr></thead><tbody>
-        {% for row in overview.days %}<tr><td>{{ ui.nl_date(row.day) }}</td><td class="num">{{ ui.number(row.calls) }}</td><td class="num">{{ ui.number(row.tokens) }}</td>{% if priced %}<td class="num">${{ "%.4f" | format(row.cost) }}</td>{% endif %}</tr>{% else %}<tr><td colspan="4" class="subtle">Nog geen gebruik.</td></tr>{% endfor %}
-      </tbody></table>
-    </div>
-    <h3>Inloggen, 24 uur</h3>
-    <p class="small">{{ logins.get('login_ok', 0) + logins.get('invite_used', 0) }} geslaagd, {{ logins.get('login_failed', 0) }} mislukt. <a href="/users/activiteit">Inlogactiviteit</a></p>
-    <h3>Mislukt werk, 7 dagen</h3>
-    {% if failures %}<ul class="list small">{% for item in failures %}<li><span>{{ item.kind }}: {{ item.n }} keer</span><span class="subtle">{{ ui.nl_date(item['last'], time=True) }}</span></li>{% endfor %}</ul><p class="small muted">De oorzaak staat in het logboek van de worker. Hier staat bewust niets wat over iemand kan gaan.</p>{% else %}<p class="small muted">Niets mislukt.</p>{% endif %}
+  <section class="panel" aria-labelledby="people-title">
+    <h2 id="people-title">Mensen</h2>
+    <p class="stat-lead">{{ people.active }} actief</p>
+    <dl class="stats">
+      <div><dt>Keer ingelogd</dt><dd>{{ people.logins }}</dd></div>
+      <div><dt>Mislukte pogingen</dt><dd>{{ people.failed }}</dd></div>
+      <div><dt>Zonder profiel</dt><dd>{{ people.without_profile }}</dd></div>
+    </dl>
+    <p class="small"><a href="/users">Gebruikers</a> · <a href="/users/activiteit">Inlogactiviteit</a></p>
+  </section>
+  <section class="panel" aria-labelledby="ai-title">
+    <h2 id="ai-title">AI vandaag</h2>
+    <p class="stat-lead">{{ ui.number(ai.tokens_today) }} tokens</p>
+    <dl class="stats">
+      <div><dt>Van de daglimiet</dt><dd>{% if ai.token_limit %}{{ ai.share }}% van {{ ui.number(ai.token_limit) }}{% else %}geen limiet{% endif %}</dd></div>
+      <div><dt>Kosten</dt><dd>{% if ai.priced %}${{ "%.2f" | format(ai.cost_today) }} vandaag, ${{ "%.2f" | format(ai.cost_period) }} in 14 dagen{% else %}geen prijzen bekend{% endif %}</dd></div>
+      <div><dt>Jev-beoordelingen</dt><dd>{{ ui.number(ai.jev_today) }}</dd></div>
+    </dl>
+    <p class="small"><a href="/admin/ai">AI: modellen, gebruik en logboek</a></p>
   </section>
 </div>
 
-<section class="panel panel-flush" aria-labelledby="src-title">
-  <div class="panel-head padded"><h2 id="src-title">Bronnen</h2><a class="small" href="/sources">Beheren</a></div>
-  <div class="table-scroll" role="region" aria-label="Bronoverzicht" tabindex="0">
-    <table class="table">
-      <thead><tr><th>Bron</th><th>Actief</th><th>Vacatures</th><th>Laatste status</th></tr></thead>
-      <tbody>
-        {% for s in sources %}
-        <tr><td>{{ s["name"] }}</td><td>{{ "ja" if s["enabled"] else "nee" }}</td><td class="num">{{ jobs_by_source.get(s["id"], 0) }}</td><td class="subtle">{{ s["last_status"] or "—" }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<details class="panel disclosure">
-  <summary><h2>Bestanden en ruwe voorkeuren</h2>{{ ui.icon('chevron-down', 'chev') }}</summary>
-  <ul class="list small">
-    {% for label, path in paths.items() %}<li><span>{{ label }}</span><code>{{ path }}</code></li>{% endfor %}
+<section class="panel" aria-labelledby="attention-title">
+  <h2 id="attention-title">Aandacht nodig</h2>
+  {% if attention %}
+  <ul class="attention">
+    {% for item in attention %}
+    <li class="{{ item.level }}">{{ ui.icon('triangle-alert' if item.level == 'warn' else 'info') }}<span>{{ item.text }}</span>{% if item.href %}<a class="small" href="{{ item.href }}">{{ item.label }}</a>{% endif %}</li>
+    {% endfor %}
   </ul>
-  <h3 class="small">Voorkeuren (JSON)</h3>
-  <pre class="doc">{{ preferences | tojson(indent=2) }}</pre>
-</details>
+  {% else %}
+  <p class="muted">{{ ui.icon('circle-check') }} Niets. Bronnen halen op, werk slaagt en niemand gokt wachtwoorden.</p>
+  {% endif %}
+</section>
 {% endblock %}

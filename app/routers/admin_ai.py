@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import os
 import time
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from .. import ai_log, auth, config, model_routes, runtime, tenancy
+from .. import ai_log, auth, config, model_routes, runtime, store, tenancy
 from ..auth.users import _list_users
 from ..llm_client import LLMError
 from ..web import templates
@@ -35,10 +36,15 @@ def ai_page(request: Request):
     if owner and owner not in names:
         owner = ""
     chosen = model_routes.routes()
+    overview = store.usage_overview()
     return templates.TemplateResponse(
         request,
         "admin_ai.html",
         {
+            "overview": overview,
+            # Many gateways report no price: then dollars say nothing and tokens are the brake.
+            "priced": any(row["cost"] for row in overview["kinds"]),
+            "token_limit": int(os.environ.get("AI_DAILY_TOKEN_LIMIT", "500000") or 0),
             "roles": [
                 {
                     "id": role,

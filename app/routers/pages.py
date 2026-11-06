@@ -18,7 +18,6 @@ from .. import (
     applications,
     auth,
     config,
-    feedback,
     judgements,
     profile,
     ranking,
@@ -84,52 +83,107 @@ def _worker_state() -> dict:
     return {"separate": True, "alive": alive, "seen": raw}
 
 
-def _last_scan() -> str | None:
+def _last_scan(sources: list) -> str | None:
+    """The last round that fetched something: from the health record, else from the sources."""
     try:
         health = json.loads(store.meta_get("source_health") or "{}")
     except ValueError:
-        return None
-    return max((item["last_ok"] for item in health.values() if item.get("last_ok")), default=None)
+        health = {}
+    moments = [item["last_ok"] for item in health.values() if item.get("last_ok")]
+    moments += [row["last_scan_at"] for row in sources if row["last_scan_at"] and row["last_status"] == "ok"]
+    return max(moments, default=None)
+
+
+def _attention(health: dict, worker: dict, sources: list) -> list[dict]:
+    """What an administrator should look at, each line linking to where it is fixed."""
+    items: list[dict] = []
+    if worker.get("separate") and not worker.get("alive"):
+        items.append({"level": "warn", "text": "De worker draait niet: scans en beoordelingen wachten.", "href": None, "label": ""})
+    names = {row["id"]: row["name"] for row in sources if row["enabled"]}
+    for source_id, item in health.items():
+        if source_id not in names:
+            continue
+        if item.get("failures"):
+            rounds = item["failures"]
+            reason = (item.get("reason") or "").split(":")[0][:60]
+            text = f"{names[source_id]}: {'laatste ronde mislukt' if rounds == 1 else f'{rounds} rondes achter elkaar mislukt'}"
+            items.append({"level": "warn", "text": text + (f", {reason}" if reason else ""), "href": "/sources", "label": "Bron"})
+        elif item.get("dropped"):
+            items.append({"level": "info", "text": f"{names[source_id]}: veel minder gevonden dan normaal", "href": "/sources", "label": "Bron"})
+    for failure in tasks.failure_kinds():
+        label = {"vacancy": "Vacaturetekst opmaken", "match": "Beoordelen", "verdict": "Beoordelen", "scan": "Ophalen", "documents": "Documenten", "insight": "Inzichten"}.get(failure["kind"], failure["kind"])
+        times = "1 keer" if failure["n"] == 1 else f"{failure['n']} keer"
+        text = f"{label} mislukte {times}" + (f": {failure['error']}" if failure["error"] else "")
+        items.append({"level": "warn", "text": text, "href": "/admin/ai", "label": "AI"})
+    for row in store.failed_attempts(days=1):
+        if row["n"] >= 5:
+            items.append({"level": "warn", "text": f"{row['n']} mislukte inlogpogingen op {row['names']} namen vanaf {row['ip'] or 'onbekend adres'}", "href": "/users/activiteit", "label": "Inlogactiviteit"})
+    return items
 
 
 @router.get("/admin", response_class=HTMLResponse, dependencies=[Depends(auth.require_admin)])
 def admin_page(request: Request):
+    """Does it run, who uses it, what does it cost: the administrator's home."""
     auth.require_admin(request)
-    votes = store.list_votes()
-    source_rows = [dict(row) for row in store.list_sources()]
+    worker = _worker_state()
+    try:
+        health = json.loads(store.meta_get("source_health") or "{}")
+    except ValueError:
+        health = {}
+    sources_rows = store.list_sources()
+    runs = {
+        **worker,
+        "last_scan": _last_scan(sources_rows),
+        "open": tasks.open_count(),
+        # A fresh install has no round yet and is not down for it; the worker decides.
+        "ok": not worker.get("separate") or bool(worker.get("alive")),
+    }
+    logins = store.auth_counts(days=1)
+    people = {
+        **store.account_counts(),
+        "logins": logins.get("login_ok", 0) + logins.get("invite_used", 0),
+        "failed": logins.get("login_failed", 0),
+    }
     overview = store.usage_overview()
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
+    today_row = next((row for row in overview["days"] if row["day"] == today), {"tokens": 0, "cost": 0.0})
+    token_limit = int(os.environ.get("AI_DAILY_TOKEN_LIMIT", "500000") or 0)
+    ai = {
+        "tokens_today": int(today_row["tokens"]),
+        "token_limit": token_limit,
+        "share": round(int(today_row["tokens"]) / token_limit * 100) if token_limit else 0,
+        "priced": any(row["cost"] for row in overview["kinds"]),
+        "cost_today": float(today_row["cost"]),
+        "cost_period": sum(float(row["cost"]) for row in overview["days"]),
+        "jev_today": store.daily_usage_calls("systemone"),
+    }
     return templates.TemplateResponse(
         request,
         "admin.html",
+        {"runs": runs, "people": people, "ai": ai, "attention": _attention(health, worker, sources_rows)},
+    )
+
+
+@router.get("/admin/instellingen", response_class=HTMLResponse, dependencies=[Depends(auth.require_admin)])
+def admin_settings(request: Request):
+    """What this installation does and keeps; values from the environment are read-only here."""
+    auth.require_admin(request)
+    return templates.TemplateResponse(
+        request,
+        "admin_settings.html",
         {
-            "preferences": profile.read_preferences(),
-            "jobs": store.count_jobs(),
-            "documents": store.count_documents(),
-            "votes": {
-                "up": len(votes["up"]),
-                "down": len(votes["down"]),
-            },
-            "feedback": feedback.load(),
-            "model": config.MODEL_LABEL,
-            "profile_chars": len(profile.read_profile()),
-            "sources": source_rows,
-            "jobs_by_source": store.count_jobs_by_source(),
-            "enabled_count": sum(1 for source in source_rows if source.get("enabled", True)),
-            "answer_log_offset": store.meta_get("answer_log_offset", "0"),
-            "bootstrap_status": store.meta_get("bootstrap_status", "idle"),
-            "worker": _worker_state(),
-            "overview": overview,
-            # Many gateways report no price: then dollars say nothing and tokens are the brake.
-            "priced": any(row["cost"] for row in overview["kinds"]),
+            "schedule_enabled": store.meta_get("scan_schedule_enabled", "1") == "1",
+            "schedule_times": store.meta_get("scan_schedule_times", os.environ.get("SCAN_TIMES", "07:30,17:30")),
+            "schedule_last_fire": store.meta_get("scheduler_last_fire"),
+            "smtp": bool(os.environ.get("SMTP_HOST") and os.environ.get("SMTP_FROM")),
+            "digest_time": os.environ.get("DIGEST_TIME", "08:30"),
             "token_limit": int(os.environ.get("AI_DAILY_TOKEN_LIMIT", "500000") or 0),
-            "failures": tasks.failures_overview(),
-            "logins": store.auth_counts(days=1),
-            "last_scan": _last_scan(),
+            "budget": float(os.environ.get("MATCH_DAILY_BUDGET_USD", "0.50") or 0),
+            "jev_limit": int(os.environ.get("SYSTEMONE_DAILY_LIMIT", "80") or 0),
+            "ai_log_days": int(os.environ.get("AI_LOG_DAYS", "30") or 30),
+            "auth_log_days": store.auth_events.retention_days(),
             "paths": {
                 "data": str(config.DATA_DIR),
-                "profile.md": str(config.user_path(profile.PROFILE_FILE)),
-                "preferences.json": str(config.user_path(profile.PREFERENCES_FILE)),
-                "feedback.json": str(config.user_path(feedback.FEEDBACK_FILE)),
                 "sources.yaml": str(sources.DATA_FILE),
                 "database": str(config.DB_PATH),
             },
