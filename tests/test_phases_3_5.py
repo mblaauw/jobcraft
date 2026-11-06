@@ -741,19 +741,17 @@ def test_pasted_text_names_its_employer_and_place(client):  # noqa: F811
     assert (job["company"], job["location"]) == ("Eigen naam", "Delft")  # what someone typed wins
 
 
-def test_greenjobs_turns_national_on_existing_installations(client):  # noqa: F811
-    old = {"id": "greenjobs", "kind": "exenzo-json", "scope": "regional", "regions": ["Amsterdam"], "search": "Amsterdam"}
-    store.save_source_config(old, enabled=True)
-    greenjobs = {item["id"]: item for item in sources.load_sources()}["greenjobs"]
-    assert greenjobs["scope"] == "national" and greenjobs["regions"] == [] and not greenjobs["search"]
-    assert greenjobs["enabled"] is True and greenjobs["max_pages"] * greenjobs["per_page"] >= 300
-
-
-def _posting_page(title, place):
-    posting = {"@context": "https://schema.org", "@type": "JobPosting", "title": title,
-               "description": "<p>" + "Je werkt aan mooie dingen. " * 25 + "</p>",
-               "jobLocation": {"@type": "Place", "address": {"@type": "PostalAddress", "addressLocality": place}}}
-    return f'<html><head><script type="application/ld+json">{json.dumps(posting)}</script></head><body></body></html>'
+PERSONIO = "https://voorbeeld.jobs.personio.com"
+PERSONIO_FEED = b"""<?xml version="1.0" encoding="UTF-8"?>
+<workzag-jobs>
+  <position><id>11</id><office>Vianen</office><additionalOffices><office>Heerlen</office></additionalOffices>
+    <name>Adviseur</name><jobDescriptions></jobDescriptions><employmentType>permanent</employmentType>
+    <schedule>full-time</schedule><createdAt>2026-10-28T08:51:16+00:00</createdAt></position>
+  <position><id>12</id><office>Amsterdam</office><name>Planner</name><jobDescriptions></jobDescriptions>
+    <employmentType>intern</employmentType><schedule>part-time</schedule><createdAt>2026-10-29T08:00:00+00:00</createdAt></position>
+  <position><id>13</id><office>Bratislava, Slovakia</office><name>Engineer</name><jobDescriptions><jobDescription>
+    <name>Taken</name><value>&lt;p&gt;Ver weg&lt;/p&gt;</value></jobDescription></jobDescriptions></position>
+</workzag-jobs>"""
 
 
 class FakeSite:
@@ -766,7 +764,90 @@ class FakeSite:
         request = httpx.Request("GET", url)
         if url not in self.pages:
             return httpx.Response(404, request=request)
-        return httpx.Response(200, text=self.pages[url], request=request)
+        body = self.pages[url]
+        return httpx.Response(200, content=body if isinstance(body, bytes) else body.encode(), request=request)
+
+
+def test_personio_boards_read_the_feed_and_fill_in_text_from_job_pages(client, monkeypatch):  # noqa: F811
+    monkeypatch.setattr(ats, "load_employers", lambda: [{"name": "Voorbeeld", "system": "personio", "slug": "voorbeeld", "detail_cap": 1}])
+    monkeypatch.setattr(ats.time, "sleep", lambda _: None)
+    page = "<html><body><main><h1>Adviseur</h1><p>" + "Je adviseert klanten over hun gebouwen. " * 20 + "</p></main></body></html>"
+    fake = FakeSite({f"{PERSONIO}/xml": PERSONIO_FEED, f"{PERSONIO}/job/11": page, f"{PERSONIO}/job/12": page})
+    store.sync_sources([{"id": "ats-bedrijven", "kind": "ats-registry"}])
+    entry = {"status": "ok", "new": 0, "updated": 0, "items": 0}
+    ats._scan_ats(fake, {"id": "ats-bedrijven"}, entry, {"new": 0, "updated": 0})
+    with store.connect() as con:
+        rows = {row["url"]: row for row in con.execute("SELECT * FROM jobs").fetchall()}
+    assert set(rows) == {f"{PERSONIO}/job/11", f"{PERSONIO}/job/12"}  # Bratislava stays out
+    first, second = rows[f"{PERSONIO}/job/11"], rows[f"{PERSONIO}/job/12"]
+    assert "adviseert klanten" in first["description"] and first["hours"] == "Fulltime · vast"
+    assert first["location"] == "Vianen, Heerlen" and first["company"] == "Voorbeeld"
+    assert second["hours"] == "Parttime · stage" and not second["description"]  # over this round's cap
+    assert fake.asked.count(f"{PERSONIO}/job/12") == 0
+    # Next round: the page fetched recently is not fetched again, the other one now is.
+    fake.asked.clear()
+    ats._scan_ats(fake, {"id": "ats-bedrijven"}, dict(entry), {"new": 0, "updated": 0})
+    assert f"{PERSONIO}/job/11" not in fake.asked and f"{PERSONIO}/job/12" in fake.asked
+
+
+def test_a_moved_personio_board_is_skipped_and_a_strange_feed_is_reported(client, monkeypatch):  # noqa: F811
+    monkeypatch.setattr(ats.time, "sleep", lambda _: None)
+    store.sync_sources([{"id": "x", "kind": "ats-registry"}])
+    monkeypatch.setattr(ats, "load_employers", lambda: [{"name": "Weg", "system": "personio", "slug": "weg"}])
+    ats._scan_ats(FakeSite({}), {"id": "x"}, {"items": 0}, {"new": 0, "updated": 0})  # 404: no failure
+    odd = b'<?xml version="1.0"?><!DOCTYPE x [<!ENTITY a "aaaa">]><workzag-jobs/>'
+    monkeypatch.setattr(ats, "load_employers", lambda: [{"name": "Raar", "system": "personio", "slug": "raar", "tld": "de"}])
+    with pytest.raises(RuntimeError, match="raar"):
+        ats._scan_ats(FakeSite({"https://raar.jobs.personio.de/xml": odd}), {"id": "x"}, {"items": 0}, {"new": 0, "updated": 0})
+
+
+def _job_page(title, place):
+    posting = {"@context": "https://schema.org", "@type": "JobPosting", "title": title, "datePosted": "2026-11-01",
+               "description": "<p>" + "Je werkt aan mooie dingen. " * 25 + "</p>",
+               "jobLocation": {"@type": "Place", "address": {"@type": "PostalAddress", "addressLocality": place}}}
+    return f'<html><head><script type="application/ld+json">{json.dumps(posting)}</script></head><body><h1>{title}</h1></body></html>'
+
+
+def test_sitemap_boards_read_job_pages_and_keep_only_dutch_ones(client, monkeypatch):  # noqa: F811
+    monkeypatch.setattr(ats.time, "sleep", lambda _: None)
+    host = "https://jobs.voorbeeld.test"
+    sitemap = f"""<?xml version="1.0"?><urlset>
+      <url><loc>{host}/jobs</loc></url><url><loc>{host}/jobs/101-planner</loc></url>
+      <url><loc>{host}/jobs/102-engineer</loc></url><url><loc>{host}/jobs/101-planner</loc></url>
+      <url><loc>{host}/jobs/101-planner/applications/new</loc></url></urlset>"""
+    hr = "https://voorbeeld.homerun.co"
+    pages = {
+        f"{host}/sitemap.xml": sitemap,
+        f"{host}/jobs/101-planner": _job_page("Planner", "Eindhoven"),
+        f"{host}/jobs/102-engineer": _job_page("Engineer", "Lisbon, Portugal"),
+        f"{hr}/sitemap.xml": f"<urlset><url><loc>{hr}</loc></url><url><loc>{hr}/redacteur-20-uur</loc></url><url><loc>{hr}/redacteur-20-uur/nl/apply</loc></url></urlset>",
+        f"{hr}/redacteur-20-uur": _job_page("Redacteur (20 uur)", "Amsterdam"),
+    }
+    monkeypatch.setattr(ats, "load_employers", lambda: [
+        {"name": "Voorbeeld", "system": "teamtailor", "slug": "voorbeeld", "host": host},
+        {"name": "Krant", "system": "homerun", "slug": "voorbeeld"},
+    ])
+    fake = FakeSite(pages)
+    store.sync_sources([{"id": "ats-bedrijven", "kind": "ats-registry"}])
+    ats._scan_ats(fake, {"id": "ats-bedrijven"}, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    with store.connect() as con:
+        rows = {row["url"]: row for row in con.execute("SELECT * FROM jobs").fetchall()}
+    assert set(rows) == {f"{host}/jobs/101-planner", f"{hr}/redacteur-20-uur"}
+    planner = rows[f"{host}/jobs/101-planner"]
+    assert planner["title"] == "Planner" and planner["location"] == "Eindhoven" and planner["company"] == "Voorbeeld"
+    assert "mooie dingen" in planner["description"] and rows[f"{hr}/redacteur-20-uur"]["company"] == "Krant"
+    assert fake.asked.count(f"{host}/jobs/101-planner") == 1  # listed twice, read once
+    fake.asked.clear()
+    ats._scan_ats(fake, {"id": "ats-bedrijven"}, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    assert f"{host}/jobs/101-planner" not in fake.asked  # known and recent: only touched
+
+
+def test_greenjobs_turns_national_on_existing_installations(client):  # noqa: F811
+    old = {"id": "greenjobs", "kind": "exenzo-json", "scope": "regional", "regions": ["Amsterdam"], "search": "Amsterdam"}
+    store.save_source_config(old, enabled=True)
+    greenjobs = {item["id"]: item for item in sources.load_sources()}["greenjobs"]
+    assert greenjobs["scope"] == "national" and greenjobs["regions"] == [] and not greenjobs["search"]
+    assert greenjobs["enabled"] is True and greenjobs["max_pages"] * greenjobs["per_page"] >= 300
 
 
 def test_exenzo_fills_in_cut_off_texts_from_the_public_page(client, monkeypatch):  # noqa: F811
@@ -784,7 +865,7 @@ def test_exenzo_fills_in_cut_off_texts_from_the_public_page(client, monkeypatch)
             return super().get(url, **kwargs)
 
     site = "https://bord.test"
-    fake = Fake({f"{site}/vacature/adviseur-1": _posting_page("Adviseur 1", "Utrecht"), f"{site}/vacature/adviseur-2": _posting_page("Adviseur 2", "Utrecht")})
+    fake = Fake({f"{site}/vacature/adviseur-1": _job_page("Adviseur 1", "Utrecht"), f"{site}/vacature/adviseur-2": _job_page("Adviseur 2", "Utrecht")})
     source = {"id": "bord", "base_url": "https://bord.api.exenzo.test", "public_site": site, "enrich_details": True, "detail_cap": 1}
     store.sync_sources([{"id": "bord", "kind": "exenzo-json"}])
     exenzo._scan_exenzo(fake, source, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
