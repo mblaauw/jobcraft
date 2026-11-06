@@ -271,7 +271,7 @@ sources:
     kind: ats-registry
     revision: 2
     enabled: true
-    notes: "Publieke Greenhouse- en Recruitee-boards uit seeds/employers.yaml; alleen vacatures in Nederland. Ashby staat er niet tussen: robots.txt van de API geeft 401, en de scanner behandelt dat als niet toegestaan."
+    notes: "Publieke Greenhouse-, Recruitee-, Lever-, Personio-, Homerun- en Teamtailor-boards uit seeds/employers.yaml; alleen vacatures in Nederland. Ashby staat er niet tussen: robots.txt van de API geeft 401, en de scanner behandelt dat als niet toegestaan."
 
   - id: academictransfer
     name: AcademicTransfer (universiteiten en onderzoek)
