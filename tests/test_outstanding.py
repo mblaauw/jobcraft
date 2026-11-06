@@ -46,7 +46,8 @@ def test_new_sources_respect_their_review():
     seed = {item["id"]: item for item in yaml.safe_load(sources.SEED_FILE.read_text())["sources"]}
     assert seed["academictransfer"]["enabled"] is True
     assert seed["academictransfer"]["kind"] == "sitemap-jsonld"
-    assert seed["onderwijsvacatures"]["enabled"] is False
+    # A proof of concept since 2026-11-06; the note keeps the terms for the agreement.
+    assert seed["onderwijsvacatures"]["enabled"] is True and "afspraak nodig" in seed["onderwijsvacatures"]["notes"]
 
 
 class Pages:
@@ -91,6 +92,61 @@ def test_one_line_summary_gives_way_to_the_page_text(client, monkeypatch):  # no
         row = con.execute("SELECT * FROM jobs WHERE url='https://w.test/vacatures/a'").fetchone()
     assert "dit vragen wij" in row["description"]
     assert row["company"] == "Rijk"
+
+
+def test_a_board_without_structured_data_gives_title_text_and_place_from_its_page(client, monkeypatch):  # noqa: F811
+    monkeypatch.setattr("app.adapters.jsonld.time.sleep", lambda _: None)
+    body = "<p>" + "Je geeft les aan groep 7 en werkt samen met een duo. " * 20 + "</p>"
+    client_pages = Pages(
+        {
+            "https://m.test/sitemap.xml": "<urlset><loc>https://m.test/vacature/1/leerkracht</loc></urlset>",
+            "https://m.test/vacature/1/leerkracht": (
+                "<html><head><title>Vacature Leerkracht groep 7 - De Bussel - Kaatsheuvel</title></head>"
+                f"<body><h1>Leerkracht groep 7</h1><main>{body}</main></body></html>"
+            ),
+        }
+    )
+    source = {
+        "id": "m",
+        "sitemap_url": "https://m.test/sitemap.xml",
+        "html_fallback": True,
+        "title_pattern": "^Vacature .+ - (?P<company>(?:(?! - ).)+) - (?P<place>(?:(?! - ).)+)$",
+    }
+    store.sync_sources([{"id": "m", "kind": "sitemap-jsonld"}])
+    entry, summary = _entry()
+    _scan_sitemap_jsonld(client_pages, source, entry, summary)
+    _scan_sitemap_jsonld(client_pages, {**source, "id": "m2", "html_fallback": False}, *_entry())
+    with store.connect() as con:
+        rows = con.execute("SELECT * FROM jobs WHERE source_id IN ('m', 'm2')").fetchall()
+    assert len(rows) == 1  # without html_fallback a page without JobPosting is left alone
+    row = rows[0]
+    assert (row["title"], row["company"], row["location"]) == ("Leerkracht groep 7", "De Bussel", "Kaatsheuvel")
+    assert "groep 7 en werkt samen" in row["description"]
+
+
+def test_a_plain_text_address_or_the_source_default_gives_the_place(client, monkeypatch):  # noqa: F811
+    monkeypatch.setattr("app.adapters.jsonld.time.sleep", lambda _: None)
+    text = "Je begeleidt collega's op je eigen locatie. Je werkt samen met een collega. " * 10
+
+    def page(address):
+        ld = {"@type": "JobPosting", "title": "Verpleegkundige", "description": text}
+        if address:
+            ld["jobLocation"] = {"@type": "Place", "address": address}
+        return f'<html><script type="application/ld+json">{json.dumps(ld)}</script><body></body></html>'
+
+    client_pages = Pages(
+        {
+            "https://z.test/sitemap.xml": "<urlset><loc>https://z.test/vacatures/1</loc><loc>https://z.test/vacatures/2</loc></urlset>",
+            "https://z.test/vacatures/1": page("Wognum"),
+            "https://z.test/vacatures/2": page(None),
+        }
+    )
+    store.sync_sources([{"id": "z", "kind": "sitemap-jsonld"}])
+    entry, summary = _entry()
+    _scan_sitemap_jsonld(client_pages, {"id": "z", "sitemap_url": "https://z.test/sitemap.xml", "default_location": "Hoorn"}, entry, summary)
+    with store.connect() as con:
+        places = {row["url"][-1]: row["location"] for row in con.execute("SELECT url, location FROM jobs WHERE source_id='z'")}
+    assert places == {"1": "Wognum", "2": "Hoorn"}  # never the village Een from "met een collega"
 
 
 def test_rich_structured_text_is_kept(client, monkeypatch):  # noqa: F811

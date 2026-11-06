@@ -6,12 +6,15 @@ import re
 import time
 from html import unescape
 
+from bs4 import BeautifulSoup
+
 from .. import store
 from .common import (
     _skip_recent_detail,
     _tally,
     best_description,
     make_job,
+    page_text,
     safe_detail_get,
     strip_html,
 )
@@ -57,6 +60,8 @@ def jsonld_location(data: dict) -> tuple[str, float | None, float | None]:
     if not isinstance(location, dict):
         return "", None, None
     address = location.get("address") or {}
+    if isinstance(address, str):  # schema.org allows plain text: "address": "Wognum"
+        address = {"addressLocality": address.strip()}
     if not isinstance(address, dict):
         address = {}
     label = ", ".join(
@@ -72,6 +77,26 @@ def jsonld_location(data: dict) -> tuple[str, float | None, float | None]:
             lat = lon = None
     return label, lat, lon
 
+
+
+def html_posting(raw_html: str, source: dict) -> dict | None:
+    """A page without JobPosting: h1 as title, the page text, and place or employer from the
+    <title> when the source's `title_pattern` has named groups `place` and `company`."""
+    soup = BeautifulSoup(raw_html, "html.parser")
+    heading = soup.find("h1")
+    title = heading.get_text(" ", strip=True) if heading else ""
+    if not title:
+        return None
+    head = soup.title.get_text(" ", strip=True) if soup.title else ""
+    match = re.search(source["title_pattern"], head) if source.get("title_pattern") else None
+    found = match.groupdict() if match else {}
+    return {
+        "title": title,
+        "company": (found.get("company") or "").strip() or source.get("default_company", ""),
+        "location": (found.get("place") or "").strip(),
+        "description": page_text(raw_html),
+        "posted_at": "",
+    }
 
 
 def _scan_sitemap_jsonld(client, source, entry, summary, limit_per_source=None) -> None:
@@ -103,22 +128,30 @@ def _scan_sitemap_jsonld(client, source, entry, summary, limit_per_source=None) 
         if page is None or page.status_code >= 400:
             continue
         items = jsonld_jobs(page.text)
-        if not items:
+        if items:
+            data = items[0]
+            location, lat, lon = jsonld_location(data)
+            posting = {
+                "title": str(data.get("title") or "").strip(),
+                "company": jsonld_company(data),
+                "location": location,
+                "description": best_description(strip_html(data.get("description")), page.text),
+                "posted_at": str(data.get("datePosted") or ""),
+            }
+        elif source.get("html_fallback"):  # boards that render vacancies without structured data
+            posting, lat, lon = html_posting(page.text, source), None, None
+        else:
             continue
-        data = items[0]
-        title = str(data.get("title") or "").strip()
-        if not title:
+        if not posting or not posting["title"]:
             continue
-        location, lat, lon = jsonld_location(data)
-        description = best_description(strip_html(data.get("description")), page.text)
         job = make_job(
             source["id"],
             url,
-            title,
-            company=jsonld_company(data),
-            location=location,
-            description=description,
-            posted_at=str(data.get("datePosted") or ""),
+            posting["title"],
+            company=posting["company"],
+            location=posting["location"] or source.get("default_location", ""),
+            description=posting["description"],
+            posted_at=posting["posted_at"],
             lat=lat,
             lon=lon,
         )

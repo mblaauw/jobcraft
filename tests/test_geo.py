@@ -187,6 +187,10 @@ def test_positive_availability_is_not_negated_by_later_experience_clause():
         ("Doorgaan naar inhoud 10 november, Fokker Terminal Den Haag Bestel je tickets", ""),
         ("De workshop vindt plaats op dinsdag 1 december in Amsterdam", ""),
         ("Locatie thuis of op kantoor", ""),
+        # "een" is also a village; a sentence after the word "locatie" is not a place.
+        ("Je coacht collega's op je eigen locatie. Je werkt daarnaast nauw samen met een collega", ""),
+        ("Werklocatie in overleg met een collega uit het team", ""),
+        ("Standplaats: Den Haag (hybride)", "Den Haag"),
     ],
 )
 def test_a_vacancy_states_its_own_place(text, place):
