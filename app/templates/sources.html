@@ -13,7 +13,7 @@
       <li>{{ jobs_by_source.get(s["id"], 0) }} vacatures</li>
       <li>{% if s["last_scan_at"] %}opgehaald {{ ui.nl_date(s["last_scan_at"], time=True) }}{% else %}nog niet opgehaald{% endif %}</li>
       {% set h = health.get(s['id']) if health else none %}
-      {% if admin and status and status != 'ok' %}<li class="warn-text">{% if h and h.failures > 1 %}{{ h.failures }} rondes achter elkaar mislukt{% else %}laatste ronde mislukt{% endif %}</li>{% endif %}
+      {% if admin and status and status != 'ok' %}<li class="warn-text">{% if h and h.failures > 1 %}{{ h.failures }} rondes achter elkaar mislukt{% else %}laatste ronde mislukt{% endif %}</li>{% if h and h.reason %}<li class="subtle source-reason">{{ h.reason }}</li>{% endif %}{% endif %}
       {% if admin and h and status == 'ok' and not h['items'] %}<li class="warn-text">laatste ronde niets gevonden</li>{% endif %}
       {% if admin and h and h.dropped %}<li class="warn-text">veel minder dan normaal</li>{% endif %}
       {% if admin and full_text and full_text.get(s['id']) is not none %}<li>{{ full_text[s['id']] }}% met volledige tekst</li>{% endif %}

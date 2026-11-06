@@ -114,3 +114,28 @@ def test_a_restart_during_a_scan_marks_no_source_as_failed(monkeypatch):
     finally:
         STOPPING.clear()
     assert marked == []
+
+
+def test_a_failing_source_keeps_its_reason_and_the_scan_goes_on(monkeypatch):
+    import json
+
+    from app import sources
+
+    def broken(client, source, entry, summary, limit):
+        raise RuntimeError("Niet bereikbaar: board-x")
+
+    def fine(client, source, entry, summary, limit):
+        entry["items"] = 3
+
+    monkeypatch.setattr(sources.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(sources, "registry", lambda: {"broken": broken, "fine": fine})
+    monkeypatch.setattr(sources, "load_sources", lambda: [{"id": "a", "kind": "broken"}, {"id": "b", "kind": "fine"}, {"id": "c", "kind": "nog-niet"}])
+    summary = sources.scan()
+    assert summary["sources"]["a"] == {"status": "error", "new": 0, "updated": 0, "items": 0, "reason": "RuntimeError: Niet bereikbaar: board-x"}
+    assert summary["sources"]["b"]["status"] == "ok" and summary["sources"]["b"]["items"] == 3
+    assert summary["sources"]["c"]["status"] == "skipped"
+    health = json.loads(store.meta_get("source_health"))
+    assert health["a"]["reason"] == "RuntimeError: Niet bereikbaar: board-x" and health["a"]["failures"] == 1
+    monkeypatch.setattr(sources, "registry", lambda: {"broken": fine, "fine": fine})
+    sources.scan()
+    assert json.loads(store.meta_get("source_health"))["a"]["reason"] == ""  # a good round clears it
