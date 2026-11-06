@@ -768,6 +768,29 @@ class FakeSite:
         return httpx.Response(200, content=body if isinstance(body, bytes) else body.encode(), request=request)
 
 
+def test_lever_boards_keep_dutch_postings_with_their_full_text(client, monkeypatch):  # noqa: F811
+    monkeypatch.setattr(ats, "load_employers", lambda: [{"name": "Voorbeeld", "system": "lever", "slug": "voorbeeld"}])
+    monkeypatch.setattr(ats.time, "sleep", lambda _: None)
+    postings = [
+        {"text": "Product Owner", "hostedUrl": "https://jobs.lever.co/voorbeeld/1", "country": "NL", "createdAt": 1793000000000,
+         "categories": {"location": "Amsterdam", "allLocations": ["Amsterdam"], "commitment": "Full-time"},
+         "descriptionPlain": "Je stuurt het team.", "lists": [{"text": "Wat je doet", "content": "<li>Plannen maken</li>"}],
+         "additionalPlain": "Hybride werken."},
+        {"text": "Engineer", "hostedUrl": "https://jobs.lever.co/voorbeeld/2", "country": "DE",
+         "categories": {"location": "Berlin | Munich", "allLocations": ["Berlin", "Munich"]}, "descriptionPlain": "Elders."},
+    ]
+    store.sync_sources([{"id": "ats-bedrijven", "kind": "ats-registry"}])
+    ats._scan_ats(FakeSite({"https://api.lever.co/v0/postings/voorbeeld": json.dumps(postings)}), {"id": "ats-bedrijven"},
+                  {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    with store.connect() as con:
+        rows = con.execute("SELECT * FROM jobs WHERE source_id='ats-bedrijven'").fetchall()
+    assert [row["url"] for row in rows] == ["https://jobs.lever.co/voorbeeld/1"]
+    job = rows[0]
+    assert job["location"] == "Amsterdam" and job["company"] == "Voorbeeld" and job["hours"] == "Full-time"
+    assert "Plannen maken" in job["description"] and "Hybride werken." in job["description"]
+    assert job["posted_at"].startswith("2026-")
+
+
 def test_personio_boards_read_the_feed_and_fill_in_text_from_job_pages(client, monkeypatch):  # noqa: F811
     monkeypatch.setattr(ats, "load_employers", lambda: [{"name": "Voorbeeld", "system": "personio", "slug": "voorbeeld", "detail_cap": 1}])
     monkeypatch.setattr(ats.time, "sleep", lambda _: None)

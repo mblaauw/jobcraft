@@ -94,6 +94,27 @@ def test_robots_denial_prevents_detail_and_redirect_destination(tmp_path):
     assert "https://other.test/private" not in requests
 
 
+def test_a_redirected_robots_file_is_followed_and_applies(tmp_path):
+    def handler(request):
+        if request.url.host == "board.test" and request.url.path == "/robots.txt":
+            return httpx.Response(302, headers={"Location": "https://careers.test/robots.txt"})
+        if request.url.path == "/robots.txt":
+            return httpx.Response(200, text="User-agent: *\nDisallow: /private")
+        return httpx.Response(200, text="public")
+
+    client, _ = transport(handler, tmp_path)
+    assert client.get("https://board.test/api/offers/").text == "public"
+    with pytest.raises(httpx.RequestError, match="disallows"):
+        client.get("https://board.test/private/x")
+
+    def looping(request):
+        return httpx.Response(302, headers={"Location": str(request.url)})
+
+    client, _ = transport(looping, tmp_path)
+    with pytest.raises(httpx.HTTPStatusError, match="Robots"):  # never settles: unavailable
+        client.get("https://loop.test/job")
+
+
 def test_unavailable_robots_fail_closed_and_404_allows(tmp_path):
     client, _ = transport(lambda request: httpx.Response(503), tmp_path)
     with pytest.raises(httpx.HTTPStatusError, match="Robots"):

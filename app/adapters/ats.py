@@ -1,6 +1,6 @@
-"""Employer registry: public Greenhouse, Recruitee, Personio, Homerun and Teamtailor boards.
+"""Employer registry: public Greenhouse, Recruitee, Lever, Personio, Homerun and Teamtailor boards.
 
-Adding an employer is one line in `seeds/employers.yaml`. Greenhouse and Recruitee
+Adding an employer is one line in `seeds/employers.yaml`. Greenhouse, Recruitee and Lever
 return full vacancy text in one response. Personio's XML feed often leaves the text
 out; its server-rendered job pages fill it in. Homerun and Teamtailor list their job
 pages in a sitemap, and each page carries JobPosting JSON-LD. Job pages are fetched
@@ -98,6 +98,33 @@ def _recruitee(client, employer: dict) -> list[dict]:
     return jobs
 
 
+def _lever(client, employer: dict) -> list[dict]:
+    response = client.get(f"https://api.lever.co/v0/postings/{employer['slug']}", params={"mode": "json"})
+    response.raise_for_status()
+    jobs = []
+    for item in response.json() or []:
+        categories = item.get("categories") or {}
+        places = categories.get("allLocations") or [categories.get("location") or ""]
+        dutch = [place for place in places if place and dutch_office(place)]
+        if not dutch and item.get("country") != "NL":
+            continue
+        sections = [f"{part.get('text') or ''}\n{strip_html(part.get('content') or '')}" for part in item.get("lists") or []]
+        created = item.get("createdAt")
+        jobs.append(
+            {
+                "url": item.get("hostedUrl"),
+                "title": item.get("text"),
+                "location": ", ".join(dutch) or categories.get("location") or "",
+                "description": "\n\n".join(
+                    part.strip() for part in (item.get("descriptionPlain"), *sections, item.get("additionalPlain")) if part
+                ),
+                "posted_at": time.strftime("%Y-%m-%d", time.gmtime(created / 1000)) if isinstance(created, int) else "",
+                "hours": categories.get("commitment") or "",
+            }
+        )
+    return jobs
+
+
 PERSONIO_SCHEDULE = {"full-time": "Fulltime", "part-time": "Parttime", "full-or-part-time": "Fulltime of parttime"}
 PERSONIO_CONTRACT = {
     "permanent": "vast",
@@ -169,6 +196,7 @@ def _teamtailor(client, employer: dict) -> list[dict]:
 SYSTEMS = {
     "greenhouse": _greenhouse,
     "recruitee": _recruitee,
+    "lever": _lever,
     "personio": _personio,
     "homerun": _homerun,
     "teamtailor": _teamtailor,

@@ -107,6 +107,13 @@ class PoliteClient:
         if origin not in self.robots:
             target = origin + "/robots.txt"
             response = self._request(target)
+            # RFC 9309: follow up to five redirects (a board on *.recruitee.com points to
+            # the employer's own robots.txt); one that goes on is still "unavailable".
+            for _ in range(5):
+                location = response.headers.get("location")
+                if response.status_code not in (301, 302, 303, 307, 308) or not location:
+                    break
+                response = self._request(str(response.url.join(location)))
             policy = RobotFileParser(target)
             if response.status_code == 404:
                 policy.parse([])  # authoritative missing policy, not transient unavailability

@@ -1,7 +1,7 @@
 # Employer registry: one line per employer. Only public job-board APIs, no login.
 # Verified 2026-11-01: the board answered and listed vacancies in the Netherlands.
-# Add an employer with: {name, system, slug}. Systems: greenhouse, recruitee, personio,
-# homerun, teamtailor.
+# Add an employer with: {name, system, slug}. Systems: greenhouse, recruitee, lever,
+# personio, homerun, teamtailor.
 # Personio also takes tld (com or de, default com): use the one whose /xml and /job/<id>
 # answer without a redirect, and optionally detail_cap (job pages per round, default 40).
 # Teamtailor also takes host, for a board on the employer's own domain. Homerun and
@@ -48,5 +48,28 @@ employers:
   # /jobs/internal/). Most guessed tenants do not exist (Homerun 302, Teamtailor 404).
   - {name: De Correspondent, system: homerun, slug: decorrespondent}
   - {name: Sendcloud, system: teamtailor, slug: sendcloud, host: "https://jobs.sendcloud.com"}
-# Recruitee boards on their own domain (Greenchoice, Effectory) redirect robots.txt, and
-# the scanner fails closed on that, so they stay out. Use boards on *.recruitee.com only.
+  # Found 2026-11-06 by trying names against the public APIs; company name and Dutch
+  # offices checked in the API answer.
+  - {name: DPG Media, system: recruitee, slug: dpgmedia}
+  - {name: Greenchoice, system: recruitee, slug: greenchoice}
+  - {name: Effectory, system: recruitee, slug: effectory}
+  - {name: bunq, system: recruitee, slug: bunq}
+  - {name: Fastned, system: recruitee, slug: fastned}
+  - {name: Transavia, system: recruitee, slug: transavia}
+  - {name: Channable, system: recruitee, slug: channable}
+  - {name: Nmbrs, system: recruitee, slug: nmbrs}
+  - {name: Vandebron, system: recruitee, slug: vandebron}
+  - {name: Tony's Chocolonely, system: recruitee, slug: tonyschocolonely}
+  - {name: RTL Nederland, system: recruitee, slug: rtl}
+  - {name: Autoriteit Financiële Markten, system: recruitee, slug: werkenbijdeafm}
+  - {name: Suitsupply, system: greenhouse, slug: suitsupply}
+  - {name: Travix, system: greenhouse, slug: travix}
+  - {name: Bloomreach, system: greenhouse, slug: bloomreach}
+  - {name: Fairphone, system: personio, slug: fairphone, tld: com}
+  - {name: Lepaya, system: personio, slug: lepaya, tld: com}
+  - {name: Silverflow, system: personio, slug: silverflow, tld: com}
+  # Lever: api.lever.co allows all with crawl-delay 1; postings carry the full text.
+  - {name: Mendix, system: lever, slug: mendix}
+  - {name: Insify, system: lever, slug: insify}
+# Recruitee boards on their own domain redirect robots.txt to that domain; the scanner
+# follows up to five such redirects (RFC 9309) and obeys the file it lands on.
