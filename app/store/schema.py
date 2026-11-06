@@ -156,6 +156,7 @@ def init_db() -> None:
         _fill_search_text(con)
         _fill_places_from_text(con)
         migrate(con)
+        _promote_schedule_meta(con)
 
 
 
@@ -218,6 +219,20 @@ def _backup_database(source: sqlite3.Connection, current: int) -> None:
     for old in sorted(directory.glob("app-*.db"), reverse=True)[5:]:
         old.unlink(missing_ok=True)
 
+
+
+def _promote_schedule_meta(con: sqlite3.Connection) -> None:
+    """The scan schedule is one setting for the installation; a value an administrator saved
+    while it was still stored per account is carried over once, then the per-account copies go."""
+    for key in ("scan_schedule_enabled", "scan_schedule_times"):
+        if con.execute("SELECT 1 FROM meta WHERE key=?", (key,)).fetchone():
+            continue
+        row = con.execute(
+            "SELECT value FROM user_meta WHERE key=? ORDER BY rowid DESC LIMIT 1", (key,)
+        ).fetchone()
+        if row is not None:
+            con.execute("INSERT INTO meta(key,value) VALUES (?,?)", (key, row["value"]))
+            con.execute("DELETE FROM user_meta WHERE key=?", (key,))
 
 
 def migrate(con: sqlite3.Connection) -> None:

@@ -20,7 +20,7 @@
 {# Zoeken is for job seekers, Beheer for administrators; an owner who is both sees both. #}
 {% set seeker = user and (not is_admin or (account_has_profile(user) if account_has_profile is defined else false)) %}
 {% set primary = [('/', 'Vandaag', 'house'), ('/jobs', 'Vacatures', 'briefcase-business'), ('/sollicitaties', 'Sollicitaties', 'list-checks'), ('/profile', 'Profiel', 'user-round')] if seeker else [] %}
-{% set beheer = [('/admin', 'Systeem', 'activity'), ('/users', 'Gebruikers', 'users'), ('/sources', 'Bronnen', 'rss'), ('/admin/ai', 'AI', 'sparkles')] if is_admin else [] %}
+{% set beheer = [('/admin', 'Overzicht', 'activity'), ('/users', 'Gebruikers', 'users'), ('/sources', 'Bronnen', 'rss'), ('/admin/ai', 'AI', 'sparkles'), ('/admin/instellingen', 'Instellingen', 'sliders-horizontal')] if is_admin else [] %}
 {% set secondary = beheer + [('/account', 'Account', 'settings-2')] %}
 {% set new_matches = new_match_count() if (primary and new_match_count is defined) else 0 %}
 {% set open_coach = open_coach_count() if (primary and open_coach_count is defined) else 0 %}

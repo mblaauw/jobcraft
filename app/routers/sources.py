@@ -84,11 +84,14 @@ def sources_scan(request: Request):
 
 
 @router.post("/sources/schedule", dependencies=[Depends(auth.require_admin)])
-def sources_schedule(request: Request, enabled: str = Form("1"), times: str = Form("07:30,17:30")):
+def sources_schedule(
+    request: Request, enabled: str = Form("1"), times: str = Form("07:30,17:30"), url: str = Form("", alias="next")
+):
     auth.require_admin(request)
     store.meta_set("scan_schedule_enabled", "1" if enabled == "1" else "0")
     store.meta_set("scan_schedule_times", times.strip() or "07:30,17:30")
-    return RedirectResponse(url="/sources", status_code=303)
+    target = "/admin/instellingen?opgeslagen=1" if url == "/admin/instellingen" else "/sources"
+    return RedirectResponse(url=target, status_code=303)
 
 
 @router.post("/sources/{source_id}/preference")

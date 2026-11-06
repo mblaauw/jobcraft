@@ -27,6 +27,7 @@ PUBLIC = {
 ADMIN = {
     ("GET", "/admin"),
     ("GET", "/admin/ai"),
+    ("GET", "/admin/instellingen"),
     ("POST", "/admin/ai/modellen"),
     ("POST", "/admin/ai/test"),
     ("GET", "/admin/ai/log/{owner}/{day}/{offset}"),

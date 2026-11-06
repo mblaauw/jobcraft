@@ -74,6 +74,8 @@ def meta_get(key: str, default: str | None = None) -> str | None:
             "digest_last_tick",
             "worker_heartbeat",
             "model_routes",
+            "scan_schedule_enabled",
+            "scan_schedule_times",
         ):
             row = con.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
         else:
@@ -96,6 +98,8 @@ def meta_set(key: str, value: str) -> None:
             "digest_last_tick",
             "worker_heartbeat",
             "model_routes",
+            "scan_schedule_enabled",
+            "scan_schedule_times",
         ):
             con.execute(
                 "INSERT INTO meta(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",

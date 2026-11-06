@@ -1,6 +1,6 @@
 # Admin area: design proposal
 
-Status: proposal of 2026-11-06; step 1 (rail groups and the Account split) built the same day on branch `admin-rail`. Steps 2 to 4 wait for approval. Follows `docs/admin-review.md`
+Status: proposal of 2026-11-06. Step 1 (rail groups, Account split) merged in PR 111; step 2 (Overzicht, Instellingen, usage tables on AI) built on branch `admin-overview`. Steps 3 and 4 wait for approval. Follows `docs/admin-review.md`
 (the findings) and the walkthrough of every admin page on a local copy.
 
 ## The problem in one sentence
