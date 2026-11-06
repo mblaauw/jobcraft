@@ -250,8 +250,9 @@ def _find_place(text: str) -> str | None:
     return max((match.group(0) for match in PLACE_PATTERN.finditer(text)), key=len, default=None)
 
 
-_PLACE_LABEL = re.compile(
-    r"(?<!\w)(?:(?:standplaats|werklocatie|locatie)\s*[:\-]?|(?:werkplek|plaats|vestiging)\s*[:\-])\s*([^\n|;]{2,60})"
+_PLACE_LABEL = re.compile(  # the place follows at once: "locatie. Je werkt met een collega" names none
+    r"(?<!\w)(?:(?:standplaats|werklocatie|locatie)\s*[:\-]?|(?:werkplek|plaats|vestiging)\s*[:\-])"
+    r"\s*((?:'s|[^\W\d_])[^\n|;]{1,59})"
 )
 _SEEKS_IN = re.compile(
     r"(?<!\w)in ([^\n|;.,]{2,40}?) (?:zoekt|zoeken|is op zoek|zijn op zoek|is looking for|are looking for)(?!\w)"
@@ -263,8 +264,13 @@ def place_in_text(text: str | None) -> str:
     """The work place a vacancy states itself ("X in Utrecht zoekt", "Standplaats: Delft",
     or "Organisatie, Plaats" as its header), never a place merely mentioned somewhere."""
     text = (text or "").replace("\u2018", "'").replace("\u2019", "'")
-    candidates = [match.group(1) for match in _PLACE_LABEL.finditer(_norm_lines(text[:3000]))]
-    candidates += [match.group(1) for match in _SEEKS_IN.finditer(_norm(text[:400]))]
+    # After a label the place comes first; "locatie in overleg met een collega" names none
+    # (Een is also a village), so a labelled place must open the text that follows.
+    for match in _PLACE_LABEL.finditer(_norm_lines(text[:3000])):
+        place = _find_place(match.group(1))
+        if place and _norm(match.group(1)).startswith(place):
+            return PLACE_LABELS.get(place, "") or place.title()
+    candidates = [match.group(1) for match in _SEEKS_IN.finditer(_norm(text[:400]))]
     candidates += [match.group(1) for match in _DOT_PLACE.finditer(_norm(text[:600]))]
     # A short header line such as "Stichting X, Amsterdam-Oost": only a bare place after the comma.
     for line in [line for line in text.splitlines()[:3] if len(line) <= 80]:
