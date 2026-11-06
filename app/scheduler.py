@@ -89,6 +89,20 @@ def run_digest_due(now: datetime | None = None) -> bool:
     return True
 
 
+_last_prune_day: str | None = None
+
+
+def run_prune_due(now: datetime | None = None) -> bool:
+    """Once a day per process: sign-in history older than the retention goes."""
+    global _last_prune_day
+    today = (now or datetime.now(UTC)).date().isoformat()
+    if _last_prune_day == today:
+        return False
+    store.prune_auth_events()
+    _last_prune_day = today
+    return True
+
+
 def start() -> None:
     global _THREAD
     if _THREAD and _THREAD.is_alive():
@@ -100,6 +114,7 @@ def start() -> None:
             try:
                 run_due()
                 run_digest_due()
+                run_prune_due()
             except Exception:
                 continue
 

@@ -7,6 +7,7 @@ import uuid
 from fastapi import Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from . import activity
 from .bootstrap import (
     _bootstrap_credentials_lock,
     _read_bootstrap_accounts,
@@ -48,6 +49,7 @@ from .users import (
 )
 from .views import (
     _account_response,
+    _activity_response,
     _login_response,
     _password_problem,
     _start_anonymous_session,
@@ -110,6 +112,8 @@ def login_submit(
     key = _failure_key(request, username)
     wait = _rate_limit_wait(key)
     if wait:
+        # Refused before the password is looked at; still a failed attempt worth seeing.
+        activity.record(request, "login_failed", username=username)
         return _login_response(
             request,
             error="Te veel mislukte pogingen. Probeer het straks opnieuw.",
@@ -126,6 +130,7 @@ def login_submit(
     if row is None or not row["active"] or not valid_password:
         _record_failure(key)
         log.warning("login failed for user=%r", username)
+        activity.record(request, "login_failed", user_id=row["id"] if row is not None else None, username=username)
         csrf = _rotate_csrf(session["token_hash"]) or session["csrf_token"]
         request.state.csrf_token = csrf
         return _login_response(
@@ -150,6 +155,7 @@ def login_submit(
     response = RedirectResponse(url=target or _default_home(row), status_code=303)
     _set_session_cookie(response, token, SESSION_TTL_SECONDS)
     log.info("login ok for user id=%s", row["id"])
+    activity.record(request, "login_ok", user_id=row["id"])
     return response
 
 
@@ -159,6 +165,8 @@ def logout(request: Request):
     session_id = getattr(request.state, "auth_session_id", None)
     if session_id:
         _revoke_session(session_id)
+    user = current_user(request)
+    activity.record(request, "logout", user_id=user["id"] if user else None)
     response = RedirectResponse(url="/login", status_code=303)
     _clear_session_cookie(response)
     return response
@@ -192,6 +200,7 @@ def account_password(
     _set_password(row["id"], new_password)
     revoked = _revoke_other_sessions(row["id"], getattr(request.state, "auth_session_id", None))
     log.info("password changed for user id=%s, %d other sessions revoked", row["id"], revoked)
+    activity.record(request, "password_changed", user_id=row["id"])
     return RedirectResponse(url="/account?changed=1", status_code=303)
 
 
@@ -199,6 +208,13 @@ def account_password(
 @router.get("/users", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
 def users_page(request: Request):
     return _users_response(request, user=require_admin(request))
+
+
+@router.get("/users/activiteit", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
+def users_activity(request: Request, account: str = "", soort: str = "", periode: str = "week"):
+    """Who signed in when and from where, and what administrators did to accounts."""
+    require_admin(request)
+    return _activity_response(request, account=account, kind=soort, period=periode)
 
 
 
@@ -275,6 +291,7 @@ def users_deactivate(request: Request, user_id: str):
         raise HTTPException(status_code=404, detail="Onbekende gebruiker.")
     revoked = _revoke_sessions_for(target["id"])
     log.info("user deactivated id=%s, %d sessions revoked", target["id"], revoked)
+    activity.record(request, "deactivated", user_id=target["id"], actor_id=admin["id"])
     return _users_response(request, user=admin, notice=f"{target['username']} is gedeactiveerd.")
 
 
@@ -287,6 +304,7 @@ def users_activate(request: Request, user_id: str):
         raise HTTPException(status_code=404, detail="Onbekende gebruiker.")
     _set_active(target["id"], True)
     log.info("user activated id=%s", target["id"])
+    activity.record(request, "activated", user_id=target["id"], actor_id=admin["id"])
     return _users_response(request, user=admin, notice=f"{target['username']} is weer actief.")
 
 
@@ -301,6 +319,7 @@ def users_reset_password(request: Request, user_id: str):
     _set_password(target["id"], password)
     revoked = _revoke_sessions_for(target["id"])
     log.info("password reset for user id=%s, %d sessions revoked", target["id"], revoked)
+    activity.record(request, "password_reset", user_id=target["id"], actor_id=admin["id"])
     return _users_response(
         request,
         user=admin,

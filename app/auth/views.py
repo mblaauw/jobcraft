@@ -9,6 +9,7 @@ from fastapi import Request
 
 from .. import config, store
 from ..web import templates
+from .activity import browser_label
 from .constants import ANONYMOUS_TTL_SECONDS, MIN_PASSWORD_LENGTH, ROLE_ADMIN
 from .credentials import verify_password
 from .security import csrf_token
@@ -94,7 +95,20 @@ def _account_response(request: Request, *, user: dict, error: str = "", status_c
     )
 
 
-def _user_admin_view(row) -> dict:
+ACTIVITY_LABELS = {
+    "login_ok": "Ingelogd",
+    "login_failed": "Inloggen mislukt",
+    "logout": "Uitgelogd",
+    "invite_used": "Account gemaakt via uitnodiging",
+    "password_changed": "Wachtwoord gewijzigd",
+    "password_reset": "Wachtwoord opnieuw ingesteld door beheerder",
+    "deactivated": "Gedeactiveerd door beheerder",
+    "activated": "Geactiveerd door beheerder",
+}
+ACTIVITY_PERIODS = {"dag": 1, "week": 7, "maand": 31}
+
+
+def _user_admin_view(row, last: dict | None = None, failed: int = 0) -> dict:
     return {
         "id": row["id"],
         "username": row["username"],
@@ -103,8 +117,53 @@ def _user_admin_view(row) -> dict:
         "active": bool(row["active"]),
         "created_label": _label_ts(row["created_at"]) or "—",
         "last_login_label": _label_ts(row["last_login_at"]) or "—",
+        "last_ip": (last or {}).get("ip") or "",
+        "last_browser": browser_label((last or {}).get("user_agent")) if last else "",
+        "failed_today": failed,
         "sessions": _session_count(row["id"]),
     }
+
+
+def _activity_response(request: Request, *, account: str, kind: str, period: str):
+    """Sign-in activity for administrators: account-level only, never what people did."""
+    days = ACTIVITY_PERIODS.get(period, 7)
+    period = period if period in ACTIVITY_PERIODS else "week"
+    kind = kind if kind in ACTIVITY_LABELS else ""
+    users = _list_users()
+    names = {row["id"]: (row["display_name"] or row["username"]) for row in users}
+    account = account if account in names else ""
+    events = [
+        {
+            **event,
+            "label": ACTIVITY_LABELS.get(event["kind"], event["kind"]),
+            "when": _label_ts(event["at"]) or event["at"],
+            "name": names.get(event["user_id"], "") if event["user_id"] else "",
+            "actor": names.get(event["actor_id"], "") if event["actor_id"] else "",
+            "browser": browser_label(event["user_agent"]),
+            "failed": event["kind"] == "login_failed",
+        }
+        for event in store.list_auth_events(user_id=account or None, kind=kind or None, days=days)
+    ]
+    guessers = [
+        {**row, "last": _label_ts(row["last"]) or row["last"]} for row in store.failed_attempts(days=1)
+    ]
+    cut_off = len(events) >= store.auth_events.PAGE_LIMIT
+    return templates.TemplateResponse(
+        request,
+        "users_activity.html",
+        {
+            "events": events,
+            "guessers": guessers,
+            "names": names,
+            "labels": ACTIVITY_LABELS,
+            "periods": ACTIVITY_PERIODS,
+            "filter_account": account,
+            "filter_kind": kind,
+            "filter_period": period,
+            "cut_off": cut_off,
+            "retention_days": store.auth_events.retention_days(),
+        },
+    )
 
 
 def _users_response(
@@ -119,11 +178,12 @@ def _users_response(
     status_code: int = 200,
 ):
     rows = _list_users()
+    last, failed = store.last_logins(), store.failed_per_user(days=1)
     return templates.TemplateResponse(
         request,
         "users.html",
         {
-            "users": [_user_admin_view(row) for row in rows],
+            "users": [_user_admin_view(row, last.get(row["id"]), failed.get(row["id"], 0)) for row in rows],
             "current_user_id": user["id"],
             "active_admins": sum(1 for row in rows if row["role"] == ROLE_ADMIN and row["active"]),
             "error": error,

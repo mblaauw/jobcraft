@@ -2,6 +2,10 @@
 # through a shared Docker network. Set PROXY_NETWORK to that network's name.
 services:
   app:
+    environment:
+      # Only the proxy reaches this container, so its X-Forwarded-For is the visitor's
+      # address: the sign-in log and the login rate limit see people, not the proxy.
+      FORWARDED_ALLOW_IPS: "*"
     networks:
       default: {}
       proxy:

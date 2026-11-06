@@ -73,7 +73,7 @@
 
 <section class="panel" aria-labelledby="data-title">
   <h2 id="data-title">Jouw gegevens</h2>
-  <p class="small muted">Wat de AI over je leest komt uit je cv en antwoorden, zonder je naam en contactgegevens. Deze aanroepen staan 30 dagen in een logbestand op de server, zodat de kwaliteit te controleren is. Ze zitten in je export en verdwijnen als je je account verwijdert.</p>
+  <p class="small muted">Wat de AI over je leest komt uit je cv en antwoorden, zonder je naam en contactgegevens. Deze aanroepen staan 30 dagen in een logbestand op de server, zodat de kwaliteit te controleren is. Van elke keer dat je inlogt bewaren we 90 dagen het moment, je adres en je browser, zodat de beheerder misbruik kan zien. Alles zit in je export en verdwijnt als je je account verwijdert.</p>
   <form method="post" action="/account/export">
     {{ csrf_input(request) }}
     <button class="button" type="submit">{{ ui.icon('download') }}Download al mijn gegevens</button>

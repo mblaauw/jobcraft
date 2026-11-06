@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Inlogactiviteit · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="small"><a href="/users">Terug naar Gebruikers</a></p>
+    <h1>Inlogactiviteit</h1>
+    <p class="lede">Wie wanneer inlogde, vanaf welk adres en met welke browser, en wat beheerders met accounts deden. Niets over wat iemand in Jobcraft doet. Regels verdwijnen na {{ retention_days }} dagen.</p>
+  </div>
+</div>
+
+{% if guessers %}
+<section class="panel" aria-labelledby="guessers-title">
+  <h2 id="guessers-title">Mislukte pogingen, laatste 24 uur</h2>
+  <div class="table-scroll" role="region" aria-label="Mislukte pogingen per adres" tabindex="0">
+    <table class="table nowrap">
+      <thead><tr><th>Adres</th><th>Pogingen</th><th>Namen</th><th>Laatste</th></tr></thead>
+      <tbody>
+        {% for row in guessers %}<tr><td><code>{{ row.ip or "onbekend" }}</code></td><td class="num">{{ row.n }}</td><td class="num">{{ row.names }}</td><td>{{ row['last'] }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted">Veel pogingen op veel namen vanaf één adres is iemand die gokt. De inlogpagina remt dat af per adres en naam.</p>
+</section>
+{% endif %}
+
+<section class="panel panel-flush" aria-labelledby="events-title">
+  <div class="padded">
+    <h2 id="events-title">Gebeurtenissen</h2>
+    <form method="get" class="log-filters" data-autosubmit>
+      <div class="field"><label for="f-account">Account</label><select id="f-account" name="account"><option value="">Alle</option>{% for id, name in names.items() %}<option value="{{ id }}"{% if filter_account == id %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="f-soort">Gebeurtenis</label><select id="f-soort" name="soort"><option value="">Alle</option>{% for key, label in labels.items() %}<option value="{{ key }}"{% if filter_kind == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="f-periode">Periode</label><select id="f-periode" name="periode">{% for key in periods %}<option value="{{ key }}"{% if filter_period == key %} selected{% endif %}>{{ {'dag': 'Vandaag', 'week': 'Deze week', 'maand': 'Deze maand'}[key] }}</option>{% endfor %}</select></div>
+      <noscript><button class="button small" type="submit">Filter</button></noscript>
+    </form>
+    {% if cut_off %}<p class="banner warn" role="status">{{ ui.icon('triangle-alert') }}<span>Alleen de nieuwste {{ events | length }} regels staan hier. Kies een kortere periode, een account of een gebeurtenis om de rest te zien.</span></p>{% endif %}
+  </div>
+  <div class="table-scroll" role="region" aria-label="Inlogactiviteit" tabindex="0">
+    <table class="table nowrap">
+      <thead><tr><th>Moment</th><th>Account</th><th>Gebeurtenis</th><th>Adres</th><th>Browser</th></tr></thead>
+      <tbody>
+      {% for event in events %}
+        <tr>
+          <td>{{ event.when }}</td>
+          <td>{% if event.name %}{{ event.name }}{% elif event.username %}<span class="subtle" title="Onbekende naam, zoals ingetypt">{{ event.username }}</span>{% else %}<span class="subtle">—</span>{% endif %}</td>
+          <td>{% if event.failed %}<span class="chip chip-warn">{{ event.label }}</span>{% else %}{{ event.label }}{% endif %}{% if event.actor %} <span class="subtle small">door {{ event.actor }}</span>{% endif %}</td>
+          <td><code>{{ event.ip or "—" }}</code></td>
+          <td class="small">{{ event.browser }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="subtle">Nog niets in deze periode{% if filter_account or filter_kind %} met dit filter{% endif %}.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

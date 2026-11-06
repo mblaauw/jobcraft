@@ -123,6 +123,7 @@ def admin_page(request: Request):
             "priced": any(row["cost"] for row in overview["kinds"]),
             "token_limit": int(os.environ.get("AI_DAILY_TOKEN_LIMIT", "500000") or 0),
             "failures": tasks.failures_overview(),
+            "logins": store.auth_counts(days=1),
             "last_scan": _last_scan(),
             "paths": {
                 "data": str(config.DATA_DIR),

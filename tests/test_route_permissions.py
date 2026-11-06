@@ -31,6 +31,7 @@ ADMIN = {
     ("POST", "/admin/ai/test"),
     ("GET", "/admin/ai/log/{owner}/{day}/{offset}"),
     ("GET", "/users"),
+    ("GET", "/users/activiteit"),
     ("POST", "/users"),
     ("POST", "/users/uitnodiging"),
     ("POST", "/users/{user_id}/deactivate"),
