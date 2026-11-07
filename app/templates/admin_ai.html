@@ -35,7 +35,7 @@
 <div class="grid two">
   <section class="panel" aria-labelledby="usage-title">
     <h2 id="usage-title">Gebruik per soort</h2>
-    <p class="small muted">Cijfers voor deze hele installatie, de afgelopen 14 dagen. {% if priced %}Snelle beoordelingen (Jev) staan als $0 geboekt: de echte kosten staan op het Runware-dashboard.{% else %}De AI-dienst meldt geen prijzen, dus hier staan alleen tokens. De daglimiet per account{% if token_limit %}, {{ ui.number(token_limit) }} tokens,{% endif %} houdt het verbruik in de hand.{% endif %}</p>
+    <p class="small muted">Cijfers voor deze hele installatie, de afgelopen 14 dagen. {% if priced %}Een AI-dienst die geen prijs meldt, staat hier als $0 geboekt; de echte kosten staan dan bij die dienst.{% else %}De AI-dienst meldt geen prijzen, dus hier staan alleen tokens. De daglimiet per account{% if token_limit %}, {{ ui.number(token_limit) }} tokens,{% endif %} houdt het verbruik in de hand.{% endif %}</p>
     <div class="table-scroll" role="region" aria-label="AI-gebruik per soort" tabindex="0">
       <table class="table nowrap"><thead><tr><th>Soort</th><th>Aanroepen</th><th>Tokens</th>{% if priced %}<th>Kosten</th>{% endif %}</tr></thead><tbody>
         {% for row in overview.kinds %}<tr><td>{{ row.kind }}</td><td class="num">{{ ui.number(row.calls) }}</td><td class="num">{{ ui.number(row.tokens) }}</td>{% if priced %}<td class="num">${{ "%.4f" | format(row.cost) }}</td>{% endif %}</tr>{% else %}<tr><td colspan="4" class="subtle">Nog geen gebruik.</td></tr>{% endfor %}

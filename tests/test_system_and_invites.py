@@ -136,7 +136,7 @@ def test_usage_overview_covers_all_accounts_without_naming_them(client):  # noqa
         con.execute("UPDATE usage_log SET owner='ander'")
     store.record_usage("s", "match", 1, 1, 0.25)
     overview = store.usage_overview()
-    assert overview["kinds"] == [{"kind": "match", "calls": 2, "tokens": 17, "cost": 0.75}]
+    assert overview["kinds"] == [{"kind": "match", "calls": 2, "tokens": 17, "cost": 0.75, "unpriced": 0}]
     assert overview["days"][0]["calls"] == 2
     assert "owner" not in overview["days"][0]
 

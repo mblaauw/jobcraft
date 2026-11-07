@@ -95,8 +95,9 @@ def _last_scan(sources: list) -> str | None:
     return max(moments, default=None)
 
 
-def _top_gaps() -> list[dict]:
-    """Per account with a profile: how much of the top of its list still waits for Jev.
+def _top_gaps(jev_full: set[str] | frozenset = frozenset()) -> list[dict]:
+    """Per account with a profile: how much of the top of its list still waits for Jev,
+    and whether that account used up today's Jev calls (`jev_full` holds those owners).
 
     Account names are account data, not what the person does; a tenth of the top is noise.
     """
@@ -106,8 +107,30 @@ def _top_gaps() -> list[dict]:
         with tenancy.scope({"id": owner}):
             gap = ranking.top_wait()
         if gap and gap["of"] and gap["waiting"] >= max(1, gap["of"] // 10):
-            gaps.append({"name": names.get(owner, "een account"), **gap})
+            gaps.append({"name": names.get(owner, "een account"), **gap, "jev_full": owner in jev_full})
     return gaps
+
+
+# Task kinds as an administrator reads them; an unknown kind shows its own name.
+TASK_LABELS = {
+    "scan": "Ophalen",
+    "vacancy": "Vacaturetekst opmaken",
+    "match": "Beoordelen",
+    "verdict": "Beoordelen",
+    "rerank": "Opnieuw rangschikken",
+    "index": "Zoekindex bijwerken",
+    "document": "Documenten maken",
+    "consolidate": "Profiel opbouwen",
+    "position": "Loopbaanpositie",
+    "insight": "Inzichten",
+    "digest": "Dagmail",
+    "cv_import": "CV inlezen",
+    "cv_coach": "CV-coach",
+}
+
+
+def _times(n: int) -> str:
+    return "1 keer" if n == 1 else f"{n} keer"
 
 
 def _attention(health: dict, worker: dict, sources: list, gaps: list | None = None) -> list[dict]:
@@ -127,15 +150,21 @@ def _attention(health: dict, worker: dict, sources: list, gaps: list | None = No
         elif item.get("dropped"):
             items.append({"level": "info", "text": f"{names[source_id]}: veel minder gevonden dan normaal", "href": "/sources", "label": "Bron"})
     for failure in tasks.failure_kinds():
-        label = {"vacancy": "Vacaturetekst opmaken", "match": "Beoordelen", "verdict": "Beoordelen", "scan": "Ophalen", "documents": "Documenten", "insight": "Inzichten"}.get(failure["kind"], failure["kind"])
-        times = "1 keer" if failure["n"] == 1 else f"{failure['n']} keer"
-        text = f"{label} mislukte {times}" + (f": {failure['error']}" if failure["error"] else "")
-        items.append({"level": "warn", "text": text, "href": "/admin/ai", "label": "AI"})
+        label = TASK_LABELS.get(failure["kind"], failure["kind"])
+        parts = []
+        if failure["n"]:
+            parts.append(f"{label} mislukte {_times(failure['n'])}" + (f": {failure['error']}" if failure["error"] else ""))
+        if failure["interrupted"]:
+            restarts = f"{_times(failure['interrupted'])} onderbroken door een herstart"
+            parts.append(restarts if parts else f"{label} {restarts}")
+        items.append({"level": "warn", "text": ", ".join(parts), "href": "/admin/ai", "label": "AI"})
     for row in store.failed_attempts(days=1):
         if row["n"] >= 5:
             items.append({"level": "warn", "text": f"{row['n']} mislukte inlogpogingen op {row['names']} namen vanaf {row['ip'] or 'onbekend adres'}", "href": "/users/activiteit", "label": "Inlogactiviteit"})
     for gap in gaps or ():
         text = f"{gap['name']}: {gap['waiting']} van de {gap['of']} best gerangschikte vacatures wachten nog op een snelle beoordeling"
+        if gap.get("jev_full"):
+            text += ", want het Jev-plafond van vandaag is bereikt (weer ruimte na middernacht UTC)"
         items.append({"level": "info", "text": text, "href": "/admin/ai", "label": "AI"})
     return items
 
@@ -166,20 +195,32 @@ def admin_page(request: Request):
     overview = store.usage_overview()
     today = datetime.now(UTC).strftime("%Y-%m-%d")
     today_row = next((row for row in overview["days"] if row["day"] == today), {"tokens": 0, "cost": 0.0})
+    # Both limits hold per account and the token limit leaves Jev out: measure them that way.
+    per_owner = store.usage_today_per_owner()
     token_limit = int(os.environ.get("AI_DAILY_TOKEN_LIMIT", "500000") or 0)
+    jev_limit = int(os.environ.get("SYSTEMONE_DAILY_LIMIT", "80") or 0)
+    busiest = max((row["tokens"] for row in per_owner), default=0)
+    # Matching leaves max(0, limit - calls): a limit of 0 or less stops Jev for every account.
+    if jev_limit <= 0:
+        jev_full = set(store.active_owners_with_profile())
+    else:
+        jev_full = {row["owner"] for row in per_owner if row["jev"] >= jev_limit}
     ai = {
-        "tokens_today": int(today_row["tokens"]),
+        "tokens_today": sum(row["tokens"] for row in per_owner),
         "token_limit": token_limit,
-        "share": round(int(today_row["tokens"]) / token_limit * 100) if token_limit else 0,
+        "share": round(busiest / token_limit * 100) if token_limit else 0,
         "priced": any(row["cost"] for row in overview["kinds"]),
+        # Gateways that report no price book $0; say so rather than show a total that looks complete.
+        "unpriced": any(row["unpriced"] for row in overview["kinds"]),
         "cost_today": float(today_row["cost"]),
         "cost_period": sum(float(row["cost"]) for row in overview["days"]),
-        "jev_today": store.daily_usage_calls("systemone"),
+        "jev_today": sum(row["jev"] for row in per_owner),
+        "jev_full": len(jev_full),
     }
     return templates.TemplateResponse(
         request,
         "admin.html",
-        {"runs": runs, "people": people, "ai": ai, "attention": _attention(health, worker, sources_rows, _top_gaps())},
+        {"runs": runs, "people": people, "ai": ai, "attention": _attention(health, worker, sources_rows, _top_gaps(jev_full))},
     )
 
 

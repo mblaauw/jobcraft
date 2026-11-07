@@ -21,8 +21,9 @@
   </section>
   <section class="panel" aria-labelledby="people-title">
     <h2 id="people-title">Mensen</h2>
-    <p class="stat-lead">{{ people.active }} actief</p>
+    <p class="stat-lead">{{ people.active }} {{ 'account' if people.active == 1 else 'accounts' }}</p>
     <dl class="stats">
+      <div><dt>Beheerders</dt><dd>{{ people.admins }}</dd></div>
       <div><dt>Keer ingelogd</dt><dd>{{ people.logins }}</dd></div>
       <div><dt>Mislukte pogingen</dt><dd>{{ people.failed }}</dd></div>
       <div><dt>Zonder profiel</dt><dd>{{ people.without_profile }}</dd></div>
@@ -32,10 +33,11 @@
   <section class="panel" aria-labelledby="ai-title">
     <h2 id="ai-title">AI vandaag</h2>
     <p class="stat-lead">{{ ui.number(ai.tokens_today) }} tokens</p>
+    <p class="small muted">Zonder Jev, zoals de daglimiet per account telt.</p>
     <dl class="stats">
-      <div><dt>Van de daglimiet</dt><dd>{% if ai.token_limit %}{{ ai.share }}% van {{ ui.number(ai.token_limit) }}{% else %}geen limiet{% endif %}</dd></div>
-      <div><dt>Kosten</dt><dd>{% if ai.priced %}${{ "%.2f" | format(ai.cost_today) }} vandaag, ${{ "%.2f" | format(ai.cost_period) }} in 14 dagen{% else %}geen prijzen bekend{% endif %}</dd></div>
-      <div><dt>Jev-beoordelingen</dt><dd>{{ ui.number(ai.jev_today) }}</dd></div>
+      <div><dt>Drukste account</dt><dd>{% if ai.token_limit %}{{ ai.share }}% van {{ ui.number(ai.token_limit) }}{% else %}geen limiet{% endif %}</dd></div>
+      <div><dt>Kosten</dt><dd>{% if ai.priced %}${{ "%.2f" | format(ai.cost_today) }} vandaag, ${{ "%.2f" | format(ai.cost_period) }} in 14 dagen{% if ai.unpriced %}, niet alles meldt een prijs{% endif %}{% else %}geen prijzen bekend{% endif %}</dd></div>
+      <div><dt>Jev-beoordelingen</dt><dd>{{ ui.number(ai.jev_today) }}{% if ai.jev_full %}, plafond bereikt bij {{ ai.jev_full }} {{ 'account' if ai.jev_full == 1 else 'accounts' }}{% endif %}</dd></div>
     </dl>
     <p class="small"><a href="/admin/ai">AI: modellen, gebruik en logboek</a></p>
   </section>
