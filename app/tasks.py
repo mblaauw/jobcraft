@@ -130,20 +130,26 @@ _EXCEPTION_NAME = re.compile(r"^[A-Z][A-Za-z0-9]*(Error|Exception|Timeout|Warnin
 
 
 def failure_kinds(days: int = 7) -> list[dict]:
-    """Failed work per kind with the exception's name only: never its message, which may quote a person."""
+    """Failed work per kind that has not succeeded since for the same account, with the
+    exception's name only: never its message, which may quote a person.
+
+    `interrupted` says every one of them was cut off by a restart rather than failing."""
     start = (datetime.now(UTC) - timedelta(days=days)).isoformat()
     with store.connect() as con:
         rows = con.execute(
-            "SELECT kind, COUNT(*) AS n, MAX(finished_at) AS last, "
-            "(SELECT error FROM tasks t2 WHERE t2.kind=t.kind AND t2.status='error' ORDER BY t2.id DESC LIMIT 1) AS error "
-            "FROM tasks t WHERE status='error' AND finished_at >= ? GROUP BY kind ORDER BY last DESC",
+            "SELECT kind, error, finished_at FROM tasks t WHERE status='error' AND finished_at >= ? "
+            "AND NOT EXISTS (SELECT 1 FROM tasks d WHERE d.kind=t.kind AND d.owner IS t.owner "
+            "AND d.status='done' AND d.id > t.id) ORDER BY id",
             (start,),
         ).fetchall()
-    result = []
+    kinds: dict[str, dict] = {}
     for row in rows:
-        match = _EXCEPTION_NAME.match((row["error"] or "").strip())
-        result.append({"kind": row["kind"], "n": row["n"], "last": row["last"], "error": match.group(0) if match else ""})
-    return result
+        error = (row["error"] or "").strip()
+        item = kinds.setdefault(row["kind"], {"kind": row["kind"], "n": 0, "interrupted": True})
+        match = _EXCEPTION_NAME.match(error)
+        item.update(n=item["n"] + 1, last=row["finished_at"], error=match.group(0) if match else "")
+        item["interrupted"] = item["interrupted"] and "herstart" in error.lower()
+    return sorted(kinds.values(), key=lambda item: item["last"] or "", reverse=True)
 
 
 def get(task_id: int, *, owner: str | None = None) -> dict | None:

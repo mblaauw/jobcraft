@@ -75,3 +75,38 @@ def test_a_schedule_saved_per_account_before_is_carried_over_once(client):  # no
     assert store.meta_get("scan_schedule_times") == "06:15,19:45"
     with store.connect() as con:
         assert con.execute("SELECT COUNT(*) AS n FROM user_meta WHERE key='scan_schedule_times'").fetchone()["n"] == 0
+
+
+def test_ai_card_measures_each_limit_per_account_and_counts_jev_for_everyone(client, monkeypatch):  # noqa: F811
+    from app import tenancy
+
+    monkeypatch.setenv("AI_DAILY_TOKEN_LIMIT", "1000")
+    monkeypatch.setenv("SYSTEMONE_DAILY_LIMIT", "2")
+    with tenancy.scope({"id": "seeker-a"}):
+        store.record_usage(None, "matching", 300, 100, 0.0, agent="matcher")
+        for _ in range(2):
+            store.record_usage(None, "systemone", 50000, 5000, 0.01, agent="jev")
+    with tenancy.scope({"id": "seeker-b"}):
+        store.record_usage(None, "documents", 100, 100, 0.0, agent="writer")
+        store.record_usage(None, "systemone", 50000, 5000, 0.01, agent="jev")
+    html = _admin().get("/admin").text
+    assert "600 tokens" in html  # the two accounts without their 165.000 Jev tokens
+    assert "<dt>Drukste account</dt><dd>40% van 1.000</dd>" in html  # seeker-a, not the total
+    assert "<dd>3, plafond bereikt</dd>" in html  # Jev calls of every account; seeker-a is at its limit
+    assert "niet alles meldt een prijs" in html  # matching and documents booked at $0
+
+
+def test_attention_drops_work_that_succeeded_since_and_names_restarts(client):  # noqa: F811
+    old = tasks.enqueue("scan", owner=None, dedupe_key="scan")
+    tasks.claim_next()
+    tasks.fail(old, "RuntimeError: De scan is onderbroken door een herstart.")
+    done = tasks.enqueue("scan", owner=None, dedupe_key="scan")
+    tasks.claim_next()
+    tasks.finish(done)
+    rerank = tasks.enqueue("rerank", owner="seeker-a", dedupe_key="rerank:seeker-a")
+    tasks.claim_next()
+    tasks.fail(rerank, "Onderbroken door een herstart. Probeer opnieuw.")
+    html = _admin().get("/admin").text
+    assert "Ophalen" not in html  # the scan ran fine afterwards
+    assert "Opnieuw rangschikken 1 keer onderbroken door een herstart" in html
+    assert "rerank" not in html

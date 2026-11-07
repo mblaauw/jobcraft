@@ -80,6 +80,20 @@ def daily_usage_tokens(owner: str | None = None) -> int:
     return int(row["tokens"])
 
 
+def usage_today_per_owner() -> list[dict]:
+    """Per account today: the tokens its daily limit counts (Jev left out) and its Jev calls,
+    so the overview measures each limit against what that limit actually counts."""
+    start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    with connect() as con:
+        rows = con.execute(
+            "SELECT owner, "
+            "COALESCE(SUM(CASE WHEN kind <> 'systemone' THEN input_tokens+output_tokens END),0) AS tokens, "
+            "SUM(kind = 'systemone') AS jev FROM usage_log WHERE created_at >= ? GROUP BY owner",
+            (start,),
+        ).fetchall()
+    return [{"owner": row["owner"], "tokens": int(row["tokens"]), "jev": int(row["jev"] or 0)} for row in rows]
+
+
 def usage_overview(days: int = 14) -> dict:
     """Totals for the whole installation; never split per person."""
     start = (datetime.now(UTC) - timedelta(days=days)).isoformat()
