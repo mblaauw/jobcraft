@@ -25,14 +25,18 @@ def safe_detail_get(client, url: str, entry: dict):
     """One unreachable or robots-disallowed page skips that vacancy, not the whole source.
 
     Repeated failures still fail the source: a partial scan must not mark every
-    unseen vacancy as expired.
+    unseen vacancy as expired. Only failures that say something about the source
+    count: a page that redirects to itself is that page's defect, and on a re-scan,
+    where the pages fetched recently are skipped, a handful of such pages would
+    otherwise be the only fetches and fail a healthy source (Unique, 2026-11-07).
     """
     try:
         response = detail_get(client, url)
     except httpx.HTTPError as exc:
         entry["details_skipped"] = entry.get("details_skipped", 0) + 1
-        # A site that asks not to be crawled is an answer, not a failing source.
-        if str(exc).startswith("Robots policy disallows"):
+        # A site that asks not to be crawled is an answer, not a failing source;
+        # a redirect loop is one broken page.
+        if str(exc).startswith("Robots policy disallows") or isinstance(exc, httpx.TooManyRedirects):
             return None
         entry["failure_streak"] = entry.get("failure_streak", 0) + 1
         if entry["failure_streak"] >= DETAIL_FAILURE_LIMIT:
