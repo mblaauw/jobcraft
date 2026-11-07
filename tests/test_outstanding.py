@@ -94,6 +94,41 @@ def test_one_line_summary_gives_way_to_the_page_text(client, monkeypatch):  # no
     assert row["company"] == "Rijk"
 
 
+def test_a_big_board_is_read_over_several_rounds_and_paced(client, monkeypatch):  # noqa: F811
+    pauses = []
+    monkeypatch.setattr("app.adapters.jsonld.time.sleep", pauses.append)
+    text = "Dit ga je doen en dit vragen wij. " * 40
+    pages = {f"https://b.test/vacatures/{n}": _page("Adviseur", text) for n in range(5)}
+    pages["https://b.test/sitemap.xml"] = "<urlset>" + "".join(f"<loc>{url}</loc>" for url in pages) + "</urlset>"
+
+    class Counting(Pages):
+        def __init__(self, pages):
+            super().__init__(pages)
+            self.asked = []
+
+        def get(self, url, **kwargs):
+            self.asked.append(url)
+            return super().get(url, **kwargs)
+
+    board = Counting(pages)
+    source = {"id": "b", "sitemap_url": "https://b.test/sitemap.xml", "per_page": 100, "detail_cap": 2, "delay": 2}
+    store.sync_sources([{"id": "b", "kind": "sitemap-jsonld"}])
+    for _ in range(3):
+        _scan_sitemap_jsonld(board, source, *_entry())
+    details = [url for url in board.asked if "/vacatures/" in url]
+    assert len(details) == 5 and len(set(details)) == 5  # 2 + 2 + 1, never a page twice
+    assert set(pauses) == {2.0}
+
+
+def test_a_sitemap_without_urls_fails_the_round(client, monkeypatch):  # noqa: F811
+    import pytest
+
+    store.sync_sources([{"id": "e", "kind": "sitemap-jsonld"}])
+    maintenance = Pages({"https://e.test/sitemap.xml": "<html><body>We zijn zo terug</body></html>"})
+    with pytest.raises(RuntimeError, match="geen enkele URL"):
+        _scan_sitemap_jsonld(maintenance, {"id": "e", "sitemap_url": "https://e.test/sitemap.xml"}, *_entry())
+
+
 def test_a_board_without_structured_data_gives_title_text_and_place_from_its_page(client, monkeypatch):  # noqa: F811
     monkeypatch.setattr("app.adapters.jsonld.time.sleep", lambda _: None)
     body = "<p>" + "Je geeft les aan groep 7 en werkt samen met een duo. " * 20 + "</p>"

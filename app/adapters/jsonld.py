@@ -112,9 +112,17 @@ def _scan_sitemap_jsonld(client, source, entry, summary, limit_per_source=None) 
             if child_response.status_code < 400:
                 urls.extend(re.findall(r"<loc>([^<]+)</loc>", child_response.text))
             time.sleep(0.4)
+    if not urls:
+        # A sitemap without a single <loc> is a maintenance or error page, not an empty board;
+        # counting it as "nothing found" would hide that the round did not happen.
+        raise RuntimeError("De sitemap gaf geen enkele URL (onderhoud of een andere opzet?)")
     pattern = source.get("url_pattern")
     selected = [url for url in urls if not pattern or re.search(pattern, url)]
     limit = limit_per_source or int(source.get("per_page", 40))
+    # Big boards throttle a full round of thousands of pages: `detail_cap` spreads the
+    # page reads over rounds (known pages are still marked as listed) and `delay` paces them.
+    budget = int(source.get("detail_cap") or 0) or None
+    pause = float(source.get("delay", 0.4))
     seen: set[str] = set()
     for url in selected:
         if url in seen:
@@ -124,7 +132,12 @@ def _scan_sitemap_jsonld(client, source, entry, summary, limit_per_source=None) 
             break
         if _skip_recent_detail(url, entry, summary):
             continue
+        if budget is not None:
+            if budget <= 0:
+                continue  # a later round reads it; the known pages after it are still marked
+            budget -= 1
         page = safe_detail_get(client, url, entry)
+        time.sleep(pause)
         if page is None or page.status_code >= 400:
             continue
         items = jsonld_jobs(page.text)
@@ -157,7 +170,6 @@ def _scan_sitemap_jsonld(client, source, entry, summary, limit_per_source=None) 
         )
         _, created = store.upsert_job(job)
         _tally(entry, summary, created)
-        time.sleep(0.4)
     store.update_source_status(source["id"], "ok")
 
 
