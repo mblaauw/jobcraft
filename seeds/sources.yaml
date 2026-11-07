@@ -330,8 +330,8 @@ sources:
     sitemap_url: https://www.tempo-team.nl/job-sitemap.xml
     url_pattern: "/vacatures/[0-9]+/"
     per_page: 3500
-    enabled: true
-    notes: "Recon 2026-11-06: ~2.900 vacatures, JSON-LD met plaats en salaris. Voorwaarden: verbieden vacatures zonder toestemming te herverkopen of te verstrekken; disclaimer verbiedt verveelvoudigen. PoC, afspraak nodig."
+    enabled: false
+    notes: "Recon 2026-11-06: ~2.900 vacatures, JSON-LD met plaats en salaris. Voorwaarden: verbieden vacatures zonder toestemming te herverkopen of te verstrekken; disclaimer verbiedt verveelvoudigen. PoC, afspraak nodig. Uit op 2026-11-07: de site geeft 403 op robots.txt, sitemap en elke pagina voor het serveradres, met elke user-agent; vanaf een thuisverbinding wel 200. Een IP-blokkade is een technische grens die blijft staan; recon voortaan ook vanaf de server doen."
 
   - id: unique
     name: Unique

@@ -73,13 +73,14 @@ def test_profile_offers_all_places_and_saves_canonical_label(client):  # noqa: F
 
 
 class FakeClient:
-    def __init__(self, failing, reason="Robots policy disallows this source URL"):
+    def __init__(self, failing, reason="Robots policy disallows this source URL", error=httpx.RequestError):
         self.failing = failing
         self.reason = reason
+        self.error = error
 
     def get(self, url, **kwargs):
         if url in self.failing:
-            raise httpx.RequestError(self.reason)
+            raise self.error(self.reason)
         return httpx.Response(200, text="ok")
 
 
@@ -100,6 +101,18 @@ def test_repeated_failures_fail_the_source_so_nothing_expires(client):  # noqa: 
         assert safe_detail_get(fake, "https://a.test/bad", entry) is None
     with pytest.raises(httpx.RequestError):
         safe_detail_get(fake, "https://a.test/bad", entry)
+
+
+def test_pages_that_redirect_to_themselves_never_fail_the_source(client):  # noqa: F811
+    # Unique, 2026-11-07: five of 785 vacancy pages answered a 308 to their own URL. On a
+    # re-scan the healthy pages are skipped as recently fetched, so those five were the
+    # only fetches and, counted as a streak, failed a source that was fine.
+    entry = {}
+    fake = FakeClient({"https://a.test/loop"}, reason="Source redirect limit reached", error=httpx.TooManyRedirects)
+    for _ in range(DETAIL_FAILURE_LIMIT + 1):
+        assert safe_detail_get(fake, "https://a.test/loop", entry) is None
+    assert entry == {"details_skipped": DETAIL_FAILURE_LIMIT + 1}
+    assert safe_detail_get(fake, "https://a.test/good", entry).status_code == 200
 
 
 def test_seed_revision_updates_settings_but_keeps_on_off_state(client, tmp_path, monkeypatch):  # noqa: F811
