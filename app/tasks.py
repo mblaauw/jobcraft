@@ -133,7 +133,8 @@ def failure_kinds(days: int = 7) -> list[dict]:
     """Failed work per kind that has not succeeded since for the same account, with the
     exception's name only: never its message, which may quote a person.
 
-    `interrupted` says every one of them was cut off by a restart rather than failing."""
+    `n` counts real failures, `interrupted` the runs a restart cut off; `error` names the
+    latest real failure. Only the marker this module writes counts as a restart."""
     start = (datetime.now(UTC) - timedelta(days=days)).isoformat()
     with store.connect() as con:
         rows = con.execute(
@@ -145,10 +146,13 @@ def failure_kinds(days: int = 7) -> list[dict]:
     kinds: dict[str, dict] = {}
     for row in rows:
         error = (row["error"] or "").strip()
-        item = kinds.setdefault(row["kind"], {"kind": row["kind"], "n": 0, "interrupted": True})
+        item = kinds.setdefault(row["kind"], {"kind": row["kind"], "n": 0, "interrupted": 0, "error": ""})
+        item["last"] = row["finished_at"]
+        if error.startswith(INTERRUPTED):
+            item["interrupted"] += 1
+            continue
         match = _EXCEPTION_NAME.match(error)
-        item.update(n=item["n"] + 1, last=row["finished_at"], error=match.group(0) if match else "")
-        item["interrupted"] = item["interrupted"] and "herstart" in error.lower()
+        item.update(n=item["n"] + 1, error=match.group(0) if match else "")
     return sorted(kinds.values(), key=lambda item: item["last"] or "", reverse=True)
 
 

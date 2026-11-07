@@ -108,7 +108,9 @@ def usage_overview(days: int = 14) -> dict:
         by_kind = con.execute(
             "SELECT kind, COUNT(*) AS calls, "
             "COALESCE(SUM(input_tokens+output_tokens),0) AS tokens, "
-            "COALESCE(SUM(cost_usd),0) AS cost FROM usage_log WHERE created_at >= ? "
+            "COALESCE(SUM(cost_usd),0) AS cost, "
+            # Calls booked without a price: a gateway that reports none books $0.
+            "COALESCE(SUM(COALESCE(cost_usd,0) = 0),0) AS unpriced FROM usage_log WHERE created_at >= ? "
             "GROUP BY kind ORDER BY tokens DESC",
             (start,),
         ).fetchall()

@@ -129,6 +129,10 @@ TASK_LABELS = {
 }
 
 
+def _times(n: int) -> str:
+    return "1 keer" if n == 1 else f"{n} keer"
+
+
 def _attention(health: dict, worker: dict, sources: list, gaps: list | None = None) -> list[dict]:
     """What an administrator should look at, each line linking to where it is fixed."""
     items: list[dict] = []
@@ -147,12 +151,13 @@ def _attention(health: dict, worker: dict, sources: list, gaps: list | None = No
             items.append({"level": "info", "text": f"{names[source_id]}: veel minder gevonden dan normaal", "href": "/sources", "label": "Bron"})
     for failure in tasks.failure_kinds():
         label = TASK_LABELS.get(failure["kind"], failure["kind"])
-        times = "1 keer" if failure["n"] == 1 else f"{failure['n']} keer"
+        parts = []
+        if failure["n"]:
+            parts.append(f"{label} mislukte {_times(failure['n'])}" + (f": {failure['error']}" if failure["error"] else ""))
         if failure["interrupted"]:
-            text = f"{label} {times} onderbroken door een herstart"
-        else:
-            text = f"{label} mislukte {times}" + (f": {failure['error']}" if failure["error"] else "")
-        items.append({"level": "warn", "text": text, "href": "/admin/ai", "label": "AI"})
+            restarts = f"{_times(failure['interrupted'])} onderbroken door een herstart"
+            parts.append(restarts if parts else f"{label} {restarts}")
+        items.append({"level": "warn", "text": ", ".join(parts), "href": "/admin/ai", "label": "AI"})
     for row in store.failed_attempts(days=1):
         if row["n"] >= 5:
             items.append({"level": "warn", "text": f"{row['n']} mislukte inlogpogingen op {row['names']} namen vanaf {row['ip'] or 'onbekend adres'}", "href": "/users/activiteit", "label": "Inlogactiviteit"})
@@ -195,18 +200,22 @@ def admin_page(request: Request):
     token_limit = int(os.environ.get("AI_DAILY_TOKEN_LIMIT", "500000") or 0)
     jev_limit = int(os.environ.get("SYSTEMONE_DAILY_LIMIT", "80") or 0)
     busiest = max((row["tokens"] for row in per_owner), default=0)
-    jev_full = {row["owner"] for row in per_owner if jev_limit and row["jev"] >= jev_limit}
+    # Matching leaves max(0, limit - calls): a limit of 0 or less stops Jev for every account.
+    if jev_limit <= 0:
+        jev_full = set(store.active_owners_with_profile()) | {row["owner"] for row in per_owner}
+    else:
+        jev_full = {row["owner"] for row in per_owner if row["jev"] >= jev_limit}
     ai = {
         "tokens_today": sum(row["tokens"] for row in per_owner),
         "token_limit": token_limit,
         "share": round(busiest / token_limit * 100) if token_limit else 0,
         "priced": any(row["cost"] for row in overview["kinds"]),
         # Gateways that report no price book $0; say so rather than show a total that looks complete.
-        "unpriced": any(row["calls"] and not row["cost"] for row in overview["kinds"]),
+        "unpriced": any(row["unpriced"] for row in overview["kinds"]),
         "cost_today": float(today_row["cost"]),
         "cost_period": sum(float(row["cost"]) for row in overview["days"]),
         "jev_today": sum(row["jev"] for row in per_owner),
-        "jev_full": bool(jev_full),
+        "jev_full": len(jev_full),
     }
     return templates.TemplateResponse(
         request,
