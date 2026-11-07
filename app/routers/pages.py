@@ -202,7 +202,7 @@ def admin_page(request: Request):
     busiest = max((row["tokens"] for row in per_owner), default=0)
     # Matching leaves max(0, limit - calls): a limit of 0 or less stops Jev for every account.
     if jev_limit <= 0:
-        jev_full = set(store.active_owners_with_profile()) | {row["owner"] for row in per_owner}
+        jev_full = set(store.active_owners_with_profile())
     else:
         jev_full = {row["owner"] for row in per_owner if row["jev"] >= jev_limit}
     ai = {

@@ -96,7 +96,11 @@ def test_ai_card_measures_each_limit_per_account_and_counts_jev_for_everyone(cli
     assert "<dd>3, plafond bereikt bij 1 account</dd>" in html  # Jev calls of every account; seeker-a is at its limit
     assert "niet alles meldt een prijs" in html  # matching and documents booked at $0
     monkeypatch.setenv("SYSTEMONE_DAILY_LIMIT", "0")  # matching then leaves no Jev call for anyone
-    assert "plafond bereikt bij 2 accounts" in admin.get("/admin").text
+    with store.connect() as con:
+        seeker = con.execute("SELECT id FROM users WHERE username='test-user'").fetchone()["id"]
+    store.set_profile("# Profiel", owner=seeker)
+    # Every active account with a profile, not the usage rows of unknown or shared owners.
+    assert "<dd>3, plafond bereikt bij 1 account</dd>" in admin.get("/admin").text
 
 
 def test_attention_drops_work_that_succeeded_since_and_names_restarts(client):  # noqa: F811
