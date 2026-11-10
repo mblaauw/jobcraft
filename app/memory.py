@@ -21,6 +21,7 @@ log = logging.getLogger("jobcraft.memory")
 # Reentrant: a re-rank runs the routed pass inside itself, and the match round calls both.
 _CATALOGUE = threading.RLock()
 _thread = threading.local()
+_task_threads = False  # set once this process runs task threads (APP_ROLE worker or all)
 
 try:
     _libc = ctypes.CDLL(ctypes.util.find_library("c") or "libc.so.6")
@@ -40,8 +41,11 @@ def release() -> None:
 
 
 def mark_task_thread() -> None:
-    """Called by each task thread: only those take turns, so a request handled in the same
-    process (APP_ROLE=all) never waits behind a worker's pass."""
+    """Called by each task thread. Where task threads run, only they take turns, so a request
+    handled in the same process (APP_ROLE=all) never waits behind a worker's pass; in a web
+    process without them, requests take turns among themselves."""
+    global _task_threads
+    _task_threads = True
     _thread.task = True
 
 
@@ -49,8 +53,11 @@ def mark_task_thread() -> None:
 def catalogue() -> Iterator[None]:
     """One whole-catalogue pass at a time; what it freed goes back before the next one starts,
     which may run in another thread whose allocator cannot reuse this thread's free memory."""
-    if not getattr(_thread, "task", False):
-        yield
+    if _task_threads and not getattr(_thread, "task", False):
+        try:
+            yield
+        finally:
+            release()
         return
     with _CATALOGUE:
         try:

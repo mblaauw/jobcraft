@@ -36,6 +36,7 @@ WORD = re.compile(r"[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9\-]+")
 COUNTED = re.compile(r"[a-zà-ÿ]{4,}")  # the words feedback counts per vacancy
 
 _model_lock = threading.Lock()  # one child at a time: each needs about 1.8 GB
+_refresh_lock = threading.Lock()
 _cache: dict = {}
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -118,6 +119,11 @@ def refresh() -> int:
     """Index new or changed vacancies and forget removed ones; returns how many were embedded."""
     if not model_available():
         return 0
+    with _refresh_lock:  # one refresh at a time, or the last to save drops the other's vectors
+        return _refresh()
+
+
+def _refresh() -> int:
     # Reading every vacancy text takes a turn; the embedding child, which can run for minutes,
     # does not, so re-ranks are not held up by it. Only the key texts outlive the turn.
     with memory.catalogue():

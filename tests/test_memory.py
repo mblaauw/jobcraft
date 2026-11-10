@@ -9,6 +9,7 @@ from app import memory, ranking, tasks
 
 
 def test_catalogue_passes_take_turns_and_may_nest(monkeypatch):
+    monkeypatch.setattr(memory, "_task_threads", memory._task_threads)
     released = []
     monkeypatch.setattr(memory, "release", lambda: released.append(1))
     inside, overlap = [], []
@@ -32,7 +33,8 @@ def test_catalogue_passes_take_turns_and_may_nest(monkeypatch):
     assert len(released) == 6  # after every pass, nested ones included
 
 
-def test_a_request_thread_never_waits_behind_a_task_pass():
+def test_a_request_thread_never_waits_behind_a_task_pass(monkeypatch):
+    monkeypatch.setattr(memory, "_task_threads", memory._task_threads)
     held, done = threading.Event(), threading.Event()
     finished = []
 
@@ -55,6 +57,49 @@ def test_a_request_thread_never_waits_behind_a_task_pass():
     assert finished == [1]  # while the task still holds its turn
     done.set()
     worker.join()
+
+
+def test_without_task_threads_requests_take_turns(monkeypatch):
+    """A web-only process (APP_ROLE=web) has no task threads: its requests take turns."""
+    monkeypatch.setattr(memory, "_task_threads", False)
+    held, done = threading.Event(), threading.Event()
+    finished = []
+
+    def first():
+        with memory.catalogue():
+            held.set()
+            done.wait(2)
+
+    def second():
+        with memory.catalogue():
+            finished.append(1)
+
+    a = threading.Thread(target=first)
+    a.start()
+    held.wait(2)
+    b = threading.Thread(target=second)
+    b.start()
+    b.join(0.3)
+    assert finished == []  # waits for its turn
+    done.set()
+    a.join()
+    b.join(2)
+    assert finished == [1]
+
+
+def test_the_worker_threads_mark_themselves(monkeypatch):
+    monkeypatch.setattr(memory, "_task_threads", memory._task_threads)  # restored afterwards
+    seen = []
+    tasks.handler("memory-mark")(lambda task: seen.append(getattr(memory._thread, "task", False)) or {})
+    tasks.enqueue("memory-mark", owner=None, dedupe_key="memory-mark")
+    tasks.start_workers(1)
+    try:
+        deadline = time.time() + 5
+        while not seen and time.time() < deadline:
+            time.sleep(0.05)
+    finally:
+        tasks.stop_workers()
+    assert seen == [True]
 
 
 def test_release_is_safe_where_libc_cannot_trim(monkeypatch):
