@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import config, feedback, store
+from . import config, feedback, memory, store
 
 log = logging.getLogger("jobcraft")
 
@@ -36,6 +36,7 @@ WORD = re.compile(r"[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9\-]+")
 COUNTED = re.compile(r"[a-zà-ÿ]{4,}")  # the words feedback counts per vacancy
 
 _model_lock = threading.Lock()  # one child at a time: each needs about 1.8 GB
+_refresh_lock = threading.Lock()
 _cache: dict = {}
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -118,23 +119,20 @@ def refresh() -> int:
     """Index new or changed vacancies and forget removed ones; returns how many were embedded."""
     if not model_available():
         return 0
-    with store.connect() as con:
-        rows = con.execute("SELECT id, title, description, content_hash FROM jobs").fetchall()
-    known: dict[int, tuple[str, np.ndarray]] = {}
-    if load() is not None:
-        known = {
-            int(job_id): (str(digest), vector)
-            for job_id, digest, vector in zip(_cache["ids"], _cache["hashes"], _cache["vectors"], strict=True)
-        }
-    todo = [row for row in rows if known.get(row["id"], ("",))[0] != (row["content_hash"] or "")]
-    present = {row["id"] for row in rows}
-    if not todo and set(known) == present:
+    with _refresh_lock:  # one refresh at a time, or the last to save drops the other's vectors
+        return _refresh()
+
+
+def _refresh() -> int:
+    # Reading every vacancy text takes a turn; the embedding child, which can run for minutes,
+    # does not, so re-ranks are not held up by it. Only the key texts outlive the turn.
+    with memory.catalogue():
+        plan = _plan()
+    if plan is None:
         return 0
-    df, total = feedback._document_frequency()
-    vectors = embed([key_text(row["title"], row["description"], df, total) for row in todo]) if todo else []
-    fresh = {
-        row["id"]: (row["content_hash"] or "", vector) for row, vector in zip(todo, vectors, strict=True)
-    }
+    known, present, todo, texts = plan
+    vectors = embed(texts) if texts else []
+    fresh = {job_id: (digest, vector) for (job_id, digest), vector in zip(todo, vectors, strict=True)}
     merged = {job_id: value for job_id, value in known.items() if job_id in present} | fresh
     if merged:
         order = sorted(merged)
@@ -145,3 +143,22 @@ def refresh() -> int:
         )
     log.info("vacancy index: %d embedded, %d in total", len(todo), len(merged))
     return len(todo)
+
+
+def _plan() -> tuple[dict, set, list[tuple[int, str]], list[str]] | None:
+    """(known vectors, present ids, (id, hash) to embed, their key texts), or None when current."""
+    with store.connect() as con:
+        rows = con.execute("SELECT id, title, description, content_hash FROM jobs").fetchall()
+    known: dict[int, tuple[str, np.ndarray]] = {}
+    if load() is not None:
+        known = {
+            int(job_id): (str(digest), vector)
+            for job_id, digest, vector in zip(_cache["ids"], _cache["hashes"], _cache["vectors"], strict=True)
+        }
+    changed = [row for row in rows if known.get(row["id"], ("",))[0] != (row["content_hash"] or "")]
+    present = {row["id"] for row in rows}
+    if not changed and set(known) == present:
+        return None
+    df, total = feedback._document_frequency()
+    texts = [key_text(row["title"], row["description"], df, total) for row in changed]
+    return known, present, [(row["id"], row["content_hash"] or "") for row in changed], texts

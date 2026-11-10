@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 
-from . import feedback, profile, store, systemone, taste, tenancy
+from . import feedback, memory, profile, store, systemone, taste, tenancy
 from . import geo as geo
 from .scoring.digests import current_digest as _current_digest
 from .scoring.digests import job_match_digest
@@ -190,7 +190,7 @@ def rerank_all(
     prefs = preferences if preferences is not None else profile.read_preferences()
     data = feedback_data if feedback_data is not None else feedback.load()
     digest = digest or _current_digest(prefs)
-    with geo.remembered_home():
+    with memory.catalogue(), geo.remembered_home():
         refresh_travel()  # Spare the next list view this work.
         jobs = store.list_jobs_for_matching()
         calibration = fit_calibration(jobs, digest)
@@ -210,8 +210,12 @@ def rerank_all(
         store.set_rank_scores(scores)
         store.meta_set(PARTS_KEY, json.dumps(parts, separators=(",", ":")))
         store.meta_set("queue_depth_digest", "")
+        # The routed pass reads every vacancy again with its new rank; without this the
+        # two copies of the catalogue are alive together and the pass needs twice the memory.
+        del jobs, tastes
         decided = routed(digest, prefs, data)
-    _remember_routes(digest, decided)
+        _remember_routes(digest, decided)
+        del decided  # inside the turn, so the next pass starts with this memory given back
     return len(scores)
 
 
@@ -289,10 +293,11 @@ def routed(
     """(route, rank, job) for every vacancy in matching: one pass that every caller shares."""
     thresholds = read_thresholds()
     quick = systemone.enabled()
-    return [
-        (*_decide(job, digest, preferences, feedback_data, thresholds, quick), job)
-        for job in store.list_jobs_for_matching()
-    ]
+    with memory.catalogue():
+        return [
+            (*_decide(job, digest, preferences, feedback_data, thresholds, quick), job)
+            for job in store.list_jobs_for_matching()
+        ]
 
 
 def _by_rank(rows) -> list:

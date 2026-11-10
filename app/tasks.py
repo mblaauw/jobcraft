@@ -11,7 +11,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from . import store, tenancy
+from . import memory, store, tenancy
 
 LLM_KINDS = ("match", "consolidate", "document")
 # Whole rounds that are safe to start over, so a restart puts them back in the queue once.
@@ -230,6 +230,7 @@ def run_one(*, resolve_owner: Callable[[str], dict | None] | None = None) -> boo
     finally:
         with _RUNNING_GUARD:
             _RUNNING.discard(task["id"])
+        memory.release()  # what the task freed counts against the container limit until then
     return True
 
 
@@ -243,6 +244,7 @@ def start_workers(
     _HEARTBEAT_STOP.clear()
 
     def loop() -> None:
+        memory.mark_task_thread()
         while not _STOP.is_set():
             try:
                 worked = run_one(resolve_owner=resolve_owner)

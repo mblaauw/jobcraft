@@ -18,7 +18,7 @@ import json
 import re
 from collections import Counter
 
-from . import config, store
+from . import config, memory, store
 from .util import now_iso
 
 FEEDBACK_FILE = config.PROFILE_DIR / "feedback.json"
@@ -241,7 +241,8 @@ def _compute_document_frequency() -> tuple[Counter, int]:
 
 
 def refresh_document_frequency() -> None:
-    corpus, total = _compute_document_frequency()
+    with memory.catalogue():
+        corpus, total = _compute_document_frequency()
     store.save_token_df(dict(corpus), total)
 
 
@@ -250,7 +251,8 @@ def _document_frequency() -> tuple[Counter, int]:
     cached = store.load_token_df()
     if cached is not None:
         return Counter(cached[0]), cached[1]
-    corpus, total = _compute_document_frequency()
+    with memory.catalogue():
+        corpus, total = _compute_document_frequency()
     store.save_token_df(dict(corpus), total)
     return corpus, total
 
