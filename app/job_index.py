@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import config, feedback, store
+from . import config, feedback, memory, store
 
 log = logging.getLogger("jobcraft")
 
@@ -118,6 +118,11 @@ def refresh() -> int:
     """Index new or changed vacancies and forget removed ones; returns how many were embedded."""
     if not model_available():
         return 0
+    with memory.catalogue():
+        return _refresh()
+
+
+def _refresh() -> int:
     with store.connect() as con:
         rows = con.execute("SELECT id, title, description, content_hash FROM jobs").fetchall()
     known: dict[int, tuple[str, np.ndarray]] = {}
