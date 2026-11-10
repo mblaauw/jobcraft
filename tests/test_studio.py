@@ -431,6 +431,22 @@ def test_the_job_page_shows_the_readable_text(client):  # noqa: F811
     assert 'id="vacancy-text"' in page
 
 
+def test_a_text_being_tidied_says_so_with_how_long_it_has_run(client, monkeypatch):  # noqa: F811
+    from bs4 import BeautifulSoup
+
+    monkeypatch.setattr(vacancy_reader, "worth_reading", lambda job: True)
+    job_id = add_job()
+    page = BeautifulSoup(client.get(f"/jobs/{job_id}").text, "html.parser")
+    wait = page.select_one("#vacancy-text[data-swap] .wait[role=status]")
+    assert wait is not None and "We maken deze tekst overzichtelijk" in wait.get_text()
+    with store.connect() as con:
+        asked = con.execute("SELECT created_at FROM tasks WHERE kind='vacancy' ORDER BY id DESC").fetchone()
+    assert wait.select_one("[data-elapsed]")["data-elapsed"] == asked["created_at"]  # the clock counts from the ask
+    assert wait.select_one("[data-swap-slow]").has_attr("hidden")  # shown only when it takes too long
+    monkeypatch.setattr(vacancy_reader, "worth_reading", lambda job: False)
+    assert "data-swap" not in client.get(f"/jobs/{job_id}/tekst").text  # the page swaps the ready text in
+
+
 # ---------------------------------------------------------------- background work
 
 

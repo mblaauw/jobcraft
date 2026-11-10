@@ -17,7 +17,7 @@
       <a hidden data-swap-link href="/jobs/{{ job['id'] }}/oordeel"></a>
       <div class="wait" role="status">
         <span class="work-dot" aria-hidden="true"></span>
-        <span class="wait-text"><strong>We beoordelen deze vacature voor je</strong><span>Dat duurt meestal tien tot dertig seconden. <span class="wait-elapsed" data-elapsed="{{ verdict.since }}"></span></span><span>De uitleg verschijnt hier vanzelf.</span></span>
+        <span class="wait-text"><strong>We beoordelen deze vacature voor je</strong><span data-swap-wait>Dat duurt meestal tien tot dertig seconden. <span class="wait-elapsed" aria-hidden="true" data-elapsed="{{ verdict.since }}"></span></span><span data-swap-wait>De uitleg verschijnt hier vanzelf.</span><span data-swap-slow hidden>Dit duurt langer dan normaal. Open de vacature straks opnieuw, dan staat de uitleg er waarschijnlijk.</span></span>
       </div>
     {% elif verdict.failed %}
       <p class="muted">Het beoordelen lukte deze keer niet. Open de vacature morgen opnieuw, dan proberen we het nog een keer.</p>

@@ -185,3 +185,20 @@ def test_short_facts_only_show_what_the_quick_assessment_is_fairly_sure_of(clien
     _signals(job_id, {**SURE, "noul": {"day_hours": 0.6, "outdoor_mobile": 0.55, "guidance": 0.9, "evening_weekend": 0.3}})
     chips = [li.get_text() for li in BeautifulSoup(client.get(f"/jobs/{job_id}").text, "html.parser").select("#detail-assessment .traits li")]
     assert chips == ["Inwerkperiode"]
+
+
+def test_a_vote_outside_the_last_full_pass_queues_it_and_stays_instant(client, monkeypatch):  # noqa: F811
+    """At 25,000 vacancies a full pass takes half a minute: a click must never wait for it."""
+    ranked, outside = add_job("Planner"), add_job("Monteur")
+    store.set_rank_scores({ranked: 40})
+    store.meta_set(ranking.PARTS_KEY, json.dumps({str(ranked): [40.0, None, None]}))
+    full = []
+    monkeypatch.setattr(ranking, "rerank_all", lambda *args, **kwargs: full.append(1))
+    store.set_job_vote(ranked, -1)
+    ranking.after_vote(outside)
+    assert full == []
+    assert store.get_job(ranked)["rank_score"] < 40  # what the last pass saw re-blends at once
+    task = tasks.claim_next()
+    assert task["kind"] == "rerank"  # the rest follows in the worker
+    ranking.after_signals(outside, SURE)  # the worker routes on the new rank next
+    assert full == [1]
