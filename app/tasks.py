@@ -244,6 +244,7 @@ def start_workers(
     _HEARTBEAT_STOP.clear()
 
     def loop() -> None:
+        memory.mark_task_thread()
         while not _STOP.is_set():
             try:
                 worked = run_one(resolve_owner=resolve_owner)

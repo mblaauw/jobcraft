@@ -14,6 +14,7 @@ def test_catalogue_passes_take_turns_and_may_nest(monkeypatch):
     inside, overlap = [], []
 
     def pass_():
+        memory.mark_task_thread()
         with memory.catalogue():  # noqa: SIM117 - the nesting is what is tested
             with memory.catalogue():  # a re-rank runs the routed pass inside itself
                 inside.append(1)
@@ -29,6 +30,31 @@ def test_catalogue_passes_take_turns_and_may_nest(monkeypatch):
         thread.join()
     assert overlap == []
     assert len(released) == 6  # after every pass, nested ones included
+
+
+def test_a_request_thread_never_waits_behind_a_task_pass():
+    held, done = threading.Event(), threading.Event()
+    finished = []
+
+    def task_pass():
+        memory.mark_task_thread()
+        with memory.catalogue():
+            held.set()
+            done.wait(2)
+
+    def request():
+        with memory.catalogue():  # APP_ROLE=all: web and worker share the process
+            finished.append(1)
+
+    worker = threading.Thread(target=task_pass)
+    worker.start()
+    held.wait(2)
+    web = threading.Thread(target=request)
+    web.start()
+    web.join(1)
+    assert finished == [1]  # while the task still holds its turn
+    done.set()
+    worker.join()
 
 
 def test_release_is_safe_where_libc_cannot_trim(monkeypatch):

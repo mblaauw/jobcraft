@@ -251,7 +251,8 @@ def _document_frequency() -> tuple[Counter, int]:
     cached = store.load_token_df()
     if cached is not None:
         return Counter(cached[0]), cached[1]
-    corpus, total = _compute_document_frequency()
+    with memory.catalogue():
+        corpus, total = _compute_document_frequency()
     store.save_token_df(dict(corpus), total)
     return corpus, total
 
