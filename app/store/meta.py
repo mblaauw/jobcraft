@@ -74,6 +74,7 @@ def meta_get(key: str, default: str | None = None) -> str | None:
             "digest_last_tick",
             "worker_heartbeat",
             "model_routes",
+            "model_reasoning",
             "scan_schedule_enabled",
             "scan_schedule_times",
         ):
@@ -98,6 +99,7 @@ def meta_set(key: str, value: str) -> None:
             "digest_last_tick",
             "worker_heartbeat",
             "model_routes",
+            "model_reasoning",
             "scan_schedule_enabled",
             "scan_schedule_times",
         ):
