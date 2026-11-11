@@ -9,7 +9,7 @@
 {% macro wait(title, usually, since='', refresh=4000) -%}
 <div class="wait" role="status" data-auto-refresh="{{ refresh }}">
   <span class="work-dot" aria-hidden="true"></span>
-  <span class="wait-text"><strong>{{ title }}</strong><span>{{ usually }} <span class="wait-elapsed" data-elapsed="{{ since }}"></span></span><span>Klik gerust verder. Het gaat door en je ziet bovenaan wanneer het klaar is.</span></span>
+  <span class="wait-text"><strong>{{ title }}</strong><span>{{ usually }} <span class="wait-elapsed" aria-hidden="true" data-elapsed="{{ since }}"></span></span><span>Klik gerust verder. Het gaat door en je ziet bovenaan wanneer het klaar is.</span></span>
 </div>
 {%- endmacro %}
 

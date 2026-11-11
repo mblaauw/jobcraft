@@ -111,14 +111,18 @@ def request(job) -> bool:
     """Ask for a reading of this text. True when one is on its way."""
     if not worth_reading(job):
         return False
-    owner = tenancy.user_id()
-    tasks.enqueue(
-        "vacancy",
-        owner=owner,
-        payload={"job_id": job["id"]},
-        dedupe_key=f"vacancy:{owner}:{job['content_hash']}",  # A key belongs to one owner.
-    )
+    tasks.enqueue("vacancy", owner=tenancy.user_id(), payload={"job_id": job["id"]}, dedupe_key=_key(job))
     return True
+
+
+def _key(job) -> str:
+    return f"vacancy:{tenancy.user_id()}:{job['content_hash']}"  # A key belongs to one owner.
+
+
+def _asked_at(job) -> str:
+    """When this reading was asked for, so the wait can show how long it has run."""
+    task = tasks.latest("vacancy", owner=tenancy.user_id(), key=_key(job))
+    return (task.get("created_at") or "") if task else ""
 
 
 def read_now(mgr, job) -> dict | None:
@@ -148,6 +152,7 @@ def view(job) -> dict:
     tracks = [track.get("name", "") for track in profile.read_preferences().get("tracks", [])]
     terms = vacancy_text.profile_terms(excerpt, tracks, lambda words: store.common_tokens(words, COMMON_SHARE))
     reading = usable(job)
+    pending = worth_reading(job)
     if reading:
         sections = reading["sections"]
         facts = [(label, reading["facts"].get(key)) for key, label in FACT_LABELS if reading["facts"].get(key)]
@@ -177,7 +182,8 @@ def view(job) -> dict:
         "must_have": [{"text": item, "in_cv": vacancy_text.in_cv(item, terms)} for item in must],
         "watch_out": watch,
         "has_terms": bool(terms),
-        "pending": worth_reading(job),
+        "pending": pending,
+        "since": _asked_at(job) if pending else "",
     }
 
 

@@ -48,8 +48,19 @@
     document.querySelectorAll("[data-swap]:not([data-swap-watched])").forEach((part) => {
       part.setAttribute("data-swap-watched", "");
       let tries = 0;
+      // Counted from when the work was asked for, so a reload does not start the wait over.
+      const asked = Date.parse(part.querySelector("[data-elapsed]")?.dataset.elapsed ?? "");
+      const started = Number.isNaN(asked) ? Date.now() : asked;
       const check = async () => {
-        if (!part.isConnected || tries++ > 12) return;
+        if (!part.isConnected) return;
+        const slow = part.querySelector("[data-swap-slow]");
+        if (slow && slow.hidden && Date.now() - started > 60000) {
+          // A minute without a result: say so instead of promising it still comes.
+          part.querySelectorAll("[data-swap-wait]").forEach((line) => { line.hidden = true; });
+          part.querySelector(".work-dot")?.classList.add("is-still");
+          slow.hidden = false;
+        }
+        if (tries++ > 40) return;
         try {
           const response = await fetch(part.querySelector("[data-swap-link]").href, { cache: "no-store" });
           if (response.ok) {
@@ -65,9 +76,9 @@
             }
           }
         } catch (error) { /* What is on screen stays readable. */ }
-        setTimeout(check, 5000);
+        setTimeout(check, 3000);
       };
-      setTimeout(check, 5000);
+      setTimeout(check, 3000);
     });
   }
   window.jobcraftWatchSwaps = watchSwaps;
