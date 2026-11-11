@@ -53,6 +53,44 @@ def model_for(role: str) -> str:
     return routes().get(role) or config.role_model(role)
 
 
+# What the admin page offers; empty sends nothing, as before this setting existed.
+REASONING = {
+    "": "Standaard",
+    "low": "Kort",
+    "medium": "Gemiddeld",
+    "high": "Lang",
+    "off": "Uit (DeepSeek)",
+}
+REASONING_SETTING = "model_reasoning"
+
+
+def reasoning_routes() -> dict[str, str]:
+    try:
+        data = json.loads(store.meta_get(REASONING_SETTING) or "{}")
+    except ValueError:
+        return {}
+    return {key: value for key, value in data.items() if key in _ROLE_IDS and value in REASONING and value}
+
+
+def reasoning_for(role: str) -> str:
+    """The admin's choice, else LLM_REASONING_<ROLE>, else nothing: the model's own default."""
+    chosen = reasoning_routes().get(role) or config.role_reasoning(role)
+    return chosen if chosen in REASONING else ""
+
+
+def save_reasoning(chosen: dict[str, str]) -> None:
+    """Empty means: the default. Raises ValueError for a value the page does not offer."""
+    clean = {}
+    for role, value in chosen.items():
+        value = value.strip()
+        if role not in _ROLE_IDS or not value:
+            continue
+        if value not in REASONING:
+            raise ValueError(role)
+        clean[role] = value
+    store.meta_set(REASONING_SETTING, json.dumps(clean))
+
+
 def valid_model(value: str) -> bool:
     return bool(_MODEL_ID.fullmatch(value))
 

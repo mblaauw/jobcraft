@@ -58,6 +58,11 @@ def role_model(role: str) -> str:
     return os.environ.get(f"LLM_MODEL_{role.upper()}", LLM_MODEL)
 
 
+def role_reasoning(role: str) -> str:
+    """How hard this task's model may think: low, medium, high or off; empty is the model's own default."""
+    return os.environ.get(f"LLM_REASONING_{role.upper()}", "").strip().lower()
+
+
 def workspace_dir() -> Path:
     return (
         DATA_DIR

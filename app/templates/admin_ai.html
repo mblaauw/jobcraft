@@ -11,7 +11,7 @@
 
 <section class="panel" aria-labelledby="routes-title">
   <h2 id="routes-title">Model per taak</h2>
-  <p class="small muted">Leeg betekent de standaard. De keuze geldt meteen voor nieuwe aanroepen, ook in de worker.</p>
+  <p class="small muted">Leeg betekent de standaard. De keuze geldt meteen voor nieuwe aanroepen, ook in de worker. Het tweede vak zegt hoe lang het model mag nadenken: korter maakt een denkend model vaak een paar keer sneller. Weigert een model die keuze, dan antwoordt het zonder.</p>
   <form method="post" action="/admin/ai/modellen" id="routes-form" data-pending-form>{% include '_csrf.html' %}</form>
   <datalist id="known-models">{% for name in available %}<option value="{{ name }}"></option>{% endfor %}</datalist>
   {% for stage in stages %}
@@ -22,6 +22,7 @@
       <div class="route-row">
         <div class="route-what"><label for="model-{{ role.id }}"><strong>{{ role.label }}</strong></label><span class="small muted">{{ role.about }}</span></div>
         <input class="input" id="model-{{ role.id }}" form="routes-form" name="model_{{ role.id }}" value="{{ role.chosen }}" placeholder="{{ role.default }}" list="known-models" autocomplete="off" spellcheck="false">
+        <select class="input" id="reasoning-{{ role.id }}" form="routes-form" name="reasoning_{{ role.id }}" aria-label="Nadenken bij {{ role.label | lower }}" title="Hoe lang het model mag nadenken">{% for value, name in reasoning_options.items() %}<option value="{{ value }}"{% if role.reasoning == value %} selected{% endif %}>{% if not value and role.reasoning_default %}Standaard ({{ role.reasoning_default | lower }}){% else %}{{ name }}{% endif %}</option>{% endfor %}</select>
         <form method="post" action="/admin/ai/test" data-pending-form>{% include '_csrf.html' %}<input type="hidden" name="role" value="{{ role.id }}"><button class="button quiet small" type="submit" aria-label="Test {{ role.label | lower }}">Test</button></form>
       </div>
       {% endfor %}

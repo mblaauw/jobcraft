@@ -226,7 +226,8 @@ class ServerManager:
         full = ""
         usage: dict[str, object] = {}
         try:
-            for event in self.client.stream_complete(messages, model=model, session_key=session_id):
+            reasoning = model_routes.reasoning_for("interviewer") or None
+            for event in self.client.stream_complete(messages, model=model, session_key=session_id, reasoning=reasoning):
                 if event.get("type") == "token":
                     token = str(event.get("text") or "")
                     if token:
@@ -271,6 +272,7 @@ class ServerManager:
         self, agent: str, messages: list[dict], *, model: str, ref: str = "", **options
     ) -> Completion:
         started = time.monotonic()
+        options.setdefault("reasoning", model_routes.reasoning_for(agent) or None)
         try:
             completion = self.client.complete(messages, model=model, **options)
         except Exception as exc:

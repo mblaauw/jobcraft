@@ -36,9 +36,19 @@ def ai_page(request: Request):
     if owner and owner not in names:
         owner = ""
     chosen = model_routes.routes()
+    thinking = model_routes.reasoning_routes()
     overview = store.usage_overview()
     roles = {
-        role: {"id": role, "label": label, "about": about, "chosen": chosen.get(role, ""), "default": config.role_model(role)}
+        role: {
+            "id": role,
+            "label": label,
+            "about": about,
+            "chosen": chosen.get(role, ""),
+            "default": config.role_model(role),
+            "reasoning": thinking.get(role, ""),
+            # Only a default set in the environment is worth naming; otherwise the model decides.
+            "reasoning_default": model_routes.REASONING.get(config.role_reasoning(role) or "-", ""),
+        }
         for role, label, about in model_routes.ROLES
     }
     return templates.TemplateResponse(
@@ -51,6 +61,7 @@ def ai_page(request: Request):
             "token_limit": int(os.environ.get("AI_DAILY_TOKEN_LIMIT", "500000") or 0),
             "stages": [{"label": label, "roles": [roles[role] for role in ids]} for label, ids in model_routes.STAGES],
             "available": model_routes.available_models(),
+            "reasoning_options": model_routes.REASONING,
             "calls": ai_log.recent(150, agent=agent, owner=owner, model=model),
             "labels": {role: label for role, label, _about in model_routes.ROLES} | {"systemone": "Snelle beoordeling (Jev)"},
             "names": names,
@@ -67,10 +78,14 @@ def ai_page(request: Request):
 @router.post("/admin/ai/modellen")
 async def save_models(request: Request):
     form = await request.form()
+    thinking = {role: str(form.get(f"reasoning_{role}") or "").strip() for role, _label, _about in model_routes.ROLES}
+    if any(value not in model_routes.REASONING for value in thinking.values()):
+        return RedirectResponse(url="/admin/ai?fout=Kies+een+van+de+aangeboden+denkstanden.", status_code=303)
     try:
         model_routes.save({role: str(form.get(f"model_{role}") or "") for role, _label, _about in model_routes.ROLES})
     except ValueError:
         return RedirectResponse(url="/admin/ai?fout=Een+modelnaam+bevat+ongeldige+tekens.", status_code=303)
+    model_routes.save_reasoning(thinking)
     return RedirectResponse(url="/admin/ai?melding=Modelkeuze+opgeslagen.", status_code=303)
 
 

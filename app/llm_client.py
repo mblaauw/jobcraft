@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import random
 import time
@@ -11,6 +12,25 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
+
+log = logging.getLogger("jobcraft.llm")
+
+# How hard a model may think before it answers. Reasoning models think by default, which on a
+# short JSON verdict is most of the wait: measured on the matcher, 80% of its output tokens.
+REASONING_EFFORTS = ("low", "medium", "high")
+REASONING_OFF = "off"
+
+
+def reasoning_body(reasoning: str | None) -> dict[str, Any]:
+    """The request fields for a reasoning setting; nothing for the default or an unknown value.
+
+    Effort is the OpenAI-style field (gpt, Anthropic and most gateways). "off" is the
+    DeepSeek-style switch; Anthropic models refuse it, so it is for DeepSeek only."""
+    if reasoning in REASONING_EFFORTS:
+        return {"reasoning_effort": reasoning}
+    if reasoning == REASONING_OFF:
+        return {"thinking": {"type": "disabled"}}
+    return {}
 
 
 class LLMError(RuntimeError):
@@ -79,6 +99,8 @@ class OpenAICompatClient:
         self.model = model
         self.structured = structured
         self.max_retries = max_retries
+        # (model, reasoning) pairs a model refused: sent without the setting from then on.
+        self._refused: set[tuple[str, str]] = set()
         self._client = httpx.Client(
             base_url=self.base_url,
             timeout=httpx.Timeout(timeout, connect=10.0),
@@ -97,6 +119,7 @@ class OpenAICompatClient:
         *,
         model: str | None = None,
         session_key: str | None = None,
+        reasoning: str | None = None,
     ) -> Iterator[dict[str, Any]]:
         body: dict[str, Any] = {
             "model": model or self.model,
@@ -104,6 +127,8 @@ class OpenAICompatClient:
             "stream": True,
             "stream_options": {"include_usage": True},
         }
+        if (body["model"], reasoning) not in self._refused:
+            body.update(reasoning_body(reasoning))
         headers = self._session_headers(session_key)
         with self._client.stream(
             "POST", "/chat/completions", json=body, headers=headers
@@ -143,10 +168,13 @@ class OpenAICompatClient:
         model: str | None = None,
         schema: dict | None = None,
         session_key: str | None = None,
+        reasoning: str | None = None,
     ) -> Completion:
+        extra = {} if (model or self.model, reasoning) in self._refused else reasoning_body(reasoning)
         body: dict[str, Any] = {
             "model": model or self.model,
             "messages": messages,
+            **extra,
         }
         if schema and self.structured != "none":
             body["response_format"] = {
@@ -172,6 +200,13 @@ class OpenAICompatClient:
                     raise last_error
                 if response.status_code >= 500:
                     last_error = LLMError(f"LLM-provider HTTP {response.status_code}")
+                elif response.status_code == 400 and extra:
+                    # A model that does not take this reasoning setting answers without it,
+                    # rather than failing someone's verdict or letter over a tuning knob.
+                    log.warning("model %s refused reasoning=%s; asking again without it", body["model"], reasoning)
+                    completion = self.complete(messages, model=model, schema=schema, session_key=session_key)
+                    self._refused.add((body["model"], str(reasoning)))  # it was the setting: skip it next time
+                    return completion
                 elif response.status_code >= 400:
                     raise LLMError(f"LLM-provider HTTP {response.status_code}")
                 else:
@@ -207,9 +242,10 @@ class FakeLLMClient:
         model: str | None = None,
         schema: dict | None = None,
         session_key: str | None = None,
+        reasoning: str | None = None,
     ) -> Completion:
         self.calls.append(
-            {"messages": messages, "model": model, "schema": schema, "session_key": session_key}
+            {"messages": messages, "model": model, "schema": schema, "session_key": session_key, "reasoning": reasoning}
         )
         if not self.replies:
             raise LLMError("FakeLLMClient has no queued reply")
@@ -222,9 +258,10 @@ class FakeLLMClient:
         *,
         model: str | None = None,
         session_key: str | None = None,
+        reasoning: str | None = None,
     ) -> Iterator[dict[str, Any]]:
         self.calls.append(
-            {"messages": messages, "model": model, "schema": None, "session_key": session_key}
+            {"messages": messages, "model": model, "schema": None, "session_key": session_key, "reasoning": reasoning}
         )
         if not self.replies:
             raise LLMError("FakeLLMClient has no queued reply")
