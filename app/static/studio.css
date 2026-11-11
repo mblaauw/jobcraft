@@ -151,8 +151,8 @@
 /* ---------------------------------------------------------------- the vacancy */
 
 .vacancy { max-width: 74ch; }
-.v-reading { display: flex; gap: 8px; align-items: flex-start; }
-.v-reading .work-dot { background: var(--moss); }
+.v-reading { margin: 0 0 18px; }
+.work-dot.is-still { animation: none; opacity: .4; }
 .v-summary { font-size: var(--fs-md); line-height: 1.5; margin: 0 0 16px; }
 .v-facts { display: flex; flex-wrap: wrap; gap: 0; margin: 0 0 18px; border-block: 1px solid var(--line); }
 .v-facts > div { padding: 10px 22px 10px 0; min-width: 0; }

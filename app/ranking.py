@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 
-from . import feedback, memory, profile, store, systemone, taste, tenancy
+from . import feedback, memory, profile, store, systemone, tasks, taste, tenancy
 from . import geo as geo
 from .scoring.digests import current_digest as _current_digest
 from .scoring.digests import job_match_digest
@@ -132,15 +132,25 @@ def rank_for(
     }
 
 
-def after_vote(job_id: int) -> None:
-    """Re-rank everything at once without the slow parts: those were stored by the last full pass."""
+def after_vote(job_id: int, *, full_pass_here: bool = False) -> None:
+    """Re-rank everything at once without the slow parts: those were stored by the last full pass.
+
+    A vacancy the last full pass did not see (new since then, or older than the newest
+    MATCHING_LIMIT) needs that pass again. A request queues it for the worker: at 25,000
+    vacancies it takes half a minute and more memory than the web process has. Worker
+    tasks that route on the fresh rank right after pass ``full_pass_here``."""
     try:
         parts = {int(key): value for key, value in json.loads(store.meta_get(PARTS_KEY) or "{}").items()}
     except ValueError:
         parts = {}
     if job_id not in parts:
-        rerank_all()
-        return
+        if full_pass_here:
+            rerank_all()
+            return
+        owner = tenancy.user_id()
+        tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}")
+        if not parts:
+            return
     digest = _current_digest()
     jobs = [row for row in store.light_job_states() if row["id"] in parts]
     tastes = taste.scores(jobs, profile.read_preferences(), lambda job: verdict_is_fresh(job, digest))
@@ -165,7 +175,7 @@ def after_signals(job_id: int, signals: dict) -> None:
     if str(job_id) in parts:
         parts[str(job_id)][1] = calibrated_fit(signals, calibration)
         store.meta_set(PARTS_KEY, json.dumps(parts, separators=(",", ":")))
-    after_vote(job_id)
+    after_vote(job_id, full_pass_here=True)  # the worker routes on the new rank next
 
 
 def after_verdict(job_id: int, score: float) -> None:
@@ -177,7 +187,7 @@ def after_verdict(job_id: int, score: float) -> None:
     if str(job_id) in parts:
         parts[str(job_id)][2] = score
         store.meta_set(PARTS_KEY, json.dumps(parts, separators=(",", ":")))
-    after_vote(job_id)
+    after_vote(job_id, full_pass_here=True)
 
 
 def rerank_all(

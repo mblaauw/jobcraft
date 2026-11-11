@@ -7,7 +7,11 @@
 
 {% macro body(job, vacancy) %}
 <div class="vacancy" id="vacancy-text"{% if vacancy.pending %} data-swap{% endif %}>
-  {% if vacancy.pending %}<a hidden data-swap-link href="/jobs/{{ job['id'] }}/tekst"></a><p class="small muted v-reading"><span class="work-dot" aria-hidden="true"></span>We zetten deze tekst overzichtelijk voor je neer. Dat duurt even, je kunt alvast lezen.</p>{% endif %}
+  {% if vacancy.pending %}<a hidden data-swap-link href="/jobs/{{ job['id'] }}/tekst"></a>
+  <div class="wait v-reading" role="status">
+    <span class="work-dot" aria-hidden="true"></span>
+    <span class="wait-text"><strong>We maken deze tekst overzichtelijk</strong><span data-swap-wait>Dat duurt meestal tien tot twintig seconden. <span class="wait-elapsed" aria-hidden="true" data-elapsed="{{ vacancy.since }}"></span></span><span data-swap-wait>De nette versie verschijnt hier vanzelf. Hieronder kun je alvast lezen.</span><span data-swap-slow hidden>Dit duurt langer dan normaal. Open de vacature straks opnieuw, dan staat de nette versie er waarschijnlijk.</span></span>
+  </div>{% endif %}
   {% if vacancy.summary %}<p class="v-summary">{{ vacancy.summary }}</p>{% endif %}
   {% if vacancy.facts %}
   <dl class="v-facts">{% for label, value in vacancy.facts %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}</dl>
