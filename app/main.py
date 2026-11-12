@@ -71,7 +71,8 @@ from .workflows import (  # noqa: F401
     _task_scan,
 )
 
-app = FastAPI(title="Jobcraft", lifespan=lifespan)
+# No generated API pages: they list every route, admin ones included, to any signed-in user.
+app = FastAPI(title="Jobcraft", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.mount("/static", StaticFiles(directory=str(config.STATIC_DIR)), name="static")
 app.middleware("http")(auth.middleware)
 errors.install(app)

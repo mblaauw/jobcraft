@@ -215,7 +215,7 @@ def jobs_page(
             "match_summary": summary,
             "feedback": feedback.load(),
             "geo_home": geo_home,
-            "queue": ranking.queue_depth(matching.current_digest()),
+            "queue": ranking.queue_depth(matching.current_digest(), compute=False),
             "return_to": return_to,
             "welcome": request.query_params.get("welkom") == "1",
             "new_match_total": notifications.badge_count(),

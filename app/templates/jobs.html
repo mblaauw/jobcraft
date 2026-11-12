@@ -10,7 +10,7 @@
   </div>
   <div class="page-actions jobs-matching">
     {# The words of the vacancy page: an "uitgebreide beoordeling" is what the queue waits for. #}
-    <span>{% if queue %}Nog {{ queue }} {{ 'vacature krijgt' if queue == 1 else 'vacatures krijgen' }} een uitgebreide beoordeling{% else %}Alle uitgebreide beoordelingen zijn bij{% endif %}</span>
+    <span>{% if queue is none %}{% elif queue %}Nog {{ queue }} {{ 'vacature krijgt' if queue == 1 else 'vacatures krijgen' }} een uitgebreide beoordeling{% else %}Alle uitgebreide beoordelingen zijn bij{% endif %}</span>
     <span class="jobs-links"><a href="/jobs/doorlopen">Eén voor één bekijken</a><a href="/jobs/toevoegen">Vacature toevoegen</a></span>
   </div>
 </div>

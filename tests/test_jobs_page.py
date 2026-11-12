@@ -10,7 +10,9 @@ import pytest
 from bs4 import BeautifulSoup
 from fastapi.testclient import TestClient
 
-from app import applications, auth, config, main, runtime, store
+from app import applications, auth, config, main, runtime, store, tenancy
+
+_real_queue_depth = main.ranking.queue_depth  # before the fixture swaps it out
 
 
 @pytest.fixture()
@@ -23,7 +25,7 @@ def client(tmp_path, monkeypatch):
     store.init_db()
     auth.init_auth()
     monkeypatch.setattr(main.matching, "current_digest", lambda: "test")
-    monkeypatch.setattr(main.ranking, "queue_depth", lambda digest: 0)
+    monkeypatch.setattr(main.ranking, "queue_depth", lambda digest, **kwargs: 0)
     monkeypatch.setattr(
         main.feedback,
         "load",
@@ -586,7 +588,33 @@ def test_company_car_quick_filter_reads_the_travel_estimate(client, monkeypatch)
 
 
 def test_the_queue_is_told_as_what_still_gets_a_full_assessment(client, monkeypatch):
-    monkeypatch.setattr(main.ranking, "queue_depth", lambda digest: 133)
+    monkeypatch.setattr(main.ranking, "queue_depth", lambda digest, **kwargs: 133)
     assert "Nog 133 vacatures krijgen een uitgebreide beoordeling" in soup(client.get("/jobs")).select_one(".jobs-matching").get_text()
-    monkeypatch.setattr(main.ranking, "queue_depth", lambda digest: 1)
+    monkeypatch.setattr(main.ranking, "queue_depth", lambda digest, **kwargs: 1)
     assert "Nog 1 vacature krijgt een uitgebreide beoordeling" in soup(client.get("/jobs")).select_one(".jobs-matching").get_text()
+
+
+def test_the_page_never_counts_the_queue_itself_but_asks_the_worker(client, monkeypatch):
+    from app import ranking as ranking_module
+    from app import tasks
+
+    monkeypatch.setattr(main.ranking, "queue_depth", _real_queue_depth)
+    monkeypatch.setattr(ranking_module, "routed", lambda *a, **k: (_ for _ in ()).throw(AssertionError("a full pass in a request")))
+    store.meta_set("queue_depth_digest", "an older digest")
+    store.meta_set("queue_depth", "40")
+    text = soup(client.get("/jobs")).select_one(".jobs-matching").get_text()
+    assert "Nog 40 vacatures" in text  # the last count, not a 12-second recount
+    assert tasks.latest("rerank", owner=tenancy.user_id(), key=f"rerank:{tenancy.user_id()}") is not None
+    with store.connect() as con:
+        con.execute("DELETE FROM user_meta WHERE key='queue_depth'")
+    text = soup(client.get("/jobs")).select_one(".jobs-matching").get_text()
+    assert "beoordeling" not in text  # nothing known yet: say nothing rather than "alles is bij"
+
+
+def test_counting_jobs_in_one_pass_gives_the_same_numbers(client):
+    first, second = add_job("Een"), add_job("Twee")
+    store.update_job_match(first, 70, "{}", "x")
+    store.update_job_status(second, "saved")
+    counts = store.count_jobs()
+    assert counts == {"total": 2, "new": 1, "matched": 1, "signaled": 0, "unmatched": 1}
+    assert store.has_jobs()

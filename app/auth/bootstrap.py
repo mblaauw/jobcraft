@@ -23,6 +23,7 @@ from .constants import (
     ROLE_USER,
     log,
 )
+from .sessions import _cookie_secure
 from .timestamps import _iso
 from .users import _get_user_by_id, _get_user_by_username, _insert_user
 
@@ -78,6 +79,21 @@ def _ensure_schema() -> None:
         )
 
 
+def _legacy_password(accounts: dict, username: str) -> str:
+    """APP_PASSWORD, else the known local fallback. Behind HTTPS (APP_COOKIE_SECURE=1) the
+    site is reachable by others, so a forgotten APP_PASSWORD gets a random one instead,
+    handed over in the bootstrap file like the admin's."""
+    chosen = getattr(config, "APP_PASSWORD", "") or ""
+    if chosen:
+        return chosen
+    if not _cookie_secure():
+        return DEFAULT_PASSWORD
+    password = secrets.token_urlsafe(18)
+    accounts[username] = {"id": LEGACY_USER_ID, "role": ROLE_USER, "password": password}
+    log.warning("auth bootstrap: APP_PASSWORD is empty on a hosted site; a random password is in %s", BOOTSTRAP_FILE)
+    return password
+
+
 def init_auth() -> None:
     """Create the auth tables and the bootstrap accounts. Idempotent.
 
@@ -102,8 +118,9 @@ def init_auth() -> None:
             legacy_username,
             LEGACY_DISPLAY_NAME,
             ROLE_USER,
-            getattr(config, "APP_PASSWORD", "") or DEFAULT_PASSWORD,
+            _legacy_password(accounts, legacy_username),
         )
+        changed = True  # a generated password goes to the bootstrap file
         log.info("auth bootstrap: local user %r created", legacy_username)
     elif legacy["username"] != legacy_username:
         # APP_USER moved: keep the login working without touching the password or role.
