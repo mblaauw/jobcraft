@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from test_jobs_page import add_job, client  # noqa: F401
+
 from app import vacancy_text
 
 LISTED = """Wij zoeken een collega voor 32 uur per week.
@@ -55,3 +57,26 @@ def test_the_quick_summary_says_what_the_work_is_not_how_the_page_opens():
 def test_a_line_that_introduces_a_list_keeps_its_colon():
     text = "Wat ga je doen?\nJe taken zijn onder meer:\n- Post sorteren\n- Bezoekers ontvangen bij de balie"
     assert vacancy_text.summary(text) == "Je taken zijn onder meer: Post sorteren. Bezoekers ontvangen bij de balie."
+
+
+def test_a_list_between_two_paragraphs_stays_between_them_on_the_page(client, monkeypatch):  # noqa: F811
+    from bs4 import BeautifulSoup
+
+    from app import store, vacancy_reader
+
+    monkeypatch.setattr(vacancy_reader, "worth_reading", lambda job: False)
+    job_id = add_job("Facilitair medewerker")
+    text = ("Wat bieden wij?\nEen fijne werkplek midden in de stad, met collega's die je helpen.\n"
+            "- Een salaris tot € 3.400\n- 25 vakantiedagen\nKom je ook? We horen graag van je, ook als je twijfelt.")
+    with store.connect() as con:
+        con.execute("UPDATE jobs SET description=? WHERE id=?", (text, job_id))
+    page = BeautifulSoup(client.get(f"/jobs/{job_id}").text, "html.parser")
+    offer = page.select_one("#vacancy-text .v-offer")
+    assert [child.name for child in offer.find_all(["p", "ul"], recursive=False)] == ["p", "ul", "p"]
+    assert offer.find("ul").get_text(" ", strip=True) == "Een salaris tot € 3.400 25 vakantiedagen"
+
+
+def test_order_survives_turning_demands_into_a_checklist():
+    ask = _kinds("Wat vragen wij?\nJe hebt een mbo-diploma. Je werkt nauwkeurig. Je hebt rijbewijs B.")["ask"]
+    assert ask["order"] == ["li", "li", "li"] and len(ask["items"]) == 3
+    assert vacancy_text.blocks(ask["order"], ask["paragraphs"], ask["items"]) == [{"ul": ask["items"]}]

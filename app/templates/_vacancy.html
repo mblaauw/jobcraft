@@ -5,6 +5,10 @@
 {%- endfor -%}
 {%- endmacro %}
 
+{% macro bullets(kind, items) -%}
+<ul class="{{ 'v-checks' if kind == 'ask' else 'v-list' }}">{% for item in items %}<li{% if kind == 'ask' and item.in_cv %} class="is-in"{% endif %}>{{ pieces(item.pieces) }}</li>{% endfor %}</ul>
+{%- endmacro %}
+
 {% macro body(job, vacancy) %}
 <div class="vacancy" id="vacancy-text"{% if vacancy.pending %} data-swap{% endif %}>
   {% if vacancy.pending %}<a hidden data-swap-link href="/jobs/{{ job['id'] }}/tekst"></a>
@@ -33,8 +37,12 @@
   {% else %}<section class="v-section v-{{ section.kind }}">
     {% if section.title %}<h3>{{ section.title }}</h3>{% endif %}
   {% endif %}
+    {% if section.blocks %}
+    {% for part in section.blocks %}{% if 'p' in part %}<p>{{ pieces(part.p) }}</p>{% else %}{{ bullets(section.kind, part.ul) }}{% endif %}{% endfor %}
+    {% else %}
     {% for paragraph in section.paragraphs %}<p>{{ pieces(paragraph) }}</p>{% endfor %}
-    {% if section.items %}<ul class="{{ 'v-checks' if section.kind == 'ask' else 'v-list' }}">{% for item in section['items'] %}<li{% if section.kind == 'ask' and item.in_cv %} class="is-in"{% endif %}>{{ pieces(item.pieces) }}</li>{% endfor %}</ul>{% endif %}
+    {% if section['items'] %}{{ bullets(section.kind, section['items']) }}{% endif %}
+    {% endif %}
   {% if section.kind == 'other' and vacancy.sections | length > 1 %}</details>{% else %}</section>{% endif %}
   {% endfor %}
   <details class="v-other"><summary class="small">Originele tekst</summary><div class="job-body small">{{ job["description"] or "Er is geen tekst opgehaald." }}</div></details>

@@ -42,6 +42,9 @@ use the screens.
 | 5 | P2 | On every beheer subpage two menu items were marked as current (Overzicht and AI). | `base.html` marks only the deepest matching item. Tested. |
 | 6 | P2 | The file field was the browser's grey default button, unlike every other control. | `input[type=file]::file-selector-button` styled like `.button`. |
 | 7 | P2 | The salary label rounded up: "tot € 4.100" above a vacancy that pays at most € 4.063. | It rounds down to tens. Tested. |
+| 9 | P2 | Within a section, the plain reading showed every paragraph first and every list below them, so "Kom je ook?" stood above the benefits it closes. | `vacancy_text._chunks` records the order and `_vacancy.html` follows it. The AI reading has no order and is unchanged. Tested on the rendered page. |
+| 10 | P2 | "Beoordelen gaat vanzelf · 133 in wachtrij" is system language. | "Nog 133 vacatures krijgen een uitgebreide beoordeling", the term the vacancy page uses. Tested. |
+| 11 | P3 | The back links on the application and AI-call pages were bare small links. | Same arrow link as the vacancy page. |
 | 8 | P1 | The web process grew to 640 MB of 768 MB and was OOM-killed (PR #125, merged). | Freed memory goes back after each request. The root cause of the remaining growth is still open (below). |
 
 ## Open, in order
@@ -49,14 +52,12 @@ use the screens.
 1. **P1 web memory.** The lab levels off near 300 MB, the live process reached 640 MB.
    A memory log of the live web process runs until 2026-11-13 ~17:20 UTC in
    `~/jc_memlab` on the VPS. Line its jumps up with the access log, then remove the folder.
-2. **P2 raw vacancy text order.** The intro before the first heading is shown last, as
-   "Overige tekst van de pagina". Inside one section, paragraphs and lists are shown
-   apart: all paragraphs, then all items. Keeping the source order needs an ordered
-   block list in `vacancy_text.structure` and `_vacancy.html`.
-3. **P2 jargon on Vacatures.** "Beoordelen gaat vanzelf · 133 in wachtrij" means little to
-   a job seeker. Say what it means for them, or show it to admins only.
-4. **P3 navigation.** The "Jij" group holds only Account. The back link on the studio
-   page is a bare underlined link, while the vacancy page uses an arrow link.
+2. **P3 intro of a raw vacancy.** The text before the first heading is shown last, collapsed
+   as "Overige tekst van de pagina". This is on purpose, because on scraped pages that text
+   is often menu text. Revisit only with real examples where the intro matters.
+3. **P3 navigation.** The "Jij" group holds only Account.
+4. **Not reviewed yet:** the database (indexes and slow queries on 25,000 vacancies) and
+   security (route permissions and input validation).
 5. **P3 answer weight.** On every yes/no card, Ja is the filled primary button and Nee
    is outlined. That may nudge answers. Equal weight is worth trying, but it is a
    product decision.
