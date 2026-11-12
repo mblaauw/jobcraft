@@ -66,6 +66,7 @@ from .jobs import (  # noqa: F401
     count_jobs_by_source,
     effective_user_sources,
     get_job,
+    has_jobs,
     import_source,
     job_date,
     job_status_counts,

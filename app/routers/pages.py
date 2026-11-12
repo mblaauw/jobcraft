@@ -66,7 +66,7 @@ def dashboard(request: Request):
             "fresh": fresh,
             "week": today.week(columns),
             "tip": today.tip(),
-            "has_jobs": bool(store.count_jobs()["total"]),
+            "has_jobs": store.has_jobs(),
         },
     )
 

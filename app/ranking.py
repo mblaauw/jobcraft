@@ -375,11 +375,18 @@ def top_wait() -> dict | None:
     return gap if isinstance(gap, dict) and "waiting" in gap and "of" in gap else None
 
 
-def queue_depth(digest: str) -> int:
+def queue_depth(digest: str, *, compute: bool = True) -> int | None:
+    """How many vacancies still wait for a full assessment. Counting it fresh is a routed
+    pass over the whole catalogue: some 12 s and hundreds of MB at 25,000 vacancies. A page
+    passes ``compute=False``: it gets the last count (None if there is none) and the worker
+    is asked for a fresh one, which a full re-rank stores."""
     if tenancy.user_id() != tenancy.LEGACY_ID and not profile.profile_exists():
         return 0
-    if store.meta_get("queue_depth_digest") == digest:
-        cached = store.meta_get("queue_depth")
-        if cached is not None:
-            return int(cached)
+    cached = store.meta_get("queue_depth")
+    if store.meta_get("queue_depth_digest") == digest and cached is not None:
+        return int(cached)
+    if not compute:
+        owner = tenancy.user_id()
+        tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}")
+        return int(cached) if cached is not None else None
     return _remember_routes(digest, routed(digest))["escalate"]
