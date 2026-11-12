@@ -97,8 +97,8 @@ def test_cards_scores_and_collapsed_history(client):
     assert "mid" in score_box["class"]
     assert html.select_one(".vacancy-score-label").get_text() == "Matchscore"
     assert "% zeker" not in html.get_text()
-    assert "0 in wachtrij" in html.select_one(".jobs-matching").get_text()
-    assert "52 in wachtrij" not in html.get_text()
+    assert "Alle uitgebreide beoordelingen zijn bij" in html.select_one(".jobs-matching").get_text()
+    assert "52" not in html.select_one(".jobs-matching").get_text()  # the old summary's count is not the queue
     assert not html.select("table")
     assert not html.select(".jobs-active-filters a")
     assert all(not detail.has_attr("open") for detail in html.select(".jobs-insights details"))
@@ -583,3 +583,10 @@ def test_company_car_quick_filter_reads_the_travel_estimate(client, monkeypatch)
     # Far, but the car takes you there: it stays in the default list too.
     assert {row["id"] for row in soup(client.get("/jobs")).select("article.vacancy-row")} == {f"job-{car}"}
     assert other
+
+
+def test_the_queue_is_told_as_what_still_gets_a_full_assessment(client, monkeypatch):
+    monkeypatch.setattr(main.ranking, "queue_depth", lambda digest: 133)
+    assert "Nog 133 vacatures krijgen een uitgebreide beoordeling" in soup(client.get("/jobs")).select_one(".jobs-matching").get_text()
+    monkeypatch.setattr(main.ranking, "queue_depth", lambda digest: 1)
+    assert "Nog 1 vacature krijgt een uitgebreide beoordeling" in soup(client.get("/jobs")).select_one(".jobs-matching").get_text()

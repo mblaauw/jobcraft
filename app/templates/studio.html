@@ -3,7 +3,7 @@
 {% block title %}Sollicitatie {{ job['title'] }} · Jobcraft{% endblock %}
 {% block content %}
 <header class="studio-head">
-  <p class="small"><a href="/jobs/{{ job['id'] }}">Terug naar de vacature</a></p>
+  <p class="detail-back"><a href="/jobs/{{ job['id'] }}">{{ ui.icon('arrow-left') }}Terug naar de vacature</a></p>
   <h1>{{ job['title'] }}</h1>
   <p class="lede">{{ job['company'] or 'Onbekende organisatie' }}{% if job['location'] %}, {{ job['location'] }}{% endif %}</p>
 </header>
