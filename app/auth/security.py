@@ -42,7 +42,15 @@ async def _request_body(request: Request, limit: int = 256 * 1024) -> bytes | No
     if length > limit:
         return None
     try:
-        body = await request.body()
+        if length:
+            body = await request.body()
+        else:  # no length given (chunked): read in pieces and stop at the limit, never all of it
+            body = b""
+            async for chunk in request.stream():
+                body += chunk
+                if len(body) > limit:
+                    return None
+            request._body = body  # starlette's own cache, so the route can still read the form
     except Exception:
         return None
     return body if len(body) <= limit else None

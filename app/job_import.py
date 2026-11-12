@@ -59,10 +59,26 @@ def _check_public(url: str) -> None:
             raise ImportBlocked(CLOSED)
 
 
+def _landed_public(response: httpx.Response) -> bool:
+    """The address the connection was really made to; True when the transport does not say."""
+    stream = response.extensions.get("network_stream")
+    peer = stream.get_extra_info("server_addr") if stream is not None else None
+    if not peer:
+        return True
+    try:
+        return ipaddress.ip_address(peer[0]).is_global
+    except ValueError:
+        return False
+
+
 def _get(client: httpx.Client, url: str) -> httpx.Response:
     for _ in range(MAX_HOPS):
         _check_public(url)
         with client.stream("GET", url) as response:
+            # The name is resolved again for the connection: a name that answered a public
+            # address to the check can answer 127.0.0.1 now. What counts is where we landed.
+            if not _landed_public(response):
+                raise ImportBlocked(CLOSED)
             if response.status_code in (301, 302, 303, 307, 308):
                 url = urljoin(url, response.headers.get("location", ""))
                 continue
@@ -84,7 +100,8 @@ def fetch_page(url: str) -> dict:
     """Vacancy fields from a public page; raises ImportBlocked when it cannot be read."""
     parts = _web_address(url)
     with httpx.Client(
-        timeout=20, follow_redirects=False, headers={"User-Agent": USER_AGENT}
+        timeout=20, follow_redirects=False, headers={"User-Agent": USER_AGENT},
+        trust_env=False,  # a proxy from the environment would resolve the name itself
     ) as client:
         try:
             robots = _get(client, f"{parts.scheme}://{parts.netloc}/robots.txt")
