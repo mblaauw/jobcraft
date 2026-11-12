@@ -165,6 +165,15 @@ def structure(description: str) -> dict:
     return {"sections": sections, "facts": facts_of(text)}
 
 
+def summary(description: str, limit: int = 320) -> str:
+    """What the work is, for a quick yes or no: the section about the work when the text has
+    one, otherwise its start. The opening of a scraped page is often menu text or a pitch."""
+    role = next((part for part in structure(description)["sections"] if part["kind"] == "role"), None)
+    lines = [*role["paragraphs"], *role["items"]] if role else []
+    text = " ".join(line if line.endswith((".", "!", "?")) else line + "." for line in lines)
+    return " ".join((text or description or "").split())[:limit]
+
+
 def facts_of(text: str) -> list[tuple[str, str]]:
     facts = []
     for label, pattern in FACT_PATTERNS:

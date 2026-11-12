@@ -14,8 +14,8 @@
   <form method="post" action="/jobs/{{ job['id'] }}/vote" class="swipe-actions" data-pending-form>
     {% include '_csrf.html' %}
     <input type="hidden" name="next" value="{{ here }}">
+    <button class="button primary" type="submit" name="vote" value="up">{{ ui.icon('thumbs-up') }}Ja</button>
     <button class="button" type="submit" name="vote" value="down">{{ ui.icon('thumbs-down') }}Nee</button>
-    <button class="button primary" type="submit" name="vote" value="up">{{ ui.icon('thumbs-up') }}Ja, leuk</button>
     <a class="button link-button" href="/jobs/doorlopen?overslaan={{ skip + 1 }}">Weet ik niet</a>
   </form>
 </article>

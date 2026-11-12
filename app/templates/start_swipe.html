@@ -15,8 +15,8 @@
   <p class="muted">{{ excerpt }}{% if excerpt|length >= 320 %}…{% endif %}</p>
   <form method="post" action="/start/vacatures/{{ job['id'] }}" class="swipe-actions" data-pending-form>
     {% include '_csrf.html' %}
+    <button class="button primary" type="submit" name="answer" value="ja">{{ ui.icon('thumbs-up') }}Ja</button>
     <button class="button" type="submit" name="answer" value="nee">{{ ui.icon('thumbs-down') }}Nee</button>
-    <button class="button primary" type="submit" name="answer" value="ja">{{ ui.icon('thumbs-up') }}Ja, leuk</button>
     <button class="button link-button" type="submit" name="answer" value="overslaan">Weet ik niet</button>
   </form>
 </article>

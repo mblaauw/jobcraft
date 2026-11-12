@@ -24,6 +24,7 @@ from .. import (
     ranking,
     store,
     tenancy,
+    vacancy_text,
 )
 from ..auth import require_user
 from ..util import now_iso
@@ -283,7 +284,7 @@ def start_swipe(request: Request):
         "start_swipe.html",
         3,
         job=job,
-        excerpt=" ".join((job["description"] or "").split())[:320],
+        excerpt=vacancy_text.summary(job["description"] or ""),
         position=answered + 1,
         total=answered + len(queue),
         short=answered + len(queue) < onboarding.SWIPE_COUNT,
