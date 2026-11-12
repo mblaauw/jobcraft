@@ -14,6 +14,7 @@ from . import (  # noqa: F401
     interview_state,
     llm,
     matching,
+    memory,
     profile,
     ranking,
     runtime_lock,
@@ -76,6 +77,7 @@ app.middleware("http")(auth.middleware)
 errors.install(app)
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.middleware("http")(errors.security_headers)
+app.middleware("http")(memory.give_back_after_request)
 app.include_router(auth.router)
 for group in (pages, source_routes, workspace, jobs, judge, profile_routes, cv, task_routes, start, studio, admin_ai):
     app.include_router(group.router)

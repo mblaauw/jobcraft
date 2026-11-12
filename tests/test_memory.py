@@ -5,6 +5,8 @@ from __future__ import annotations
 import threading
 import time
 
+from test_jobs_page import client  # noqa: F401
+
 from app import memory, ranking, tasks
 
 
@@ -152,3 +154,45 @@ def test_a_rerank_lets_its_first_copy_go_before_the_routed_pass(monkeypatch):
     monkeypatch.setattr(ranking, "_remember_routes", lambda digest, decided: {})
     ranking.rerank_all()
     assert seen_alive == [0]
+
+
+def test_a_page_hands_its_memory_back_but_polls_and_files_do_not(client, monkeypatch):  # noqa: F811
+    trimmed = []
+    monkeypatch.setattr(memory, "release", lambda: trimmed.append(1))
+
+    def settled(expected: int) -> bool:
+        deadline = time.monotonic() + 2
+        while len(trimmed) < expected and time.monotonic() < deadline:
+            time.sleep(0.01)
+        time.sleep(0.05)  # and nothing more arrives
+        return len(trimmed) == expected
+
+    assert client.get("/jobs").status_code == 200
+    assert settled(1)
+    client.get("/healthz")
+    client.get("/api/werk")
+    client.get("/static/ui.js")
+    assert settled(1)
+
+
+def test_requests_during_a_trim_wait_for_nothing_and_get_one_more_trim(monkeypatch):
+    started, release_gate = threading.Event(), threading.Event()
+    calls = []
+
+    def slow_release():
+        calls.append(1)
+        started.set()
+        release_gate.wait(2)
+
+    monkeypatch.setattr(memory, "release", slow_release)
+    first = threading.Thread(target=memory._release_unless_running)
+    first.start()
+    assert started.wait(2)
+    memory._release_unless_running()  # both return at once: nobody waits behind a trim
+    memory._release_unless_running()
+    assert calls == [1]
+    release_gate.set()
+    first.join(2)
+    assert calls == [1, 1]  # one more for what they freed, not one each
+    memory._release_unless_running()
+    assert calls == [1, 1, 1]
