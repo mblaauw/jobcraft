@@ -139,3 +139,14 @@ def test_the_ai_page_saves_the_setting_next_to_the_model(client):  # noqa: F811
     )
     assert "fout" in refused.headers["location"]
     assert model_routes.model_for("matcher") == "gpt-6-luna"  # nothing half-saved
+
+
+def test_the_ai_page_test_button_sends_a_session_so_the_gateway_answers(client, monkeypatch):  # noqa: F811
+    manager = llm.ServerManager()
+    manager.client = FakeLLMClient(["OK"])
+    monkeypatch.setattr("app.routers.admin_ai.runtime.get_manager", lambda: manager)
+    admin = _full_app_client("admin", _bootstrap_password("admin"))
+    page = admin.get("/admin/ai").text
+    answer = admin.post("/admin/ai/test", data={"_csrf": csrf_of(page), "role": "matcher"}, follow_redirects=False)
+    assert "werkt" in answer.headers["location"] and "niet" not in answer.headers["location"]
+    assert manager.client.calls[0]["session_key"].startswith("matcher-")

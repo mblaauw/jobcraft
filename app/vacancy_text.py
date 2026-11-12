@@ -58,7 +58,8 @@ _KIND_OF = {phrase: kind for kind, phrases in _HEADINGS.items() for phrase in ph
 _ALTERNATIVES = "|".join(re.escape(phrase) for phrase in sorted(_KIND_OF, key=len, reverse=True))
 # Flat text has no line breaks: only an unmistakable phrase counts there. A single word such as
 # "Organisatie" also occurs mid-sentence, so it needs a line of its own or a colon.
-_SPLIT = re.compile(rf"(?<![\w-])({_ALTERNATIVES})(?=\s*:|\s+[A-Z\u00c0-\u00dc]|\s*\n|\s*$)", re.I)
+# Dutch headings are often questions ("Wat ga je doen?"): the question mark belongs to the heading.
+_SPLIT = re.compile(rf"(?<![\w-])({_ALTERNATIVES})(?=\??(?:\s*:|\s+[A-Z\u00c0-\u00dc]|\s*\n|\s*$))", re.I)
 _NOISE_TAIL = re.compile(r"\s(?:Relevante vacatures|Vergelijkbare vacatures|Andere vacatures|Deel deze vacature|Share this)\b.*$", re.I | re.S)
 _STRONG_SHORT = {"functieomschrijving", "arbeidsvoorwaarden", "functie-eisen", "work activities", "qualifications", "conditions of employment", "job description"}
 _SENTENCE = re.compile(r"(?<=[.!?])\s+(?=[A-ZÀ-Ü])")
@@ -123,7 +124,7 @@ def _is_heading(match: re.Match, text: str) -> bool:
     if not phrase[0].isupper():
         return False
     before = text[: match.start()].rstrip(" ")
-    after = text[match.end() :]
+    after = text[match.end() :].removeprefix("?")
     own_line = (not before or before.endswith("\n")) and (after[:1] in ("", "\n", ":") or after.lstrip(" ")[:1] == "\n")
     if own_line or after.lstrip(" ")[:1] == ":":
         return True
@@ -142,7 +143,7 @@ def structure(description: str) -> dict:
     other = text[: found[0].start()] if found else text
     for index, match in enumerate(found):
         end = found[index + 1].start() if index + 1 < len(found) else len(text)
-        body = text[match.end() : end].strip(" :\n")
+        body = text[match.end() : end].lstrip("?").strip(" :\n")
         if len(body) < 40:  # A table of contents, or a word that only looked like a heading.
             if body:
                 other += " " + match.group(0) + body
