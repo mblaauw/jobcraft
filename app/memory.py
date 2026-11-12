@@ -9,6 +9,7 @@ kept 3.5 GB. So passes take turns, and memory goes back to the system after each
 
 from __future__ import annotations
 
+import asyncio
 import ctypes
 import ctypes.util
 import logging
@@ -38,6 +39,30 @@ def release() -> None:
         _libc.malloc_trim(0)
     except Exception:  # bookkeeping must never fail the task it follows
         log.debug("malloc_trim failed", exc_info=True)
+
+
+_trimming = threading.Lock()
+# Polled every few seconds by every open tab, or served from disk: nothing to give back.
+_QUIET = ("/static/", "/healthz", "/api/werk")
+
+
+def _release_unless_running() -> None:
+    if _trimming.acquire(blocking=False):  # one trim gives back everything; a second adds nothing
+        try:
+            release()
+        finally:
+            _trimming.release()
+
+
+async def give_back_after_request(request, call_next):
+    """The web process the same as the worker: a page over the whole catalogue (the list, the
+    dashboard, a vote's re-blend) frees what it built, but glibc keeps it per thread. Requests
+    land on dozens of threads, so a web process grew to 640 MB of its 768 MB in a day and was
+    killed. The trim runs beside the response, so nobody waits for it."""
+    response = await call_next(request)
+    if not request.url.path.startswith(_QUIET):
+        asyncio.get_running_loop().run_in_executor(None, _release_unless_running)
+    return response
 
 
 def mark_task_thread() -> None:
