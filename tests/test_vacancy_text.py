@@ -50,3 +50,8 @@ def test_the_quick_summary_says_what_the_work_is_not_how_the_page_opens():
     assert vacancy_text.summary(LISTED) == "Je bent verantwoordelijk voor de post. Je werkt samen met een klein team."
     assert vacancy_text.summary("Kort en zonder kopjes: wij zoeken een collega.") == "Kort en zonder kopjes: wij zoeken een collega."
     assert len(vacancy_text.summary("woord " * 200)) == 320
+
+
+def test_a_line_that_introduces_a_list_keeps_its_colon():
+    text = "Wat ga je doen?\nJe taken zijn onder meer:\n- Post sorteren\n- Bezoekers ontvangen bij de balie"
+    assert vacancy_text.summary(text) == "Je taken zijn onder meer: Post sorteren. Bezoekers ontvangen bij de balie."

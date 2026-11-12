@@ -170,7 +170,7 @@ def summary(description: str, limit: int = 320) -> str:
     one, otherwise its start. The opening of a scraped page is often menu text or a pitch."""
     role = next((part for part in structure(description)["sections"] if part["kind"] == "role"), None)
     lines = [*role["paragraphs"], *role["items"]] if role else []
-    text = " ".join(line if line.endswith((".", "!", "?")) else line + "." for line in lines)
+    text = " ".join(line if line.endswith((".", "!", "?", ":")) else line + "." for line in lines)
     return " ".join((text or description or "").split())[:limit]
 
 
