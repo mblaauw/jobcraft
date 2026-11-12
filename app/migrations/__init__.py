@@ -11,6 +11,7 @@ from . import (
     m0006_foreign_keys,
     m0007_job_events,
     m0008_auth_events,
+    m0009_status_index,
 )
 
 MIGRATIONS = [
@@ -22,4 +23,5 @@ MIGRATIONS = [
     m0006_foreign_keys,
     m0007_job_events,
     m0008_auth_events,
+    m0009_status_index,
 ]

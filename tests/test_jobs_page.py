@@ -618,3 +618,17 @@ def test_counting_jobs_in_one_pass_gives_the_same_numbers(client):
     counts = store.count_jobs()
     assert counts == {"total": 2, "new": 1, "matched": 1, "signaled": 0, "unmatched": 1}
     assert store.has_jobs()
+
+
+def test_a_status_list_starts_from_the_status_index_and_stays_per_account(client):
+    mine, theirs = add_job("Bewaard"), add_job("Van een ander")
+    store.update_job_status(mine, "saved")
+    with tenancy.scope({"id": "someone-else", "username": "x", "display_name": "x", "role": "user"}):
+        store.update_job_status(theirs, "saved")
+    assert [row["id"] for row in store.list_jobs(status="saved")] == [mine]
+    with store.connect() as con:
+        plan = " ".join(row[3] for row in con.execute(
+            "EXPLAIN QUERY PLAN SELECT job_id FROM job_states WHERE owner=? AND status=? AND status != 'new'",
+            (tenancy.user_id(), "saved"),
+        ))
+    assert "job_states_status" in plan
