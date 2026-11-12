@@ -79,6 +79,7 @@ use the screens.
    - The shared vector index includes other accounts' private imports. It shows no
      text, but it can influence taste ranking.
    - The `melding` and `fout` parameters show any text a link carries.
+   - After a DNS rebind, Vacature toevoegen still sends the GET to the internal address. Only the response is refused. Pinning the checked IP in a custom transport would stop the request too.
 
    The security review found no access between accounts, no path traversal, no CSRF
    gap, no open redirect and no XSS.
