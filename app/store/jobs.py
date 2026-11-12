@@ -196,6 +196,9 @@ def list_jobs(
     only_unvoted: bool = False,
 ) -> list:
     clauses, filters = _job_filters(status, query_text, source, include_stale, only_unvoted)
+    if status and status != "new":  # start from the few states with this status (index m0009)
+        clauses.append("id IN (SELECT job_id FROM job_states WHERE owner=? AND status=? AND status != 'new')")
+        filters = [*filters, tenancy.user_id(), status]
     params: list = [tenancy.user_id(), *filters]
     sql = "SELECT * FROM (" + _job_select() + ")"
     if clauses:
