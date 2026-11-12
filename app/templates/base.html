@@ -32,7 +32,10 @@
   {%- for item in work.done %}<a class="work-item is-done" href="{{ item.href }}">{{ ui.icon('circle-check') }}<span><strong>{{ item.what }}</strong> {{ item.verb }}<span class="work-for">{{ item.title }}</span></span></a>{% endfor -%}
 </div>
 {%- endmacro %}
-{% macro is_active(href) -%}{{ 'yes' if path == href or (href != '/' and path.startswith(href + '/')) else '' }}{%- endmacro %}
+{# The deepest item that contains this page: /admin/ai is AI, not also Overzicht. #}
+{% set ns = namespace(current='') %}
+{% for href, _label, _icon in primary + secondary %}{% if (path == href or (href != '/' and path.startswith(href + '/'))) and href|length > ns.current|length %}{% set ns.current = href %}{% endif %}{% endfor %}
+{% macro is_active(href) -%}{{ 'yes' if href == ns.current else '' }}{%- endmacro %}
 <body>
   <a class="skip-link" href="#main-content">Naar de inhoud</a>
   <div class="shell">

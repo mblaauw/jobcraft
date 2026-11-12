@@ -54,7 +54,9 @@ def facts(job: dict) -> list[str]:
     found: list[str] = []
     pay = wishes.monthly_salary(text)
     if pay:
-        found.append(f"tot € {round(pay / 100) * 100:,}".replace(",", ".") + " per maand")
+        # Down to tens, never up: "tot € 4.100" for a vacancy that pays at most € 4.063 promises
+        # more than it says, and the exact figure stands a few lines lower on the same page.
+        found.append(f"tot € {int(pay) // 10 * 10:,}".replace(",", ".") + " per maand")
     if wishes.remote_kind(text):
         found.append(wishes.remote_kind(text))
     found.extend(_CONTRACT_LABELS[name] for name in sorted(wishes.contract_types(text)))

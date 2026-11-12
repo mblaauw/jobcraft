@@ -228,6 +228,7 @@ def test_reason_prefers_the_verdict_and_otherwise_shows_what_rules_saw():
 def test_facts_come_from_the_text():
     found = reasons.facts({"search_text": "salaris € 4.500 per maand, vast contract en hybride"})
     assert found == ["tot € 4.500 per maand", "Deels thuis", "Vast contract"]
+    assert reasons.facts({"search_text": "salaris € 3.211 tot € 4.063 per maand"}) == ["tot € 4.060 per maand"]
     assert reasons.facts({"search_text": "leuke baan"}) == []
 
 

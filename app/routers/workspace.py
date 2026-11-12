@@ -21,6 +21,7 @@ from .. import (
     notifications,
     store,
     tenancy,
+    vacancy_text,
 )
 from ..auth import require_user
 from ..auth.credentials import verify_password
@@ -80,7 +81,7 @@ def jobs_swipe(request: Request, overslaan: int = 0):
         "jobs_swipe.html",
         {
             "job": job,
-            "excerpt": " ".join(((job or {}).get("description") or "").split())[:320],
+            "excerpt": vacancy_text.summary((job or {}).get("description") or ""),
             "skip": skip,
             "here": f"/jobs/doorlopen?{urlencode({'overslaan': skip})}",
         },

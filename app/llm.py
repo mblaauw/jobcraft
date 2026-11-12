@@ -273,6 +273,8 @@ class ServerManager:
     ) -> Completion:
         started = time.monotonic()
         options.setdefault("reasoning", model_routes.reasoning_for(agent) or None)
+        # The OpenCode gateway refuses a call without a session; callers that keep one pass it.
+        options.setdefault("session_key", f"{agent}-{uuid.uuid4().hex}")
         try:
             completion = self.client.complete(messages, model=model, **options)
         except Exception as exc:
@@ -320,7 +322,6 @@ class ServerManager:
             model=model_routes.model_for(agent),
             ref=ref,
             schema=schema,
-            session_key=f"{agent}-{uuid.uuid4().hex}",
         )
         return completion.text, completion.usage
 
