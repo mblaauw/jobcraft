@@ -175,7 +175,7 @@ def test_a_page_hands_its_memory_back_but_polls_and_files_do_not(client, monkeyp
     assert settled(1)
 
 
-def test_a_trim_already_running_is_not_started_twice(monkeypatch):
+def test_requests_during_a_trim_wait_for_nothing_and_get_one_more_trim(monkeypatch):
     started, release_gate = threading.Event(), threading.Event()
     calls = []
 
@@ -188,7 +188,11 @@ def test_a_trim_already_running_is_not_started_twice(monkeypatch):
     first = threading.Thread(target=memory._release_unless_running)
     first.start()
     assert started.wait(2)
-    memory._release_unless_running()  # returns at once: the running trim covers it
+    memory._release_unless_running()  # both return at once: nobody waits behind a trim
+    memory._release_unless_running()
+    assert calls == [1]
     release_gate.set()
     first.join(2)
-    assert calls == [1]
+    assert calls == [1, 1]  # one more for what they freed, not one each
+    memory._release_unless_running()
+    assert calls == [1, 1, 1]

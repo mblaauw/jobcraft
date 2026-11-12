@@ -46,9 +46,17 @@ _trimming = threading.Lock()
 _QUIET = ("/static/", "/healthz", "/api/werk")
 
 
+_wanted = False  # a request finished since the last trim began
+
+
 def _release_unless_running() -> None:
-    if _trimming.acquire(blocking=False):  # one trim gives back everything; a second adds nothing
+    """One trim at a time. A request that finishes while one runs is not dropped: the running
+    trim may have passed its thread's memory already, so it goes once more afterwards."""
+    global _wanted
+    _wanted = True
+    while _wanted and _trimming.acquire(blocking=False):
         try:
+            _wanted = False
             release()
         finally:
             _trimming.release()
@@ -59,10 +67,11 @@ async def give_back_after_request(request, call_next):
     dashboard, a vote's re-blend) frees what it built, but glibc keeps it per thread. Requests
     land on dozens of threads, so a web process grew to 640 MB of its 768 MB in a day and was
     killed. The trim runs beside the response, so nobody waits for it."""
-    response = await call_next(request)
-    if not request.url.path.startswith(_QUIET):
-        asyncio.get_running_loop().run_in_executor(None, _release_unless_running)
-    return response
+    try:
+        return await call_next(request)
+    finally:  # a request that failed half-way built just as much
+        if not request.url.path.startswith(_QUIET):
+            asyncio.get_running_loop().run_in_executor(None, _release_unless_running)
 
 
 def mark_task_thread() -> None:
