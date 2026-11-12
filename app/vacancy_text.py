@@ -88,26 +88,40 @@ def _clean(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
-def _chunks(body: str) -> tuple[list[str], list[str]]:
-    """Paragraphs of a few sentences, and whatever was already a list."""
+def _chunks(body: str) -> tuple[list[str], list[str], list[str]]:
+    """Paragraphs of a few sentences, whatever was already a list, and the order they came
+    in ("p" or "li" per piece), so a list between two paragraphs stays between them."""
     paragraphs: list[str] = []
     items: list[str] = []
+    order: list[str] = []
+
+    def paragraph(text: str) -> None:
+        paragraphs.append(text)
+        order.append("p")
+
+    def item(text: str) -> None:
+        items.append(text)
+        order.append("li")
+
     for line in re.split(r"\n+", body):
         line = line.strip()
         if not line:
             continue
         if _BULLET.match(line):
-            items.append(_BULLET.sub("", line))
+            item(_BULLET.sub("", line))
             continue
         pieces = _INLINE_BULLET.split(line)
         if len(pieces) >= 3:
-            paragraphs.extend(piece for piece in pieces[:1] if len(piece.split()) > 3)
-            items.extend(pieces[1:] if len(pieces[0].split()) > 3 else pieces)
+            for piece in pieces[:1]:
+                if len(piece.split()) > 3:
+                    paragraph(piece)
+            for piece in pieces[1:] if len(pieces[0].split()) > 3 else pieces:
+                item(piece)
             continue
         sentences = _SENTENCE.split(line)
         for start in range(0, len(sentences), MAX_SENTENCES):
-            paragraphs.append(" ".join(sentences[start : start + MAX_SENTENCES]))
-    return paragraphs, items
+            paragraph(" ".join(sentences[start : start + MAX_SENTENCES]))
+    return paragraphs, items, order
 
 
 def _sentences_as_items(section: dict) -> None:
@@ -116,7 +130,7 @@ def _sentences_as_items(section: dict) -> None:
         return
     sentences = [part for paragraph in section["paragraphs"] for part in _SENTENCE.split(paragraph)]
     if len(sentences) >= 3 and all(len(part) < 240 for part in sentences):
-        section["items"], section["paragraphs"] = sentences, []
+        section["items"], section["paragraphs"], section["order"] = sentences, [], ["li"] * len(sentences)
 
 
 def _is_heading(match: re.Match, text: str) -> bool:
@@ -150,19 +164,32 @@ def structure(description: str) -> dict:
             continue
         heading = match.group(1)
         kind = _KIND_OF[heading.lower()]
-        paragraphs, items = _chunks(body)
-        section = {"kind": kind, "title": heading[0].upper() + heading[1:], "paragraphs": paragraphs, "items": items}
+        paragraphs, items, order = _chunks(body)
+        section = {"kind": kind, "title": heading[0].upper() + heading[1:], "paragraphs": paragraphs, "items": items, "order": order}
         if kind == "ask":
             _sentences_as_items(section)
         sections.append(section)
     if not sections:
-        paragraphs, items = _chunks(text)
-        sections = [{"kind": "other", "title": "", "paragraphs": paragraphs, "items": items}]
+        paragraphs, items, order = _chunks(text)
+        sections = [{"kind": "other", "title": "", "paragraphs": paragraphs, "items": items, "order": order}]
         other = ""
     elif other.strip():
-        paragraphs, items = _chunks(other)
-        sections.append({"kind": "other", "title": KIND_TITLES["other"], "paragraphs": paragraphs, "items": items})
+        paragraphs, items, order = _chunks(other)
+        sections.append({"kind": "other", "title": KIND_TITLES["other"], "paragraphs": paragraphs, "items": items, "order": order})
     return {"sections": sections, "facts": facts_of(text)}
+
+
+def blocks(order: list[str], paragraphs: list, items: list) -> list[dict]:
+    """Paragraphs and lists in the order of the text: [{"p": paragraph} | {"ul": [items]}]."""
+    paragraph_at, item_at, found = iter(paragraphs), iter(items), []
+    for kind in order:
+        if kind == "p":
+            found.append({"p": next(paragraph_at)})
+        elif found and "ul" in found[-1]:
+            found[-1]["ul"].append(next(item_at))
+        else:
+            found.append({"ul": [next(item_at)]})
+    return found
 
 
 def summary(description: str, limit: int = 320) -> str:

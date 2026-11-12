@@ -166,12 +166,15 @@ def view(job) -> dict:
             {"pieces": vacancy_text.marked(item, terms), "in_cv": vacancy_text.in_cv(item, terms)}
             for item in section["items"]
         ]
+        paragraphs = [vacancy_text.marked(item, terms) for item in section["paragraphs"]]
         shown.append(
             {
                 "kind": section["kind"],
                 "title": section["title"] or vacancy_text.KIND_TITLES.get(section["kind"], ""),
-                "paragraphs": [vacancy_text.marked(item, terms) for item in section["paragraphs"]],
+                "paragraphs": paragraphs,
                 "items": items,
+                # The plain reading knows the order of the text; the AI reading has none.
+                "blocks": vacancy_text.blocks(section["order"], paragraphs, items) if section.get("order") else None,
             }
         )
     return {
