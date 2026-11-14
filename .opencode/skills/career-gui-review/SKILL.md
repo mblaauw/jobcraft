@@ -12,10 +12,10 @@ metadata:
 
 ## Kader
 
-- Server-gerenderde Jinja-templates met één stylesheet: `app/static/app.css`.
-- Bestaande tokens: `--ink`, `--muted`, `--line`, `--accent`, `--accent-ink`, `--panel`, `--ok`, `--warn`.
-- Bestaande componenten: `.card`, `.banner`, `.button`, `.chip`, `.table`, `.steps`, `.score-badge`, `.travel`, `.vote`, `.filter-bar`.
-- Geen framework of buildstap voorstellen; geen nieuwe visuele taal zonder reden.
+- Server-gerenderde Jinja-templates. `app/static/app.css` draagt het systeem; `cv.css` (Profiel) en `studio.css` (sollicitatie) laden alleen op hun eigen pagina. Lees eerst `docs/design-system.md`.
+- Tokens: `--paper`, `--surface`, `--surface-2`, `--sunk`, `--line`, `--field-line`, `--ink`, `--ink-2`, `--ink-3`, `--forest`, `--moss`, `--lime`, `--ok`, `--clay`, `--danger`, `--selected`; maten `--fs-*`, `--sp-*`, `--r-*`, `--ctl`.
+- Componenten: `.panel`, `.banner`, `.button`, `.icon-button`, `.field`, `.choice`, `.toggle-chip`, `.chip`, `.status-tabs`, `.segmented`, `.table`, `.settings`, `.empty-state`, de stempel `ui.stamp` (`.vacancy-score`), `.meta` met `.travel`.
+- Geen framework of buildstap voorstellen; geen nieuwe visuele taal zonder reden. Geen kleur, maat of afstand als losse waarde in een paginaregel: ontbreekt een token, voeg het token toe.
 
 ## Checklist
 
@@ -25,7 +25,7 @@ metadata:
 4. Focus: `:focus-visible` zichtbaar op knoppen, links, selects en checkboxes.
 5. Statussen: leeg, bezig, fout en klaar hebben alle vier een zichtbare toestand.
 6. Overloop: lange vacatureteksten, lange profielen en honderden rijen blijven netjes scrollen.
-7. Responsief: breekpunten 780/820/980 px; tabellen mogen kolommen verbergen, niet onleesbaar krimpen.
+7. Responsief: breekpunten 1180/900/640 px; bekijk 1440, 1024 en 375 breed, licht en donker; tabellen mogen kolommen verbergen, niet onleesbaar krimpen.
 8. Microcopy: Nederlands, kort, geen jargon; een foutmelding zegt wat de gebruiker moet doen.
 9. Toegankelijkheid: elk formulier-element heeft een label; knoppen hebben tekst of `aria-label`; tabellen hebben koppen.
 10. Eerlijkheid: geen verzonnen voortgang; genoemde kosten en wachttijden moeten kloppen.

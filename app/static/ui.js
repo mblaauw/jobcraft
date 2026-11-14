@@ -242,8 +242,11 @@
     const search = sourceFilter.querySelector("input[type=search]");
     const troubleOnly = sourceFilter.querySelector("[data-source-trouble-only]");
     const none = sourceFilter.parentElement.querySelector("[data-source-none]");
+    const count = sourceFilter.parentElement.querySelector("[data-source-count]");
+    const total = count ? count.textContent : "";
     const apply = () => {
       const words = search.value.trim().toLowerCase();
+      const narrowed = Boolean(words) || Boolean(troubleOnly && troubleOnly.checked);
       let shown = 0;
       rows.forEach((row) => {
         const match = row.dataset.sourceName.includes(words) && (!troubleOnly || !troubleOnly.checked || row.hasAttribute("data-source-trouble"));
@@ -251,6 +254,8 @@
         if (match) shown += 1;
       });
       if (none) none.hidden = shown > 0;
+      // The line above the list says what the list shows now.
+      if (count) count.textContent = narrowed ? shown + " van " + rows.length + " bronnen" : total;
     };
     search.addEventListener("input", apply);
     if (troubleOnly) troubleOnly.addEventListener("change", apply);

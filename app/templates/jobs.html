@@ -6,7 +6,7 @@
 <div class="page-head">
   <div>
     <h1>Vacatures</h1>
-    <p class="lede wide-only">Gesorteerd op hoe goed ze bij je profiel passen. Geef met duim omhoog of omlaag aan wat je aanspreekt; de volgorde past zich meteen aan.</p>
+    <p class="lede wide-only">De best passende bovenaan. Je duimen sturen de volgorde bij.</p>
   </div>
   <div class="page-actions jobs-matching">
     {# The words of the vacancy page: an "uitgebreide beoordeling" is what the queue waits for. #}
@@ -120,13 +120,13 @@
   <nav class="status-tabs jobs-tabs" aria-label="Vacaturestatus">
     {% for tab in status_links %}<a href="{{ tab.url }}" data-status="{{ tab.value }}" {% if status_filter == tab.value %}aria-current="page"{% endif %}>{{ tab.label }}{% if tab.count is defined and tab.count is not none %} <span class="tab-count">{{ tab.count }}</span>{% endif %}</a>{% endfor %}
   </nav>
-  <fieldset class="segmented filters-sort"><legend class="visually-hidden">Volgorde</legend>
-    {% for value, label in [('rank', 'Best passend'), ('newest', 'Nieuwste')] %}<label><input type="radio" name="sort" value="{{ value }}" form="job-filters" {% if sort == value %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}
-  </fieldset>
 </div>
 <div class="jobs-results-head">
   <h2>{{ total_filtered }} {{ 'resultaat' if total_filtered == 1 else 'resultaten' }}</h2>
-  <span>{% if within == '1' %}binnen je reisbereik of met onbekende reistijd{% else %}ook buiten je reisbereik{% endif %}{% if excluded %}, {{ excluded }} buiten je reisbereik verborgen{% endif %}{% if not stale_active %}. <a href="{{ stale_url }}">Toon ook verlopen</a>{% endif %}</span>
+  <fieldset class="segmented filters-sort"><legend class="visually-hidden">Volgorde</legend>
+    {% for value, label in [('rank', 'Best passend'), ('newest', 'Nieuwste')] %}<label><input type="radio" name="sort" value="{{ value }}" form="job-filters" {% if sort == value %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}
+  </fieldset>
+  <span class="jobs-results-note">{% if within == '1' %}binnen je reisbereik of met onbekende reistijd{% else %}ook buiten je reisbereik{% endif %}{% if excluded %}, {{ excluded }} buiten je reisbereik verborgen{% endif %}{% if not stale_active %}. <a href="{{ stale_url }}">Toon ook verlopen</a>{% endif %}</span>
 </div>
 
 <p id="jobs-action-status" class="visually-hidden" role="status" aria-live="polite"></p>
@@ -194,7 +194,7 @@
   </details>
   <details class="card disclosure"><summary>Hoe komt de matchscore tot stand?{{ ui.icon('chevron-down', 'chev') }}</summary>
     <p>De matchscore is een rangschikking op basis van je voorkeuren, de beoordelingen en je stemmen. Het is geen kans op succes. Een stippelrand om de score betekent dat er alleen een snelle eerste beoordeling is; de kansrijkste vacatures krijgen vanzelf een uitgebreide beoordeling met toelichting.</p>
-    <p>Reistijden zijn schattingen. Vacatures met een onbekende reistijd blijven zichtbaar. Je stemmen tellen direct mee; klik nog eens op een gekozen duim om je stem te wissen.</p>
+    <p>Geef met duim omhoog of omlaag aan wat je aanspreekt; de volgorde past zich meteen aan. Klik nog eens op een gekozen duim om je stem te wissen. Reistijden zijn schattingen. Vacatures met een onbekende reistijd blijven zichtbaar.</p>
   </details>
   {% if feedback.counts.up or feedback.counts.down %}
   <details class="card disclosure jobs-signals"><summary><span>Wat we leren van je stemmen <span class="muted small">{{ feedback.counts.up }} interessant · {{ feedback.counts.down }} minder passend</span></span>{{ ui.icon('chevron-down', 'chev') }}</summary>

@@ -107,7 +107,7 @@
     if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
     if (document.querySelector("dialog[open]")) return;
     const target = event.target;
-    if (target.closest("input, textarea, select, [contenteditable]")) return;
+    if (target.closest("input, textarea, select, [contenteditable], details[data-menu]")) return;
     const key = event.key;
     if (key === "/") {
       const search = document.getElementById("job-search");
