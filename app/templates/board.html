@@ -16,9 +16,9 @@
 {% if funnel.rate is not none %}<p class="small muted pipeline-note">Van je {{ funnel.sent }} verstuurde sollicitaties leidden er {{ funnel.talks }} tot een gesprek ({{ funnel.rate }}%).</p>{% endif %}
 
 {% if not open_cards and not columns[-1].cards %}
-<section class="studio-start">
+<section class="panel empty-state">
   <h2>Nog niets om op te volgen</h2>
-  <p>Bewaar een vacature die je aanspreekt, dan staat hier wat de volgende stap is.</p>
+  <p class="muted">Bewaar een vacature die je aanspreekt, dan staat hier wat de volgende stap is.</p>
   <a class="button primary" href="/jobs">Bekijk je vacatures</a>
 </section>
 {% endif %}

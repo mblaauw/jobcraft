@@ -1,45 +1,53 @@
-/* Mijn cv: a calm sheet of parts, a short index beside it, the coach's notes in place. */
-.profile-tabs { overflow-x: auto; scrollbar-width: none; }
-.profile-tabs a { flex: none; white-space: nowrap; }
-.profile-tabs .badge { margin-left: 6px; }
-.cv-start, .cv-review { max-width: 72ch; margin: 0 0 24px; }
-.cv-start h2, .cv-review h2 { margin: 0 0 8px; }
+/* Profiel: Mijn cv, Wat ik zoek and Notities. Every tab is an index beside a column of
+ * sheets, so a long page stays one click from any of its parts. Tokens come from app.css. */
+
+.profile-tabs .badge { margin-left: 0; }
+.cv-start, .cv-review { max-width: 72ch; margin: 0 0 var(--sp-6); }
+.cv-start { padding: var(--sp-6) 28px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
+.cv-start h2, .cv-review h2 { font-size: var(--fs-xl); letter-spacing: -0.02em; margin: 0 0 8px; }
+.cv-start > p { color: var(--ink-2); }
 .cv-read-in { display: grid; gap: 18px; margin-top: 18px; max-width: 72ch; }
 .cv-read-in form { display: grid; gap: 8px; justify-items: start; margin: 0; }
-.cv-read-in label { font-weight: 650; }
+.cv-read-in label { font-size: var(--fs-sm); font-weight: 640; }
 .cv-read-in textarea { min-height: 140px; }
+.cv-read-in form + form { padding-top: 18px; border-top: 1px solid var(--line); width: 100%; }
 .cv-again { margin-top: 28px; max-width: 72ch; }
 
-.cv-coach { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: 0 0 24px; padding: 16px 20px; border-radius: var(--r-lg); background: var(--lime-soft); border: 1px solid var(--line); }
-.cv-coach h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 2px; font-size: var(--fs-md); }
+.cv-coach { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: 0 0 var(--sp-6); padding: 14px 18px; border-radius: var(--r-lg); background: var(--lime-soft); border: 1px solid color-mix(in srgb, var(--moss) 18%, transparent); }
+.cv-coach h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 2px; font-size: var(--fs-base); }
+.cv-coach h2 .icon { color: var(--moss); }
 .cv-coach p { margin: 0; max-width: 70ch; }
 .cv-coach form { margin: 0; }
 .cv-coach .wait { flex: 1; background: transparent; border: 0; padding: 0; }
 
-.cv-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 28px; align-items: start; }
-.cv-nav { position: sticky; top: 16px; display: grid; gap: 2px; font-size: var(--fs-sm); }
-.cv-nav a { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: var(--r-sm); color: var(--ink-2); text-decoration: none; font-weight: 650; }
+/* The index beside the content: shared by Mijn cv and Wat ik zoek. */
+.cv-layout, .wishes { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: var(--sp-7); align-items: start; }
+.cv-nav { position: sticky; top: var(--sp-5); display: grid; gap: 2px; font-size: var(--fs-sm); }
+.cv-nav a { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 10px; border-radius: var(--r-sm); color: var(--ink-2); text-decoration: none; font-weight: 620; }
 .cv-nav a:hover { background: var(--sunk); color: var(--ink); }
-.cv-nav .cv-nav-sub { padding-left: 22px; font-weight: 500; }
+.cv-nav .cv-nav-sub { padding-left: 22px; font-weight: 500; font-size: var(--fs-xs); }
 .cv-nav .badge { margin-left: auto; }
+.cv-nav .start-count { position: static; margin: 0 0 var(--sp-3); box-shadow: none; }
 
-.cv-sheet { max-width: 76ch; }
-.cv-sheet.is-draft { padding: 4px 24px; border: 1px dashed var(--line-strong); border-radius: var(--r-lg); }
-.cv-part { padding: 20px 0; border-top: 1px solid var(--line); }
-.cv-part:first-child { border-top: 0; padding-top: 4px; }
-.cv-part > h2 { font-size: var(--fs-lg); margin: 0 0 10px; }
+.cv-sheet { max-width: 76ch; padding: 8px 28px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
+.cv-sheet.is-draft { border-style: dashed; border-color: var(--line-strong); }
+.cv-part { padding: var(--sp-5) 0; border-top: 1px solid var(--line); scroll-margin-top: var(--sp-5); }
+.cv-part:first-child { border-top: 0; }
+.cv-part > h2 { font-size: var(--fs-md); margin: 0 0 10px; }
 .cv-summary { font-size: var(--fs-md); line-height: 1.6; margin: 0 0 8px; }
-.cv-role { padding: 14px 0; }
+.cv-role { padding: 14px 0; scroll-margin-top: var(--sp-5); }
 .cv-role + .cv-role { border-top: 1px dashed var(--line); }
-.cv-role header h3 { font-size: var(--fs-md); margin: 0; }
+.cv-role header h3 { font-size: var(--fs-base); margin: 0; }
 .cv-role header p { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 2px 0 8px; }
-.cv-period { font-variant-numeric: tabular-nums; }
+.cv-period { white-space: nowrap; }
 .cv-points { margin: 0 0 8px; padding-left: 20px; line-height: 1.6; }
 .cv-points li { margin: 0 0 4px; }
-.cv-source { margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--sunk); color: var(--ink-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.cv-source { margin-left: 8px; padding: 1px 8px; border-radius: var(--r-pill); background: var(--sunk); color: var(--ink-2); font-size: var(--fs-2xs); font-weight: 600; white-space: nowrap; }
 .cv-chips { list-style: none; margin: 0 0 8px; padding: 0; }
+.cv-chips .chip { font-size: var(--fs-xs); padding: 3px 10px; }
 
-.cv-edit > summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; color: var(--moss); font-size: var(--fs-sm); font-weight: 650; }
+.cv-edit > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; cursor: pointer; list-style: none; color: var(--moss); font-size: var(--fs-sm); font-weight: 640; }
+.cv-edit > summary:hover { color: var(--moss-hover); text-decoration: underline; text-underline-offset: 3px; }
 .cv-edit > summary::-webkit-details-marker { display: none; }
 .cv-edit[open] > summary { margin-bottom: 10px; }
 .cv-edit form { display: grid; gap: 8px; margin: 0 0 8px; }
@@ -49,7 +57,7 @@
 .cv-role-tools form { margin: 0; }
 .cv-add { margin-top: 12px; }
 
-.cv-note { margin: 10px 0 0; padding: 12px 14px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--moss); border-radius: 0 var(--r) var(--r) 0; font-size: var(--fs-sm); }
+.cv-note { margin: 10px 0 0; padding: 12px 14px; background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--moss); border-radius: 0 var(--r) var(--r) 0; font-size: var(--fs-sm); }
 .cv-note.is-klopt_niet { border-left-color: var(--clay); }
 .cv-note.is-niet_claimen { border-left-color: var(--danger); }
 .cv-note p { margin: 0 0 6px; }
@@ -57,38 +65,52 @@
 .cv-note-was { color: var(--ink-3); text-decoration: line-through; }
 .cv-note-new { font-weight: 600; }
 .cv-note-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 0; }
-.cv-note-actions input { flex: 1 1 220px; min-height: 36px; padding: 6px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface); font: inherit; }
+.cv-note-actions input { flex: 1 1 220px; min-height: var(--ctl-sm); padding: 6px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface); font: inherit; }
 
-@media (max-width: 900px) {
-  .profile-tabs a { padding: 10px 12px; }
-  .cv-layout { grid-template-columns: minmax(0, 1fr); }
-  .cv-nav { display: none; }
-  .cv-role-form { grid-template-columns: minmax(0, 1fr); }
-}
-
-/* Wat ik zoek: three calm parts, the count beside the heading that it answers. */
-.wishes { max-width: 80ch; }
-.wishes-part { padding: 4px 0 28px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
-.wishes-part:last-child { border-bottom: 0; }
-.wishes-part > h2, .wishes-head h2 { font-size: var(--fs-lg); margin: 0 0 12px; }
-.wishes-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
-.wishes-head .start-count { margin: 0 0 12px; }
-.wishes-words { display: grid; gap: 8px; margin: 0 20px 18px; }
+/* Wat ik zoek: three sheets, one per question it answers. */
+.wishes-parts { display: grid; gap: var(--sp-5); max-width: 760px; min-width: 0; }
+.wishes-part { padding: var(--sp-5) var(--sp-6) var(--sp-6); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); scroll-margin-top: var(--sp-5); }
+.wishes-part > h2, .wishes-head h2 { font-size: var(--fs-lg); margin: 0 0 4px; }
+.wishes-part > h2 + p, .wishes-head + p { margin-bottom: var(--sp-5); }
+.wishes-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; margin-bottom: var(--sp-4); }
+.wishes-head .start-count { display: none; }
+.wishes-part .form-stack { max-width: none; gap: var(--sp-5); }
+.wishes-part .field > input { max-width: 520px; }
+.wishes-part .btn-row { margin-top: 0; padding-top: var(--sp-4); border-top: 1px solid var(--line); }
+.wishes-words { display: grid; gap: 8px; margin: 0 18px 18px; }
+.wishes-part .profile-card { background: var(--surface-2); }
 
 /* Notities and Meer over jou. */
-.profile-more { margin-top: 36px; max-width: 76ch; }
+.profile-more { margin-top: var(--sp-8); max-width: 76ch; }
+.cv-layout + .cv-again, .cv-layout ~ .profile-more { margin-left: calc(208px + var(--sp-7)); }
 .notes-part { max-width: 80ch; padding: 4px 0 28px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
 .notes-part > h2 { display: flex; align-items: center; gap: 8px; font-size: var(--fs-lg); margin: 0 0 6px; }
+.notes-part > h2 .icon { color: var(--ink-3); }
 .notes-form { display: grid; gap: 8px; }
-.version-history { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.version-history { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); overflow: hidden; }
 .version-history > li { border-top: 1px solid var(--line); }
 .version-history > li:first-child { border-top: 0; }
 .version-history details > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 12px 16px; cursor: pointer; list-style: none; }
+.version-history details > summary:hover { background: var(--surface-2); }
 .version-history details > summary::-webkit-details-marker { display: none; }
-.version-history .version-when { font-weight: 650; font-variant-numeric: tabular-nums; }
+.version-history .version-when { font-weight: 650; }
 .version-history .version-what { color: var(--ink-2); flex: 1; min-width: 0; }
 .version-count { display: inline-flex; gap: 8px; font-variant-numeric: tabular-nums; }
 .version-count .add { color: var(--ok); }
 .version-count .del { color: var(--danger); }
 .version-history details[open] > :not(summary) { margin: 0 16px 14px; }
 .version-history .diff { white-space: pre-wrap; max-height: 360px; }
+
+@media (max-width: 1040px) {
+  .cv-layout, .wishes { grid-template-columns: minmax(0, 1fr); gap: var(--sp-4); }
+  .cv-nav { display: none; }
+  .wishes > .cv-nav { display: block; position: static; }
+  .wishes > .cv-nav a { display: none; }
+  .cv-layout + .cv-again, .cv-layout ~ .profile-more { margin-left: 0; }
+}
+@media (max-width: 900px) {
+  .cv-sheet { padding: 4px var(--sp-4); }
+  .cv-start { padding: var(--sp-5); }
+  .cv-role-form { grid-template-columns: minmax(0, 1fr); }
+  .wishes-part { padding: var(--sp-4); }
+}

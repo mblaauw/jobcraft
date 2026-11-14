@@ -109,6 +109,7 @@
       scoreBox.classList.remove("high", "mid", "low");
       scoreBox.classList.add(score >= 70 ? "high" : score >= 50 ? "mid" : "low");
       scoreBox.classList.toggle("is-provisional", detail.dataset.jobProvisional === "true");
+      scoreBox.style.setProperty("--p", String(Math.round(score)));
       const strong = scoreBox.querySelector("strong");
       if (strong && strong.firstChild) strong.firstChild.textContent = String(Math.round(score));
     }

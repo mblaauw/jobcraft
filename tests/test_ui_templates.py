@@ -75,7 +75,11 @@ def test_an_administrator_without_a_profile_sees_beheer_and_jij_only():
     assert [title.get_text(strip=True) for title in html.select(".rail-group-title")] == ["Beheer", "Jij"]
     active = html.select('.top [aria-current="page"]')
     assert len(active) == 1 and active[0]["href"] == "/admin"
-    assert not html.select(".tabbar")
+    # On a phone the bar holds the first four Beheer pages; the rest is behind "Meer".
+    bar = html.select_one(".tabbar")
+    assert [link.get_text(strip=True) for link in bar.select(":scope > a")] == ["Overzicht", "Gebruikers", "Bronnen", "AI"]
+    assert [link.get_text(strip=True) for link in bar.select(".tabbar-sheet a")] == ["Instellingen", "Account"]
+    assert bar.select_one('.tabbar-sheet form[action="/logout"]')
     assert html.select_one(".brand")["href"] == "/admin"
 
 
@@ -85,12 +89,16 @@ def test_an_owner_who_is_also_an_administrator_sees_both_groups():
     assert labels[:4] == ["Vandaag", "Vacatures", "Sollicitaties", "Profiel"]
     assert "Overzicht" in labels and labels[-1] == "Account"
     assert html.select(".tabbar") and html.select_one(".brand")["href"] == "/"
+    assert "Overzicht" in [link.get_text(strip=True) for link in html.select(".tabbar-sheet a")]
 
 
 def test_a_job_seeker_sees_zoeken_without_a_title_and_jij():
     html = render("base.html", "/", role="user")
     assert [title.get_text(strip=True) for title in html.select(".rail-group-title")] == ["Jij"]
     assert "Overzicht" not in [link.get_text(strip=True) for link in html.select(".rail-nav a")]
+    # Nothing but Account is left for "Meer", so Account is a place in the bar itself.
+    assert [link.get_text(strip=True) for link in html.select(".tabbar > a")][-1] == "Account"
+    assert not html.select(".tabbar-more")
 
 
 def test_job_filters_preserve_search_source_and_travel_and_show_empty_state():

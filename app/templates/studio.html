@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}Sollicitatie {{ job['title'] }} · Jobcraft{% endblock %}
+{% block styles %}<link rel="stylesheet" href="/static/studio.css">{% endblock %}
+{# Until there is a plan this page asks one thing; after that it is a workbench and needs the width. #}
+{% block main_class %}{% if running or not has_profile or not plan %} is-focused{% endif %}{% endblock %}
 {% block content %}
 <header class="studio-head">
   <p class="detail-back"><a href="/jobs/{{ job['id'] }}">{{ ui.icon('arrow-left') }}Terug naar de vacature</a></p>

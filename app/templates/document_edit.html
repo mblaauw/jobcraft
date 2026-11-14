@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}Document bewerken · Jobcraft{% endblock %}
+{% block main_class %} is-focused{% endblock %}
 {% block content %}
 <div class="page-head"><div>
   <h1>{{ 'CV' if document.kind == 'resume' else 'Motivatiebrief' }} bewerken</h1>
