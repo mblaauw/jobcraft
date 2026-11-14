@@ -37,8 +37,8 @@ def list_jobs_for_matching(limit: int | None = None) -> list:
             "AND (source_id IS NULL OR source_id NOT LIKE 'import:%' OR source_id=?)"
             + source_sql
             + " ORDER BY COALESCE(posted_at, first_seen) DESC, id DESC LIMIT ?",
-            (*params, cap),
+            (*params, cap + 1),  # one more, to know whether the cap left anything out
         ).fetchall()
-    if limit is None and len(rows) >= cap:
+    if len(rows) > cap and limit is None:
         log.warning("matching walk capped at %d vacancies: older live ones are left out", cap)
-    return rows
+    return rows[:cap] if len(rows) > cap else rows

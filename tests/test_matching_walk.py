@@ -19,6 +19,8 @@ def test_the_walk_takes_every_live_vacancy_and_says_when_its_cap_binds(client, m
     assert {row["id"] for row in store.list_jobs_for_matching()} == set(ids)
     assert warnings == []
 
+    monkeypatch.setattr(job_walk, "MATCHING_LIMIT", 4)
+    assert len(store.list_jobs_for_matching()) == 4 and warnings == []  # exactly full is not capped
     monkeypatch.setattr(job_walk, "MATCHING_LIMIT", 3)
     assert [row["id"] for row in store.list_jobs_for_matching()] == ids[:0:-1]  # newest first
     assert len(warnings) == 1 and warnings[0][1] == 3
@@ -46,11 +48,11 @@ def test_onboarding_ranks_part_in_the_request_and_the_whole_in_the_worker(flow, 
     assert passes == [store.WEB_WALK_LIMIT]
     with store.connect() as con:
         owner = con.execute("SELECT id FROM users WHERE username='test'").fetchone()["id"]
-    assert [task["kind"] for task in tasks.list_for_owner(owner)] == ["rerank"]
+    assert tasks.list_for_owner(owner) == []  # the full pass waits for the swipe votes
 
     with tenancy.scope({"id": owner}):
         queue = json.loads(store.meta_get("start_swipe"))
     for job_id in queue:
         flow.post(f"/start/vacatures/{job_id}", data={"answer": "overslaan"}, follow_redirects=False)
-    flow.post("/start/vacatures/stoppen", follow_redirects=False)
     assert passes == [store.WEB_WALK_LIMIT]  # the end of the swipes ranks in the worker only
+    assert [task["kind"] for task in tasks.list_for_owner(owner)] == ["rerank"]

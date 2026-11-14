@@ -260,8 +260,8 @@ async def start_choices_save(request: Request):
     if store.meta_get("start_finished_at"):  # Later edit from the profile page: back to the list.
         _assess_soon("match" if tracks_changed else "rerank")
         return RedirectResponse(url="/jobs", status_code=303)
+    # The picks need ranks now; the full pass waits for the swipe votes (below).
     await run_in_threadpool(ranking.rerank_all, limit=store.WEB_WALK_LIMIT)
-    _rerank_in_worker()
     store.meta_set("start_swipe", json.dumps(await run_in_threadpool(onboarding.pick_swipes)))
     store.meta_set("start_swipe_done", "0")
     return RedirectResponse(url="/start/vacatures", status_code=303)
