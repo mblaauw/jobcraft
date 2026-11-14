@@ -50,29 +50,19 @@ use the screens.
 | 14 | P2 | Security: a hosted site without `APP_PASSWORD` created the legacy account with the known password `dev-local`. | Behind HTTPS it gets a random password in the bootstrap file. Tested. |
 | 15 | P2 | Security: Vacature toevoegen checked the resolved address, then let httpx resolve it again (DNS rebinding to 127.0.0.1). | It checks the address the connection actually reached, and ignores proxy settings from the environment. Tested. |
 | 16 | P3 | Security: a form without a Content-Length was read whole before the size check. Scraped `javascript:` links were shown. `/docs` listed every route. | The body is read in pieces up to the limit, only http(s) links are shown, and the API pages are off. Tested. |
-| 8 | P1 | The web process grew to 640 MB of 768 MB and was OOM-killed (PR #125, merged). | Freed memory goes back after each request. The root cause of the remaining growth is still open (below). |
+| 8 | P1 | The web process grew to 640 MB of 768 MB and was OOM-killed (PR #125). | Freed memory goes back after each request (#125), and the 12 s queue recount left the page (#12). A 24-hour memory log of the live web process (2026-11-12 to 11-13) peaked at 133 MB and stayed at 78–80 MB after the deploy; 39 hours later it was 103 MB. Traffic was light, so watch it again after a busy day. |
+| 17 | P2 | Sollicitaties scanned the whole catalogue for each of its five status lists. | Index `job_states(owner, status) WHERE status != 'new'` (migration m0009) and a status filter that starts from job_states: five lists 136 → 12 ms at 25,000 vacancies, same rows (PR #129). |
 
 ## Open, in order
 
-1. **P1 web memory.** The lab levels off near 300 MB, the live process reached 640 MB.
-   A memory log of the live web process runs until 2026-11-13 ~17:20 UTC in
-   `~/jc_memlab` on the VPS. Line its jumps up with the access log, then remove the folder.
-2. **P3 intro of a raw vacancy.** The text before the first heading is shown last, collapsed
-   as "Overige tekst van de pagina". This is on purpose, because on scraped pages that text
-   is often menu text. Revisit only with real examples where the intro matters.
-3. **P3 navigation.** The "Jij" group holds only Account.
-4. **P2 database, needs approval (schema migration).** An index
-   `job_states(owner, status) WHERE status != 'new'`, plus a query that starts from
-   job_states, takes the status lists on Sollicitaties from 24.5 ms to 3.8 ms per status
-   (5 per page). Measured on a copy with 25,000 vacancies.
-5. **P2 list pages.** The duplicate check (`_UNIQUE_JOBS`, window functions over a computed
+1. **P2 list pages.** The duplicate check (`_UNIQUE_JOBS`, window functions over a computed
    key) costs about 110 ms, and /jobs and the dashboard each run it twice. A stored
    duplicate key or deduplicating only the top candidates would fix it. Both change
    behaviour, so they need a design.
-6. **P2 small wins, not measured.** On Sollicitaties, each card makes 3 separate queries,
+2. **P2 small wins, not measured.** On Sollicitaties, each card makes 3 separate queries,
    about 180 ms for 107 cards. Today's new matches and the five-for-today round run the
    same query one after the other.
-7. **P3 security hardening.**
+3. **P3 security hardening.**
    - Login throttling is per IP and username only, so it does not stop password
      spraying or rotating IPs.
    - Opening a vacancy page queues AI work on a GET.
@@ -83,7 +73,11 @@ use the screens.
 
    The security review found no access between accounts, no path traversal, no CSRF
    gap, no open redirect and no XSS.
-5. **P3 answer weight.** On every yes/no card, Ja is the filled primary button and Nee
+4. **P3 intro of a raw vacancy.** The text before the first heading is shown last, collapsed
+   as "Overige tekst van de pagina". This is on purpose, because on scraped pages that text
+   is often menu text. Revisit only with real examples where the intro matters.
+5. **P3 navigation.** The "Jij" group holds only Account.
+6. **P3 answer weight.** On every yes/no card, Ja is the filled primary button and Nee
    is outlined. That may nudge answers. Equal weight is worth trying, but it is a
    product decision.
 
@@ -99,8 +93,8 @@ use the screens.
 | Accessibility | 8 | 8 | Automated checks clean before and after; no screen-reader run |
 | Frontend architecture | 7 | 7 | Server-rendered, small JS; not changed |
 | Backend architecture | 7 | 7 | Not reviewed in depth this round |
-| Database design | — | 6 | Sound schema and owner filters; list pages pay about 110 ms for duplicate detection; one useful index awaits approval |
-| Performance | 6 | 7 | Web memory trimmed (#125); 12 s queue recount gone from pages; list pages about 0.5 s at 25k |
-| Reliability | 6 | 7 | OOM kill addressed in part; Test button fixed |
+| Database design | — | 7 | Sound schema and owner filters; list pages pay about 110 ms for duplicate detection; status lists indexed (#129) |
+| Performance | 6 | 7 | Web memory flat at about 80 MB; 12 s queue recount gone from pages; Sollicitaties lists 136 → 12 ms; list pages still pay for duplicate detection |
+| Reliability | 6 | 8 | No restart or error in 39 hours live; Test button fixed |
 | Security | — | 8 | No cross-account or injection findings; four hardening fixes done, four listed |
 | Maintainability | 7 | 7 | Small, tested changes |
