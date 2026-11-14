@@ -345,32 +345,6 @@ def list_scored_jobs(owner: str | None = None) -> list:
         ).fetchall()
 
 
-MATCHING_LIMIT = 20000
-
-
-def list_jobs_for_matching(limit: int = MATCHING_LIMIT) -> list:
-    disabled = _disabled_user_sources()
-    source_sql = ""
-    params: list = [tenancy.user_id(), stale_cutoff(), import_source()]
-    if disabled:
-        source_sql = (
-            " AND (source_id IS NULL OR source_id NOT IN (" + ",".join("?" for _ in disabled) + "))"
-        )
-        params.extend(disabled)
-    with connect() as con:
-        return con.execute(
-            "SELECT * FROM ("
-            + _job_select()
-            + ") WHERE NOT (last_seen < ? AND status NOT IN ('saved','applied','interview','offer','rejected') "
-            "AND EXISTS (SELECT 1 FROM sources src WHERE src.id=source_id "
-            "AND src.last_status='ok' AND src.last_scan_at > last_seen)) "
-            "AND (source_id IS NULL OR source_id NOT LIKE 'import:%' OR source_id=?)"
-            + source_sql
-            + " ORDER BY COALESCE(posted_at, first_seen) DESC, id DESC LIMIT ?",
-            (*params, limit),
-        ).fetchall()
-
-
 def count_jobs() -> dict:
     with connect() as con:
         total = con.execute("SELECT COUNT(*) AS n FROM jobs").fetchone()["n"]

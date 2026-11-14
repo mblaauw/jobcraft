@@ -52,6 +52,7 @@ use the screens.
 | 16 | P3 | Security: a form without a Content-Length was read whole before the size check. Scraped `javascript:` links were shown. `/docs` listed every route. | The body is read in pieces up to the limit, only http(s) links are shown, and the API pages are off. Tested. |
 | 8 | P1 | The web process grew to 640 MB of 768 MB and was OOM-killed (PR #125). | Freed memory goes back after each request (#125), and the 12 s queue recount left the page (#12). A 24-hour memory log of the live web process (2026-11-12 to 11-13) peaked at 133 MB and stayed at 78–80 MB after the deploy; 39 hours later it was 103 MB. Traffic was light, so watch it again after a busy day. |
 | 17 | P2 | Sollicitaties scanned the whole catalogue for each of its five status lists. | Index `job_states(owner, status) WHERE status != 'new'` (migration m0009) and a status filter that starts from job_states: five lists 136 → 12 ms at 25,000 vacancies, same rows (PR #129). |
+| 18 | P1 | Re-ranking, System One and the LLM step walked only the 20,000 newest live vacancies. With 28,318 live, 2,785 vacancies within reach (posted before 14 October) were never re-ranked or assessed again; 493 of them had an old rank inside the top 1,000. Measured live on 2026-11-14. | The cap is 60,000 and logs a warning when it binds (in the worker: 762 MB peak and a 49 s routing pass at 28,318). The two re-ranks at the end of the swipes run in the worker. The choices step still ranks in the request, limited to the old 20,000 and without the routing pass, and queues the full pass. Tested. |
 
 ## Open, in order
 
@@ -59,10 +60,14 @@ use the screens.
    key) costs about 110 ms, and /jobs and the dashboard each run it twice. A stored
    duplicate key or deduplicating only the top candidates would fix it. Both change
    behaviour, so they need a design.
-2. **P2 small wins, not measured.** On Sollicitaties, each card makes 3 separate queries,
+2. **P2 onboarding ranks in the request.** After the choices step the swipe picks need
+   fresh ranks, so that request still ranks the 20,000 newest vacancies (about 600 MB peak in
+   the 768 MB web process). Ranking in the worker with a short wait on the swipe page would
+   remove the risk; it changes the flow, so it needs a design.
+3. **P2 small wins, not measured.** On Sollicitaties, each card makes 3 separate queries,
    about 180 ms for 107 cards. Today's new matches and the five-for-today round run the
    same query one after the other.
-3. **P3 security hardening.**
+4. **P3 security hardening.**
    - Login throttling is per IP and username only, so it does not stop password
      spraying or rotating IPs.
    - Opening a vacancy page queues AI work on a GET.
@@ -73,11 +78,11 @@ use the screens.
 
    The security review found no access between accounts, no path traversal, no CSRF
    gap, no open redirect and no XSS.
-4. **P3 intro of a raw vacancy.** The text before the first heading is shown last, collapsed
+5. **P3 intro of a raw vacancy.** The text before the first heading is shown last, collapsed
    as "Overige tekst van de pagina". This is on purpose, because on scraped pages that text
    is often menu text. Revisit only with real examples where the intro matters.
-5. **P3 navigation.** The "Jij" group holds only Account.
-6. **P3 answer weight.** On every yes/no card, Ja is the filled primary button and Nee
+6. **P3 navigation.** The "Jij" group holds only Account.
+7. **P3 answer weight.** On every yes/no card, Ja is the filled primary button and Nee
    is outlined. That may nudge answers. Equal weight is worth trying, but it is a
    product decision.
 
