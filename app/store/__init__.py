@@ -56,8 +56,10 @@ from .job_state import (  # noqa: F401
     update_job_signals,
     update_job_status,
 )
+from .job_walk import MATCHING_LIMIT as MATCHING_LIMIT
+from .job_walk import WEB_WALK_LIMIT as WEB_WALK_LIMIT
+from .job_walk import list_jobs_for_matching as list_jobs_for_matching
 from .jobs import (  # noqa: F401
-    MATCHING_LIMIT,
     TRAVEL_FIELDS,
     _disabled_user_sources,
     _job_select,
@@ -72,7 +74,6 @@ from .jobs import (  # noqa: F401
     job_status_counts,
     jobs_missing_travel,
     list_jobs,
-    list_jobs_for_matching,
     list_jobs_page,
     list_scored_jobs,
     normalize_posted_at,

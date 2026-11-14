@@ -194,7 +194,9 @@ def rerank_all(
     preferences: dict | None = None,
     feedback_data: dict | None = None,
     digest: str | None = None,
+    limit: int | None = None,
 ) -> int:
+    """Rank every live vacancy; ``limit`` keeps a pass inside a web request small."""
     if tenancy.user_id() != tenancy.LEGACY_ID and not profile.profile_exists():
         return 0
     prefs = preferences if preferences is not None else profile.read_preferences()
@@ -202,7 +204,7 @@ def rerank_all(
     digest = digest or _current_digest(prefs)
     with memory.catalogue(), geo.remembered_home():
         refresh_travel()  # Spare the next list view this work.
-        jobs = store.list_jobs_for_matching()
+        jobs = store.list_jobs_for_matching(limit)
         calibration = fit_calibration(jobs, digest)
         store.meta_set(
             "fit_calibration",
@@ -223,6 +225,8 @@ def rerank_all(
         # The routed pass reads every vacancy again with its new rank; without this the
         # two copies of the catalogue are alive together and the pass needs twice the memory.
         del jobs, tastes
+        if limit:  # a partial pass in a request: the worker's full pass routes everything
+            return len(scores)
         decided = routed(digest, prefs, data)
         _remember_routes(digest, decided)
         del decided  # inside the turn, so the next pass starts with this memory given back

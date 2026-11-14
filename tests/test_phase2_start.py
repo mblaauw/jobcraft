@@ -93,7 +93,7 @@ def _add_jobs(count=14):
 @pytest.fixture()
 def flow(client, monkeypatch):  # noqa: F811
     """The jobs-page fixture replaces ranking pieces; this flow needs the real rerank."""
-    monkeypatch.setattr(ranking, "rerank_all", lambda *args: 0)
+    monkeypatch.setattr(ranking, "rerank_all", lambda *args, **kwargs: 0)
     monkeypatch.setattr(start_routes.feedback, "rebuild", lambda: None)
     return client
 

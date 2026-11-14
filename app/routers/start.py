@@ -23,6 +23,7 @@ from .. import (
     profile,
     ranking,
     store,
+    tasks,
     tenancy,
     vacancy_text,
 )
@@ -242,8 +243,6 @@ async def start_count(request: Request):
     return {"count": count, "place_known": known}
 
 
-
-
 @router.post("/start/keuzes")
 async def start_choices_save(request: Request):
     form = await request.form()
@@ -261,7 +260,8 @@ async def start_choices_save(request: Request):
     if store.meta_get("start_finished_at"):  # Later edit from the profile page: back to the list.
         _assess_soon("match" if tracks_changed else "rerank")
         return RedirectResponse(url="/jobs", status_code=303)
-    await run_in_threadpool(ranking.rerank_all)
+    # The picks need ranks now; the full pass waits for the swipe votes (below).
+    await run_in_threadpool(ranking.rerank_all, limit=store.WEB_WALK_LIMIT)
     store.meta_set("start_swipe", json.dumps(await run_in_threadpool(onboarding.pick_swipes)))
     store.meta_set("start_swipe_done", "0")
     return RedirectResponse(url="/start/vacatures", status_code=303)
@@ -292,13 +292,18 @@ def start_swipe(request: Request):
     )
 
 
+def _rerank_in_worker() -> None:
+    """A full re-rank of the whole catalogue does not fit in the 768 MB web process."""
+    tasks.enqueue("rerank", owner=tenancy.user_id(), dedupe_key=f"rerank:{tenancy.user_id()}")
+
+
 @router.post("/start/vacatures/stoppen")
 def start_swipe_stop():
     if onboarding.swipe_queue():
         store.meta_set("start_swipe", "[]")
         store.meta_set("start_swipe_done", str(int(store.meta_get("start_swipe_done") or 0) or 1))
         feedback.rebuild()
-        ranking.rerank_all()
+        _rerank_in_worker()
     return RedirectResponse(url="/start/vragen", status_code=303)
 
 
@@ -313,7 +318,7 @@ def start_swipe_answer(job_id: int, answer: str = Form(...)):
         store.meta_set("start_swipe_done", str(int(store.meta_get("start_swipe_done") or 0) + 1))
         if not queue:  # Learn from all answers at once instead of after every tap.
             feedback.rebuild()
-            ranking.rerank_all()
+            _rerank_in_worker()
     return RedirectResponse(url="/start/vacatures", status_code=303)
 
 
