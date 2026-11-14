@@ -10,7 +10,7 @@
 
 <nav class="pipeline" aria-label="Waar je sollicitaties staan">
   {% for column in columns %}
-  <a class="pipeline-step is-{{ column.status }}" href="#fase-{{ column.status }}"><strong>{{ column.cards | length }}</strong><span>{{ column.label }}</span></a>
+  <a class="pipeline-step is-{{ column.status }}{% if not column.cards %} is-empty{% endif %}" href="#fase-{{ column.status }}"><strong>{{ column.cards | length }}</strong><span>{{ column.label }}</span></a>
   {% endfor %}
 </nav>
 {% if funnel.rate is not none %}<p class="small muted pipeline-note">Van je {{ funnel.sent }} verstuurde sollicitaties leidden er {{ funnel.talks }} tot een gesprek ({{ funnel.rate }}%).</p>{% endif %}
@@ -61,7 +61,7 @@
         <div class="field"><label for="st-{{ job['id'] }}">Status</label><select id="st-{{ job['id'] }}" name="status">{% for value, label in statuses %}<option value="{{ value }}" {% if value == column.status %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
         <div class="field"><label for="dl-{{ job['id'] }}">Deadline</label><input id="dl-{{ job['id'] }}" type="date" name="deadline" value="{{ card.deadline or '' }}"></div>
         <div class="field board-note"><label for="nt-{{ job['id'] }}">Notitie</label><textarea id="nt-{{ job['id'] }}" name="note" rows="3">{{ card.note or '' }}</textarea></div>
-        <button class="button small" type="submit">Opslaan</button>
+        <button class="button small primary" type="submit">Opslaan</button>
       </form>
     </details>
     {% if card.note %}<p class="app-note small">{{ card.note }}</p>{% endif %}

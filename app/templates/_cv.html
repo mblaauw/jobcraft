@@ -36,7 +36,7 @@
     {% include '_csrf.html' %}
     <label for="cv-file">Upload je cv</label>
     <input id="cv-file" type="file" name="bestand" accept=".pdf,.docx" required>
-    <button class="button" type="submit">Lees in</button>
+    <button class="button{{ ' primary' if open and not has_profile_text else '' }}" type="submit">Lees in</button>
   </form>
   <form method="post" action="/profile/cv/inlezen" class="cv-read-paste" data-pending-form>
     {% include '_csrf.html' %}

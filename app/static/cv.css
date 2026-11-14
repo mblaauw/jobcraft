@@ -65,7 +65,7 @@
 .cv-note-was { color: var(--ink-3); text-decoration: line-through; }
 .cv-note-new { font-weight: 600; }
 .cv-note-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 0; }
-.cv-note-actions input { flex: 1 1 220px; min-height: var(--ctl-sm); padding: 6px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface); font: inherit; }
+.cv-note-actions input { flex: 1 1 220px; min-height: var(--ctl-sm); padding: 6px 10px; border: 1px solid var(--field-line); border-radius: var(--r-sm); background: var(--surface); font: inherit; }
 
 /* Wat ik zoek: three sheets, one per question it answers. */
 .wishes-parts { display: grid; gap: var(--sp-5); max-width: 760px; min-width: 0; }
@@ -83,7 +83,8 @@
 /* Notities and Meer over jou. */
 .profile-more { margin-top: var(--sp-8); max-width: 76ch; }
 .cv-layout + .cv-again, .cv-layout ~ .profile-more { margin-left: calc(208px + var(--sp-7)); }
-.notes-part { max-width: 80ch; padding: 4px 0 28px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+.notes-part { max-width: 760px; padding: var(--sp-5) var(--sp-6) var(--sp-6); margin-bottom: var(--sp-5); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
+.notes-part .profile-card { background: var(--surface-2); }
 .notes-part > h2 { display: flex; align-items: center; gap: 8px; font-size: var(--fs-lg); margin: 0 0 6px; }
 .notes-part > h2 .icon { color: var(--ink-3); }
 .notes-form { display: grid; gap: 8px; }
@@ -112,5 +113,5 @@
   .cv-sheet { padding: 4px var(--sp-4); }
   .cv-start { padding: var(--sp-5); }
   .cv-role-form { grid-template-columns: minmax(0, 1fr); }
-  .wishes-part { padding: var(--sp-4); }
+  .wishes-part, .notes-part { padding: var(--sp-4); }
 }
