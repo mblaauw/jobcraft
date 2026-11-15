@@ -96,3 +96,22 @@ def test_the_studio_progress_shows_how_long_it_runs(client):  # noqa: F811
     now = datetime.now(UTC).isoformat()
     store.meta_set(f"doc_status:{job_id}", json.dumps({"state": "running", "kind": "both", "started_at": now, "updated_at": now}))
     assert _page(client, f"/jobs/{job_id}/sollicitatie").select_one(f'[data-elapsed="{now}"]')
+
+
+def test_the_studio_progress_names_the_current_step_for_a_screen_reader(client):  # noqa: F811
+    from app import profile
+
+    profile.write_profile("# Profiel\n\n## Werkervaring\nAdviseur\n", "test")
+    job_id = add_job()
+    now = datetime.now(UTC).isoformat()
+    status = {"state": "running", "kind": "both", "stage": "review", "started_at": now, "updated_at": now}
+    store.meta_set(f"doc_status:{job_id}", json.dumps(status))
+    wait = _page(client, f"/jobs/{job_id}/sollicitatie").select_one("[data-auto-refresh]")
+    # The poll in ui.js swaps these parts in; the block itself must not be a live region,
+    # or every swap would read the whole block out again.
+    assert len(wait.select("[data-wait-sync]")) == 2 and not wait.get("aria-live")
+    assert wait.select_one('[aria-current="step"]').get_text(strip=True) == "Een kritische recruiter leest mee"
+    assert wait.select_one('[role="status"]').get_text(strip=True) == "Nu: Een kritische recruiter leest mee"
+    store.meta_set(f"doc_status:{job_id}", json.dumps({**status, "stage": ""}))
+    queued = _page(client, f"/jobs/{job_id}/sollicitatie").select_one("[data-auto-refresh]")
+    assert queued.select_one('[role="status"]').get_text(strip=True) == "Begint zo"

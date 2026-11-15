@@ -187,10 +187,16 @@
         const response = await fetch(url, { cache: "no-store" });
         if (!response.ok) throw new Error("unavailable");
         const next = new DOMParser().parseFromString(await response.text(), "text/html");
-        if (!next.querySelector("[data-auto-refresh]")) {
+        const fresh = next.querySelector("[data-auto-refresh]");
+        if (!fresh) {
           window.location.reload();
           return;
         }
+        // Still running: bring over what moved (the step the work is on), not the clock.
+        const parts = fresh.querySelectorAll("[data-wait-sync]");
+        waiting.querySelectorAll("[data-wait-sync]").forEach((part, index) => {
+          if (parts[index] && parts[index].innerHTML !== part.innerHTML) part.innerHTML = parts[index].innerHTML;
+        });
       } catch (_) {
         // Keep trying; a transient failure should not stop the wait.
       }

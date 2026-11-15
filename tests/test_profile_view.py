@@ -78,7 +78,7 @@ def test_a_pasted_cv_keeps_its_role_lines_tables_and_parts():
     assert [item["heading"] for item in sections] == ["", "Werkervaring", "Interesses", "1. Wat is toegevoegd", "4. Nog te bevestigen"]
     assert "Status: voorstel." in sections[0]["text"] and "Wat is toegevoegd" not in sections[2]["text"]
     work = str(profile_view.render(sections[1]["text"]))
-    assert '<h4 class="profile-sub">JUN 2024 – HEDEN — Adviseur | Voorbeeldbedrijf, Utrecht</h4>' in work
+    assert '<h3 class="profile-sub">JUN 2024 – HEDEN — Adviseur | Voorbeeldbedrijf, Utrecht</h3>' in work
     assert "<li>Begeleidt klanten bij vragen over installatie, inclusief urgente storingen.</li>" in work
     assert "<em>Optionele zin.</em>" in work and "---" not in str(profile_view.render(sections[0]["text"]))
     table = str(profile_view.render(sections[3]["text"]))
