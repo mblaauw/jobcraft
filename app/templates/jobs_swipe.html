@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}Eén voor één · Jobcraft{% endblock %}
+{% block main_class %} is-focused{% endblock %}
 {% block content %}
 <div class="page-head"><div>
   <h1>Zou je hierop reageren?</h1>
@@ -20,6 +21,6 @@
   </form>
 </article>
 {% else %}
-<div class="empty-state"><h2>Je bent bij</h2><p class="muted">Er zijn nu geen nieuwe vacatures meer om te bekijken.</p><a class="button" href="/jobs">Naar alle vacatures</a></div>
+<div class="panel empty-state"><h2>Je bent bij</h2><p class="muted">Er zijn nu geen nieuwe vacatures meer om te bekijken.</p><a class="button" href="/jobs">Naar alle vacatures</a></div>
 {% endif %}
 {% endblock %}

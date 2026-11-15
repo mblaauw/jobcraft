@@ -6,7 +6,8 @@
 {% set selection = user_sources[s['id']] %}
 {% set mine = selection.selected %}
 {% set status = s["last_status"] %}
-<li class="source-row">
+{% set h0 = health.get(s['id']) if health else none %}
+<li class="source-row" data-source-name="{{ s['name'] | lower }}"{% if (status and status != 'ok') or (h0 and (h0.failures or h0.dropped)) %} data-source-trouble{% endif %}>
   <div>
     <h3>{% if admin %}<span class="dot {{ 'ok' if status == 'ok' else ('err' if status and status != 'ok' else '') }}" title="{{ 'Laatste ophaalronde gelukt' if status == 'ok' else ('Laatste ophaalronde mislukt' if status else 'Nog niet opgehaald') }}"></span>{% endif %}{{ s["name"] }}</h3>
     <ul class="meta">
@@ -84,11 +85,18 @@
 {% endif %}
 
 <section class="section" aria-labelledby="active-title">
-  <div class="panel-head"><h2 id="active-title">Actieve bronnen</h2><span class="small subtle">{{ active | length }} bronnen, {{ counts.total }} vacatures</span></div>
+  <div class="panel-head"><h2 id="active-title">Actieve bronnen</h2><span class="small subtle" data-source-count>{{ active | length }} bronnen, {{ counts.total }} vacatures</span></div>
+  {% if active | length > 8 %}
+  <div class="source-tools" data-source-filter hidden>
+    <div class="input-icon">{{ ui.icon('search') }}<label class="visually-hidden" for="source-search">Zoek een bron</label><input class="input" id="source-search" type="search" placeholder="Zoek een bron" autocomplete="off"></div>
+    {% if admin %}<label class="toggle-chip"><input type="checkbox" data-source-trouble-only>{{ ui.icon('triangle-alert') }}<span>Alleen met een probleem</span></label>{% endif %}
+  </div>
+  {% endif %}
   <div class="panel panel-flush">
     <ul class="source-list">
       {% for s in active %}{{ source_row(s, admin, kind_labels) }}{% else %}<li class="source-row"><p class="muted">Er zijn nog geen actieve bronnen.{% if admin %} Zet hieronder een bron aan.{% endif %}</p></li>{% endfor %}
     </ul>
+    <p class="source-none" data-source-none hidden>Geen bron met deze naam.</p>
   </div>
 </section>
 

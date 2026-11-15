@@ -15,99 +15,134 @@
 {% if error %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ error }}</span></p>{% endif %}
 
 
-{% if seeker and account.id != 'legacy' %}
-<section class="panel" aria-labelledby="cv-title">
-  <h2 id="cv-title">Je cv</h2>
-  {% if request.query_params.get('uploaded') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je cv is ingelezen en je profiel is bijgewerkt. Nieuwe sollicitaties gebruiken het meteen.</span></p>{% endif %}
-  <p class="muted" id="cv-upload-help">Alles wat Jobcraft voor je schrijft, komt uit je cv. Heb je een nieuwere versie? Upload hem hier als PDF of Word (maximaal 5 MB). We lezen hem zonder AI en je ziet eerst wat we hebben gevonden. Cv's en brieven die je al hebt gemaakt, blijven zoals ze zijn.</p>
-  <form method="post" action="/start/cv" enctype="multipart/form-data" class="form-stack" data-pending-form>
-    {{ csrf_input(request) }}
-    <input type="hidden" name="terug" value="account">
-    <div class="field"><label for="own-cv">{{ 'Nieuwe versie van je cv' if has_cv or cv_generated else 'Je cv' }}</label><input id="own-cv" type="file" name="cv" accept=".pdf,.docx" aria-describedby="cv-upload-help" required></div>
-    <div><button class="button primary" type="submit">{{ ui.icon('file-text') }}Lees mijn cv</button></div>
-  </form>
-</section>
-{% endif %}
-
-<div class="account-grid">
-  <section class="panel" aria-labelledby="details-title">
-    <h2 id="details-title">Gegevens</h2>
-    <dl class="stats">
-      <div><dt>Naam</dt><dd>{{ account.display_name }}</dd></div>
-      <div><dt>Gebruikersnaam</dt><dd>{{ account.username }}</dd></div>
-      <div><dt>Rol</dt><dd>{{ 'Beheerder' if account.role == 'admin' else 'Gebruiker' }}</dd></div>
-      <div><dt>Laatst ingelogd</dt><dd>{{ account.last_login_label }}</dd></div>
-      <div><dt>Account sinds</dt><dd>{{ account.created_label }}</dd></div>
-      <div><dt>Ingelogd op</dt><dd>{{ devices }} {{ 'apparaat' if devices == 1 else 'apparaten' }}</dd></div>
-    </dl>
-    <div class="btn-row">
-      {% if devices > 1 %}<form method="post" action="/account/uitloggen-overal" class="inline-form auth-inline-form">{{ csrf_input(request) }}<button class="button" type="submit">{{ ui.icon('log-out') }}Overal anders uitloggen</button></form>{% endif %}
-      <form method="post" action="/logout" class="inline-form auth-inline-form">{{ csrf_input(request) }}<button class="button" type="submit">{{ ui.icon('log-out') }}Uitloggen</button></form>
+<div class="settings">
+  <section class="setting" aria-labelledby="details-title">
+    <div class="setting-about">
+      <h2 id="details-title">Gegevens</h2>
+      <p>Wie je hier bent en waar je bent ingelogd.</p>
+    </div>
+    <div class="setting-body">
+      <dl class="stats">
+        <div><dt>Naam</dt><dd>{{ account.display_name }}</dd></div>
+        <div><dt>Gebruikersnaam</dt><dd>{{ account.username }}</dd></div>
+        <div><dt>Rol</dt><dd>{{ 'Beheerder' if account.role == 'admin' else 'Gebruiker' }}</dd></div>
+        <div><dt>Laatst ingelogd</dt><dd>{{ account.last_login_label }}</dd></div>
+        <div><dt>Account sinds</dt><dd>{{ account.created_label }}</dd></div>
+        <div><dt>Ingelogd op</dt><dd>{{ devices }} {{ 'apparaat' if devices == 1 else 'apparaten' }}</dd></div>
+      </dl>
+      <div class="btn-row">
+        {% if devices > 1 %}<form method="post" action="/account/uitloggen-overal" class="inline-form auth-inline-form">{{ csrf_input(request) }}<button class="button" type="submit">{{ ui.icon('log-out') }}Overal anders uitloggen</button></form>{% endif %}
+        <form method="post" action="/logout" class="inline-form auth-inline-form">{{ csrf_input(request) }}<button class="button" type="submit">{{ ui.icon('log-out') }}Uitloggen</button></form>
+      </div>
     </div>
   </section>
 
-  <section class="panel" aria-labelledby="password-title">
-    <h2 id="password-title">Wachtwoord wijzigen</h2>
-    <form method="post" action="/account/password" class="form-stack account-form">
-      {{ csrf_input(request) }}
-      <div class="field"><label for="current_password">Huidig wachtwoord</label><input id="current_password" name="current_password" type="password" autocomplete="current-password" required></div>
-      <div class="field"><label for="new_password">Nieuw wachtwoord</label><input id="new_password" name="new_password" type="password" autocomplete="new-password" minlength="10" aria-describedby="password-help" required><span class="hint" id="password-help">Minstens 10 tekens.</span></div>
-      <div class="field"><label for="confirm_password">Herhaal nieuw wachtwoord</label><input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" required></div>
-      <div><button class="button primary" type="submit">Wachtwoord opslaan</button></div>
-    </form>
-    <p class="small subtle">Na het opslaan word je op je andere apparaten uitgelogd.</p>
+  {% if seeker and account.id != 'legacy' %}
+  <section class="setting" aria-labelledby="cv-title">
+    <div class="setting-about">
+      <h2 id="cv-title">Je cv</h2>
+      <p id="cv-upload-help">Alles wat Jobcraft voor je schrijft, komt uit je cv. Heb je een nieuwere versie? Upload hem hier als PDF of Word (maximaal 5 MB). We lezen hem zonder AI en je ziet eerst wat we hebben gevonden. Cv's en brieven die je al hebt gemaakt, blijven zoals ze zijn.</p>
+    </div>
+    <div class="setting-body">
+      {% if request.query_params.get('uploaded') %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je cv is ingelezen en je profiel is bijgewerkt. Nieuwe sollicitaties gebruiken het meteen.</span></p>{% endif %}
+      <form method="post" action="/start/cv" enctype="multipart/form-data" class="form-stack" data-pending-form>
+        {{ csrf_input(request) }}
+        <input type="hidden" name="terug" value="account">
+        <div class="field"><label for="own-cv">{{ 'Nieuwe versie van je cv' if has_cv or cv_generated else 'Je cv' }}</label><input id="own-cv" type="file" name="cv" accept=".pdf,.docx" aria-describedby="cv-upload-help" required></div>
+        <div><button class="button primary" type="submit">{{ ui.icon('file-text') }}Lees mijn cv</button></div>
+      </form>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="setting" aria-labelledby="password-title">
+    <div class="setting-about">
+      <h2 id="password-title">Wachtwoord wijzigen</h2>
+      <p>Na het opslaan word je op je andere apparaten uitgelogd.</p>
+    </div>
+    <div class="setting-body">
+      <form method="post" action="/account/password" class="form-stack account-form">
+        {{ csrf_input(request) }}
+        <div class="field"><label for="current_password">Huidig wachtwoord</label><input id="current_password" name="current_password" type="password" autocomplete="current-password" required></div>
+        <div class="field"><label for="new_password">Nieuw wachtwoord</label><input id="new_password" name="new_password" type="password" autocomplete="new-password" minlength="10" aria-describedby="password-help" required><span class="hint" id="password-help">Minstens 10 tekens.</span></div>
+        <div class="field"><label for="confirm_password">Herhaal nieuw wachtwoord</label><input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" required></div>
+        <div><button class="button primary" type="submit">Wachtwoord opslaan</button></div>
+      </form>
+    </div>
+  </section>
+
+  {% if seeker %}
+  <section class="setting" aria-labelledby="digest-title">
+    <div class="setting-about">
+      <h2 id="digest-title">Dagelijkse mail</h2>
+      <p>Elke ochtend de beste nieuwe vacatures in je inbox.</p>
+    </div>
+    <div class="setting-body">
+      {% if digest.smtp %}
+      <form method="post" action="/account/dagmail" class="form-stack">
+        {{ csrf_input(request) }}
+        <div class="field"><label for="digest-email">E-mailadres</label><input id="digest-email" type="email" name="email" value="{{ digest.email }}" autocomplete="email"></div>
+        <label class="switch"><input type="checkbox" name="enabled" value="1" {% if digest.enabled %}checked{% endif %}> Stuur me elke ochtend de beste nieuwe vacatures</label>
+        <div><button class="button" type="submit">Opslaan</button></div>
+      </form>
+      {% else %}
+      <p class="small muted">Deze installatie kan nog geen mail versturen. De beheerder kan dit instellen.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="setting" aria-labelledby="sources-title">
+    <div class="setting-about">
+      <h2 id="sources-title">Vacaturesites</h2>
+      <p>Van welke sites je vacatures ziet.</p>
+    </div>
+    <div class="setting-body">
+      <p class="small"><a class="button" href="/sources">Kies zelf welke vacaturesites je wilt zien</a></p>
+    </div>
+  </section>
+
+  <section class="setting" aria-labelledby="data-title">
+    <div class="setting-about">
+      <h2 id="data-title">Jouw gegevens</h2>
+      <p>Wat de AI over je leest komt uit je cv en antwoorden, zonder je naam en contactgegevens. Deze aanroepen staan 30 dagen in een logbestand op de server, zodat de kwaliteit te controleren is. Van elke keer dat je inlogt bewaren we 90 dagen het moment, je adres en je browser, zodat de beheerder misbruik kan zien. Alles zit in je export en verdwijnt als je je account verwijdert.</p>
+    </div>
+    <div class="setting-body">
+      <form method="post" action="/account/export">
+        {{ csrf_input(request) }}
+        <button class="button" type="submit">{{ ui.icon('download') }}Download al mijn gegevens</button>
+      </form>
+      {% if account.id != 'legacy' %}
+      <details class="disclosure danger-zone">
+        <summary><span>Account verwijderen</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
+        <p class="small muted">Dit verwijdert je profiel, cv, documenten en sollicitaties definitief. Dat kan niet ongedaan worden gemaakt. Reservekopieën die bij een update van Jobcraft zijn gemaakt, kunnen je gegevens nog bevatten tot ze worden vervangen.</p>
+        <form method="post" action="/account/verwijderen" class="form-stack">
+          {{ csrf_input(request) }}
+          <div class="field"><label for="delete-password">Je wachtwoord</label><input id="delete-password" type="password" name="password" autocomplete="current-password" required></div>
+          <div class="field"><label for="delete-confirm">Typ VERWIJDER</label><input id="delete-confirm" name="confirm" autocomplete="off" required></div>
+          <div><button class="button danger" type="submit">Definitief verwijderen</button></div>
+        </form>
+      </details>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="setting" aria-labelledby="theme-title">
+    <div class="setting-about">
+      <h2 id="theme-title">Weergave</h2>
+      <p>Je keuze wordt bewaard in deze browser.</p>
+    </div>
+    <div class="setting-body">
+      <div class="field form-stack">
+        <label for="theme-select">Thema</label>
+        <select id="theme-select">
+          <option value="system" {% if not _theme %}selected{% endif %}>Systeeminstelling</option>
+          <option value="light" {% if _theme == 'light' %}selected{% endif %}>Licht</option>
+          <option value="dark" {% if _theme == 'dark' %}selected{% endif %}>Donker</option>
+        </select>
+      </div>
+      <noscript><p class="small muted">Thema wisselen werkt alleen met JavaScript.</p></noscript>
+    </div>
   </section>
 </div>
-
-{% if seeker %}
-<section class="panel" aria-labelledby="digest-title">
-  <h2 id="digest-title">Dagelijkse mail</h2>
-  {% if digest.smtp %}
-  <form method="post" action="/account/dagmail" class="form-stack">
-    {{ csrf_input(request) }}
-    <div class="field"><label for="digest-email">E-mailadres</label><input id="digest-email" type="email" name="email" value="{{ digest.email }}" autocomplete="email"></div>
-    <label class="switch"><input type="checkbox" name="enabled" value="1" {% if digest.enabled %}checked{% endif %}> Stuur me elke ochtend de beste nieuwe vacatures</label>
-    <div><button class="button" type="submit">Opslaan</button></div>
-  </form>
-  {% else %}
-  <p class="small muted">Deze installatie kan nog geen mail versturen. De beheerder kan dit instellen.</p>
-  {% endif %}
-</section>
-
-<section class="panel" aria-labelledby="data-title">
-  <h2 id="data-title">Jouw gegevens</h2>
-  <p class="small muted">Wat de AI over je leest komt uit je cv en antwoorden, zonder je naam en contactgegevens. Deze aanroepen staan 30 dagen in een logbestand op de server, zodat de kwaliteit te controleren is. Van elke keer dat je inlogt bewaren we 90 dagen het moment, je adres en je browser, zodat de beheerder misbruik kan zien. Alles zit in je export en verdwijnt als je je account verwijdert.</p>
-  <form method="post" action="/account/export">
-    {{ csrf_input(request) }}
-    <button class="button" type="submit">{{ ui.icon('download') }}Download al mijn gegevens</button>
-  </form>
-  {% if account.id != 'legacy' %}
-  <details class="disclosure">
-    <summary><span>Account verwijderen</span>{{ ui.icon('chevron-down', 'chev') }}</summary>
-    <p class="small muted">Dit verwijdert je profiel, cv, documenten en sollicitaties definitief. Dat kan niet ongedaan worden gemaakt. Reservekopieën die bij een update van Jobcraft zijn gemaakt, kunnen je gegevens nog bevatten tot ze worden vervangen.</p>
-    <form method="post" action="/account/verwijderen" class="form-stack">
-      {{ csrf_input(request) }}
-      <div class="field"><label for="delete-password">Je wachtwoord</label><input id="delete-password" type="password" name="password" autocomplete="current-password" required></div>
-      <div class="field"><label for="delete-confirm">Typ VERWIJDER</label><input id="delete-confirm" name="confirm" autocomplete="off" required></div>
-      <div><button class="button" type="submit">Definitief verwijderen</button></div>
-    </form>
-  </details>
-  {% endif %}
-</section>
-
-<p class="small"><a href="/sources">Kies zelf welke vacaturesites je wilt zien</a></p>
-{% endif %}
-<section class="panel" aria-labelledby="theme-title">
-  <h2 id="theme-title">Weergave</h2>
-  <div class="field">
-    <label for="theme-select">Thema</label>
-    <select id="theme-select">
-      <option value="system" {% if not _theme %}selected{% endif %}>Systeeminstelling</option>
-      <option value="light" {% if _theme == 'light' %}selected{% endif %}>Licht</option>
-      <option value="dark" {% if _theme == 'dark' %}selected{% endif %}>Donker</option>
-    </select>
-  </div>
-  <p class="small muted">Je keuze wordt bewaard in deze browser.</p>
-  <noscript><p class="small muted">Thema wisselen werkt alleen met JavaScript.</p></noscript>
-</section>
 {% endblock %}

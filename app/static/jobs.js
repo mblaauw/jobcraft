@@ -84,3 +84,56 @@
   }
   window.setTimeout(checkProgress, 4000);
 })();
+
+// Keys for going through many vacancies without the mouse: j and k move, Enter opens,
+// s saves, x sets aside, / searches. Never while typing, and never under the open drawer.
+(function () {
+  const rows = () => Array.from(document.querySelectorAll(".vacancy-list .vacancy-row"));
+  if (!rows().length) return;
+  let current = -1;
+
+  function select(index) {
+    const all = rows();
+    if (!all.length) return;
+    current = Math.max(0, Math.min(all.length - 1, index));
+    all.forEach((row, at) => row.classList.toggle("is-current", at === current));
+    const row = all[current];
+    row.scrollIntoView({ block: "nearest" });
+    // Move focus with the highlight, so Tab continues from this vacancy.
+    row.querySelector("[data-job-link]:not(.vacancy-score)")?.focus({ preventScroll: true });
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (document.querySelector("dialog[open]")) return;
+    const target = event.target;
+    if (target.closest("input, textarea, select, [contenteditable], details[data-menu]")) return;
+    const key = event.key;
+    if (key === "/") {
+      const search = document.getElementById("job-search");
+      if (search && search.offsetParent) {
+        event.preventDefault();
+        search.focus();
+        search.select();
+      }
+      return;
+    }
+    if (key === "j" || key === "k") {
+      event.preventDefault();
+      // Start from the row that has focus, when the person tabbed into the list.
+      const focused = rows().indexOf(target.closest(".vacancy-row"));
+      if (focused >= 0) current = focused;
+      select(current + (key === "j" ? 1 : -1));
+      return;
+    }
+    const row = rows()[current];
+    if (!row) return;
+    if (key === "s" || key === "x") {
+      const button = row.querySelectorAll(".vacancy-save button")[key === "s" ? 0 : 1];
+      if (button && !button.disabled) {
+        event.preventDefault();
+        button.click();
+      }
+    }
+  });
+})();

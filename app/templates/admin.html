@@ -12,7 +12,7 @@
 <div class="grid three">
   <section class="panel" aria-labelledby="runs-title">
     <h2 id="runs-title">Draait</h2>
-    <p class="stat-lead {{ 'ok-text' if runs.ok else 'warn-text' }}">{{ 'Ja' if runs.ok else 'Nee' }}</p>
+    <p class="stat-lead status-line {{ 'ok-text' if runs.ok else 'warn-text' }}"><span class="dot {{ 'ok' if runs.ok else 'err' }}" aria-hidden="true"></span>{{ 'Ja' if runs.ok else 'Nee' }}</p>
     <dl class="stats">
       <div><dt>Worker</dt><dd>{% if not runs.separate %}in dit proces{% elif runs.alive %}{{ ui.nl_date(runs.seen, time=True) }}{% elif runs.seen %}niet gezien sinds {{ ui.nl_date(runs.seen, time=True) }}{% else %}nooit gezien{% endif %}</dd></div>
       <div><dt>Laatste ronde</dt><dd>{% if runs.last_scan %}{{ ui.nl_date(runs.last_scan, time=True) }}{% else %}nog geen{% endif %}</dd></div>
@@ -36,9 +36,15 @@
     <p class="small muted">Zonder Jev, zoals de daglimiet per account telt.</p>
     <dl class="stats">
       <div><dt>Drukste account</dt><dd>{% if ai.token_limit %}{{ ai.share }}% van {{ ui.number(ai.token_limit) }}{% else %}geen limiet{% endif %}</dd></div>
-      <div><dt>Kosten</dt><dd>{% if ai.priced %}${{ "%.2f" | format(ai.cost_today) }} vandaag, ${{ "%.2f" | format(ai.cost_period) }} in 14 dagen{% if ai.unpriced %}, niet alles meldt een prijs{% endif %}{% else %}geen prijzen bekend{% endif %}</dd></div>
-      <div><dt>Jev-beoordelingen</dt><dd>{{ ui.number(ai.jev_today) }}{% if ai.jev_full %}, plafond bereikt bij {{ ai.jev_full }} {{ 'account' if ai.jev_full == 1 else 'accounts' }}{% endif %}</dd></div>
+      {% if ai.priced %}
+      <div><dt>Kosten vandaag</dt><dd>${{ "%.2f" | format(ai.cost_today) }}</dd></div>
+      <div><dt>Kosten in 14 dagen</dt><dd>${{ "%.2f" | format(ai.cost_period) }}</dd></div>
+      {% else %}
+      <div><dt>Kosten</dt><dd>geen prijzen bekend</dd></div>
+      {% endif %}
+      <div><dt>Jev-beoordelingen</dt><dd>{{ ui.number(ai.jev_today) }}</dd></div>
     </dl>
+    {% if (ai.priced and ai.unpriced) or ai.jev_full %}<p class="small muted">{% if ai.priced and ai.unpriced %}Bij de kosten: niet alles meldt een prijs. {% endif %}{% if ai.jev_full %}Jev: plafond bereikt bij {{ ai.jev_full }} {{ 'account' if ai.jev_full == 1 else 'accounts' }}.{% endif %}</p>{% endif %}
     <p class="small"><a href="/admin/ai">AI: modellen, gebruik en logboek</a></p>
   </section>
 </div>

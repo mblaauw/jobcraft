@@ -5,11 +5,11 @@
   document.documentElement.classList.add("js");
 
   // Filters and selects that apply themselves: <form data-autosubmit>.
-  document.querySelectorAll("form[data-autosubmit]").forEach((form) => {
-    form.addEventListener("change", (event) => {
-      const target = event.target;
-      if (target.matches("select, input[type=checkbox], input[type=radio]")) form.requestSubmit();
-    });
+  // A control may sit outside its form (the sort beside the list), so listen on the page.
+  document.addEventListener("change", (event) => {
+    const target = event.target;
+    const form = target.form;
+    if (form && form.matches("form[data-autosubmit]") && target.matches("select, input[type=checkbox], input[type=radio]")) form.requestSubmit();
   });
 
   // Prevent double posts and show that a change is being saved.
@@ -233,17 +233,47 @@
     });
   }
 
-  // Close the mobile menu when tapping elsewhere or pressing Escape.
-  const menu = document.querySelector(".topbar-menu");
-  if (menu) {
+  // Bronnen: type to find a source; an administrator can show only the ones with a problem.
+  const sourceFilter = document.querySelector("[data-source-filter]");
+  if (sourceFilter) {
+    sourceFilter.hidden = false;
+    const list = sourceFilter.parentElement.querySelector(".source-list");
+    const rows = Array.from(list.querySelectorAll(".source-row[data-source-name]"));
+    const search = sourceFilter.querySelector("input[type=search]");
+    const troubleOnly = sourceFilter.querySelector("[data-source-trouble-only]");
+    const none = sourceFilter.parentElement.querySelector("[data-source-none]");
+    const count = sourceFilter.parentElement.querySelector("[data-source-count]");
+    const total = count ? count.textContent : "";
+    const apply = () => {
+      const words = search.value.trim().toLowerCase();
+      const narrowed = Boolean(words) || Boolean(troubleOnly && troubleOnly.checked);
+      let shown = 0;
+      rows.forEach((row) => {
+        const match = row.dataset.sourceName.includes(words) && (!troubleOnly || !troubleOnly.checked || row.hasAttribute("data-source-trouble"));
+        row.hidden = !match;
+        if (match) shown += 1;
+      });
+      if (none) none.hidden = shown > 0;
+      // The line above the list says what the list shows now.
+      if (count) count.textContent = narrowed ? shown + " van " + rows.length + " bronnen" : total;
+    };
+    search.addEventListener("input", apply);
+    if (troubleOnly) troubleOnly.addEventListener("change", apply);
+  }
+
+  // Menus that open in place (the phone's "Meer"): close on a tap elsewhere or on Escape.
+  const menus = document.querySelectorAll("details[data-menu]");
+  if (menus.length) {
     document.addEventListener("click", (event) => {
-      if (menu.open && !menu.contains(event.target)) menu.open = false;
+      menus.forEach((menu) => { if (menu.open && !menu.contains(event.target)) menu.open = false; });
     });
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && menu.open) {
+      if (event.key !== "Escape") return;
+      menus.forEach((menu) => {
+        if (!menu.open) return;
         menu.open = false;
         menu.querySelector("summary").focus();
-      }
+      });
     });
   }
 })();

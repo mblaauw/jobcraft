@@ -11,8 +11,7 @@
   <link rel="preload" href="/static/fonts/schibsted-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/app.css">
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/studio.css">
-  <link rel="stylesheet" href="/static/cv.css">
+  {% block styles %}{% endblock %}
 </head>
 {% set user = request.state.user if request.state is defined and request.state.user else None %}
 {% set path = request.url.path %}
@@ -25,6 +24,10 @@
 {% set new_matches = new_match_count() if (primary and new_match_count is defined) else 0 %}
 {% set open_coach = open_coach_count() if (primary and open_coach_count is defined) else 0 %}
 {% set home_href = '/' if primary else '/admin' %}
+{# On a phone: the main places in the bar, everything else behind "Meer". An administrator
+   without a profile gets the first four Beheer pages as places. #}
+{% set tab_items = primary if primary else beheer[:4] %}
+{% set more_items = (beheer if primary else beheer[4:]) + [('/account', 'Account', 'settings-2')] %}
 {% set work = background_work() if (user and background_work is defined) else {'running': [], 'done': []} %}
 {% macro work_strip() -%}
 <div class="work-strip" data-work-strip{% if work.running %} data-work-running{% endif %} aria-live="polite">
@@ -79,31 +82,37 @@
 
     <div class="topbar">
       <a class="brand" href="{{ home_href }}"><span class="brand-mark" aria-hidden="true">j</span>Jobcraft</a>
-      {% if user %}
-      <details class="topbar-menu">
-        <summary aria-label="Menu: instellingen en account">{{ ui.icon('settings-2', 'icon-lg') }}</summary>
-        <div>
-          <p class="who">Ingelogd als <strong>{{ user.display_name or user.username }}</strong></p>
-          {% for href, label, icon in secondary %}
-          <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}{{ label }}</a>
-          {% endfor %}
-          <form method="post" action="/logout">{% include '_csrf.html' %}<button type="submit">{{ ui.icon('log-out') }}Uitloggen</button></form>
-        </div>
-      </details>
-      {% endif %}
+      {% if user %}<span class="topbar-user">{{ user.display_name or user.username }}</span>{% endif %}
     </div>
 
     <div class="topbar-work">{{ work_strip() if user }}</div>
-    <main id="main-content" class="main" tabindex="-1">
+    <main id="main-content" class="main{% block main_class %}{% endblock %}" tabindex="-1">
       {% block content %}{% endblock %}
     </main>
   </div>
 
-  {% if primary %}
+  {% if user and tab_items %}
   <nav class="tabbar" aria-label="Snelnavigatie">
-    {% for href, label, icon in primary %}
+    {% for href, label, icon in tab_items %}
     <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}<span>{{ label }}{% if href == '/jobs' and new_matches %} ({{ new_matches }})<span class="visually-hidden"> nieuwe matches</span>{% elif href == '/profile' and open_coach %} ({{ open_coach }})<span class="visually-hidden"> {{ 'punt' if open_coach == 1 else 'punten' }} van de coach open</span>{% endif %}</span></a>
     {% endfor %}
+    {% if more_items | length == 1 %}
+    <a href="/account" {% if is_active('/account') %}aria-current="page"{% endif %}>{{ ui.icon('settings-2') }}<span>Account</span></a>
+    {% else %}
+    {% set more = namespace(current=false) %}
+    {% for href, _label, _icon in more_items %}{% if is_active(href) %}{% set more.current = true %}{% endif %}{% endfor %}
+    <details class="tabbar-more{% if more.current %} is-current{% endif %}" data-menu>
+      <summary aria-label="Meer: {{ 'beheer, ' if beheer else '' }}account en uitloggen">{{ ui.icon('ellipsis') }}<span>Meer</span></summary>
+      <div class="tabbar-sheet">
+        <p class="who">Ingelogd als <strong>{{ user.display_name or user.username }}</strong></p>
+        {% if primary and beheer %}<p class="sheet-title">Beheer</p>{% endif %}
+        {% for href, label, icon in more_items %}
+        <a href="{{ href }}" {% if is_active(href) %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}<span>{{ label }}</span></a>
+        {% endfor %}
+        <form method="post" action="/logout">{% include '_csrf.html' %}<button type="submit">{{ ui.icon('log-out') }}<span>Uitloggen</span></button></form>
+      </div>
+    </details>
+    {% endif %}
   </nav>
   {% endif %}
   <script src="/static/ui.js" defer></script>

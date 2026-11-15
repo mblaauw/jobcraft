@@ -10,6 +10,17 @@
     <h1>Hallo{% if name %} {{ name }}{% endif %}</h1>
     <p class="lede">{{ summary }}</p>
   </div>
+  <section class="week" aria-labelledby="week-title">
+    <h2 id="week-title" class="visually-hidden">Je week</h2>
+    <div>
+      <dl class="week-numbers">
+        <div><dt>verstuurd deze week</dt><dd>{{ week.sent_week }}</dd></div>
+        <div><dt>wacht op antwoord</dt><dd>{{ week.waiting }}</dd></div>
+        <div><dt>{{ 'gesprek' if week.talks == 1 else 'gesprekken' }}</dt><dd>{{ week.talks }}</dd></div>
+      </dl>
+      <p class="small muted week-note">{% if week.rate is not none %}{{ week.rate }}% van je sollicitaties leidde tot een gesprek. {% elif week.sent_week == 0 %}Drie per week houdt je zoektocht in beweging. {% endif %}<a href="/sollicitaties">Naar je sollicitaties</a></p>
+    </div>
+  </section>
 </div>
 
 {% set first = tasks[0] if tasks else none %}
@@ -35,7 +46,7 @@
 </section>
 
 <div class="today-grid">
-  <div>
+  <div class="today-do">
     {{ judge.round(judge_round, ui) }}
     {% if tasks | length > 1 %}
     <section class="today-block" aria-labelledby="tasks-title">
@@ -53,7 +64,9 @@
       </ol>
     </section>
     {% endif %}
+  </div>
 
+  <div class="today-new">
     <section class="today-block" id="nieuw" aria-labelledby="new-title">
       <div class="panel-head">
         <h2 id="new-title">Nieuw en kansrijk</h2>
@@ -88,20 +101,7 @@
       </div>
       {% endif %}
     </section>
-  </div>
-
-  <aside class="today-side" aria-label="Je voortgang">
-    <section class="panel week" aria-labelledby="week-title">
-      <h2 id="week-title">Je week</h2>
-      <dl class="week-numbers">
-        <div><dt>verstuurd deze week</dt><dd>{{ week.sent_week }}</dd></div>
-        <div><dt>wacht op antwoord</dt><dd>{{ week.waiting }}</dd></div>
-        <div><dt>{{ 'gesprek' if week.talks == 1 else 'gesprekken' }}</dt><dd>{{ week.talks }}</dd></div>
-      </dl>
-      {% if week.rate is not none %}<p class="small muted">{{ week.rate }}% van je sollicitaties leidde tot een gesprek.</p>
-      {% elif week.sent_week == 0 %}<p class="small muted">Drie sollicitaties per week houdt je zoektocht in beweging.</p>{% endif %}
-      <a class="small" href="/sollicitaties">Naar je sollicitaties</a>
-    </section>
+    <div class="today-tips">
     {% if start == 'questions' %}
     <section class="panel tip" aria-labelledby="questions-tip-title">
       <h2 id="questions-tip-title">{{ ui.icon('message-circle') }}Drie korte vragen</h2>
@@ -116,6 +116,7 @@
       <a class="small" href="/profile?tab=positie">Meer over je positie</a>
     </section>
     {% endif %}
-  </aside>
+    </div>
+  </div>
 </div>
 {% endblock %}

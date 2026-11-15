@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui %}
 {% import "_start.html" as start %}
 {% block title %}Snelle start · Jobcraft{% endblock %}
+{% block main_class %} is-focused{% endblock %}
 {% block content %}
 {% if step %}{{ start.steps(step) }}{% endif %}
 <div class="page-head"><div>
