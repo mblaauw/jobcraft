@@ -65,7 +65,7 @@ def test_navigation_marks_only_current_section_and_has_skip_link():
         assert active[0]["href"] == expected
         assert html.select_one('.skip-link[ href="#main-content"]')
         assert html.select_one("main#main-content")
-        assert "deepseek" not in html.footer.get_text()
+        assert "deepseek" not in html.select_one(".rail-foot").get_text()
 
 
 def test_an_administrator_without_a_profile_sees_beheer_and_jij_only():

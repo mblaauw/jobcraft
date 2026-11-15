@@ -71,19 +71,21 @@
       </nav>
       {{ work_strip() if user }}
       {% if user %}
-      <footer class="rail-foot">
+      {# A div, not a footer: inside the banner a footer reads as the page's own footer. #}
+      <div class="rail-foot">
         <div class="rail-user"><strong>{{ user.display_name or user.username }}</strong><span>{{ 'Beheerder' if user.role == 'admin' else 'Ingelogd' }}</span></div>
         <form method="post" action="/logout">{% include '_csrf.html' %}<button class="rail-logout" type="submit" title="Uitloggen" aria-label="Uitloggen">{{ ui.icon('log-out') }}</button></form>
-      </footer>
+      </div>
       {% else %}
-      <footer class="rail-foot"></footer>
+      <div class="rail-foot"></div>
       {% endif %}
     </header>
 
-    <div class="topbar">
+    {# The phone's banner; the rail above is hidden there, so only one is ever announced. #}
+    <header class="topbar">
       <a class="brand" href="{{ home_href }}"><span class="brand-mark" aria-hidden="true">j</span>Jobcraft</a>
       {% if user %}<span class="topbar-user">{{ user.display_name or user.username }}</span>{% endif %}
-    </div>
+    </header>
 
     <div class="topbar-work">{{ work_strip() if user }}</div>
     <main id="main-content" class="main{% block main_class %}{% endblock %}" tabindex="-1">

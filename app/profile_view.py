@@ -90,7 +90,7 @@ def render(text: str | None) -> Markup:
             close_paragraph()
             close_list()
             if subheading:  # "### JUN 2024 – HEDEN — Adviseur | Werkgever"
-                out.append(f'<h4 class="profile-sub">{_inline(subheading.group(2))}</h4>')
+                out.append(f'<h3 class="profile-sub">{_inline(subheading.group(2))}</h3>')  # under the page's h2
         elif bullet or numbered:
             close_paragraph()
             kind = "ul" if bullet else "ol"
