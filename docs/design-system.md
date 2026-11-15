@@ -123,20 +123,3 @@ Use a synthetic demo, never real data. Three things need more than the dev serve
   browser. Axe leaves text on the rail gradient and the stamp disc undecided; check
   those against the colour actually behind them. On 2026-11-15 all pages, as a job
   seeker and as an administrator, at 1440 and 375 in both themes, had no violations.
-
-A screen reader pass is still done by a person. About ten minutes with VoiceOver
-(Cmd+F5) in Safari:
-
-1. Rotor (VO+U) on Vacatures: landmarks are one banner, the main navigation, main, the
-   filter form, the status tabs and the results; headings start at one `h1`.
-2. Move through the list: each row says the title, the score as "80/100", the employer
-   and the travel time, and the vote buttons say what they do.
-3. Open a vacancy in the drawer: focus moves into it, Escape closes it and returns to
-   the row.
-4. Start a new CV version in the studio: the waiting block says "Nu: ..." when the step
-   changes, and nothing is read out every second.
-5. Let a write fail (stand-in mode `fail`): the error is announced without moving focus.
-6. Profiel: the coach count in the navigation is read with its meaning, and the parts of
-   the CV can be reached by heading.
-7. On a phone (VoiceOver on iOS, or Safari's responsive mode): the tab bar reads its
-   five places, "Meer" opens and closes its sheet, and the top bar is the only banner.
