@@ -129,7 +129,7 @@ def test_a_rerank_lets_its_first_copy_go_before_the_routed_pass(monkeypatch):
 
     alive = []
 
-    def listing():
+    def listing(limit=None):
         rows = Rows()
         alive.append(weakref.ref(rows))
         return rows
