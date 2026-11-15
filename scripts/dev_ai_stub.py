@@ -12,7 +12,8 @@ it runs: {"delay": 20, "mode": "ok" | "fail" | "slow-stream"}.
     uv run python scripts/dev_ai_stub.py --dir /tmp/ai-stub          # port 8099
     LLM_BASE_URL=http://127.0.0.1:8099/v1 LLM_API_KEY=stub \
     RUNWARE_API_KEY=stub SYSTEMONE_URL=http://127.0.0.1:8099/v1/decisions ...
-    (from a container: host.docker.internal instead of 127.0.0.1)
+    (from a container on Docker Desktop or OrbStack: host.docker.internal instead of
+    127.0.0.1; on Linux Docker it listens on loopback only, so run the app on the host)
 """
 
 import argparse
