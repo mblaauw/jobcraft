@@ -784,7 +784,16 @@ a.vacancy-score:hover { transform: scale(1.06); }
 .vacancy-facts { display: contents; }
 .vacancy-origin { margin: 0; color: var(--ink-3); font-size: var(--fs-2xs); }
 .vacancy-flags { display: inline-flex; gap: 6px; margin-left: 8px; vertical-align: 2px; }
-.vacancy-actions { position: absolute; top: 8px; right: 10px; display: flex; align-items: center; gap: 2px; }
+.vacancy-actions { position: absolute; top: 7px; right: 10px; display: flex; align-items: center; gap: 2px; }
+/* Small enough to end above the line of facts, so a long line can run under them without touching. */
+.vacancy-actions .icon-button { width: 32px; height: 32px; }
+/* Fingers get full-size buttons, and those get a column of their own instead of floating over the text. */
+@media (pointer: coarse) and (min-width: 901px) {
+  .vacancy-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .vacancy-actions { position: static; }
+  .vacancy-actions .icon-button { width: 44px; height: 44px; }
+  .vacancy-main h3 { padding-right: 0; }
+}
 .vacancy-row:not(:has(.vacancy-actions)) h3 { padding-right: 0; }
 .vacancy-actions form { margin: 0; display: inline-flex; gap: 2px; }
 .vacancy-actions .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
@@ -1292,6 +1301,7 @@ details.stage > summary:hover h2 { color: var(--moss); }
   .vacancy-row .vacancy-score strong { font-size: 16px; }
   .vacancy-main h3 { padding-right: 0; }
   .vacancy-actions { position: static; grid-column: 2; margin: 4px 0 -6px -10px; }
+  .vacancy-actions .icon-button { width: 44px; height: 44px; }
   .job-head { gap: 12px 14px; }
   .job-head h1 { hyphens: auto; font-size: 1.5rem; }
   .vacancy-score.big { --size: 60px; --ring: 4px; }
