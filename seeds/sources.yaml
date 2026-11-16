@@ -642,11 +642,12 @@ sources:
   - id: eures
     name: EURES (werk.nl en andere vacatures in Nederland)
     kind: eures-json
-    revision: 2
+    revision: 3
     location_codes: [nl]
     period: LAST_THREE_DAYS
     per_page: 50
     pages: 20
     detail_cap: 300
+    max_age_days: 21
     enabled: true
-    notes: "Recon 2026-11-06: ~300.000 vacatures in Nederland (vooral werk.nl/UWV), ~17.000 nieuwe per dag. Zoek-API geeft de nieuwste; per nieuwe vacature het detail (volledige tekst, plaats, eigen pagina van de werkgever). Staat die eigen pagina al via een andere bron binnen, dan wordt hij overgeslagen. robots.txt: crawl-delay 10, dus hooguit ~300 nieuwe per ronde (~55 minuten). Voorwaarden: geen screen scraping of geautomatiseerd ophalen; de API is voor EURES-partners. PoC, afspraak nodig."
+    notes: "Recon 2026-11-06, bijgewerkt 2026-11-16: ~300.000 vacatures in Nederland (vooral werk.nl/UWV). De zoek-API sorteert en filtert op laatste wijziging, niet op aanmaakdatum: werk.nl raakt elke nacht (~03:15 UTC) ~31.000 vacatures aan, dus bovenaan staan vooral oude. Hooguit 50 per pagina en enkele honderden pagina's diep. Daarom leest een ronde eerst de zoekpagina's en daarna de detailpagina's van de nieuwst aangemaakte, nooit ouder dan max_age_days (tot 2026-11-16 was 87% van wat binnenkwam ouder dan twee weken). Staat de eigen pagina van de werkgever al via een andere bron binnen, dan wordt hij overgeslagen. robots.txt: crawl-delay 10, dus hooguit ~300 nieuwe per ronde (~55 minuten). Voorwaarden: geen screen scraping of geautomatiseerd ophalen; de API is voor EURES-partners. PoC, afspraak nodig."
