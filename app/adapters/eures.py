@@ -23,6 +23,7 @@ API = "https://europa.eu/eures/api/jv-searchengine/public"
 PORTAL = "https://europa.eu/eures/portal/jv-se/jv-details/{id}?lang=nl"
 KNOWN_FOR = 30 * 86400  # a vacancy read within this time is only marked as still listed
 MAX_AGE_DAYS = 21  # older vacancies are not read: few are still open, and they crowd out new ones
+STILL_LISTED = 365 * 86400  # one read that long ago is kept current while the search lists it
 SCHEDULES = {"fulltime": "Fulltime", "parttime": "Parttime", "flextime": "Flexibel"}
 
 
@@ -100,7 +101,11 @@ def _scan_eures(client, source, entry, summary, limit_per_source=None) -> None:
             if not isinstance(created, int | float):
                 created = 0  # no date given: read only when nothing dated is left
             elif created < oldest_ms:
-                entry["too_old"] = entry.get("too_old", 0) + 1
+                # One we read long ago stays current without a new read; the rest is old stock.
+                if store.touch_recent_detail(url, STILL_LISTED):
+                    _tally(entry, summary, False)
+                else:
+                    entry["too_old"] = entry.get("too_old", 0) + 1
                 continue
             fresh.setdefault(item["id"], created)
     # Newest first; whatever is left over waits for a later round.

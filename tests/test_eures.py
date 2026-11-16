@@ -1,5 +1,7 @@
+import hashlib
 import json
 import time
+from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
@@ -101,6 +103,24 @@ def test_a_round_reads_the_newest_created_first_and_never_old_stock(client):  # 
     eures._scan_eures(fake, {"id": "eures", "detail_cap": 2, "pages": 5}, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
     asked = [url.split("/jv/id/")[1].split("?")[0] for url in fake.asked]
     assert asked == ["today", "two", "week"]  # the week-old one next; the 40-day-old one never
+
+
+def test_a_vacancy_read_long_ago_stays_listed_without_a_new_read(client):  # noqa: F811
+    store.sync_sources([{"id": "eures", "kind": "eures-json"}])
+    details = {"open": _detail("Functie open", "Delft")}
+    fake = FakeEures([{"id": "open"}], details)
+    eures._scan_eures(fake, {"id": "eures"}, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    url = eures.PORTAL.format(id="open")
+    key = "detail_fetched:" + hashlib.sha256(url.encode()).hexdigest()
+    with store.connect() as con:  # read 40 days ago, and the vacancy is 60 days old by now
+        con.execute("UPDATE meta SET value=? WHERE key=?", ((datetime.now(UTC) - timedelta(days=40)).isoformat(), key))
+        con.execute("UPDATE jobs SET last_seen='2020-01-01T00:00:00+00:00' WHERE url=?", (url,))
+    fake.items, fake.asked = [{"id": "open", "creationDate": (time.time() - 60 * 86400) * 1000}], []
+    entry = {"items": 0, "new": 0, "updated": 0}
+    eures._scan_eures(fake, {"id": "eures"}, entry, {"new": 0, "updated": 0})
+    with store.connect() as con:
+        seen = con.execute("SELECT last_seen FROM jobs WHERE url=?", (url,)).fetchone()[0]
+    assert fake.asked == [] and entry["updated"] == 1 and "too_old" not in entry and seen > "2026"
 
 def test_post_json_obeys_robots_and_sends_the_payload(tmp_path):
     seen = []
