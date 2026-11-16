@@ -1,4 +1,5 @@
 import json
+import time
 
 import httpx
 import pytest
@@ -73,6 +74,33 @@ def test_a_round_reads_only_its_cap_of_new_vacancies(client):  # noqa: F811
     eures._scan_eures(fake, {"id": "eures", "detail_cap": 2}, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
     assert len(fake.asked) == 4  # the next round takes the next two
 
+
+
+def test_a_round_reads_the_newest_created_first_and_never_old_stock(client):  # noqa: F811
+    # The search lists by last change: werk.nl touches old vacancies every night, so they
+    # come first. The reads go to what was created most recently, across all the pages.
+    store.sync_sources([{"id": "eures", "kind": "eures-json"}])
+    day = 86400 * 1000
+    now = time.time() * 1000
+    created = {"old": now - 40 * day, "week": now - 7 * day, "today": now - day / 4, "two": now - 2 * day}
+    details = {key: _detail(f"Functie {key}", "Delft") for key in created}
+    pages = [[{"id": "old", "creationDate": created["old"]}, {"id": "week", "creationDate": created["week"]}],
+             [{"id": "today", "creationDate": created["today"]}, {"id": "two", "creationDate": created["two"]}]]
+
+    class Paged(FakeEures):
+        def post_json(self, url, payload):
+            self.searched.append(payload)
+            items = pages[payload["page"] - 1] if payload["page"] <= len(pages) else []
+            return httpx.Response(200, json={"jvs": items}, request=httpx.Request("POST", url))
+
+    fake = Paged([], details)
+    entry = {"items": 0, "new": 0, "updated": 0}
+    eures._scan_eures(fake, {"id": "eures", "detail_cap": 2, "pages": 5}, entry, {"new": 0, "updated": 0})
+    asked = [url.split("/jv/id/")[1].split("?")[0] for url in fake.asked]
+    assert asked == ["today", "two"] and entry["too_old"] == 1 and len(fake.searched) == 3
+    eures._scan_eures(fake, {"id": "eures", "detail_cap": 2, "pages": 5}, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    asked = [url.split("/jv/id/")[1].split("?")[0] for url in fake.asked]
+    assert asked == ["today", "two", "week"]  # the week-old one next; the 40-day-old one never
 
 def test_post_json_obeys_robots_and_sends_the_payload(tmp_path):
     seen = []
