@@ -642,12 +642,12 @@ sources:
   - id: eures
     name: EURES (werk.nl en andere vacatures in Nederland)
     kind: eures-json
-    revision: 3
+    revision: 4
     location_codes: [nl]
     period: LAST_THREE_DAYS
     per_page: 50
-    pages: 20
+    pages: 200
     detail_cap: 300
     max_age_days: 21
     enabled: true
-    notes: "Recon 2026-11-06, bijgewerkt 2026-11-16: ~300.000 vacatures in Nederland (vooral werk.nl/UWV). De zoek-API sorteert en filtert op laatste wijziging, niet op aanmaakdatum: werk.nl raakt elke nacht (~03:15 UTC) ~31.000 vacatures aan, dus bovenaan staan vooral oude. Hooguit 50 per pagina en enkele honderden pagina's diep. Daarom leest een ronde eerst de zoekpagina's en daarna de detailpagina's van de nieuwst aangemaakte, nooit ouder dan max_age_days (tot 2026-11-16 was 87% van wat binnenkwam ouder dan twee weken). Staat de eigen pagina van de werkgever al via een andere bron binnen, dan wordt hij overgeslagen. robots.txt: crawl-delay 10, dus hooguit ~300 nieuwe per ronde (~55 minuten). Voorwaarden: geen screen scraping of geautomatiseerd ophalen; de API is voor EURES-partners. PoC, afspraak nodig."
+    notes: "Recon 2026-11-06, bijgewerkt 2026-11-16: ~300.000 vacatures in Nederland (vooral werk.nl/UWV). De zoek-API sorteert en filtert op laatste wijziging, niet op aanmaakdatum: werk.nl raakt elke nacht (~03:15 UTC) ~31.000 vacatures aan, dus bovenaan staan vooral oude. Hooguit 50 per pagina en hooguit de eerste 10.000 resultaten (200 pagina's); daarna antwoordt de API 400. Op 2026-11-17 waren van de eerste 10.000 er ~1.200 hooguit 21 dagen oud, tegen 14 in de eerste 1.000; regiocodes nl1-nl4 geven 0 resultaten. Daarom leest een ronde eerst de zoekpagina's en daarna de detailpagina's van de nieuwst aangemaakte, nooit ouder dan max_age_days (tot 2026-11-16 was 87% van wat binnenkwam ouder dan twee weken). Staat de eigen pagina van de werkgever al via een andere bron binnen, dan wordt hij overgeslagen. robots.txt: crawl-delay 10, dus 200 zoekpagina's kosten ~33 minuten en hooguit ~300 nieuwe per ronde nog ~50 minuten. Voorwaarden: geen screen scraping of geautomatiseerd ophalen; de API is voor EURES-partners. PoC, afspraak nodig."
