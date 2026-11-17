@@ -86,8 +86,8 @@ def _scan_eures(client, source, entry, summary, limit_per_source=None) -> None:
     budget = limit_per_source or int(source.get("detail_cap", 300))
     oldest_ms = (time.time() - float(source.get("max_age_days", MAX_AGE_DAYS)) * 86400) * 1000
     fresh: dict[str, float] = {}  # id -> creation time, for the vacancies worth a read
-    per_page = max(1, int(source.get("per_page", 50)))
-    last_page = max(1, min(int(source.get("pages", 20)), MAX_RESULTS // per_page))
+    per_page = min(max(1, int(source.get("per_page", 50))), MAX_RESULTS)
+    last_page = min(int(source.get("pages", 20)), MAX_RESULTS // per_page)  # pages 0 pauses the search
     for page in range(1, last_page + 1):
         response = client.post_json(f"{API}/jv-search/search", search_body(source, page))
         response.raise_for_status()
