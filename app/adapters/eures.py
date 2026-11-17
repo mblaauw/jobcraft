@@ -10,7 +10,8 @@ while the search still lists them.
 The search's "newest first" and its publication period go by the last change, and werk.nl
 touches its whole stock every night, so the top of the list is mostly old vacancies. A
 round therefore walks its pages first and spends the reads on the vacancies created most
-recently, never on ones older than `max_age_days`."""
+recently, never on ones older than `max_age_days`. The search serves at most the first
+10,000 results (200 pages of 50); asking past that is an error."""
 
 from __future__ import annotations
 
@@ -24,6 +25,7 @@ PORTAL = "https://europa.eu/eures/portal/jv-se/jv-details/{id}?lang=nl"
 KNOWN_FOR = 30 * 86400  # a vacancy read within this time is only marked as still listed
 MAX_AGE_DAYS = 21  # older vacancies are not read: few are still open, and they crowd out new ones
 STILL_LISTED = 365 * 86400  # one read that long ago is kept current while the search lists it
+MAX_RESULTS = 10_000  # the search answers 400 "Too many results" past this
 SCHEDULES = {"fulltime": "Fulltime", "parttime": "Parttime", "flextime": "Flexibel"}
 
 
@@ -84,7 +86,9 @@ def _scan_eures(client, source, entry, summary, limit_per_source=None) -> None:
     budget = limit_per_source or int(source.get("detail_cap", 300))
     oldest_ms = (time.time() - float(source.get("max_age_days", MAX_AGE_DAYS)) * 86400) * 1000
     fresh: dict[str, float] = {}  # id -> creation time, for the vacancies worth a read
-    for page in range(1, int(source.get("pages", 20)) + 1):
+    per_page = min(max(1, int(source.get("per_page", 50))), MAX_RESULTS)
+    last_page = min(int(source.get("pages", 20)), MAX_RESULTS // per_page)  # pages 0 pauses the search
+    for page in range(1, last_page + 1):
         response = client.post_json(f"{API}/jv-search/search", search_body(source, page))
         response.raise_for_status()
         items = response.json().get("jvs") or []

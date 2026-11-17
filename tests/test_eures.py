@@ -122,6 +122,23 @@ def test_a_vacancy_read_long_ago_stays_listed_without_a_new_read(client):  # noq
         seen = con.execute("SELECT last_seen FROM jobs WHERE url=?", (url,)).fetchone()[0]
     assert fake.asked == [] and entry["updated"] == 1 and "too_old" not in entry and seen > "2026"
 
+def test_a_round_never_asks_past_the_searchs_first_ten_thousand(client):  # noqa: F811
+    # The search answers 400 past result 10,000, so a larger `pages` stops at page 200.
+    store.sync_sources([{"id": "eures", "kind": "eures-json"}])
+
+    class Endless(FakeEures):
+        def post_json(self, url, payload):
+            self.searched.append(payload)
+            status = 400 if payload["page"] * payload["resultsPerPage"] > eures.MAX_RESULTS else 200
+            items = [{"id": f"p{payload['page']}", "creationDate": 0}]
+            return httpx.Response(status, json={"jvs": items}, request=httpx.Request("POST", url))
+
+    fake = Endless([], {})
+    entry = {"items": 0, "new": 0, "updated": 0}
+    eures._scan_eures(fake, {"id": "eures", "pages": 500}, entry, {"new": 0, "updated": 0})
+    assert len(fake.searched) == 200 and fake.searched[-1]["page"] == 200 and entry["too_old"] == 200
+
+
 def test_post_json_obeys_robots_and_sends_the_payload(tmp_path):
     seen = []
 
