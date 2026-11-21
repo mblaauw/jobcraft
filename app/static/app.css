@@ -774,6 +774,8 @@ a.vacancy-score:hover { transform: scale(1.06); }
 .vacancy-row.is-dimmed .vacancy-score { opacity: .6; }
 .vacancy-row > .vacancy-score { margin-top: 1px; }
 .vacancy-main { min-width: 0; }
+.row-alert { margin: 8px 0 0; color: var(--clay); font-size: var(--fs-sm); font-weight: 600; }
+.row-alert a { color: inherit; }
 /* The title keeps clear of the actions at the top right; everything under it uses the full width. */
 .vacancy-main h3 { font-size: var(--fs-md); line-height: 1.3; margin: 0 0 3px; padding-right: 176px; letter-spacing: -0.012em; }
 .vacancy-main h3 a { color: var(--ink); text-decoration: none; }

@@ -15,6 +15,7 @@ COLUMNS = (
     ("rejected", "Afgewezen"),
 )
 STATUSES = tuple(key for key, _label in COLUMNS)
+SENT = ("applied", "interview", "offer", "rejected")  # past the point a list row may change
 FOLLOW_UP_DAYS = 7
 HINTS = {
     "saved": "Nog te versturen",
@@ -73,11 +74,6 @@ def on_the_list(job: dict) -> dict:
     return {**job, "status": "saved"}
 
 
-def _documents(job_id: int) -> dict:
-    kinds = {row["kind"] for row in store.list_documents(job_id)}
-    return {"cv": "resume" in kinds, "letter": "motivatie" in kinds}
-
-
 def _days_since(card: dict, status: str, today: date) -> int | None:
     try:
         return (today - date.fromisoformat((card.get("since") or {}).get(status, ""))).days
@@ -118,14 +114,21 @@ def _deadline(card: dict, today: date) -> dict | None:
 def board() -> list[dict]:
     today = date.today()
     columns = []
+    # Asked once for the whole board, not per card: 150 applications took 330 connections.
+    kinds, saved = store.document_kinds(), dict(store.meta_like("application:"))
     for status, label in COLUMNS:
         cards = []
         for row in store.list_jobs(None, status, include_stale=True, sort="newest"):
-            card = {"job": row, **details(row["id"]), "documents": _documents(row["id"])}
+            try:
+                own = json.loads(saved.get(_key(row["id"])) or "{}")
+            except ValueError:
+                own = {}
+            has = kinds.get(row["id"], set())
+            card = {"job": row, **own, "documents": {"cv": "resume" in has, "letter": "motivatie" in has}}
             card["next"] = next_step(status, card, today)
             card["due"] = _deadline(card, today)
             card["days_here"] = _days_since(card, status, today)
-            card["apply_by"] = dict(vacancy_text.facts_of(row["description"] or "")).get("Reageer voor", "")
+            card["apply_by"] = vacancy_text.apply_by(row["description"] or "")
             cards.append(card)
         cards.sort(key=lambda card: card.get("deadline") or "9999")
         columns.append({"status": status, "label": label, "hint": HINTS[status], "cards": cards})

@@ -30,6 +30,7 @@ from .documents import (  # noqa: F401
     add_document,
     count_documents,
     delete_document,
+    document_kinds,
     get_document,
     list_documents,
 )

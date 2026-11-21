@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from .. import (
     auth,
+    store,
     tasks,
 )
 from ..auth import require_user
@@ -16,6 +17,13 @@ from ..auth import require_user
 log = logging.getLogger("jobcraft")
 
 router = APIRouter(dependencies=[Depends(require_user)])
+
+
+@router.get("/api/beoordeling")
+def api_matching():
+    """Whether an assessment round runs. The list asks this instead of loading itself again
+    every few seconds for as long as a round takes, which can be hours."""
+    return {"running": store.meta_get("match_status", "idle") == "running"}
 
 
 @router.get("/api/tasks")

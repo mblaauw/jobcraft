@@ -149,6 +149,18 @@ def failures_overview(days: int = 7) -> list[dict]:
     return [dict(row) for row in rows]
 
 
+def waiting(kind: str, owner: str | None, key_prefix: str) -> bool:
+    """Whether such work is still queued or running: slow, perhaps, but not lost."""
+    escaped = key_prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    with store.connect() as con:
+        row = con.execute(
+            "SELECT 1 FROM tasks WHERE kind=? AND owner IS ? AND dedupe_key LIKE ? ESCAPE '\\' "
+            "AND status IN ('queued','running') LIMIT 1",
+            (kind, owner, escaped + "%"),
+        ).fetchone()
+    return row is not None
+
+
 def open_count() -> int:
     """Work waiting or running right now."""
     with store.connect() as con:

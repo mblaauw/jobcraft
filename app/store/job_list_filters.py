@@ -12,7 +12,7 @@ FILTER_TERMS = {
     "vast": ("vast contract", "vaste aanstelling", "vast dienstverband", "vaste baan", "permanent contract", "permanent position"),
     "tijdelijk": ("tijdelijk", "jaarcontract", "bepaalde tijd", "detachering", "fixed-term", "fixed term", "temporary"),
     "freelance": ("freelance", "zzp", "interim", "contractor"),
-    "salaris": ("€", "eur "),
+    "salaris": ("€", " euro ", " eur "),  # not "eur ": that is the end of monteur and chauffeur
 }
 
 
@@ -28,14 +28,18 @@ def list_filter_clauses(filters: dict | None) -> tuple[list[str], list]:
     params: list = []
     bucket = HOUR_BUCKETS.get((filters or {}).get("hours") or "")
     if bucket:
-        terms = [f"{hours} {word}" for hours in bucket for word in ("uur", "hours")]
-        clauses.append(
-            "("
-            + " OR ".join("search_text LIKE ? OR COALESCE(hours,'') LIKE ?" for _ in terms)
-            + ")"
-        )
-        for term in terms:
-            params.extend([f"%{term}%", f"%{term}%"])
+        parts = []
+        for hours in bucket:
+            for word in ("uur", "hours"):
+                term = f"{hours} {word}"
+                if hours < 10:
+                    # "8 uur" is also the end of "28 uur" and "38 uur": no digit may stand before it.
+                    parts.append("(' ' || search_text) GLOB ? OR (' ' || COALESCE(hours,'')) GLOB ?")
+                    params.extend([f"*[^0-9]{term}*", f"*[^0-9]{term}*"])
+                else:
+                    parts.append("search_text LIKE ? OR COALESCE(hours,'') LIKE ?")
+                    params.extend([f"%{term}%", f"%{term}%"])
+        clauses.append("(" + " OR ".join(parts) + ")")
     for key in ("remote", "contract", "salaris"):
         term_key = (filters or {}).get(key)
         terms = FILTER_TERMS.get(term_key) if term_key else None

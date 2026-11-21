@@ -108,10 +108,26 @@ def week(columns: list[dict], today: date | None = None) -> dict:
     }
 
 
+SITTING = timedelta(minutes=30)
+VISIT_MARK_KEY = "overview_new_since"
+
+
 def last_visit() -> str | None:
-    """When this account last opened the overview; the visit now becomes the new mark."""
+    """Since when a vacancy counts as new on the overview: the last view of the previous sitting.
+
+    Views less than half an hour apart are one sitting and keep the same mark. Every action
+    on the overview comes back to it, and so does Back from a vacancy; if each view moved the
+    mark, saving one of five new vacancies would turn the other four into "nothing new"."""
+    now = datetime.now(UTC)
     previous = store.meta_get(VISIT_KEY)
-    store.meta_set(VISIT_KEY, datetime.now(UTC).isoformat())
+    store.meta_set(VISIT_KEY, now.isoformat())
+    try:
+        same_sitting = bool(previous) and now - datetime.fromisoformat(previous) < SITTING
+    except ValueError:
+        same_sitting = False
+    if same_sitting:
+        return store.meta_get(VISIT_MARK_KEY) or None
+    store.meta_set(VISIT_MARK_KEY, previous or "")
     return previous
 
 

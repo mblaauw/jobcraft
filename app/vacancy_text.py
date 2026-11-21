@@ -240,6 +240,12 @@ def facts_of(text: str) -> list[tuple[str, str]]:
     return facts
 
 
+def apply_by(text: str) -> str:
+    """Only the closing date, for a board of many vacancies."""
+    match = next(pattern for label, pattern in FACT_PATTERNS if label == "Reageer voor").search(text)
+    return " ".join(match.group(1).split()).rstrip(",-.") if match else ""
+
+
 _CV_WORD = re.compile(r"[a-zà-ÿ][a-zà-ÿ0-9-]{4,}")
 
 

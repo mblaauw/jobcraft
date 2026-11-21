@@ -160,10 +160,12 @@ def _job_filters(
     params.append(import_source())
     disabled_sources = _disabled_user_sources()
     if disabled_sources:
+        # Never what someone is working on: a source that falls out of reach after a move, or
+        # is switched off, must not take a running application off Sollicitaties and Vandaag.
         clauses.append(
             "(source_id IS NULL OR source_id NOT IN ("
             + ",".join("?" for _ in disabled_sources)
-            + "))"
+            + ") OR status IN ('saved','applied','interview','offer','rejected'))"
         )
         params.extend(disabled_sources)
     if not include_stale:

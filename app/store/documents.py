@@ -34,6 +34,18 @@ def list_documents(job_id: int) -> list:
 
 
 
+def document_kinds() -> dict[int, set[str]]:
+    """Which kinds of document each vacancy of this account has, in one query for a whole board."""
+    with connect() as con:
+        rows = con.execute(
+            "SELECT DISTINCT job_id, kind FROM documents WHERE owner=?", (tenancy.user_id(),)
+        ).fetchall()
+    found: dict[int, set[str]] = {}
+    for row in rows:
+        found.setdefault(row["job_id"], set()).add(row["kind"])
+    return found
+
+
 def get_document(document_id: int) -> sqlite3.Row | None:
     with connect() as con:
         return con.execute(

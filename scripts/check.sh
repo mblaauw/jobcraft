@@ -12,6 +12,6 @@ echo "check: revision ${head} (${state} working tree)"
 
 run="uv run ${UV_RUN_FLAGS:-}"
 $run ruff check .
-node --check app/static/job-drawer.js
+for script in app/static/*.js; do node --check "$script"; done
 $run pytest -q "$@"
 echo "check: passed on ${head} (${state})"

@@ -32,6 +32,7 @@ from . import (
     vacancy_reader,  # noqa: F401  (registers its task)
 )
 from .ai_budget import budget_reached as _budget_reached
+from .llm_client import LLMAuthError, LLMRateLimited
 from .runtime import get_manager
 
 log = logging.getLogger("jobcraft")
@@ -132,10 +133,14 @@ def _doc_status(job_id: int) -> dict:
         return {}
     if status.get("state") == "running":
         try:
-            age = (datetime.now(UTC) - datetime.fromisoformat(status.get("updated_at") or "")).total_seconds()
+            stamp = status.get("updated_at") or status.get("started_at") or ""
+            age = (datetime.now(UTC) - datetime.fromisoformat(stamp)).total_seconds()
         except ValueError:
-            age = 0
-        if age > DOC_STALE_SECONDS:
+            age = DOC_STALE_SECONDS + 1  # no moment at all: nothing ever picked this up
+        # Quiet for long, but still in the queue behind other work of this account: it will
+        # run, and "probeer het opnieuw" would have someone start it a second time.
+        owner = tenancy.user_id()
+        if age > DOC_STALE_SECONDS and not tasks.waiting("document", owner, f"document:{owner}:{job_id}:"):
             return {"state": "error", "error": "Dit duurde te lang. Probeer het opnieuw."}
     return status
 
@@ -194,7 +199,7 @@ def _run_document(job_id: int, kind: str) -> None:
     except Exception as exc:
         log.exception("document generation failed")
         message = "Er ging iets mis bij het schrijven. Probeer het opnieuw."
-        if "provider.auth" in str(exc) or "api_key_expired" in str(exc):
+        if isinstance(exc, LLMAuthError | LLMRateLimited):
             message = "De AI-dienst is nu niet bereikbaar. Probeer het later opnieuw."
         store.meta_set(key, json.dumps({"state": "error", "kind": kind, "error": message}))
 
@@ -233,7 +238,7 @@ def _run_bootstrap() -> None:
     except Exception as exc:
         log.exception("consolidation failed")
         message = str(exc)
-        if "provider.auth" in message or "api_key_expired" in message:
+        if isinstance(exc, LLMAuthError):
             message = "API-key verlopen of ongeldig. Werk LLM_API_KEY bij en herstart de app."
         store.meta_set("bootstrap_status", f"error: {message}"[:500])
 

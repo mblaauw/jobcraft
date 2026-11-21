@@ -84,7 +84,7 @@
       hide.setAttribute("aria-pressed", String(hidden));
       hide.title = hidden ? "Terugzetten" : "Negeren";
       hide.setAttribute("aria-label", (hidden ? "Zet terug: " : "Negeer: ") + jobTitle);
-      save.disabled = hide.disabled = status === "applied";
+      save.disabled = hide.disabled = ["applied", "interview", "offer", "rejected"].includes(status);
       row.classList.toggle("is-dimmed", hidden);
     }
     const labels = { saved: "Bewaard", applied: "Gereageerd", ignored: "Genegeerd" };
