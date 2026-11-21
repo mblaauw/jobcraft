@@ -59,7 +59,7 @@ def enqueue(
 def _follow_up(con: sqlite3.Connection, task_id: int) -> None:
     """Queue the pass that was asked for while this one ran. Called once the row has ended."""
     row = con.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
-    if row is None or row["status"] in ("queued", "running") or not row["dedupe_key"]:
+    if row is None or row["status"] not in ("done", "error") or not row["dedupe_key"]:
         return
     try:
         payload = json.loads(row["payload_json"] or "{}")

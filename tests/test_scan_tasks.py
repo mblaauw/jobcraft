@@ -88,7 +88,7 @@ def test_new_vacancies_are_ranked_during_a_scan_not_only_after_it(monkeypatch):
     ])
     monkeypatch.setattr(store, "active_owners_with_profile", lambda: ["a", "b"])
     enqueued = []
-    monkeypatch.setattr(sources.tasks, "enqueue", lambda kind, owner, dedupe_key: enqueued.append((kind, owner)))
+    monkeypatch.setattr(sources.tasks, "enqueue", lambda kind, owner, dedupe_key, follow=False: enqueued.append((kind, owner)))
     sources.scan()
     assert enqueued == [("rerank", "a"), ("rerank", "b")] * 2
 

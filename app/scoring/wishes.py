@@ -30,8 +30,10 @@ _RANGE_END = re.compile(
 )
 # A training budget or a bonus is money, but not what the job pays a month.
 NOT_PAY_BEFORE = re.compile(
-    r"(?:budget|bonus|reiskostenvergoeding|thuiswerkvergoeding|onkostenvergoeding|premie|korting|subsidie|omzet|tegoed)"
-    r"\w*[^\w€.]+(?:(?!en\b|plus\b)\w+[^\w€.]+){0,3}$",
+    # Only when the amount belongs to that word: "opleidingsbudget van € 2.000", "bonus: € 500".
+    # Not "onze bonusregeling en een salaris van € 3.500".
+    r"(?:\w*budget|\w*bonus|(?:reiskosten|thuiswerk|onkosten|internet|telefoon)\w*vergoeding)"
+    r"(?:\s+(?:van|tot|is|bedraagt|maximaal|minimaal|max\.?|wel|ter|waarde|à))*\s*:?\s*$",
     re.I,
 )
 _PER_YEAR_AFTER = re.compile(r"(?:[.,]\d{2}|,-)?\s*(?:bruto\s+|netto\s+)?(?:per jaar|p/j|jaarlijks|eenmalig)")
@@ -40,7 +42,7 @@ HOURS = re.compile(r"\b(\d{1,2})(?:\s*(?:-|–|tot|to|à)\s*(\d{1,2}))?\s*(?:uur
 _WEEK_AFTER = re.compile(r"\s*(?:per\s+(?:werk)?week|p\.?\s?/?\s?w\b|/\s*week|in de week|per wk)", re.I)
 # "bij 36 uur" and "op basis van 36 uur" say what a salary is counted on, not what the job is.
 _NOT_JOB_HOURS_BEFORE = re.compile(
-    r"(?:binnen|na|elke|iedere|om de|per|bij|basis van|o\.b\.v\.|gebaseerd op)\s+(?:een\s+)?$", re.I
+    r"(?:binnen|within|na|elke|iedere|every|om de|per|bij|basis van|o\.b\.v\.|gebaseerd op)\s+(?:een\s+)?$", re.I
 )
 _NOT_JOB_HOURS_AFTER = re.compile(
     r"\s*(?:per\s+(?:dag|etmaal|maand|jaar)|bereikbaar|beschikbaar|service|reactie|open|van tevoren|vooraf|training|opleiding|cursus)",
@@ -78,10 +80,12 @@ def working_hours(text: str) -> re.Match | None:
         after = text[match.end() : match.end() + 24]
         before = text[max(0, match.start() - 20) : match.start()]
         highest = max(int(number) for number in match.groups() if number)
-        # Up to 60: "45 uur per week" is a working week too, "binnen 72 uur" is not.
         if highest > 60 or _NOT_JOB_HOURS_BEFORE.search(before) or _NOT_JOB_HOURS_AFTER.match(after):
             continue
-        if _WEEK_AFTER.match(after):
+        weekly = bool(_WEEK_AFTER.match(after)) or "werkweek" in before.lower()
+        if highest > 40 and not weekly:
+            continue  # "45 uur per week" is a working week; a bare "56 uur" is something else
+        if weekly:
             return match
         possible = possible or match
     return possible

@@ -37,11 +37,16 @@ def test_the_hours_fact_is_the_working_week(text, hours):
 
 def test_a_bonus_is_not_shown_as_the_salary():
     assert "Salaris" not in dict(vacancy_text.facts_of("Een bonus van € 500 bij indiensttreding."))
+    # Only the amount that belongs to the bonus or budget is left out, and only as salary.
+    assert dict(vacancy_text.facts_of("Onze bonusregeling en een salaris van € 3.500"))["Salaris"] == "€ 3.500"
+    assert vacancy_text.facts_of("Je krijgt een bonus bij een vast contract.") == [("Contract", "vast contract")]
+    assert vacancy_text.facts_of("Opleidingsbudget voor HBO-medewerkers.") == [("Niveau", "HBO")]
 
 
 def test_no_hours_fact_from_a_response_time():
     assert "Uren" not in dict(vacancy_text.facts_of("Je hoort binnen 48 uur van ons."))
     assert wishes.hours_range("een werkweek van 45 uur") == (45, 45)  # long weeks exist and count against a wish
+    assert wishes.hours_range("respond within 48 hours") is None and wishes.hours_range("56 uur training") is None
 
 
 @pytest.mark.parametrize(

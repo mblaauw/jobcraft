@@ -227,11 +227,13 @@ def facts_of(text: str) -> list[tuple[str, str]]:
         matches = list(pattern.finditer(text))
         if label == "Uren":
             match = wishes.working_hours(text)
-        else:
+        elif label == "Salaris":
             # A salary in euros says more than the scale it may mention first, and a training
             # budget or bonus is no salary at all.
             pay = [item for item in matches if not wishes.NOT_PAY_BEFORE.search(text[max(0, item.start() - 60) : item.start()])]
             match = next((item for item in pay if "€" in item.group(0)), pay[0] if pay else None)
+        else:
+            match = matches[0] if matches else None
         if match:
             value = " ".join((match.group(1) if label == "Reageer voor" else match.group(0)).split())
             if label == "Salaris":

@@ -57,7 +57,10 @@ and conditional caching. Robots 404 permits fetching; denied, redirected or
 unavailable policies fail closed. Authenticated clients/requests are unsupported.
 Only public responses are cached (64 files, at most 2 MiB each) under the runtime
 directory. Known rich job details are skipped for 3 days from the last real
-detail fetch; empty updates cannot erase existing fields.
+detail fetch; empty updates cannot erase existing fields, and a feed's short text
+cannot replace a full text whose page was read in the last month. A vacancy is only
+marked as seen without a new read when its last read kept it, so a page that closed
+expires by itself.
 
 Ruff includes `B`, `SIM`, `RUF`. Public scoring/store/LLM/task interfaces are hinted;
 dynamic provider JSON remains explicit dictionaries. No extra type checker is

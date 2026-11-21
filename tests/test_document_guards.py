@@ -26,6 +26,8 @@ def test_an_invented_name_does_not_pass_as_letters_inside_another_word():
     assert unsupported_facts(["Ik werkte in Amsterdam bij Zorggroep Amstelland met Sam."], source) == []
     # A longer name may open a compound word of the source.
     assert unsupported_facts(["Ik werk met Excel, Scrum en Python."], "excelsheets, scrummaster en Python3") == []
+    # But never of a name: "Marie" is not known because the source mentions "Mariette".
+    assert len(unsupported_facts(["Samen met Marie."], "Ik werkte met Mariette aan excelsheets.")) == 1
 
 
 def test_style_checks_read_words_not_letters():
