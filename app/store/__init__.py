@@ -37,6 +37,7 @@ from .documents import (  # noqa: F401
 from .ingestion import (  # noqa: F401
     fetched_within,
     known_job_urls,
+    prune_detail_fetches,
     read_and_left_out,
     source_urls_seen_longest_ago,
     upsert_job,

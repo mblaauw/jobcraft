@@ -98,12 +98,15 @@ _last_prune_day: str | None = None
 
 
 def run_prune_due(now: datetime | None = None) -> bool:
-    """Once a day per process: sign-in history older than the retention goes."""
+    """Once a day per process: sign-in history older than the retention goes, and so do
+    finished queue rows and page-read marks nothing asks about any more."""
     global _last_prune_day
     today = (now or datetime.now(UTC)).date().isoformat()
     if _last_prune_day == today:
         return False
     store.prune_auth_events()
+    tasks.prune()
+    store.prune_detail_fetches()
     _last_prune_day = today
     return True
 

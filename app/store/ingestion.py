@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from .connection import connect, now, stale_cutoff
 from .jobs import normalize_posted_at
@@ -25,6 +25,15 @@ def _detail_fetched_at(url: str) -> str:
     with connect() as con:
         stamp = con.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
     return stamp[0] if stamp else ""
+
+
+def prune_detail_fetches(days: int = 400) -> int:
+    """Forget page reads older than any adapter still asks about (EURES looks a year back)."""
+    cutoff = (datetime.now(UTC) - timedelta(days=days)).isoformat()
+    with connect() as con:
+        return con.execute(
+            "DELETE FROM meta WHERE key >= 'detail_fetched:' AND key < 'detail_fetched;' AND value < ?", (cutoff,)
+        ).rowcount
 
 
 def fetched_within(url: str, max_age_seconds: int) -> bool:

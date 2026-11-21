@@ -123,3 +123,19 @@ def test_travel_is_refreshed_in_pieces_and_then_left_alone(client, monkeypatch):
         assert signals.refresh_travel() == 0
     add_job(9, location="Zwolle")  # a new vacancy makes it look again
     assert signals.refresh_travel() == 1
+
+
+def test_old_finished_work_is_cleared_and_waiting_work_is_not():
+    done = tasks.enqueue("rerank", owner="a", dedupe_key="rerank:a")
+    tasks.claim_next()
+    tasks.finish(done, {})
+    waiting = tasks.enqueue("match", owner="a", dedupe_key="match:a")
+    with store.connect() as con:
+        con.execute("UPDATE tasks SET finished_at='2020-01-01T00:00:00+00:00', created_at='2020-01-01T00:00:00+00:00'")
+    assert tasks.prune() == 1
+    assert tasks.get(waiting, owner="a")["status"] == "queued" and tasks.get(done, owner="a") is None
+    store.record_detail_fetch("https://example.test/old")
+    with store.connect() as con:
+        con.execute("UPDATE meta SET value='2020-01-01T00:00:00+00:00' WHERE key LIKE 'detail_fetched:%'")
+    store.record_detail_fetch("https://example.test/new")
+    assert store.prune_detail_fetches() == 1 and store.fetched_within("https://example.test/new", 60)

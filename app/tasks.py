@@ -161,6 +161,17 @@ def waiting(kind: str, owner: str | None, key_prefix: str) -> bool:
     return row is not None
 
 
+def prune(days: int = 30) -> int:
+    """Drop work that ended long ago. Every poll for new work reads past the finished rows,
+    twice a second per worker; nothing looks further back than a week."""
+    cutoff = (datetime.now(UTC) - timedelta(days=days)).isoformat()
+    with store.connect() as con:
+        return con.execute(
+            "DELETE FROM tasks WHERE status NOT IN ('queued','running') AND COALESCE(finished_at, created_at) < ?",
+            (cutoff,),
+        ).rowcount
+
+
 def open_count() -> int:
     """Work waiting or running right now."""
     with store.connect() as con:
