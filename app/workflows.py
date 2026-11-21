@@ -50,7 +50,7 @@ def _run_scan() -> dict:
         store.meta_set("scan_status", "done")
         if os.environ.get("MATCH_AFTER_SCAN", "1") != "0":
             for owner in store.active_owners_with_profile():
-                tasks.enqueue("match", owner=owner, dedupe_key=f"match:{owner}")
+                tasks.enqueue("match", owner=owner, dedupe_key=f"match:{owner}", follow=True)
         return summary
     except tasks.Interrupted:  # not a failure: the round goes back in the queue once
         store.meta_set("scan_status", "interrupted")
@@ -77,7 +77,7 @@ def _task_index(task):
         raise RuntimeError("index tasks must be shared")
     if _refresh_index():
         for owner in store.active_owners_with_profile():
-            tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}")
+            tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}", follow=True)
     return {}
 
 

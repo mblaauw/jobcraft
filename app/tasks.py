@@ -34,21 +34,22 @@ def enqueue(
     owner: str | None,
     payload: dict[str, Any] | None = None,
     dedupe_key: str | None = None,
+    follow: bool = False,
 ) -> int:
     """Queue work. A key keeps one task per subject: asking again while it waits changes nothing.
 
-    Asking again while it already runs is different for a ranking or assessment pass: that
-    pass read its list before the vote, profile change or scan that prompted this call, so
-    it is marked to run once more when it ends (FOLLOW_UP_KINDS)."""
+    ``follow`` is for a caller that just changed what the pass reads (a vote, a profile edit,
+    new vacancies): a pass that already runs read its list before that, so it is marked to
+    run once more. Not for a caller that only wants a fresh number: a page view is no change."""
     with store.connect() as con:
         row = con.execute(
             "INSERT INTO tasks(owner, kind, payload_json, dedupe_key, created_at) "
             "VALUES (?,?,?,?,?) "
             "ON CONFLICT(dedupe_key) WHERE status IN ('queued','running') "
-            "DO UPDATE SET payload_json=CASE WHEN tasks.status='running' AND tasks.kind IN ('rerank','match') "
+            "DO UPDATE SET payload_json=CASE WHEN ? AND tasks.status='running' "
             f"THEN json_set(tasks.payload_json,'$.{AGAIN}',1) ELSE tasks.payload_json END "
             "RETURNING id, owner",
-            (owner, kind, json.dumps(payload or {}, ensure_ascii=False), dedupe_key, store.now()),
+            (owner, kind, json.dumps(payload or {}, ensure_ascii=False), dedupe_key, store.now(), 1 if follow else 0),
         ).fetchone()
         if row["owner"] != owner:
             raise ValueError("dedupe key belongs to another owner")
@@ -58,7 +59,7 @@ def enqueue(
 def _follow_up(con: sqlite3.Connection, task_id: int) -> None:
     """Queue the pass that was asked for while this one ran. Called once the row has ended."""
     row = con.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
-    if row is None or row["status"] not in ("done", "error") or not row["dedupe_key"]:
+    if row is None or row["status"] in ("queued", "running") or not row["dedupe_key"]:
         return
     try:
         payload = json.loads(row["payload_json"] or "{}")
@@ -162,8 +163,7 @@ def waiting(kind: str, owner: str | None, key_prefix: str) -> bool:
 
 
 def prune(days: int = 30) -> int:
-    """Drop work that ended long ago. Every poll for new work reads past the finished rows,
-    twice a second per worker; nothing looks further back than a week."""
+    """Drop work that ended long ago: every poll for new work reads past the finished rows."""
     cutoff = (datetime.now(UTC) - timedelta(days=days)).isoformat()
     with store.connect() as con:
         return con.execute(
@@ -358,12 +358,16 @@ def _close_interrupted(con: sqlite3.Connection, row: sqlite3.Row, *, resume: boo
         ),
     )
     if again:
+        # The round starts over and reads everything fresh, so a follow-up asked for during
+        # the interrupted run is already served by it.
         con.execute(
             "INSERT INTO tasks(owner, kind, payload_json, dedupe_key, attempts, created_at) "
-            "VALUES (?,?,?,?,?,?) "
+            f"VALUES (?,?,json_remove(?,'$.{AGAIN}'),?,?,?) "
             "ON CONFLICT(dedupe_key) WHERE status IN ('queued','running') DO NOTHING",
             (row["owner"], row["kind"], row["payload_json"], row["dedupe_key"], row["attempts"], store.now()),
         )
+    elif resume:  # a re-rank cut off by a restart still owes the pass that was asked for
+        _follow_up(con, row["id"])
     return again
 
 

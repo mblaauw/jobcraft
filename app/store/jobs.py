@@ -125,9 +125,6 @@ _UNIQUE_JOBS = """SELECT * FROM (
 ) WHERE dup_rank=1"""
 
 
-_UNVOTED = " WHERE COALESCE(vote,0)=0"
-
-
 def _unique_jobs(clauses: list[str]) -> str:
     where = "WHERE " + " AND ".join(clauses) if clauses else ""
     return _UNIQUE_JOBS.format(select=_job_select(), where=where)
@@ -230,17 +227,22 @@ def job_status_counts(
     reach: dict | None = None,
 ) -> dict[str, tuple[int, int]]:
     """Per status: (unique jobs, unique jobs known to be outside the travel range)."""
+    list_filters = dict(list_filters or {})
+    seen_after = list_filters.pop("seen_after", None)  # asked after folding, as in the list itself
     clauses, filters = _job_filters(None, query_text, source, include_stale, False, list_filters)
     far_sql, far_params = _too_far(reach)
+    outer = [*(["COALESCE(vote,0)=0"] if only_unvoted else []), *(["first_seen > ?"] if seen_after else [])]
     sql = (
         f"SELECT status, COUNT(*) AS n, COALESCE(SUM({far_sql}),0) AS far FROM ("
         + _unique_jobs(clauses)
         + ")"
-        + (_UNVOTED if only_unvoted else "")
+        + (" WHERE " + " AND ".join(outer) if outer else "")
         + " GROUP BY status"
     )
     with connect() as con:
-        rows = con.execute(sql, (*far_params, tenancy.user_id(), *filters)).fetchall()
+        rows = con.execute(
+            sql, (*far_params, tenancy.user_id(), *filters, *([seen_after] if seen_after else []))
+        ).fetchall()
     return {row["status"]: (row["n"], row["far"]) for row in rows}
 
 

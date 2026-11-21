@@ -6,6 +6,7 @@ import json
 import os
 
 from . import feedback, geo, llm, profile, ranking, standards, store, systemone
+from .llm_client import LLMSchemaError
 from .scoring import digests
 
 # Bump when the matcher prompt or its instructions change: cached verdicts must
@@ -314,7 +315,11 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
     failed_today = _failed_today()
     if available:
         decided = ranking.routed(digest_base, preferences, feedback_data)
-        sample = ranking.calibration_sample(digest_base, preferences, feedback_data, decided)[:limit]
+        sample = [
+            job
+            for job in ranking.calibration_sample(digest_base, preferences, feedback_data, decided)
+            if job["id"] not in failed_today
+        ][:limit]
         # Not the ones that already failed today: the best-ranked vacancy whose answer cannot
         # be read would otherwise be bought again at the top of every round.
         candidates = [
@@ -333,8 +338,11 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
         except Exception as exc:
             summary["failed"] += 1
             summary["errors"].append(f"job {job['id']}: {type(exc).__name__}")
-            failed_today.add(job["id"])
-            store.meta_set(FAILED_KEY, json.dumps({"day": now_local().date().isoformat(), "ids": sorted(failed_today)[-200:]}))
+            if isinstance(exc, ValueError | KeyError | TypeError | LLMSchemaError):
+                # An answer that cannot be read is this vacancy's problem. An expired key, a
+                # rate limit or a timeout is not: those vacancies must be tried again at once.
+                failed_today.add(job["id"])
+                store.meta_set(FAILED_KEY, json.dumps({"day": now_local().date().isoformat(), "ids": sorted(failed_today)[-200:]}))
 
     # Blend the new LLM verdicts into the deterministic rank, then report where things stand.
     ranking.rerank_all(preferences, feedback_data, digest_base)

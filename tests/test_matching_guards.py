@@ -68,6 +68,13 @@ def test_a_rejected_vacancy_does_not_return_through_its_copy_on_another_site(cli
     store.set_job_vote(first, -1)
     assert store.list_jobs_page(10, 0, "new", only_unvoted=True) == []
     assert store.job_status_counts(only_unvoted=True) == {}
+    # "New since" is asked of the folded vacancy too, in the count as in the list.
+    store.set_job_vote(first, 0)
+    with store.connect() as con:
+        con.execute("UPDATE jobs SET first_seen='2020-01-01T00:00:00+00:00' WHERE id=?", (first,))
+        con.execute("UPDATE job_states SET rank_score=95 WHERE job_id=?", (first,))
+    since = {"seen_after": "2026-01-01T00:00:00+00:00"}
+    assert store.job_status_counts(list_filters=since) == {} and store.list_jobs_page(10, 0, list_filters=since) == []
     assert [row["id"] for row in store.list_jobs_page(10, 0)] == [first]  # the list still shows the one you judged
 
 

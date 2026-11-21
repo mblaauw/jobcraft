@@ -267,6 +267,7 @@ def _scan_ats(client, source, entry, summary, limit_per_source=None) -> None:
             problems.append(employer["slug"])
             continue
         budget = [int(employer.get("detail_cap") or DETAIL_CAP)]
+        entry["failure_streak"] = 0  # each board is judged on its own pages
         try:
             for item in found[: limit_per_source or len(found)]:
                 if item.get("page"):

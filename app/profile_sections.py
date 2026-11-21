@@ -97,7 +97,7 @@ def public_excerpt(markdown: str, max_chars: int = 6000, skip: tuple[str, ...] =
     truncated = False
     if fill and sum(len(chunk) for chunk in chunks) > max_chars:
         truncated = True
-        room, left = max_chars, len(chunks)
+        room, left = max(0, max_chars - 2 * len(chunks)), len(chunks)  # the blank lines between them count
         share: dict[int, int] = {}
         for index in sorted(range(len(chunks)), key=lambda item: len(chunks[item])):
             share[index] = min(len(chunks[index]), room // left)

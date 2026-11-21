@@ -51,7 +51,7 @@ def _assess_soon(kind: str = "match") -> None:
     """Votes and travel only rerank for free; a changed profile also earns new assessments."""
     if profile.profile_exists():
         owner = tenancy.user_id()
-        tasks.enqueue(kind, owner=owner, dedupe_key=f"{kind}:{owner}")
+        tasks.enqueue(kind, owner=owner, dedupe_key=f"{kind}:{owner}", follow=True)
 
 
 @router.get("/profile", response_class=HTMLResponse)

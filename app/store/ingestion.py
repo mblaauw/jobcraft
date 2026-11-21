@@ -99,12 +99,17 @@ def known_job_urls(urls: list[str]) -> set[str]:
 STUB_LENGTH = 400
 
 
-def _only_a_stub(key: str, value, existing) -> bool:
+STUB_GUARD_SECONDS = 30 * 86400
+
+
+def _only_a_stub(key: str, value, existing, read_lately: bool) -> bool:
     """A feed header or cut-off summary, offered where the full text of the page is stored.
 
     Adapters fall back to the short feed text when a page cannot be read this round; that must
-    not replace the text matching and documents were built on."""
-    if key != "description" or not isinstance(value, str):
+    not replace the text matching and documents were built on. Only while the page itself was
+    read in the last month: a text that really became this short gets through after that, and
+    so does anything that never came from a page read (a pasted vacancy, a local import)."""
+    if key != "description" or not isinstance(value, str) or not read_lately:
         return False
     stored = existing["description"] or ""
     return len(value) < STUB_LENGTH and len(stored) >= 2 * len(value) and len(stored) >= STUB_LENGTH
@@ -122,6 +127,7 @@ def upsert_job(job: dict) -> tuple[int, bool]:
     stamp = now()
     job = {**job, "posted_at": normalize_posted_at(job.get("posted_at"))}
     search_text = _search_text(job.get("title"), job.get("company"), job.get("description"))
+    read_lately = fetched_within(job["url"], STUB_GUARD_SECONDS)
     with connect() as con:
         existing = con.execute("SELECT * FROM jobs WHERE url=?", (job["url"],)).fetchone()
         if existing:
@@ -138,7 +144,7 @@ def upsert_job(job: dict) -> tuple[int, bool]:
                 "lon",
             ):
                 value = job.get(key)
-                if value is None or (isinstance(value, str) and not value.strip()) or _only_a_stub(key, value, existing):
+                if value is None or (isinstance(value, str) and not value.strip()) or _only_a_stub(key, value, existing, read_lately):
                     if key in ("title", "description") and existing[key]:
                         merged_content = True
                     job[key] = existing[key]

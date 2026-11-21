@@ -204,9 +204,12 @@ def _listed_places(text: str) -> list[str]:
     """Each town of a location that is a plain list of towns ("Utrecht, Amsterdam en Zwolle")."""
     text = re.sub(r",\s*(nh|nb|l|zh|gld)\b", r" (\1)", _norm(text))
     found = []
-    for part in re.split(r"\s*(?:[,;/|·]|\ben\b|\bof\b|\bor\b|\band\b)\s*", text):
-        if part and part in PLACES and len(part) > 2 and part not in found:
-            found.append(part)
+    for piece in re.split(r"\s*[,;/|·]\s*", text):
+        # "Beek en Donk" is one town; only a piece that is no town itself is split on "en".
+        parts = [piece] if piece in PLACES else re.split(r"\s+(?:en|of|or|and)\s+", piece)
+        for part in parts:
+            if part and part in PLACES and len(part) > 2 and part not in found:
+                found.append(part)
     return found
 
 

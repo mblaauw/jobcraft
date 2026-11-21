@@ -34,7 +34,7 @@ def list_filter_clauses(filters: dict | None) -> tuple[list[str], list]:
                 term = f"{hours} {word}"
                 if hours < 10:
                     # "8 uur" is also the end of "28 uur" and "38 uur": no digit may stand before it.
-                    parts.append("(' ' || search_text) GLOB ? OR (' ' || COALESCE(hours,'')) GLOB ?")
+                    parts.append("(' ' || search_text) GLOB ? OR (' ' || LOWER(COALESCE(hours,''))) GLOB ?")
                     params.extend([f"*[^0-9]{term}*", f"*[^0-9]{term}*"])
                 else:
                     parts.append("search_text LIKE ? OR COALESCE(hours,'') LIKE ?")

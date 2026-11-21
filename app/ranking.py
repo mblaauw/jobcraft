@@ -148,7 +148,7 @@ def after_vote(job_id: int, *, full_pass_here: bool = False) -> None:
             rerank_all()
             return
         owner = tenancy.user_id()
-        tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}")
+        tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}", follow=True)
         if not parts:
             return
     digest = _current_digest()

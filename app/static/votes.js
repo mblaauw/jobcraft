@@ -51,7 +51,9 @@
           alert.setAttribute("role", "alert");
           if (error.message === "signed out") {
             const link = document.createElement("a");
-            link.href = "/login?next=" + encodeURIComponent(location.pathname + location.search);
+            // Relative to where the app is served, which may be under a path prefix.
+            const appRoot = new URL(document.querySelector('link[href*="static/app.css"]').href).pathname.split("static/")[0];
+            link.href = appRoot + "login?next=" + encodeURIComponent(location.pathname + location.search);
             link.textContent = "Log opnieuw in";
             alert.append("Je bent uitgelogd, dus je stem is niet opgeslagen. ", link, ".");
           } else {

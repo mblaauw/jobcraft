@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sqlite3
 import threading
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -104,9 +105,11 @@ def run_prune_due(now: datetime | None = None) -> bool:
     today = (now or datetime.now(UTC)).date().isoformat()
     if _last_prune_day == today:
         return False
-    store.prune_auth_events()
-    tasks.prune()
-    store.prune_detail_fetches()
+    for prune in (store.prune_auth_events, tasks.prune, store.prune_detail_fetches):
+        try:
+            prune()
+        except sqlite3.OperationalError as exc:  # one table busy or absent does not stop the others
+            log.warning("prune %s skipped: %s", prune.__name__, exc)
     _last_prune_day = today
     return True
 

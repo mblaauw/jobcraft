@@ -14,8 +14,9 @@ from app.scoring import reasons, rules, wishes
         ("Salaris tussen € 3.100 en € 4.200 bruto per maand", "€ 3.100 – € 4.200"),
         ("salaris van minimaal €3.012 en maximaal €4.312 bruto", "€3.012 – €4.312"),
         ("€ 3.100,- tot € 4.200,- bruto", "€ 3.100 – € 4.200"),
-        ("Een bonus van € 500 en € 20 korting", "€ 500"),  # "en" without "tussen" is no range
+        ("Je krijgt € 500 en € 20 per gewerkte dag", "€ 500"),  # "en" without "tussen" is no range
         ("max. € 4.200 (schaal 8)", "€ 4.200"),
+        ("Opleidingsbudget van € 2.000 per jaar. Salaris € 3.500", "€ 3.500"),  # a budget is no salary
     ],
 )
 def test_a_salary_range_is_shown_whole(text, shown):
@@ -34,8 +35,13 @@ def test_the_hours_fact_is_the_working_week(text, hours):
     assert dict(vacancy_text.facts_of(text))["Uren"] == hours
 
 
+def test_a_bonus_is_not_shown_as_the_salary():
+    assert "Salaris" not in dict(vacancy_text.facts_of("Een bonus van € 500 bij indiensttreding."))
+
+
 def test_no_hours_fact_from_a_response_time():
     assert "Uren" not in dict(vacancy_text.facts_of("Je hoort binnen 48 uur van ons."))
+    assert wishes.hours_range("een werkweek van 45 uur") == (45, 45)  # long weeks exist and count against a wish
 
 
 @pytest.mark.parametrize(

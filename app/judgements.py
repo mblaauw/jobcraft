@@ -64,7 +64,7 @@ def learn(job_id: int) -> None:
     feedback.rebuild()
     ranking.after_vote(job_id)
     owner = tenancy.user_id()
-    tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}")
+    tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}", follow=True)
 
 
 # ------------------------------------------------------------------ the daily round

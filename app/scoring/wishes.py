@@ -29,9 +29,10 @@ _RANGE_END = re.compile(
     r"\s*(?:,-)?\s*(?:bruto\s+)?(?:-|–|tot en met|tot maximaal|tot|t/m|en maximaal)\s*(\d{1,3}(?:[.,]\d{3})+|\d{4,6})(?![\d%])"
 )
 # A training budget or a bonus is money, but not what the job pays a month.
-_NOT_PAY_BEFORE = re.compile(
+NOT_PAY_BEFORE = re.compile(
     r"(?:budget|bonus|reiskostenvergoeding|thuiswerkvergoeding|onkostenvergoeding|premie|korting|subsidie|omzet|tegoed)"
-    r"\w*[^\w€.]+(?:(?!en\b|plus\b)\w+[^\w€.]+){0,3}$"
+    r"\w*[^\w€.]+(?:(?!en\b|plus\b)\w+[^\w€.]+){0,3}$",
+    re.I,
 )
 _PER_YEAR_AFTER = re.compile(r"(?:[.,]\d{2}|,-)?\s*(?:bruto\s+|netto\s+)?(?:per jaar|p/j|jaarlijks|eenmalig)")
 
@@ -51,7 +52,7 @@ def monthly_salary(text: str) -> float | None:
     """Highest plausible monthly gross pay named in a vacancy, if any."""
     best = None
     for match in _AMOUNT.finditer(text):
-        if _NOT_PAY_BEFORE.search(text[max(0, match.start() - 60) : match.start()]):
+        if NOT_PAY_BEFORE.search(text[max(0, match.start() - 60) : match.start()]):
             continue
         amounts = [match.group(1)]
         upper = _RANGE_END.match(text, match.end())
@@ -77,7 +78,8 @@ def working_hours(text: str) -> re.Match | None:
         after = text[match.end() : match.end() + 24]
         before = text[max(0, match.start() - 20) : match.start()]
         highest = max(int(number) for number in match.groups() if number)
-        if highest > 40 or _NOT_JOB_HOURS_BEFORE.search(before) or _NOT_JOB_HOURS_AFTER.match(after):
+        # Up to 60: "45 uur per week" is a working week too, "binnen 72 uur" is not.
+        if highest > 60 or _NOT_JOB_HOURS_BEFORE.search(before) or _NOT_JOB_HOURS_AFTER.match(after):
             continue
         if _WEEK_AFTER.match(after):
             return match

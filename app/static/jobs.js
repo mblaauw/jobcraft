@@ -62,7 +62,8 @@
 
   async function checkProgress() {
     try {
-      const state = await fetch("/api/beoordeling", { cache: "no-store", headers: { Accept: "application/json" } });
+      const appRoot = new URL(document.querySelector('link[href*="static/app.css"]').href).pathname.split("static/")[0];
+      const state = await fetch(appRoot + "api/beoordeling", { cache: "no-store", headers: { Accept: "application/json" } });
       if (!state.ok) throw new Error("status unavailable");
       if ((await state.json()).running) {
         later();

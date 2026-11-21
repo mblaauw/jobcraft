@@ -146,7 +146,10 @@ def _stands_in(name: str, plain_source: str) -> bool:
 
     Not as letters inside another word: "Ann" is in "channel", "Roos" in "rooster" and "Jan"
     in "januari", and an invented colleague by such a name must not pass for a known one."""
-    return re.search(rf"(?<!\w){re.escape(name)}(?:e|en|s|se|'s|’s)?(?!\w)", plain_source) is not None
+    if re.search(rf"(?<!\w){re.escape(name)}(?:e|en|s|se|'s|’s)?(?![^\W\d])", plain_source):
+        return True
+    # A longer name may open a compound: "Excel" in "excelsheets", "Scrum" in "scrummaster".
+    return len(name) >= 5 and re.search(rf"(?<!\w){re.escape(name)}", plain_source) is not None
 
 
 def roles_changed(content: dict, source: str) -> list[str]:

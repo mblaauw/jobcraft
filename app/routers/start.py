@@ -282,7 +282,7 @@ def start_swipe(request: Request):
 
 def _rerank_in_worker() -> None:
     """A full re-rank of the whole catalogue does not fit in the 768 MB web process."""
-    tasks.enqueue("rerank", owner=tenancy.user_id(), dedupe_key=f"rerank:{tenancy.user_id()}")
+    tasks.enqueue("rerank", owner=tenancy.user_id(), dedupe_key=f"rerank:{tenancy.user_id()}", follow=True)
 
 
 @router.post("/start/vacatures/stoppen")

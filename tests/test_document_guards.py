@@ -24,6 +24,8 @@ def test_an_invented_name_does_not_pass_as_letters_inside_another_word():
     problems = unsupported_facts(["Bij Ann leerde ik veel over Roos en Jan."], source)
     assert [name for name in ("Ann", "Roos", "Jan") if any(f'"{name}"' in line for line in problems)] == ["Ann", "Roos", "Jan"]
     assert unsupported_facts(["Ik werkte in Amsterdam bij Zorggroep Amstelland met Sam."], source) == []
+    # A longer name may open a compound word of the source.
+    assert unsupported_facts(["Ik werk met Excel, Scrum en Python."], "excelsheets, scrummaster en Python3") == []
 
 
 def test_style_checks_read_words_not_letters():

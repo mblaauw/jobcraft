@@ -20,6 +20,7 @@ FULL = "Je coördineert het gebouwbeheer en de ontvangst. " * 30
 def test_a_feed_stub_does_not_replace_the_stored_full_text():
     url = "https://example.test/jobs/1"
     job_id = add_job(1, description=FULL)
+    store.record_detail_fetch(url)  # the full text came from reading the page
     before = store.get_job(job_id)["content_hash"]
     store.upsert_job({"source_id": "fixture", "url": url, "title": "Fixture vacancy 1", "description": "Rijksoverheid · Den Haag", "content_hash": "stub"})
     stored = store.get_job(job_id)
@@ -27,6 +28,10 @@ def test_a_feed_stub_does_not_replace_the_stored_full_text():
     # A real, changed text still replaces it.
     store.upsert_job({"source_id": "fixture", "url": url, "title": "Fixture vacancy 1", "description": FULL + " Nieuw: ook de inkoop.", "content_hash": "new"})
     assert store.get_job(job_id)["description"].endswith("ook de inkoop.") and before != "new"
+    # A text that never came from a page read (pasted, a local import) is replaced as given.
+    pasted = add_job(2, description=FULL)
+    store.upsert_job({"source_id": "fixture", "url": "https://example.test/jobs/2", "title": "Fixture vacancy 2", "description": "Ingekort.", "content_hash": "short"})
+    assert store.get_job(pasted)["description"] == "Ingekort."
 
 
 def test_a_vacancy_with_several_offices_is_judged_by_the_nearest():
@@ -36,12 +41,13 @@ def test_a_vacancy_with_several_offices_is_judged_by_the_nearest():
     # A sentence that merely mentions two towns is not a list of offices.
     assert geo._listed_places("Standplaats Amsterdam, soms in Utrecht aanwezig") == []
     assert geo._listed_places("Zwolle / Deventer en Kampen") == ["zwolle", "deventer", "kampen"]
+    assert geo._listed_places("Zeist, Beek en Donk") == ["zeist", "beek en donk"]  # one town with "en" in its name
 
 
 def test_a_pass_asked_for_while_one_runs_follows_it():
     first = tasks.enqueue("rerank", owner="a", dedupe_key="rerank:a")
     assert tasks.claim_next()["id"] == first
-    assert tasks.enqueue("rerank", owner="a", dedupe_key="rerank:a") == first  # e.g. a vote during the pass
+    assert tasks.enqueue("rerank", owner="a", dedupe_key="rerank:a", follow=True) == first  # a vote during the pass
     assert tasks.open_count() == 1
     tasks.finish(first, {})
     follow_up = tasks.claim_next()
@@ -51,12 +57,35 @@ def test_a_pass_asked_for_while_one_runs_follows_it():
     assert tasks.claim_next() is None  # one follow-up, not a loop
 
 
-def test_other_kinds_are_not_repeated_after_a_second_request():
-    first = tasks.enqueue("document", owner="a", dedupe_key="doc:a:1")
+def test_asking_without_a_change_never_repeats_work():
+    for kind, key in (("document", "doc:a:1"), ("rerank", "rerank:a")):
+        first = tasks.enqueue(kind, owner="a", dedupe_key=key)
+        tasks.claim_next()
+        assert tasks.enqueue(kind, owner="a", dedupe_key=key) == first
+        tasks.finish(first, {})
+        # A second click must not write a paid document twice, and a page that only wants a
+        # fresh count must not queue a pass for every view during a pass.
+        assert tasks.claim_next() is None
+
+
+def test_a_rerank_cut_off_by_a_restart_still_runs_the_pass_that_was_asked_for():
+    first = tasks.enqueue("rerank", owner="a", dedupe_key="rerank:a")
     tasks.claim_next()
-    assert tasks.enqueue("document", owner="a", dedupe_key="doc:a:1") == first
-    tasks.finish(first, {})
-    assert tasks.claim_next() is None  # a second click must not write a paid document twice
+    tasks.enqueue("rerank", owner="a", dedupe_key="rerank:a", follow=True)
+    assert tasks.recover_interrupted() == 1
+    again = tasks.claim_next()
+    assert again and again["kind"] == "rerank" and again["id"] != first
+    tasks.finish(again["id"], {})
+    assert tasks.claim_next() is None
+    # A match round goes back in the queue by itself, once, without a second follow-up.
+    match = tasks.enqueue("match", owner="a", dedupe_key="match:a")
+    tasks.claim_next()
+    tasks.enqueue("match", owner="a", dedupe_key="match:a", follow=True)
+    tasks.recover_interrupted()
+    resumed = tasks.claim_next()
+    assert resumed["id"] != match and tasks.AGAIN not in json.loads(resumed["payload_json"])
+    tasks.finish(resumed["id"], {})
+    assert tasks.claim_next() is None
 
 
 class Response:
