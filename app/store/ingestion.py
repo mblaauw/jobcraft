@@ -100,6 +100,14 @@ def _only_a_stub(key: str, value, existing) -> bool:
     return len(value) < STUB_LENGTH and len(stored) >= 2 * len(value) and len(stored) >= STUB_LENGTH
 
 
+def bump_catalogue(con) -> None:
+    """Tell stored travel times that a vacancy is new, or changed where or what it is."""
+    con.execute(
+        "INSERT INTO meta(key,value) VALUES ('catalogue_version','1') "
+        "ON CONFLICT(key) DO UPDATE SET value=CAST(value AS INTEGER)+1"
+    )
+
+
 def upsert_job(job: dict) -> tuple[int, bool]:
     stamp = now()
     job = {**job, "posted_at": normalize_posted_at(job.get("posted_at"))}
@@ -129,6 +137,8 @@ def upsert_job(job: dict) -> tuple[int, bool]:
                     f"{job['title']}:{job['description']}".encode()
                 ).hexdigest()
             search_text = _search_text(job.get("title"), job.get("company"), job.get("description"))
+            if any(existing[key] != job.get(key) for key in ("content_hash", "location", "lat", "lon")):
+                bump_catalogue(con)
             con.execute(
                 "UPDATE jobs SET source_id=?, title=?, company=?, location=?, hours=?, "
                 "description=?, posted_at=?, last_seen=?, content_hash=?, lat=?, lon=?, "
@@ -150,6 +160,7 @@ def upsert_job(job: dict) -> tuple[int, bool]:
                 ),
             )
             return existing["id"], False
+        bump_catalogue(con)
         cursor = con.execute(
             "INSERT INTO jobs(source_id, url, title, company, location, hours, description, "
             "posted_at, first_seen, last_seen, content_hash, lat, lon, search_text) "

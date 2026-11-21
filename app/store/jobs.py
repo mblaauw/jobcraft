@@ -340,13 +340,10 @@ def jobs_missing_travel(home_key: str, limit: int | None = None) -> list:
 
 
 def catalogue_stamp() -> str:
-    """Changes whenever vacancies were added or a source finished a round; cheap to ask."""
+    """Changes whenever a vacancy arrives or changes where or what it is; cheap to ask."""
     with connect() as con:
-        row = con.execute(
-            "SELECT (SELECT COALESCE(MAX(id),0) FROM jobs) AS newest,"
-            " (SELECT COALESCE(MAX(last_scan_at),'') FROM sources) AS scanned"
-        ).fetchone()
-    return f"{row['newest']}:{row['scanned']}"
+        row = con.execute("SELECT value FROM meta WHERE key='catalogue_version'").fetchone()
+    return row["value"] if row else "0"
 
 
 def get_job(job_id: int) -> sqlite3.Row | None:

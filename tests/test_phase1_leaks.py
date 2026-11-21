@@ -32,8 +32,8 @@ def test_travel_refresh_only_recomputes_changed_jobs(client):  # noqa: F811
     with tenancy.scope({"id": owner}):
         assert ranking.refresh_travel() == 1
         assert ranking.refresh_travel() == 0
-        with store.connect() as con:
-            con.execute("UPDATE jobs SET location='far' WHERE id=?", (job_id,))
+        row = dict(store.get_job(job_id))
+        store.upsert_job({**row, "location": "far"})  # a scan finds it moved
         assert ranking.refresh_travel() == 1
 
 
