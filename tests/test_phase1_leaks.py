@@ -168,7 +168,7 @@ def test_jev_calls_stop_at_the_daily_ceiling(client, monkeypatch):  # noqa: F811
     with store.connect() as con:
         owner = con.execute("SELECT id FROM users WHERE username='test'").fetchone()["id"]
     monkeypatch.setattr(matching, "current_digest", lambda *args: "test")
-    monkeypatch.setattr(matching.ranking, "rerank_all", lambda *args: None)
+    monkeypatch.setattr(matching.ranking, "rerank_all", lambda *args, **kwargs: None)
     monkeypatch.setattr(matching.ranking, "escalation_candidates", lambda *args: [])
     decided = []
     monkeypatch.setattr(systemone, "decide", lambda *a, **k: decided.append(1) or (_ for _ in ()).throw(RuntimeError()))

@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import os
 import secrets
+import sqlite3
 from contextlib import closing
 from datetime import UTC, datetime, timedelta
 
@@ -60,10 +61,17 @@ def _touch_session(token_hash: str, last_seen: str) -> None:
     parsed = _parse_ts(last_seen)
     if parsed and (datetime.now(UTC) - parsed).total_seconds() < LAST_SEEN_REFRESH_SECONDS:
         return
-    with closing(store.connect()) as con, con:
-        con.execute(
-            "UPDATE auth_sessions SET last_seen_at=? WHERE token_hash=?", (now_iso(), token_hash)
-        )
+    # Best effort, and never a wait: this runs on the event loop for every request, and while
+    # the worker holds the write lock (a re-rank, a scan) a five-second wait here would stall
+    # every page of every user. A missed touch is made at the next request.
+    try:
+        with closing(store.connect()) as con, con:
+            con.execute("PRAGMA busy_timeout=50")
+            con.execute(
+                "UPDATE auth_sessions SET last_seen_at=? WHERE token_hash=?", (now_iso(), token_hash)
+            )
+    except sqlite3.OperationalError:
+        return
 
 
 

@@ -142,3 +142,16 @@ def update_job_match(job_id: int, score: float, reason: str, profile_hash: str) 
             con, job_id, match_score=score, match_reason=reason, profile_hash=profile_hash
         )
         _add_event(con, job_id, "verdict", f"{score:g}")  # the score only; the reason stays in job_states
+
+
+def restamp_verdicts(old_key, new_key) -> int:
+    """Give this account's verdicts stored under ``old_key(job)`` the key ``new_key(job)``."""
+    with connect() as con:
+        rows = con.execute(
+            "SELECT id, content_hash, profile_hash FROM (" + _job_select() + ") WHERE match_score IS NOT NULL",
+            (tenancy.user_id(),),
+        ).fetchall()
+        changed = [row for row in rows if row["profile_hash"] == old_key(row)]
+        for row in changed:
+            _set_job_state(con, row["id"], profile_hash=new_key(row))
+    return len(changed)

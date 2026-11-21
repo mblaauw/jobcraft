@@ -115,7 +115,7 @@ def test_matching_stores_the_question_snapshot_that_was_actually_sent(monkeypatc
 
     monkeypatch.setattr(systemone, "enabled", lambda: True)
     monkeypatch.setattr(systemone, "decide", decide)
-    monkeypatch.setattr(matching.ranking, "rerank_all", lambda *args: 0)
+    monkeypatch.setattr(matching.ranking, "rerank_all", lambda *args, **kwargs: 0)
     monkeypatch.setattr(matching.ranking, "escalation_candidates", lambda *args: [])
     monkeypatch.setattr(matching.ranking, "queue_depth", lambda *args: 0)
     matching.match_jobs(None)

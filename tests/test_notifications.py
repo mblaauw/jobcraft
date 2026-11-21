@@ -135,7 +135,7 @@ def test_no_configured_model_is_not_reported_as_a_failure(client, monkeypatch): 
     from app import matching, ranking
 
     monkeypatch.setattr(matching, "current_digest", lambda *a: "test")
-    monkeypatch.setattr(ranking, "rerank_all", lambda *a: 0)
+    monkeypatch.setattr(ranking, "rerank_all", lambda *a, **kw: 0)
     monkeypatch.setattr(ranking, "queue_depth", lambda *a: 0)
     monkeypatch.setattr(
         ranking, "escalation_candidates", lambda *a: pytest.fail("no model to ask")

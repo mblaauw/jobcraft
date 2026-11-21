@@ -34,7 +34,7 @@ def jev(client, monkeypatch):  # noqa: F811
     monkeypatch.setattr(systemone, "enabled", lambda: True)
     monkeypatch.setattr(systemone, "decide", fake)
     monkeypatch.setattr(matching, "current_digest", lambda *a: "test")
-    monkeypatch.setattr(ranking, "rerank_all", lambda *a: 0)
+    monkeypatch.setattr(ranking, "rerank_all", lambda *a, **kw: 0)
     monkeypatch.setattr(ranking, "escalation_candidates", lambda *a: [])
     monkeypatch.setenv("SYSTEMONE_DAILY_LIMIT", "1000")
     monkeypatch.setenv("SYSTEMONE_BATCH", "1000")

@@ -125,6 +125,9 @@ _UNIQUE_JOBS = """SELECT * FROM (
 ) WHERE dup_rank=1"""
 
 
+_UNVOTED = " WHERE COALESCE(vote,0)=0"
+
+
 def _unique_jobs(clauses: list[str]) -> str:
     where = "WHERE " + " AND ".join(clauses) if clauses else ""
     return _UNIQUE_JOBS.format(select=_job_select(), where=where)
@@ -227,14 +230,14 @@ def job_status_counts(
     reach: dict | None = None,
 ) -> dict[str, tuple[int, int]]:
     """Per status: (unique jobs, unique jobs known to be outside the travel range)."""
-    clauses, filters = _job_filters(
-        None, query_text, source, include_stale, only_unvoted, list_filters
-    )
+    clauses, filters = _job_filters(None, query_text, source, include_stale, False, list_filters)
     far_sql, far_params = _too_far(reach)
     sql = (
         f"SELECT status, COUNT(*) AS n, COALESCE(SUM({far_sql}),0) AS far FROM ("
         + _unique_jobs(clauses)
-        + ") GROUP BY status"
+        + ")"
+        + (_UNVOTED if only_unvoted else "")
+        + " GROUP BY status"
     )
     with connect() as con:
         rows = con.execute(sql, (*far_params, tenancy.user_id(), *filters)).fetchall()
@@ -254,14 +257,22 @@ def list_jobs_page(
     list_filters: dict | None = None,
 ) -> list:
     """One page of full rows; ordering touches no descriptions, so it stays cheap at scale."""
-    clauses, filters = _job_filters(
-        None, query_text, source, include_stale, only_unvoted, list_filters
-    )
+    # "Not judged yet" and "arrived since" are asked of the vacancy that stands for all its
+    # copies, after the copies are folded: the one you acted on stands for them, so the same
+    # vacancy on a second site does not come back as new after a thumbs down on the first.
+    list_filters = dict(list_filters or {})
+    seen_after = list_filters.pop("seen_after", None)
+    clauses, filters = _job_filters(None, query_text, source, include_stale, False, list_filters)
     outer: list[str] = []
     outer_params: list = []
     if status:
         outer.append("status=?")
         outer_params.append(status)
+    if only_unvoted:
+        outer.append("COALESCE(vote,0)=0")
+    if seen_after:
+        outer.append("first_seen > ?")
+        outer_params.append(seen_after)
     if within_travel:
         # True: the account's own reach; a dict: budgets this list was given.
         far_sql, far_params = _too_far(within_travel if isinstance(within_travel, dict) else None)

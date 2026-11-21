@@ -134,7 +134,9 @@ def today_round() -> dict:
     """Today's round, picked on the first visit of the day: the current vacancy and progress."""
     state = _state()
     today = now_local().date().isoformat()
-    if state.get("date") != today:
+    # Also when today's round was picked while there was nothing to pick from (a new account,
+    # a visit before the first scan landed): it would stay empty until tomorrow.
+    if state.get("date") != today or (not state.get("ids") and not state.get("done")):
         skipped = set(state.get("skipped") or [])
         state = {
             "date": today,

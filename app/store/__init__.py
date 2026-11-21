@@ -55,6 +55,7 @@ from .job_state import (  # noqa: F401
     get_job_travel,
     light_job_states,
     list_votes,
+    restamp_verdicts,
     set_job_travel,
     set_job_travels,
     set_job_vote,
