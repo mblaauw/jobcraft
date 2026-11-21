@@ -10,6 +10,7 @@ import yaml
 from .. import feedback
 from ..contracts import JobRow
 from . import signals as ranking
+from . import wishes
 from . import wishes as wish_rules
 
 
@@ -80,7 +81,8 @@ def rule_score(
     for item in preferences.get("dislikes", []):
         tag = (item.get("tag") or "").lower()
         if tag and has_term(tag, text):
-            score += min(0.0, float(item.get("weight", -1.0))) * 2.0
+            # A dislike lowers the score whatever sign its weight was saved with.
+            score -= abs(float(item.get("weight", -1.0))) * 2.0
             notes.append(f"dislike: {tag}")
 
     for keyword in preferences.get("keywords", {}).get("boost", []):
@@ -102,13 +104,13 @@ def rule_score(
         hours_max = float(hours.get("hours_max"))
     except (TypeError, ValueError):
         hours_min = hours_max = 0.0
-    match = re.search(r"\b(\d{1,2})\s*(?:uur|hours?)\b", text)
-    if match and hours_min and hours_max:
-        offered = float(match.group(1))
-        if hours_min <= offered <= hours_max:
+    offered = wishes.hours_range(text) if hours_min and hours_max else None
+    if offered:
+        # "32 tot 40 uur" fits someone who wants 24 to 32: any overlap counts.
+        if offered[0] <= hours_max and offered[1] >= hours_min:
             score += 4.0
             notes.append(f"{int(hours_min)}-{int(hours_max)} uur vermeld")
-        elif offered > hours_max:
+        elif offered[0] > hours_max:
             score -= 3.0
     filters = preferences.get("hard_filters", {})
     noul = (ranking.signals_of(job) or {}).get("noul") or {}

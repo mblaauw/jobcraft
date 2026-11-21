@@ -59,5 +59,10 @@ def facts(job: dict) -> list[str]:
         found.append(f"tot € {int(pay) // 10 * 10:,}".replace(",", ".") + " per maand")
     if wishes.remote_kind(text):
         found.append(wishes.remote_kind(text))
-    found.extend(_CONTRACT_LABELS[name] for name in sorted(wishes.contract_types(text)))
+    contracts = wishes.contract_types(text)
+    if {"vast", "tijdelijk"} <= contracts:
+        # "Jaarcontract met uitzicht op vast": two chips side by side would contradict each other.
+        found.append("Tijdelijk, uitzicht op vast")
+        contracts -= {"vast", "tijdelijk"}
+    found.extend(_CONTRACT_LABELS[name] for name in sorted(contracts))
     return found[:3]

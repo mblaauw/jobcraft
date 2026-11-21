@@ -71,7 +71,7 @@ def profile_page(request: Request):
             "kept_sections": [
                 item
                 for item in profile.split_sections(current)
-                if item["text"] and (item["heading"] in profile.HIDDEN_HEADINGS or item["heading"].startswith(profile.PRIVATE_HEADING))
+                if item["text"] and profile.is_hidden_heading(item["heading"])
             ],
         }
     if tab == "zoek":

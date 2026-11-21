@@ -20,7 +20,7 @@ from .preference_models import (  # noqa: F401
     _validate_preferences,
     public_preferences,
 )
-from .profile_sections import join_sections, split_sections
+from .profile_sections import is_hidden_heading, join_sections, public_excerpt, split_sections
 from .util import now_iso, now_local, parse_json_object
 
 PROFILE_FILE = config.PROFILE_DIR / "profile.md"
@@ -168,37 +168,13 @@ def append_answer(question: str, answer: str) -> None:
     store.append_answer(question, answer)
 
 
-def public_excerpt(markdown: str, max_chars: int = 6000, skip: tuple[str, ...] = ()) -> str:
-    """Sections safe for letters/CVs/matching: no private or open-questions blocks."""
-    parts: list[str] = []
-    total = 0
-    truncated = False
-    for section in split_sections(markdown):
-        heading = section["heading"]
-        if heading.startswith(PRIVATE_HEADING) or heading in HIDDEN_HEADINGS or heading in skip:
-            continue
-        body = section["text"]
-        if not body and not heading:
-            continue
-        chunk = f"## {heading}\n{body}".rstrip() if heading else body
-        if total + len(chunk) > max_chars:
-            truncated = True
-            break
-        parts.append(chunk)
-        total += len(chunk)
-    text = "\n\n".join(parts).strip()
-    if truncated:
-        text += "\n\n[profiel-excerpt afgekapt op veilige sectiegrens]"
-    return text
-
-
 def read_public_excerpt(max_chars: int = 6000) -> str:
     return public_excerpt(read_profile(), max_chars)
 
 
 def read_document_excerpt(max_chars: int = 12000) -> str:
     """For CVs and letters: what someone told us to help matching is not for employers."""
-    return public_excerpt(read_profile(), max_chars, skip=(ANSWERS_HEADING,))
+    return public_excerpt(read_profile(), max_chars, skip=(ANSWERS_HEADING,), fill=True)
 
 
 def answer_log_size() -> int:
@@ -295,7 +271,7 @@ def save_draft(profile_md: str, preferences: dict, meta: dict | None = None) -> 
         ]
     sections = split_sections(profile_md)
     for local in split_sections(read_profile()):
-        if local["heading"].startswith(PRIVATE_HEADING) or local["heading"] in HIDDEN_HEADINGS:
+        if is_hidden_heading(local["heading"]):
             matching_section = next(
                 (section for section in sections if section["heading"] == local["heading"]), None
             )

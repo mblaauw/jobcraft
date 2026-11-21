@@ -50,3 +50,22 @@ def test_public_excerpt_respects_character_budget():
     assert "b" * 100 not in text
     assert "afgekapt" in text
     assert len(text) < 900
+
+
+def test_private_sections_stay_out_however_the_heading_is_typed():
+    markdown = (
+        "# Profiel\n\n## Kern\nKern feit.\n\n### Privé\nGeheim onder een kopje.\n\n### Verder\nOpenbaar onder een kopje.\n\n"
+        "## Prive\nGeheim zonder accent.\n\n## privé:\nGeheim klein geschreven.\n\n## Open Vragen\nGeheim open.\n\n"
+        "## Zoekprofiel\nGroen en buiten.\n"
+    )
+    text = public_excerpt(markdown, 6000)
+    assert "Geheim" not in text
+    assert "Kern feit" in text and "Openbaar onder een kopje" in text and "Groen en buiten" in text
+
+
+def test_document_excerpt_keeps_small_sections_next_to_a_long_one():
+    markdown = "# Profiel\n\n## Werkervaring\n" + "Lang stuk tekst. " * 900 + "\n\n## Opleiding\nMbo 4.\n\n## Vaardigheden\nExcel.\n"
+    assert "Mbo 4" not in public_excerpt(markdown, 6000)  # the matching excerpt is unchanged
+    text = public_excerpt(markdown, 6000, fill=True)
+    assert "Lang stuk tekst." in text and "Mbo 4." in text and "Excel." in text
+    assert "afgekapt" in text and len(text) < 6200

@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 
 from .feedback import STOPWORDS
+from .scoring import wishes
 
 MAX_SENTENCES = 3
 # Phrase, kind. Kinds: role (the work), ask (what they want), offer, about, apply.
@@ -68,9 +69,11 @@ _INLINE_BULLET = re.compile(r"\s+[•·]\s+")
 
 _MONTHS = "januari|februari|maart|april|mei|juni|juli|augustus|september|oktober|november|december|january|february|march|may|june|july|august|october|december"
 _DATE = rf"(?:\d{{1,2}}[-/.]\d{{1,2}}[-/.]\d{{2,4}}|\d{{1,2}}\s+(?:{_MONTHS})(?:\s+\d{{4}})?)"
+_TO = r"(?:-|–|~|tot en met|tot maximaal|tot|to|t/m|en maximaal|en)"
 FACT_PATTERNS = (
-    ("Uren", re.compile(r"\b\d{1,2}(?:\s*(?:-|–|tot|to)\s*\d{1,2})?\s*(?:uur|hours)(?=\b)", re.I)),
-    ("Salaris", re.compile(r"€\s?[\d.,]+[-,]*(?:\s*(?:-|–|~|tot|to|t/m)\s*€?\s?[\d.,]+[-,]*)?|\b(?:salaris)?schaal\s+\d+(?:\s*(?:-|t/m)\s*\d+)?", re.I)),
+    ("Uren", wishes.HOURS),  # which of the matches is the job's own: wishes.working_hours
+    # "tussen € 3.100 en € 4.200" and "minimaal € 3.100 en maximaal € 4.200" are ranges too.
+    ("Salaris", re.compile(rf"€\s?[\d.,]+[-,]*(?:\s*(?:bruto\s+)?{_TO}\s*€?\s?[\d.,]+[-,]*)?|\b(?:salaris)?schaal\s+\d+(?:\s*(?:-|t/m)\s*\d+)?", re.I)),
     ("Niveau", re.compile(r"\b(?:WO|HBO|MBO|Master(?:'s)?|Bachelor|PhD|universitair|academisch)\b(?:[- ](?:werk- en )?denkniveau)?")),
     ("Contract", re.compile(r"\b(?:vaste aanstelling|vast contract|onbepaalde tijd|bepaalde tijd|tijdelijke? (?:aanstelling|contract)|uitzicht op vast|zicht op vast|detachering|interim|stage|freelance|fixed[- ]term|permanent)\b", re.I)),
     ("Reageer voor", re.compile(rf"(?:sluitingsdatum|(?:solliciteer|solliciteren) (?:voor|vóór|uiterlijk)|reageer (?:voor|vóór|uiterlijk)|reageren (?:kan )?(?:tot|voor)|deadline|closing date|apply before)\W{{0,4}}(?:op\s+)?({_DATE})", re.I)),
@@ -198,18 +201,42 @@ def summary(description: str, limit: int = 320) -> str:
     role = next((part for part in structure(description)["sections"] if part["kind"] == "role"), None)
     lines = [*role["paragraphs"], *role["items"]] if role else []
     text = " ".join(line if line.endswith((".", "!", "?", ":")) else line + "." for line in lines)
-    return " ".join((text or description or "").split())[:limit]
+    text = " ".join((text or description or "").split())
+    if len(text) <= limit:
+        return text
+    # Stop after a whole sentence when that keeps most of the room, else after a whole word.
+    cut = text[:limit]
+    sentence = max(cut.rfind(". "), cut.rfind("! "), cut.rfind("? "))
+    if sentence >= limit * 0.6:
+        return cut[: sentence + 1]
+    return cut[: cut.rfind(" ")].rstrip(",;:") + "…"
+
+
+def _salary_text(value: str) -> str:
+    """One way to write a range, whatever words the vacancy put between the two amounts."""
+    parts = re.split(rf"\s*(?:bruto\s+)?(?<![\d.,]){_TO}\s*(?=€|\d)", re.sub(r",-+", "", value), maxsplit=1, flags=re.I)
+    if len(parts) != 2 or "€" not in parts[0]:
+        return value.rstrip(",-.")
+    low, high = (part.strip().rstrip(",-.") for part in parts)
+    return f"{low} – {high if high.startswith('€') else '€ ' + high}"
 
 
 def facts_of(text: str) -> list[tuple[str, str]]:
     facts = []
     for label, pattern in FACT_PATTERNS:
         matches = list(pattern.finditer(text))
-        # A salary in euros says more than the scale it may mention first.
-        match = next((item for item in matches if "€" in item.group(0)), matches[0] if matches else None)
+        if label == "Uren":
+            match = wishes.working_hours(text)
+        else:
+            # A salary in euros says more than the scale it may mention first.
+            match = next((item for item in matches if "€" in item.group(0)), matches[0] if matches else None)
         if match:
-            value = match.group(1) if pattern.groups else match.group(0)
-            facts.append((label, " ".join(value.split()).rstrip(",-")))
+            value = " ".join((match.group(1) if label == "Reageer voor" else match.group(0)).split())
+            if label == "Salaris":
+                # A bare "en" joins two amounts only after "tussen": "€ 500 en € 20 korting" is no range.
+                between = "tussen" in text[max(0, match.start() - 24) : match.start()].lower()
+                value = _salary_text(value if between else re.split(r"\s+en\s+(?=€|\d)", value)[0])
+            facts.append((label, value.rstrip(",-.")))
     return facts
 
 

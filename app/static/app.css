@@ -1202,7 +1202,9 @@ details.stage > summary:hover h2 { color: var(--moss); }
 .swipe-card h2 { margin: 0 0 4px; font-size: var(--fs-xl); letter-spacing: -0.02em; }
 .swipe-card h2 a { color: var(--ink); text-decoration: none; }
 .swipe-card h2 a:hover { color: var(--moss); text-decoration: underline; }
-.swipe-card .vacancy-company { margin-bottom: 12px; }
+.swipe-card .vacancy-company { margin-bottom: 6px; }
+.swipe-card .meta { margin-bottom: 10px; }
+.swipe-card .chips { margin: 0 0 12px; }
 .swipe-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 .swipe-actions .button { min-height: 48px; flex: 1 1 130px; justify-content: center; }
 .swipe-actions .link-button { flex-basis: 100%; min-height: var(--ctl); border: 0; background: none; color: var(--ink-2); text-decoration: none; }

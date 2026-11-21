@@ -18,11 +18,8 @@ NOTES = re.compile(
     r"\b(bron|toegevoegd|te bevestigen|waarschuwing|status|voorstel|aantekening)",
     re.IGNORECASE,
 )
-HIDDEN = (*profile.HIDDEN_HEADINGS, profile.PRIVATE_HEADING)
-
-
 def _public(sections: list[dict]) -> list[dict]:
-    return [item for item in sections if not item["heading"].startswith(HIDDEN)]
+    return [item for item in sections if not profile.is_hidden_heading(item["heading"])]
 
 
 MANUAL_NOTE = "handmatige bewerking"

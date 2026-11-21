@@ -51,7 +51,10 @@ def test_a_question_in_a_sentence_is_not_mistaken_for_a_heading():
 def test_the_quick_summary_says_what_the_work_is_not_how_the_page_opens():
     assert vacancy_text.summary(LISTED) == "Je bent verantwoordelijk voor de post. Je werkt samen met een klein team."
     assert vacancy_text.summary("Kort en zonder kopjes: wij zoeken een collega.") == "Kort en zonder kopjes: wij zoeken een collega."
-    assert len(vacancy_text.summary("woord " * 200)) == 320
+    cut = vacancy_text.summary("woord " * 200)  # never in the middle of a word
+    assert len(cut) <= 320 and cut.endswith("woord…")
+    long = "Je regelt de post en de ontvangst. " * 12
+    assert vacancy_text.summary(long).endswith("ontvangst.") and len(vacancy_text.summary(long)) <= 320
 
 
 def test_a_line_that_introduces_a_list_keeps_its_colon():

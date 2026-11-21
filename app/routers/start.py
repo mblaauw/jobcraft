@@ -28,6 +28,7 @@ from .. import (
     vacancy_text,
 )
 from ..auth import require_user
+from ..scoring import reasons
 from ..util import now_iso
 from ..web import templates
 from .profile import _assess_soon
@@ -37,15 +38,8 @@ log = logging.getLogger("jobcraft")
 router = APIRouter(dependencies=[Depends(require_user)])
 
 
-
 def _page(request: Request, name: str, step: int | None, **context) -> HTMLResponse:
     return templates.TemplateResponse(request, name, {"step": step, **context})
-
-
-
-
-
-
 
 
 # ------------------------------------------------------------------ step 1: CV
@@ -182,12 +176,6 @@ def start_own_vacancy():
 # ------------------------------------------------------------- step 2: choices
 
 
-
-
-
-
-
-
 @router.get("/start/keuzes", response_class=HTMLResponse)
 def start_choices(request: Request):
     preferences = profile.read_preferences()
@@ -270,8 +258,6 @@ async def start_choices_save(request: Request):
 # ---------------------------------------------------------------- step 3: swipe
 
 
-
-
 @router.get("/start/vacatures", response_class=HTMLResponse)
 def start_swipe(request: Request):
     queue = onboarding.swipe_queue()
@@ -285,6 +271,8 @@ def start_swipe(request: Request):
         3,
         job=job,
         excerpt=vacancy_text.summary(job["description"] or ""),
+        travel=ranking.travel_of(job),
+        facts=reasons.facts(dict(job)),
         position=answered + 1,
         total=answered + len(queue),
         short=answered + len(queue) < onboarding.SWIPE_COUNT,
@@ -323,12 +311,6 @@ def start_swipe_answer(job_id: int, answer: str = Form(...)):
 
 
 # ------------------------------------------------------------ step 4: questions
-
-
-
-
-
-
 
 
 @router.get("/start/vragen", response_class=HTMLResponse)
