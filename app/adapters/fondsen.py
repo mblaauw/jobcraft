@@ -7,7 +7,7 @@ import time
 from bs4 import BeautifulSoup
 
 from .. import store
-from .common import _skip_recent_detail, _tally, detail_get, make_job, page_text
+from .common import _skip_recent_detail, _tally, make_job, page_text, safe_detail_get
 
 
 def _scan_fondsen(client, source, entry, summary, limit_per_source=None) -> None:
@@ -27,8 +27,8 @@ def _scan_fondsen(client, source, entry, summary, limit_per_source=None) -> None
     for link in links[:limit]:
         if _skip_recent_detail(link, entry, summary):
             continue
-        page = detail_get(client, link)
-        if page.status_code >= 400:
+        page = safe_detail_get(client, link, entry)  # one unreachable page skips that vacancy only
+        if page is None or page.status_code >= 400:
             continue
         page_soup = BeautifulSoup(page.text, "html.parser")
         heading = page_soup.find("h1")

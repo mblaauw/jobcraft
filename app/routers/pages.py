@@ -29,6 +29,7 @@ from .. import (
 )
 from ..auth.users import _list_users
 from ..web import templates
+from ..web_helpers import refresh_travel_for_page
 
 log = logging.getLogger("jobcraft")
 
@@ -44,7 +45,7 @@ def dashboard(request: Request):
         return RedirectResponse(url="/admin", status_code=303)
     if tenancy.user_id() != tenancy.LEGACY_ID and not profile.profile_exists():
         return RedirectResponse(url="/start", status_code=303)
-    ranking.refresh_travel()  # the picks below hide what is too far, so their times must be current
+    refresh_travel_for_page()  # the picks below hide what is too far, so their times must be current
     columns = applications.board()
     task_list = today.tasks(columns)
     start = today.start_state()

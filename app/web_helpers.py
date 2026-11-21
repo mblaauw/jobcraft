@@ -15,6 +15,8 @@ from . import (
     profile,
     profile_check,
     store,
+    tasks,
+    tenancy,
 )
 
 log = logging.getLogger("jobcraft")
@@ -104,3 +106,12 @@ def _with_done(url: str, job_id: int, done: str) -> str:
         return url
     query = [(key, value) for key, value in parse_qsl(parts.query) if key != "gedaan"] + [("gedaan", done)]
     return parts._replace(query=urlencode(query), fragment="acties").geturl()
+
+
+def refresh_travel_for_page() -> None:
+    """Travel times for a list: the best-ranked vacancies now, the rest of a large backlog
+    (a new account, a move) by the worker, so no page waits on the whole catalogue."""
+    from .scoring import signals
+
+    if signals.refresh_travel(signals.PAGE_TRAVEL_BATCH) >= signals.PAGE_TRAVEL_BATCH:
+        tasks.enqueue("rerank", owner=tenancy.user_id(), dedupe_key=f"rerank:{tenancy.user_id()}")

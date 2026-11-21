@@ -150,14 +150,32 @@ def test_getro_board_reads_new_jobs_and_keeps_live_ones_from_expiring(client, mo
     assert "circulaire stad" in rows[0]["description"]
     # It drops off the list, but its own page says it is still open: it is read again, not expired.
     pages[f"{base}/jobs"] = page({"jobs": {"total": 0, "found": []}})
-    with store.connect() as con:
-        con.execute("UPDATE meta SET value='2000-01-01T00:00:00+00:00' WHERE key LIKE 'detail_fetched:%'")
-        con.execute("UPDATE jobs SET last_seen='2000-01-01T00:00:00+00:00'")
+    from datetime import UTC, datetime, timedelta
+
+    days_ago = (datetime.now(UTC) - timedelta(days=5)).isoformat()
+
+    def age_everything():
+        with store.connect() as con:
+            con.execute("UPDATE meta SET value=? WHERE key LIKE 'detail_fetched:%'", (days_ago,))
+            con.execute("UPDATE jobs SET last_seen=?", (days_ago,))
+
+    age_everything()
     asked.clear()
     getro._scan_getro(Site(), source, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
     assert f"{base}/companies/oscar/jobs/1-a" in asked
     with store.connect() as con:
-        assert con.execute("SELECT last_seen FROM jobs").fetchone()[0] > "2026"
+        assert con.execute("SELECT last_seen FROM jobs").fetchone()[0] > days_ago
+    # Then it closes. Its page is read once more and the vacancy is left to expire: later
+    # rounds neither read it again within three days nor mark it as seen.
+    pages[f"{base}/companies/oscar/jobs/1-a"] = page(job("1-a", status="closed"))
+    age_everything()
+    getro._scan_getro(Site(), source, {"items": 0, "new": 0, "updated": 0}, {"new": 0, "updated": 0})
+    asked.clear()
+    entry = {"items": 0, "new": 0, "updated": 0}
+    getro._scan_getro(Site(), source, entry, {"new": 0, "updated": 0})
+    assert asked == [f"{base}/jobs"] and entry["items"] == 0
+    with store.connect() as con:
+        assert con.execute("SELECT last_seen FROM jobs").fetchone()[0] == days_ago
     # A list that says it has jobs but names none means the page changed: report it.
     pages[f"{base}/jobs"] = page({"jobs": {"total": 5, "found": []}})
     with pytest.raises(RuntimeError):

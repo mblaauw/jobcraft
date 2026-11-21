@@ -311,16 +311,29 @@ def count_catalogue(include: list[str], exclude: list[str], exclude_titles: list
         return con.execute(sql, (tenancy.user_id(), *filters)).fetchone()["n"]
 
 
-def jobs_missing_travel(home_key: str) -> list:
-    """Jobs whose stored travel estimate belongs to another home or vacancy version."""
+def jobs_missing_travel(home_key: str, limit: int | None = None) -> list:
+    """Jobs whose stored travel estimate belongs to another home or vacancy version.
+
+    With a limit, the best-ranked first: those are the ones a list shows."""
     with connect() as con:
         return con.execute(
             "SELECT j.id,j.location,j.lat,j.lon,j.description,j.title,j.content_hash FROM jobs j "
             "LEFT JOIN job_states s ON s.job_id=j.id AND s.owner=? "
             "WHERE s.travel_key IS NULL OR s.travel_key <> "
-            f"{TRAVEL_KEY_SQL}",
-            (tenancy.user_id(), home_key),
+            f"{TRAVEL_KEY_SQL}"
+            + (" ORDER BY COALESCE(s.rank_score,-1) DESC, j.id DESC LIMIT ?" if limit else ""),
+            (tenancy.user_id(), home_key, *([limit] if limit else [])),
         ).fetchall()
+
+
+def catalogue_stamp() -> str:
+    """Changes whenever vacancies were added or a source finished a round; cheap to ask."""
+    with connect() as con:
+        row = con.execute(
+            "SELECT (SELECT COALESCE(MAX(id),0) FROM jobs) AS newest,"
+            " (SELECT COALESCE(MAX(last_scan_at),'') FROM sources) AS scanned"
+        ).fetchone()
+    return f"{row['newest']}:{row['scanned']}"
 
 
 def get_job(job_id: int) -> sqlite3.Row | None:

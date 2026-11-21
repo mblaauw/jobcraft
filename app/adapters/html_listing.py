@@ -36,6 +36,8 @@ def _scan_html_listing(client, source, entry, summary, limit_per_source=None) ->
         for href in re.findall(r'href="([^"]+)"', response.text):
             if not re.search(link_pattern, href):
                 continue
+            if href.startswith("//"):  # the same scheme as the listing, on a host of its own
+                href = base.split("//")[0] + href
             absolute = (
                 href
                 if href.startswith("http")

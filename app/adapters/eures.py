@@ -17,7 +17,10 @@ from __future__ import annotations
 
 import time
 
+import httpx
+
 from .. import store
+from ..source_http import STOPPING
 from .common import _tally, make_job, safe_detail_get, strip_html
 
 API = "https://europa.eu/eures/api/jv-searchengine/public"
@@ -89,8 +92,15 @@ def _scan_eures(client, source, entry, summary, limit_per_source=None) -> None:
     per_page = min(max(1, int(source.get("per_page", 50))), MAX_RESULTS)
     last_page = min(int(source.get("pages", 20)), MAX_RESULTS // per_page)  # pages 0 pauses the search
     for page in range(1, last_page + 1):
-        response = client.post_json(f"{API}/jv-search/search", search_body(source, page))
-        response.raise_for_status()
+        try:
+            response = client.post_json(f"{API}/jv-search/search", search_body(source, page))
+            response.raise_for_status()
+        except httpx.HTTPError:
+            if page == 1 or STOPPING.is_set():
+                raise
+            # Half an hour of paging is not thrown away over one late page: read what was found.
+            entry["reason"] = f"Zoeken stopte op pagina {page} van {last_page}"
+            break
         items = response.json().get("jvs") or []
         if not items:
             break

@@ -40,7 +40,7 @@ from ..scoring import reasons
 from ..scoring.route import LABELS as ROUTE_LABELS
 from ..util import LOCAL_TZ
 from ..web import templates
-from ..web_helpers import _jobs_return_target, _with_done
+from ..web_helpers import _jobs_return_target, _with_done, refresh_travel_for_page
 from ..workflows import _doc_status, _document_lock
 from . import job_list
 
@@ -94,7 +94,7 @@ def jobs_page(
         summary["route_line"] = ", ".join(
             f"{count} {ROUTE_LABELS[key]}" for key, count in summary["routes"].items() if count and key in ROUTE_LABELS
         )
-    ranking.refresh_travel()
+    refresh_travel_for_page()
     source_rows = store.list_sources()
     source_names = {row["id"]: row["name"] for row in source_rows}
     within_active = within != "0"  # reisbereik-filter staat standaard aan

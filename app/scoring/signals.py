@@ -70,18 +70,32 @@ def travel_of(job: JobRow, settings: dict | None = None) -> dict:
     return geo.judge(found, settings)
 
 
-def refresh_travel() -> int:
-    """Bring every stored travel estimate up to date, so lists can filter on them in SQL."""
+TRAVEL_CURRENT = "travel_current"
+PAGE_TRAVEL_BATCH = 400
+
+
+def refresh_travel(limit: int | None = None) -> int:
+    """Bring stored travel estimates up to date, so lists can filter on them in SQL.
+
+    Everything for the worker; a page passes a limit, because a whole catalogue takes tens of
+    seconds after a move or a new account. Once all are current nothing is looked up again
+    until vacancies arrive: that lookup alone read every row, on every list and Vandaag."""
     settings = geo.home()
     home_key = _home_key(settings)
+    marker = f"{home_key}|{store.catalogue_stamp()}"
+    if store.meta_get(TRAVEL_CURRENT) == marker:
+        return 0
+    missing = store.jobs_missing_travel(home_key, limit)
     entries = {
         job["id"]: (
             store.travel_key(home_key, job),
             json.dumps(_times(job, settings), ensure_ascii=False),
         )
-        for job in store.jobs_missing_travel(home_key)
+        for job in missing
     }
     store.set_job_travels(entries)
+    if not limit or len(missing) < limit:
+        store.meta_set(TRAVEL_CURRENT, marker)
     return len(entries)
 
 

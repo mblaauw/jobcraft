@@ -19,6 +19,7 @@ import httpx
 import yaml
 
 from .. import geo, store
+from ..source_http import STOPPING
 from .common import (
     SHORT_SUMMARY,
     _skip_recent_detail,
@@ -258,7 +259,11 @@ def _scan_ats(client, source, entry, summary, limit_per_source=None) -> None:
             if exc.response.status_code != 404:  # A removed board simply has no jobs.
                 problems.append(employer["slug"])
             continue
-        except (httpx.HTTPError, ValueError):
+        except Exception:
+            # Also a maintenance page where XML or JSON was expected (ParseError, TypeError):
+            # one odd board must not end the round for every employer after it.
+            if STOPPING.is_set():
+                raise
             problems.append(employer["slug"])
             continue
         budget = [int(employer.get("detail_cap") or DETAIL_CAP)]
@@ -289,12 +294,18 @@ def _scan_ats(client, source, entry, summary, limit_per_source=None) -> None:
                 )
                 _, created = store.upsert_job(job)
                 _tally(entry, summary, created)
-        except httpx.HTTPError:
+        except Exception:
+            if STOPPING.is_set():
+                raise
             problems.append(employer["slug"])  # its job pages kept failing; other boards go on
         time.sleep(0.5)
     if problems:
-        # A failed board must not make its vacancies look expired.
-        raise RuntimeError("Niet bereikbaar: " + ", ".join(problems)[:200])
+        entry["reason"] = ("Niet bereikbaar: " + ", ".join(problems))[:200]
+        # Most boards down is a failed round. A few are not: their vacancies were not seen, so
+        # they keep their last date and only expire if the board stays away for weeks, while
+        # the other boards' closed vacancies no longer wait for a perfect round to expire.
+        if len(problems) > len(employers) // 5:
+            raise RuntimeError(entry["reason"])
     store.update_source_status(source["id"], "ok")
 
 

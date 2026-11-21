@@ -21,6 +21,9 @@ HEARTBEAT_INTERVAL = 30.0
 log = logging.getLogger("jobcraft.tasks")
 
 
+AGAIN = "_again"  # in a running task's payload: run this once more when it ends
+
+
 class Interrupted(RuntimeError):
     """Raised by a handler that was cut off by a restart: the work did not fail, it did not finish."""
 
@@ -32,17 +35,42 @@ def enqueue(
     payload: dict[str, Any] | None = None,
     dedupe_key: str | None = None,
 ) -> int:
+    """Queue work. A key keeps one task per subject: asking again while it waits changes nothing.
+
+    Asking again while it already runs is different for a ranking or assessment pass: that
+    pass read its list before the vote, profile change or scan that prompted this call, so
+    it is marked to run once more when it ends (FOLLOW_UP_KINDS)."""
     with store.connect() as con:
         row = con.execute(
             "INSERT INTO tasks(owner, kind, payload_json, dedupe_key, created_at) "
             "VALUES (?,?,?,?,?) "
             "ON CONFLICT(dedupe_key) WHERE status IN ('queued','running') "
-            "DO UPDATE SET dedupe_key=excluded.dedupe_key RETURNING id, owner",
+            "DO UPDATE SET payload_json=CASE WHEN tasks.status='running' AND tasks.kind IN ('rerank','match') "
+            f"THEN json_set(tasks.payload_json,'$.{AGAIN}',1) ELSE tasks.payload_json END "
+            "RETURNING id, owner",
             (owner, kind, json.dumps(payload or {}, ensure_ascii=False), dedupe_key, store.now()),
         ).fetchone()
         if row["owner"] != owner:
             raise ValueError("dedupe key belongs to another owner")
         return int(row["id"])
+
+
+def _follow_up(con: sqlite3.Connection, task_id: int) -> None:
+    """Queue the pass that was asked for while this one ran. Called once the row has ended."""
+    row = con.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
+    if row is None or row["status"] not in ("done", "error") or not row["dedupe_key"]:
+        return
+    try:
+        payload = json.loads(row["payload_json"] or "{}")
+    except ValueError:
+        return
+    if not isinstance(payload, dict) or not payload.pop(AGAIN, None):
+        return
+    con.execute(
+        "INSERT INTO tasks(owner, kind, payload_json, dedupe_key, created_at) VALUES (?,?,?,?,?) "
+        "ON CONFLICT(dedupe_key) WHERE status IN ('queued','running') DO NOTHING",
+        (row["owner"], row["kind"], json.dumps(payload, ensure_ascii=False), row["dedupe_key"], store.now()),
+    )
 
 
 def claim_next() -> dict | None:
@@ -77,6 +105,7 @@ def finish(task_id: int, result: dict | None = None) -> None:
             "WHERE id=? AND status='running'",
             (json.dumps(result or {}, ensure_ascii=False), store.now(), task_id),
         )
+        _follow_up(con, task_id)
 
 
 def fail(task_id: int, error: str) -> None:
@@ -86,6 +115,7 @@ def fail(task_id: int, error: str) -> None:
             "WHERE id=? AND status='running'",
             (error[:1000], store.now(), task_id),
         )
+        _follow_up(con, task_id)
 
 
 def cancel(task_id: int, *, owner: str | None) -> bool:

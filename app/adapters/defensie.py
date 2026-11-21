@@ -7,6 +7,8 @@ import re
 import time
 from xml.etree import ElementTree
 
+import httpx
+
 from .. import store
 from .common import _skip_recent_detail, _tally, make_job, strip_html
 
@@ -15,23 +17,28 @@ DEFENSIE_HOST = "https://werkenbijdefensie.nl"
 
 def _defensie_component_payloads(client, href: str) -> list[dict]:
     """Fetch the CMS components of one vacancy page (public JSON API)."""
-    route = client.get(f"{DEFENSIE_HOST}/api/v1/routing/route", params={"href": href})
-    if route.status_code >= 400:
+    # One vacancy whose details cannot be read keeps its feed text; the feed's other
+    # vacancies are still read. Only a stopping server ends the round here.
+    try:
+        route = client.get(f"{DEFENSIE_HOST}/api/v1/routing/route", params={"href": href})
+        if route.status_code >= 400:
+            return []
+        components = ((route.json() or {}).get("data") or {}).get("components") or []
+    except (httpx.HTTPError, ValueError, AttributeError):
         return []
-    components = ((route.json() or {}).get("data") or {}).get("components") or []
     payloads: list[dict] = []
     for component in components[:8]:
-        raw = component.get("id")
+        raw = component.get("id") if isinstance(component, dict) else None
         if not raw:
             continue
-        response = client.get(
-            f"{DEFENSIE_HOST}/api/v1/component/component", params={"component_id": raw}
-        )
-        if response.status_code >= 400:
-            continue
         try:
+            response = client.get(
+                f"{DEFENSIE_HOST}/api/v1/component/component", params={"component_id": raw}
+            )
+            if response.status_code >= 400:
+                continue
             payloads.append(response.json())
-        except ValueError:
+        except (httpx.HTTPError, ValueError):
             continue
         time.sleep(0.3)
     return payloads

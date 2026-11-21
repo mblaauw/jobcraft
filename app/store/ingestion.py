@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 from datetime import UTC, datetime
 
-from .connection import connect, now
+from .connection import connect, now, stale_cutoff
 from .jobs import normalize_posted_at
 from .schema import _search_text
 
@@ -19,35 +19,57 @@ def record_detail_fetch(url: str) -> None:
         )
 
 
-def fetched_within(url: str, max_age_seconds: int) -> bool:
-    """Whether this page was read within the given time, whatever came of it."""
+def _detail_fetched_at(url: str) -> str:
     key = "detail_fetched:" + hashlib.sha256(url.encode()).hexdigest()
     with connect() as con:
         stamp = con.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
+    return stamp[0] if stamp else ""
+
+
+def fetched_within(url: str, max_age_seconds: int) -> bool:
+    """Whether this page was read within the given time, whatever came of it."""
+    stamp = _detail_fetched_at(url)
     try:
-        age = (datetime.now(UTC) - datetime.fromisoformat(stamp[0])).total_seconds() if stamp else -1
+        age = (datetime.now(UTC) - datetime.fromisoformat(stamp)).total_seconds() if stamp else -1
     except (ValueError, TypeError):
         return False
     return 0 <= age < max_age_seconds
 
 
 def touch_recent_detail(url: str, max_age_seconds: int = 3 * 86400) -> bool:
-    """Touch known rich jobs without extending their last real detail-fetch time."""
+    """Touch known rich jobs without extending their last real detail-fetch time.
+
+    Only a vacancy that its last read kept: a page that was read and then left out (closed,
+    moved abroad) has not been stored since, and marking it as seen would keep it alive forever.
+    """
     if not fetched_within(url, max_age_seconds):
         return False
     with connect() as con:
         cursor = con.execute(
-            "UPDATE jobs SET last_seen=? WHERE url=? AND description IS NOT NULL AND TRIM(description)<>''",
-            (now(), url),
+            "UPDATE jobs SET last_seen=? WHERE url=? AND description IS NOT NULL AND TRIM(description)<>''"
+            " AND last_seen >= ?",
+            (now(), url, _detail_fetched_at(url)),
         )
         return bool(cursor.rowcount)
 
 
+def read_and_left_out(url: str, max_age_seconds: int = 3 * 86400) -> bool:
+    """A stored vacancy whose page was read lately and not kept: no need to read it again yet."""
+    if not fetched_within(url, max_age_seconds):
+        return False
+    with connect() as con:
+        row = con.execute("SELECT last_seen FROM jobs WHERE url=?", (url,)).fetchone()
+    return bool(row) and (row["last_seen"] or "") < _detail_fetched_at(url)
+
+
 def source_urls_seen_longest_ago(source_id: str, limit: int) -> list[str]:
-    """A source's vacancies that have gone longest without being seen, oldest first."""
+    """A source's vacancies that have gone longest without being seen, oldest first.
+
+    Not the ones already past their expiry: they are hidden, and would fill every round."""
     with connect() as con:
         rows = con.execute(
-            "SELECT url FROM jobs WHERE source_id=? ORDER BY last_seen ASC LIMIT ?", (source_id, limit)
+            "SELECT url FROM jobs WHERE source_id=? AND last_seen >= ? ORDER BY last_seen ASC LIMIT ?",
+            (source_id, stale_cutoff(), limit),
         ).fetchall()
     return [row["url"] for row in rows]
 
@@ -62,6 +84,20 @@ def known_job_urls(urls: list[str]) -> set[str]:
             f"SELECT url FROM jobs WHERE url IN ({','.join('?' for _ in urls)})", urls
         ).fetchall()
     return {row["url"] for row in rows}
+
+
+STUB_LENGTH = 400
+
+
+def _only_a_stub(key: str, value, existing) -> bool:
+    """A feed header or cut-off summary, offered where the full text of the page is stored.
+
+    Adapters fall back to the short feed text when a page cannot be read this round; that must
+    not replace the text matching and documents were built on."""
+    if key != "description" or not isinstance(value, str):
+        return False
+    stored = existing["description"] or ""
+    return len(value) < STUB_LENGTH and len(stored) >= 2 * len(value) and len(stored) >= STUB_LENGTH
 
 
 def upsert_job(job: dict) -> tuple[int, bool]:
@@ -84,7 +120,7 @@ def upsert_job(job: dict) -> tuple[int, bool]:
                 "lon",
             ):
                 value = job.get(key)
-                if value is None or (isinstance(value, str) and not value.strip()):
+                if value is None or (isinstance(value, str) and not value.strip()) or _only_a_stub(key, value, existing):
                     if key in ("title", "description") and existing[key]:
                         merged_content = True
                     job[key] = existing[key]
