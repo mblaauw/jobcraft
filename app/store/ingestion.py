@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import sqlite3
 from datetime import UTC, datetime
 
 from .connection import connect, now, stale_cutoff
@@ -100,7 +101,7 @@ def _only_a_stub(key: str, value, existing) -> bool:
     return len(value) < STUB_LENGTH and len(stored) >= 2 * len(value) and len(stored) >= STUB_LENGTH
 
 
-def bump_catalogue(con) -> None:
+def bump_catalogue(con: sqlite3.Connection) -> None:
     """Tell stored travel times that a vacancy is new, or changed where or what it is."""
     con.execute(
         "INSERT INTO meta(key,value) VALUES ('catalogue_version','1') "

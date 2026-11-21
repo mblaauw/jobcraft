@@ -199,9 +199,17 @@ def _run_document(job_id: int, kind: str) -> None:
     except Exception as exc:
         log.exception("document generation failed")
         message = "Er ging iets mis bij het schrijven. Probeer het opnieuw."
+        retry = {}
         if isinstance(exc, LLMAuthError | LLMRateLimited):
             message = "De AI-dienst is nu niet bereikbaar. Probeer het later opnieuw."
-        store.meta_set(key, json.dumps({"state": "error", "kind": kind, "error": message}))
+        elif isinstance(exc, document_pipeline.Partly):
+            names = {"resume": "cv", "motivatie": "brief"}
+            message = (
+                f"Je {names[exc.done[0]]} is gemaakt en staat klaar, je {names[exc.failed[0]]} is niet gelukt. "
+                f"Probeer het opnieuw: dan schrijven we alleen nog je {names[exc.failed[0]]}."
+            )
+            retry = {"retry": exc.failed[0]}  # what is there is not written, and paid for, twice
+        store.meta_set(key, json.dumps({"state": "error", "kind": kind, "error": message, **retry}))
 
 
 def _run_bootstrap() -> None:

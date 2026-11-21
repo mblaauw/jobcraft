@@ -123,7 +123,10 @@ def gather(job: dict) -> list[dict]:
             for address in _site_of(job, company):
                 html = _fetch(client, address, robots)
                 text = page_text(html) if html else ""
-                if len(text) < 200 or not _mentions(text, company.split()[-1]):
+                # The last word that is really the name: "Heijn" of "Albert Heijn B.V.". Taking
+                # "B.V." itself matched nothing, so such employers were never looked up.
+                name = _name_words(company)[-1:]
+                if len(text) < 200 or not name or name[0] not in text.lower():
                     continue  # A parked domain or someone else with a similar name.
                 pages.append({"url": address, "title": "Website", "text": text[:PAGE_CHARS]})
                 for link in _about_links(html, address)[:4]:

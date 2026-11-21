@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import sqlite3
+from collections.abc import Callable
+
 from .. import tenancy
 from .connection import connect, now
 from .job_events import _add as _add_event
@@ -144,7 +147,7 @@ def update_job_match(job_id: int, score: float, reason: str, profile_hash: str) 
         _add_event(con, job_id, "verdict", f"{score:g}")  # the score only; the reason stays in job_states
 
 
-def restamp_verdicts(old_key, new_key) -> int:
+def restamp_verdicts(old_key: Callable[[sqlite3.Row], str], new_key: Callable[[sqlite3.Row], str]) -> int:
     """Give this account's verdicts stored under ``old_key(job)`` the key ``new_key(job)``."""
     with connect() as con:
         rows = con.execute(

@@ -7,6 +7,7 @@ import json
 import logging
 import re
 import subprocess
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -201,10 +202,13 @@ def _pages(pdf: Path | None) -> int:
 
 
 def _convert(docx_path: Path) -> tuple[Path | None, str | None]:
-    try:
-        return docs.convert_pdf(docx_path), None
-    except (subprocess.SubprocessError, OSError) as exc:
-        return None, type(exc).__name__
+    error = None
+    for _attempt in range(2):  # the converter sometimes fails once when two documents start it together
+        try:
+            return docs.convert_pdf(docx_path), None
+        except (subprocess.SubprocessError, OSError) as exc:
+            error = type(exc).__name__
+    return None, error
 
 
 def _render_own(job: dict, content: dict, docx_path: Path) -> None:
@@ -262,6 +266,22 @@ def save_version(
     language = (plan.get("research") or {}).get("language", "nl")
     directory = docs._job_dir(job)
     docs._job_json(job, directory)
+    with _save_lock(job["id"], kind):
+        return _save_numbered(job, kind, content, design, colour, review, extra, plan, language, directory)
+
+
+_SAVE_LOCKS: dict[tuple, threading.Lock] = {}
+_SAVE_GUARD = threading.Lock()
+
+
+def _save_lock(job_id: int, kind: str) -> threading.Lock:
+    """One version number at a time per document: a restyle during a rewrite, or a double
+    click, took the same number and the second file replaced the first."""
+    with _SAVE_GUARD:
+        return _SAVE_LOCKS.setdefault((tenancy.user_id(), job_id, kind), threading.Lock())
+
+
+def _save_numbered(job, kind, content, design, colour, review, extra, plan, language, directory) -> dict:
     version = docs._next_document_version(directory, kind, store.list_documents(job["id"]))
     stem = f"{kind}-v{version}"
     docx_path = directory / f"{stem}.docx"
@@ -311,8 +331,28 @@ def create_all(mgr, job: dict, kinds: tuple[str, ...], emit=lambda stage: None) 
     if len(kinds) == 1:
         return create(mgr, job, kinds[0], emit)["version"]
     with ThreadPoolExecutor(max_workers=len(kinds)) as pool:
-        futures = [pool.submit(tenancy.capture(create), mgr, job, kind, emit) for kind in kinds]
-        return [future.result() for future in futures][-1]["version"]
+        futures = {kind: pool.submit(tenancy.capture(create), mgr, job, kind, emit) for kind in kinds}
+    version, done, failed, cause = None, [], [], None
+    for kind, future in futures.items():
+        try:
+            version = future.result()["version"]
+            done.append(kind)
+        except Exception as exc:
+            failed.append(kind)
+            cause = exc
+    if failed and done:
+        raise Partly(done, failed) from cause
+    if cause:
+        raise cause
+    return version
+
+
+class Partly(RuntimeError):
+    """One document was written and saved, another failed: say which, and redo only that one."""
+
+    def __init__(self, done: list[str], failed: list[str]):
+        super().__init__(f"written: {done}; failed: {failed}")
+        self.done, self.failed = done, failed
 
 
 def retone(mgr, job: dict, kind: str, content: dict, meta: dict, tone: str) -> dict:

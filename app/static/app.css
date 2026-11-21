@@ -562,6 +562,7 @@ textarea.prose-edit:focus-visible, textarea.doc-edit:focus-visible { outline: 0;
 .banner.warn { background: var(--clay-soft); color: var(--ink); border-color: color-mix(in srgb, var(--clay) 26%, transparent); }
 .banner.warn > .icon { color: var(--clay); }
 .banner a { color: inherit; font-weight: 640; }
+.banner form { margin: 0; }
 .banner details { flex-basis: 100%; }
 .banner summary { cursor: pointer; font-weight: 600; }
 .banner .banner-action { margin-left: auto; flex: none; }

@@ -85,8 +85,11 @@ def _enqueue(job_id: int, kind: str) -> str:
     if budget_reached():
         return "Je daglimiet voor AI is bereikt. Morgen kan het weer."
     with _document_lock:
-        if _doc_status(job_id).get("state") == "running":
+        before = _doc_status(job_id)
+        if before.get("state") == "running":
             return ""
+        if kind == "both" and before.get("retry") in KINDS.values():
+            kind = before["retry"]  # the other one was written last time
         store.meta_set(
             f"doc_status:{job_id}",
             json.dumps(

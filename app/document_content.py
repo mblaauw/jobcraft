@@ -11,8 +11,10 @@ import unicodedata
 
 from pydantic import BaseModel, ConfigDict, Field
 
-LETTER_MIN_WORDS = 120
-LETTER_MAX_WORDS = 330
+# The standard asks 170 to 270 words. A little either side is no reason to pay for a rewrite,
+# but 300 words is a letter a recruiter stops reading.
+LETTER_MIN_WORDS = 150
+LETTER_MAX_WORDS = 290
 
 BANNED = (
     "hierbij solliciteer",
@@ -134,9 +136,17 @@ def unsupported_facts(lines: list[str], source: str) -> list[str]:
         if number not in known_numbers:
             problems.append(f"Het getal {number} staat niet in je gegevens of de vacature.")
     for name in sorted(_names("\n".join(lines))):
-        if _plain(name) not in plain_source:
+        if not _stands_in(_plain(name), plain_source):
             problems.append(f"De naam of term \"{name}\" staat niet in je gegevens of de vacature.")
     return problems
+
+
+def _stands_in(name: str, plain_source: str) -> bool:
+    """As a word of its own, give or take a Dutch ending ("Amsterdam" in "Amsterdamse").
+
+    Not as letters inside another word: "Ann" is in "channel", "Roos" in "rooster" and "Jan"
+    in "januari", and an invented colleague by such a name must not pass for a known one."""
+    return re.search(rf"(?<!\w){re.escape(name)}(?:e|en|s|se|'s|’s)?(?!\w)", plain_source) is not None
 
 
 def roles_changed(content: dict, source: str) -> list[str]:
@@ -152,9 +162,12 @@ def roles_changed(content: dict, source: str) -> list[str]:
 
 
 def style_problems(lines: list[str]) -> list[str]:
-    plain = _plain(" ".join(lines))
-    problems = [f"Cliché: \"{phrase}\"." for phrase in BANNED if phrase in plain]
-    if "—" in " ".join(lines):
+    text = " ".join(lines)
+    plain = _plain(text)
+    # At the start of a word: "passie" is a cliché, "compassievol" is not.
+    problems = [f"Cliché: \"{phrase}\"." for phrase in BANNED if re.search(rf"(?<![a-z]){re.escape(phrase)}", plain)]
+    # Also the shorter dash between words; "2019 – 2021" is a period, not an aside.
+    if "—" in text or re.search(r"[^\W\d_],? – [^\W\d_]", text):
         problems.append("Gedachtestreepjes lezen als AI; schrijf gewone zinnen.")
     return problems
 

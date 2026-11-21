@@ -144,7 +144,7 @@
 {% endmacro %}
 
 {% if cv_problem %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ cv_problem }}</span></p>{% endif %}
-{% if cv_status.state == 'error' %}<p class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ cv_status.error }}</span></p>{% endif %}
+{% if cv_status.state == 'error' %}<div class="banner warn" role="alert">{{ ui.icon('triangle-alert') }}<span>{{ cv_status.error }}{% if cv_status.retry %} Je tekst is bewaard.{% endif %}</span>{% if cv_status.retry %}<form method="post" action="/profile/cv/inlezen" data-pending-form>{% include '_csrf.html' %}<input type="hidden" name="bron" value="opnieuw"><button class="button small" type="submit">Lees opnieuw in</button></form>{% endif %}</div>{% endif %}
 {% if cv_saved == 'cv' %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Je cv staat erin. Je volgende sollicitaties gebruiken het, en de coach leest nu mee.</span></p>
 {% elif cv_saved == 'deel' %}<p class="banner ok" role="status">{{ ui.icon('circle-check') }}<span>Opgeslagen. Je volgende sollicitaties gebruiken dit.</span></p>{% endif %}
 

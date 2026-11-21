@@ -10,7 +10,12 @@
       <img class="sheet" src="{{ base }}/voorbeeld/{{ page }}.png" width="910" height="1286" alt="Voorbeeld van {{ 'je cv' if is_cv else 'je brief' }}, pagina {{ page }}. De tekst staat ook onder Tekst aanpassen.">
       {% endfor %}
     {% else %}
+      {% if not row['pdf_path'] %}
+      {# The conversion failed: without a PDF nobody checked that it fits one page. #}
+      <div class="sheet sheet-none" role="status"><p><strong>De PDF maken is niet gelukt.</strong> Het Word-bestand is er wel. Kies bij Opmaak dezelfde stijl nog eens om het opnieuw te proberen, en kijk in Word of alles op één pagina past.</p></div>
+      {% else %}
       <div class="sheet sheet-none"><p>Een voorbeeld is hier niet beschikbaar. Download het document om het te bekijken.</p></div>
+      {% endif %}
     {% endif %}
   </div>
 
