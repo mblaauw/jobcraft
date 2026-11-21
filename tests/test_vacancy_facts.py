@@ -39,6 +39,8 @@ def test_a_bonus_is_not_shown_as_the_salary():
     assert "Salaris" not in dict(vacancy_text.facts_of("Een bonus van € 500 bij indiensttreding."))
     # Only the amount that belongs to the bonus or budget is left out, and only as salary.
     assert dict(vacancy_text.facts_of("Onze bonusregeling en een salaris van € 3.500"))["Salaris"] == "€ 3.500"
+    assert dict(vacancy_text.facts_of("Een eindejaarsbonus (€ 1.600) en salaris € 3.100"))["Salaris"] == "€ 3.100"
+    assert wishes.monthly_salary("een eindejaarsbonus (€ 1.600) en salaris € 3.100") == 3100
     assert vacancy_text.facts_of("Je krijgt een bonus bij een vast contract.") == [("Contract", "vast contract")]
     assert vacancy_text.facts_of("Opleidingsbudget voor HBO-medewerkers.") == [("Niveau", "HBO")]
 

@@ -33,7 +33,7 @@ NOT_PAY_BEFORE = re.compile(
     # Only when the amount belongs to that word: "opleidingsbudget van € 2.000", "bonus: € 500".
     # Not "onze bonusregeling en een salaris van € 3.500".
     r"(?:\w*budget|\w*bonus|(?:reiskosten|thuiswerk|onkosten|internet|telefoon)\w*vergoeding)"
-    r"(?:\s+(?:van|tot|is|bedraagt|maximaal|minimaal|max\.?|wel|ter|waarde|à))*\s*:?\s*$",
+    r"(?:\s+(?:van|tot|is|bedraagt|maximaal|minimaal|max\.?|wel|ter|waarde|à))*\s*[:=(]?\s*$",
     re.I,
 )
 _PER_YEAR_AFTER = re.compile(r"(?:[.,]\d{2}|,-)?\s*(?:bruto\s+|netto\s+)?(?:per jaar|p/j|jaarlijks|eenmalig)")
