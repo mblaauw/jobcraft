@@ -5,6 +5,7 @@ from fastapi.routing import APIRoute
 from app import auth
 from app.routers import (
     admin_ai,
+    admin_usage,
     cv,
     jobs,
     judge,
@@ -33,6 +34,7 @@ ADMIN = {
     ("GET", "/admin/ai/log/{owner}/{day}/{offset}"),
     ("GET", "/users"),
     ("GET", "/users/activiteit"),
+    ("GET", "/users/gebruik"),
     ("POST", "/users"),
     ("POST", "/users/uitnodiging"),
     ("POST", "/users/{user_id}/deactivate"),
@@ -140,6 +142,7 @@ def test_every_endpoint_has_reviewed_permission_dependency():
     groups = (
         auth,
         admin_ai,
+        admin_usage,
         cv,
             jobs,
         judge,

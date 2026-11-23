@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 import secrets
+import time
 from contextlib import contextmanager
 from urllib.parse import parse_qs, urlencode, urlsplit
 
@@ -10,7 +11,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from markupsafe import Markup, escape
 
-from .. import tenancy
+from .. import activity, tenancy
 from ..web import templates
 from .constants import COOKIE_NAME, CSRF_FIELD, CSRF_HEADER, PUBLIC_PATHS, ROLE_ADMIN, SAFE_METHODS
 from .sessions import _clear_session_cookie, _session_for_request
@@ -240,6 +241,14 @@ async def middleware(request: Request, call_next):
     if request.method not in SAFE_METHODS and not await _csrf_matches(request, session):
         return _uncached(_reject(request, 403, "CSRF-token ontbreekt of is ongeldig."))
 
+    started = time.monotonic()
     with _scope(user):
-        return _uncached(await call_next(request))
+        response = await call_next(request)
+    route = getattr(request.scope.get("route"), "path", "")
+    if route:  # which part of the app was used, never the address or what was typed
+        activity.record(
+            user["id"], request.method, route, request.url.path, response.status_code,
+            int((time.monotonic() - started) * 1000),
+        )
+    return _uncached(response)
 
