@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Gebruik · Gebruikers · Jobcraft{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Gebruikers</h1>
+    <p class="lede">Welke onderdelen iemand gebruikt en wanneer. Alleen het soort handeling: niet welke vacature, geen zoekwoorden en niets van wat iemand invult. Regels verdwijnen na {{ retention_days }} dagen.</p>
+    {% set users_tab = 'gebruik' %}{% include '_users_tabs.html' %}
+  </div>
+</div>
+
+<section class="panel panel-flush" aria-labelledby="usage-summary-title">
+  <div class="padded">
+    <h2 id="usage-summary-title">Per account, {{ {'dag': 'laatste 24 uur', 'week': 'laatste 7 dagen', 'maand': 'laatste 31 dagen'}[filter_period] }}</h2>
+  </div>
+  <div class="table-scroll" role="region" aria-label="Gebruik per account" tabindex="0">
+    <table class="table">
+      <thead><tr><th>Account</th><th>Laatst actief</th><th>Dagen actief</th><th>Schermen</th><th>Handelingen</th><th>Meest gebruikt</th></tr></thead>
+      <tbody>
+      {% for item in summary %}
+        <tr>
+          <td><a href="?account={{ item.owner }}&amp;periode={{ filter_period }}">{{ names[item.owner] }}</a></td>
+          <td>{% if item.when %}{{ item.when }}{% else %}<span class="subtle">niet in deze periode</span>{% endif %}</td>
+          <td class="num">{{ item.days }}</td>
+          <td class="num">{{ item.views }}</td>
+          <td class="num">{{ item.actions }}</td>
+          <td class="small">{% for part, count in item.parts[:4] %}{{ part }} {{ count }}{% if not loop.last %}, {% endif %}{% else %}<span class="subtle">—</span>{% endfor %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel panel-flush" aria-labelledby="usage-events-title">
+  <div class="padded">
+    <h2 id="usage-events-title">Wat er gedaan is</h2>
+    <form method="get" class="log-filters" data-autosubmit>
+      <div class="field"><label for="u-account">Account</label><select id="u-account" name="account"><option value="">Alle</option>{% for id, name in names.items() %}<option value="{{ id }}"{% if filter_account == id %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="u-onderdeel">Onderdeel</label><select id="u-onderdeel" name="onderdeel"><option value="">Alle</option>{% for part in parts %}<option value="{{ part }}"{% if filter_part == part %} selected{% endif %}>{{ part }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="u-periode">Periode</label><select id="u-periode" name="periode">{% for key in periods %}<option value="{{ key }}"{% if filter_period == key %} selected{% endif %}>{{ {'dag': 'Laatste 24 uur', 'week': 'Laatste 7 dagen', 'maand': 'Laatste 31 dagen'}[key] }}</option>{% endfor %}</select></div>
+      <noscript><button class="button small" type="submit">Filter</button></noscript>
+    </form>
+    {% if cut_off %}<p class="banner warn" role="status">{{ ui.icon('triangle-alert') }}<span>Alleen de nieuwste {{ events | length }} regels staan hier. Kies een kortere periode, een account of een onderdeel om de rest te zien.</span></p>{% endif %}
+  </div>
+  <div class="table-scroll" role="region" aria-label="Wat er gedaan is" tabindex="0">
+    <table class="table nowrap">
+      <thead><tr><th>Moment</th><th>Account</th><th>Onderdeel</th><th>Wat</th><th>Soort</th></tr></thead>
+      <tbody>
+      {% for event in events %}
+        <tr>
+          <td>{{ event.when }}</td>
+          <td>{{ names.get(event.owner, '—') }}</td>
+          <td>{{ event.part }}</td>
+          <td>{{ event.action }}{% if event.status >= 400 %} <span class="chip chip-warn">mislukt ({{ event.status }})</span>{% endif %}</td>
+          <td class="small subtle">{{ 'handeling' if event.method == 'POST' else 'scherm' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="subtle">Nog niets in deze periode{% if filter_account or filter_part %} met dit filter{% endif %}.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
