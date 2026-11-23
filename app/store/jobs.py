@@ -160,10 +160,12 @@ def _job_filters(
     params.append(import_source())
     disabled_sources = _disabled_user_sources()
     if disabled_sources:
+        # Never what someone is working on: a source that falls out of reach after a move, or
+        # is switched off, must not take a running application off Sollicitaties and Vandaag.
         clauses.append(
             "(source_id IS NULL OR source_id NOT IN ("
             + ",".join("?" for _ in disabled_sources)
-            + "))"
+            + ") OR status IN ('saved','applied','interview','offer','rejected'))"
         )
         params.extend(disabled_sources)
     if not include_stale:
@@ -225,17 +227,22 @@ def job_status_counts(
     reach: dict | None = None,
 ) -> dict[str, tuple[int, int]]:
     """Per status: (unique jobs, unique jobs known to be outside the travel range)."""
-    clauses, filters = _job_filters(
-        None, query_text, source, include_stale, only_unvoted, list_filters
-    )
+    list_filters = dict(list_filters or {})
+    seen_after = list_filters.pop("seen_after", None)  # asked after folding, as in the list itself
+    clauses, filters = _job_filters(None, query_text, source, include_stale, False, list_filters)
     far_sql, far_params = _too_far(reach)
+    outer = [*(["COALESCE(vote,0)=0"] if only_unvoted else []), *(["first_seen > ?"] if seen_after else [])]
     sql = (
         f"SELECT status, COUNT(*) AS n, COALESCE(SUM({far_sql}),0) AS far FROM ("
         + _unique_jobs(clauses)
-        + ") GROUP BY status"
+        + ")"
+        + (" WHERE " + " AND ".join(outer) if outer else "")
+        + " GROUP BY status"
     )
     with connect() as con:
-        rows = con.execute(sql, (*far_params, tenancy.user_id(), *filters)).fetchall()
+        rows = con.execute(
+            sql, (*far_params, tenancy.user_id(), *filters, *([seen_after] if seen_after else []))
+        ).fetchall()
     return {row["status"]: (row["n"], row["far"]) for row in rows}
 
 
@@ -252,14 +259,22 @@ def list_jobs_page(
     list_filters: dict | None = None,
 ) -> list:
     """One page of full rows; ordering touches no descriptions, so it stays cheap at scale."""
-    clauses, filters = _job_filters(
-        None, query_text, source, include_stale, only_unvoted, list_filters
-    )
+    # "Not judged yet" and "arrived since" are asked of the vacancy that stands for all its
+    # copies, after the copies are folded: the one you acted on stands for them, so the same
+    # vacancy on a second site does not come back as new after a thumbs down on the first.
+    list_filters = dict(list_filters or {})
+    seen_after = list_filters.pop("seen_after", None)
+    clauses, filters = _job_filters(None, query_text, source, include_stale, False, list_filters)
     outer: list[str] = []
     outer_params: list = []
     if status:
         outer.append("status=?")
         outer_params.append(status)
+    if only_unvoted:
+        outer.append("COALESCE(vote,0)=0")
+    if seen_after:
+        outer.append("first_seen > ?")
+        outer_params.append(seen_after)
     if within_travel:
         # True: the account's own reach; a dict: budgets this list was given.
         far_sql, far_params = _too_far(within_travel if isinstance(within_travel, dict) else None)
@@ -311,16 +326,26 @@ def count_catalogue(include: list[str], exclude: list[str], exclude_titles: list
         return con.execute(sql, (tenancy.user_id(), *filters)).fetchone()["n"]
 
 
-def jobs_missing_travel(home_key: str) -> list:
-    """Jobs whose stored travel estimate belongs to another home or vacancy version."""
+def jobs_missing_travel(home_key: str, limit: int | None = None) -> list:
+    """Jobs whose stored travel estimate belongs to another home or vacancy version.
+
+    With a limit, the best-ranked first: those are the ones a list shows."""
     with connect() as con:
         return con.execute(
             "SELECT j.id,j.location,j.lat,j.lon,j.description,j.title,j.content_hash FROM jobs j "
             "LEFT JOIN job_states s ON s.job_id=j.id AND s.owner=? "
             "WHERE s.travel_key IS NULL OR s.travel_key <> "
-            f"{TRAVEL_KEY_SQL}",
-            (tenancy.user_id(), home_key),
+            f"{TRAVEL_KEY_SQL}"
+            + (" ORDER BY COALESCE(s.rank_score,-1) DESC, j.id DESC LIMIT ?" if limit else ""),
+            (tenancy.user_id(), home_key, *([limit] if limit else [])),
         ).fetchall()
+
+
+def catalogue_stamp() -> str:
+    """Changes whenever a vacancy arrives or changes where or what it is; cheap to ask."""
+    with connect() as con:
+        row = con.execute("SELECT value FROM meta WHERE key='catalogue_version'").fetchone()
+    return row["value"] if row else "0"
 
 
 def get_job(job_id: int) -> sqlite3.Row | None:

@@ -6,6 +6,7 @@ import re
 import time
 from html import unescape
 
+import httpx
 from bs4 import BeautifulSoup
 
 from .. import store
@@ -108,7 +109,10 @@ def _scan_sitemap_jsonld(client, source, entry, summary, limit_per_source=None) 
         children = [url for url in urls if re.search(child_pattern, url)]
         urls = []
         for child in children[: int(source.get("child_limit", 4))]:
-            child_response = client.get(child)
+            try:
+                child_response = client.get(child)
+            except httpx.HTTPError:
+                continue  # the other parts of the sitemap are still read
             if child_response.status_code < 400:
                 urls.extend(re.findall(r"<loc>([^<]+)</loc>", child_response.text))
             time.sleep(0.4)

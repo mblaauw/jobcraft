@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import logging
 import os
+import sqlite3
 import threading
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from . import digest, store, tasks
+
+log = logging.getLogger("jobcraft.scheduler")
 
 _STOP = threading.Event()
 _THREAD: threading.Thread | None = None
@@ -83,9 +87,11 @@ def run_digest_due(now: datetime | None = None) -> bool:
         return False
     if store.meta_get("digest_last_tick") == today:
         return False
-    store.meta_set("digest_last_tick", today)
     for owner in store.active_owners_with_profile():
         tasks.enqueue("digest", owner=owner, dedupe_key=f"digest:{owner}")
+    # Marked only once everyone is queued: an error halfway is retried at the next tick, and a
+    # digest task never sends twice on one day.
+    store.meta_set("digest_last_tick", today)
     return True
 
 
@@ -93,12 +99,17 @@ _last_prune_day: str | None = None
 
 
 def run_prune_due(now: datetime | None = None) -> bool:
-    """Once a day per process: sign-in history older than the retention goes."""
+    """Once a day per process: sign-in history older than the retention goes, and so do
+    finished queue rows and page-read marks nothing asks about any more."""
     global _last_prune_day
     today = (now or datetime.now(UTC)).date().isoformat()
     if _last_prune_day == today:
         return False
-    store.prune_auth_events()
+    for prune in (store.prune_auth_events, tasks.prune, store.prune_detail_fetches):
+        try:
+            prune()
+        except sqlite3.OperationalError as exc:  # one table busy or absent does not stop the others
+            log.warning("prune %s skipped: %s", prune.__name__, exc)
     _last_prune_day = today
     return True
 
@@ -111,12 +122,13 @@ def start() -> None:
 
     def loop():
         while not _STOP.wait(60):
-            try:
-                run_due()
-                run_digest_due()
-                run_prune_due()
-            except Exception:
-                continue
+            # Each on its own, and never silent: a failing scan trigger must not also stop the
+            # daily mail, and "no scans since Tuesday" needs a line in the log to be found.
+            for step in (run_due, run_digest_due, run_prune_due):
+                try:
+                    step()
+                except Exception:
+                    log.exception("scheduler step %s failed", step.__name__)
 
     _THREAD = threading.Thread(target=loop, daemon=True)
     _THREAD.start()

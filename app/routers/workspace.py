@@ -19,6 +19,7 @@ from .. import (
     job_import,
     job_verdict,
     notifications,
+    ranking,
     store,
     tenancy,
     vacancy_text,
@@ -26,6 +27,7 @@ from .. import (
 from ..auth import require_user
 from ..auth.credentials import verify_password
 from ..auth.users import _deactivate_without_losing_last_admin, _get_user_by_id
+from ..scoring import reasons
 from ..web import templates
 from ..web_helpers import _jobs_return_target
 
@@ -82,6 +84,8 @@ def jobs_swipe(request: Request, overslaan: int = 0):
         {
             "job": job,
             "excerpt": vacancy_text.summary((job or {}).get("description") or ""),
+            "travel": ranking.travel_of(job) if job else {},
+            "facts": reasons.facts(job) if job else [],
             "skip": skip,
             "here": f"/jobs/doorlopen?{urlencode({'overslaan': skip})}",
         },

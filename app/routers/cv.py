@@ -42,6 +42,8 @@ def _anchor(data: dict, target: str) -> str:
 
 @router.post("/profile/cv/inlezen")
 async def read_in(bron: str = Form("tekst"), tekst: str = Form(""), bestand: UploadFile | None = File(None)):
+    if bron == "opnieuw" and cv_ai.text_waiting():  # after a failed reading: the same text again
+        return _back(probleem=cv_ai.request("import"))
     raw = await bestand.read(cv_text.MAX_BYTES + 1) if bestand and bestand.filename else b""
     if len(raw) > cv_text.MAX_BYTES:
         return _back("inlezen", probleem="Het bestand mag maximaal 5 MB zijn.")

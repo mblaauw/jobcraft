@@ -17,7 +17,7 @@ def jev(client, monkeypatch):  # noqa: F811
     monkeypatch.setattr(systemone, "enabled", lambda: True)
     monkeypatch.setattr(systemone, "decide", fake)
     monkeypatch.setattr(matching, "current_digest", lambda *a: "test")
-    monkeypatch.setattr(ranking, "rerank_all", lambda *a: 0)
+    monkeypatch.setattr(ranking, "rerank_all", lambda *a, **kw: 0)
     monkeypatch.setenv("SYSTEMONE_DAILY_LIMIT", "100")
     monkeypatch.setenv("SYSTEMONE_BATCH", "2")  # one vacancy per batch: facts and fit
     monkeypatch.setenv("SYSTEMONE_FIT_TOP", "10")
@@ -61,7 +61,7 @@ def test_a_failing_jev_stops_after_three_failures_and_does_not_loop(jev, monkeyp
 def test_a_batch_that_answers_nothing_does_not_loop(jev, monkeypatch):
     monkeypatch.setenv("SYSTEMONE_BATCH", "0")
     reranks = []
-    monkeypatch.setattr(ranking, "rerank_all", lambda *a: reranks.append(1))
+    monkeypatch.setattr(ranking, "rerank_all", lambda *a, **kw: reranks.append(1))
     three_jobs()
     with tenancy.scope({"id": owner_id()}):
         matching.match_jobs(None)

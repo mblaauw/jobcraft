@@ -120,8 +120,10 @@ def safe_next(value: str | None) -> str:
 
 
 def _wants_json(request: Request) -> bool:
+    """A script asking, not a person: it needs "not signed in" as an answer it can tell
+    apart from success, which a redirect to the login page is not."""
     path = request.url.path
-    return path == "/api" or path.startswith("/api/")
+    return path == "/api" or path.startswith("/api/") or request.headers.get("accept", "").startswith("application/json")
 
 
 
@@ -152,17 +154,27 @@ def _login_url(target: str) -> str:
 
 
 
+def _after_login(request: Request) -> str:
+    """Where to land after signing in again: the page asked for, or for a form that was being
+    sent, the page that form was on. A form's own address only answers POST."""
+    if request.method in ("GET", "HEAD"):
+        return str(request.url.path) + (f"?{request.url.query}" if request.url.query else "")
+    referer = urlsplit(request.headers.get("referer", ""))
+    if referer.netloc and referer.netloc != request.url.netloc:
+        return ""
+    return referer.path + (f"?{referer.query}" if referer.query else "") if referer.path else ""
+
+
+
 def _login_redirect(request: Request) -> RedirectResponse:
-    current = str(request.url.path) + (f"?{request.url.query}" if request.url.query else "")
-    return RedirectResponse(url=_login_url(safe_next(current)), status_code=303)
+    return RedirectResponse(url=_login_url(safe_next(_after_login(request))), status_code=303)
 
 
 
 def _unauthenticated(request: Request) -> HTTPException:
     if _wants_json(request):
         return HTTPException(status_code=401, detail="Niet ingelogd.")
-    current = str(request.url.path) + (f"?{request.url.query}" if request.url.query else "")
-    return HTTPException(status_code=303, headers={"Location": _login_url(safe_next(current))})
+    return HTTPException(status_code=303, headers={"Location": _login_url(safe_next(_after_login(request)))})
 
 
 

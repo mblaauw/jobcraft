@@ -9,7 +9,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from .. import store
-from .common import _skip_recent_detail, _tally, detail_get, make_job
+from .common import _skip_recent_detail, _tally, make_job, safe_detail_get
 
 
 def _hn_ref(client, listing_url: str, fallback: str) -> str:
@@ -50,9 +50,9 @@ def _parse_hn_cards(html: str) -> list[dict]:
     return cards
 
 
-def _rijksoverheid_detail(client, url: str) -> tuple[str, str, str, str]:
-    page = detail_get(client, url)
-    if page.status_code >= 400:
+def _rijksoverheid_detail(client, url: str, entry: dict) -> tuple[str, str, str, str]:
+    page = safe_detail_get(client, url, entry)  # one unreachable page skips that page only
+    if page is None or page.status_code >= 400:
         return "", "", "", ""
     soup = BeautifulSoup(page.text, "html.parser")
     for tag in soup(["script", "style", "noscript"]):
@@ -108,7 +108,7 @@ def _scan_rijksoverheid(client, source, entry, summary, limit_per_source=None) -
         job_url = href if href.startswith("http") else base + href
         if _skip_recent_detail(job_url, entry, summary):
             continue
-        title, meta_location, meta_hours, description = _rijksoverheid_detail(client, job_url)
+        title, meta_location, meta_hours, description = _rijksoverheid_detail(client, job_url, entry)
         title = title or card["title"]
         labels = card.get("labels") or {}
         location = labels.get("Locatie") or meta_location

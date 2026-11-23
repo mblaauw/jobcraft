@@ -317,6 +317,10 @@ def _fill_places_from_text(con) -> None:
         if place:
             con.execute("UPDATE jobs SET location=? WHERE id=?", (place, row["id"]))
     con.execute("INSERT INTO meta(key,value) VALUES ('places_from_text_v1','1')")
+    con.execute(  # stored travel times must notice the new places
+        "INSERT INTO meta(key,value) VALUES ('catalogue_version','1') "
+        "ON CONFLICT(key) DO UPDATE SET value=CAST(value AS INTEGER)+1"
+    )
 
 
 def _recover_raw_verdicts(con) -> None:

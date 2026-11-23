@@ -83,6 +83,7 @@
             <ul class="meta small">
               <li>{{ job['company'] or 'Onbekende organisatie' }}</li>
               {{ ui.travel(job['travel']) }}
+              {% if job['hours'] %}<li>{{ ui.icon('clock') }}<span>{{ job['hours'] }}</span></li>{% endif %}
             </ul>
           </div>
           <div class="pick-actions">

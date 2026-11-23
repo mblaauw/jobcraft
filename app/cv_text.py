@@ -177,7 +177,8 @@ def contact_of(text: str) -> dict:
     found: dict[str, str] = {}
     for line in lines[:_HEADER_LINES]:
         # "CV Jan de Vries 2026 — voor ..." or just "Jan de Vries": the name, without the rest.
-        candidate = re.split(r"\s[—–|-]\s|\d|@|:", re.sub(r"^(?:cv|c\.v\.|curriculum vitae|resume)\b\s*", "", line, flags=re.I))[0]
+        # A profile the app wrote itself opens with "Profiel Sam Jansen": that word is no first name.
+        candidate = re.split(r"\s[—–|-]\s|\d|@|:", re.sub(r"^(?:cv|c\.v\.|curriculum vitae|resume|profiel)\b(?:\s+van\b)?\s*", "", line, flags=re.I))[0]
         words = candidate.split()
         if 2 <= len(words) <= 4 and words[0][:1].isupper() and words[-1][:1].isupper() and candidate.casefold() not in _NOT_A_NAME:
             found["name"] = " ".join(words)

@@ -70,8 +70,17 @@ def status() -> dict:
         except ValueError:
             age = 0
         if age > STALE_SECONDS:
-            return {"state": "error", "kind": data.get("kind"), "error": "Dit duurde te lang. Probeer het opnieuw."}
+            data = {"state": "error", "kind": data.get("kind"), "error": "Dit duurde te lang. Probeer het opnieuw."}
+    if data.get("state") == "error" and data.get("kind") == "import":
+        data["retry"] = text_waiting()  # the text is still there: one button reads it again
     return data
+
+
+def text_waiting() -> bool:
+    try:
+        return bool(json.loads(store.meta_get(TEXT_KEY) or "{}").get("text"))
+    except ValueError:
+        return False
 
 
 def _set_status(state: str, kind: str, **extra) -> None:
@@ -159,7 +168,11 @@ def _other_sources() -> str:
     """What else the person told us, to find what contradicts or is missing."""
     rest = [
         f"## {item['heading']}\n{item['text']}"
-        for item in profile.split_sections(profile.public_excerpt(profile.read_profile(), 12000))
+        # Not the interview answers: what someone said to help matching is not for employers,
+        # and a coach note built on it would carry it into the CV.
+        for item in profile.split_sections(
+            profile.public_excerpt(profile.read_profile(), 12000, skip=(profile.ANSWERS_HEADING,))
+        )
         if item["heading"] and item["heading"] not in cv_model.SECTIONS and item["text"]
     ]
     answers = [f"- {story['question']}: {story['answer']}" for story in application_plan.stories()]
@@ -245,11 +258,13 @@ def _scoped(task, work) -> dict:
 def _task_import(task):
     def work():
         waiting = json.loads(store.meta_get(TEXT_KEY) or "{}")
-        store.meta_set(TEXT_KEY, "{}")
         if not waiting.get("text"):
             raise RuntimeError("nothing to read")
         read_back = read(get_manager(), waiting["text"])
         data = cv_model.from_read(read_back)
+        # Only now: when the reading fails, the text someone pasted or uploaded is still
+        # there for "Probeer het opnieuw", instead of having to be found and pasted again.
+        store.meta_set(TEXT_KEY, "{}")
         if waiting.get("source") == START_SOURCE and cv_model.load() is None:
             # Already checked in the quick start ("Klopt dit?"): straight into Mijn cv.
             cv_model.save(data, note="cv uit de snelle start")

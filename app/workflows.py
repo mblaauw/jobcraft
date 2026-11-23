@@ -32,6 +32,7 @@ from . import (
     vacancy_reader,  # noqa: F401  (registers its task)
 )
 from .ai_budget import budget_reached as _budget_reached
+from .llm_client import LLMAuthError, LLMRateLimited
 from .runtime import get_manager
 
 log = logging.getLogger("jobcraft")
@@ -49,7 +50,7 @@ def _run_scan() -> dict:
         store.meta_set("scan_status", "done")
         if os.environ.get("MATCH_AFTER_SCAN", "1") != "0":
             for owner in store.active_owners_with_profile():
-                tasks.enqueue("match", owner=owner, dedupe_key=f"match:{owner}")
+                tasks.enqueue("match", owner=owner, dedupe_key=f"match:{owner}", follow=True)
         return summary
     except tasks.Interrupted:  # not a failure: the round goes back in the queue once
         store.meta_set("scan_status", "interrupted")
@@ -76,7 +77,7 @@ def _task_index(task):
         raise RuntimeError("index tasks must be shared")
     if _refresh_index():
         for owner in store.active_owners_with_profile():
-            tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}")
+            tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}", follow=True)
     return {}
 
 
@@ -132,10 +133,14 @@ def _doc_status(job_id: int) -> dict:
         return {}
     if status.get("state") == "running":
         try:
-            age = (datetime.now(UTC) - datetime.fromisoformat(status.get("updated_at") or "")).total_seconds()
+            stamp = status.get("updated_at") or status.get("started_at") or ""
+            age = (datetime.now(UTC) - datetime.fromisoformat(stamp)).total_seconds()
         except ValueError:
-            age = 0
-        if age > DOC_STALE_SECONDS:
+            age = DOC_STALE_SECONDS + 1  # no moment at all: nothing ever picked this up
+        # Quiet for long, but still in the queue behind other work of this account: it will
+        # run, and "probeer het opnieuw" would have someone start it a second time.
+        owner = tenancy.user_id()
+        if age > DOC_STALE_SECONDS and not tasks.waiting("document", owner, f"document:{owner}:{job_id}:"):
             return {"state": "error", "error": "Dit duurde te lang. Probeer het opnieuw."}
     return status
 
@@ -194,9 +199,17 @@ def _run_document(job_id: int, kind: str) -> None:
     except Exception as exc:
         log.exception("document generation failed")
         message = "Er ging iets mis bij het schrijven. Probeer het opnieuw."
-        if "provider.auth" in str(exc) or "api_key_expired" in str(exc):
+        retry = {}
+        if isinstance(exc, LLMAuthError | LLMRateLimited):
             message = "De AI-dienst is nu niet bereikbaar. Probeer het later opnieuw."
-        store.meta_set(key, json.dumps({"state": "error", "kind": kind, "error": message}))
+        elif isinstance(exc, document_pipeline.Partly):
+            names = {"resume": "cv", "motivatie": "brief"}
+            message = (
+                f"Je {names[exc.done[0]]} is gemaakt en staat klaar, je {names[exc.failed[0]]} is niet gelukt. "
+                f"Probeer het opnieuw: dan schrijven we alleen nog je {names[exc.failed[0]]}."
+            )
+            retry = {"retry": exc.failed[0]}  # what is there is not written, and paid for, twice
+        store.meta_set(key, json.dumps({"state": "error", "kind": kind, "error": message, **retry}))
 
 
 def _run_bootstrap() -> None:
@@ -233,7 +246,7 @@ def _run_bootstrap() -> None:
     except Exception as exc:
         log.exception("consolidation failed")
         message = str(exc)
-        if "provider.auth" in message or "api_key_expired" in message:
+        if isinstance(exc, LLMAuthError):
             message = "API-key verlopen of ongeldig. Werk LLM_API_KEY bij en herstart de app."
         store.meta_set("bootstrap_status", f"error: {message}"[:500])
 

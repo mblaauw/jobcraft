@@ -10,8 +10,15 @@
 {% if job %}
 <article class="panel swipe-card">
   <h2><a href="/jobs/{{ job['id'] }}">{{ job['title'] or 'Zonder titel' }}</a></h2>
-  <p class="vacancy-company">{{ job['company'] or 'Onbekende organisatie' }}{% if job['location'] %} · {{ job['location'] }}{% endif %}</p>
-  <p class="muted">{{ excerpt }}{% if excerpt | length >= 320 %}…{% endif %}</p>
+  <p class="vacancy-company">{{ job['company'] or 'Onbekende organisatie' }}</p>
+  {# What decides a yes or no before the text does: where, how far, how many hours, what it pays. #}
+  <ul class="meta small">
+    {% if job['location'] %}<li>{{ ui.icon('map-pin') }}<span>{{ job['location'] }}</span></li>{% endif %}
+    {{ ui.travel(travel) }}
+    {% if job['hours'] %}<li>{{ ui.icon('clock') }}<span>{{ job['hours'] }}</span></li>{% endif %}
+  </ul>
+  {% if facts %}<p class="chips">{% for fact in facts %}<span class="chip">{{ fact }}</span>{% endfor %}</p>{% endif %}
+  <p class="muted">{{ excerpt }}</p>
   <form method="post" action="/jobs/{{ job['id'] }}/vote" class="swipe-actions" data-pending-form>
     {% include '_csrf.html' %}
     <input type="hidden" name="next" value="{{ here }}">

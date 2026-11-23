@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import UTC, datetime
+import sqlite3
+from datetime import UTC, datetime, timedelta
 
-from .connection import connect, now
+from .connection import connect, now, stale_cutoff
 from .jobs import normalize_posted_at
 from .schema import _search_text
 
@@ -19,35 +20,66 @@ def record_detail_fetch(url: str) -> None:
         )
 
 
-def fetched_within(url: str, max_age_seconds: int) -> bool:
-    """Whether this page was read within the given time, whatever came of it."""
+def _detail_fetched_at(url: str) -> str:
     key = "detail_fetched:" + hashlib.sha256(url.encode()).hexdigest()
     with connect() as con:
         stamp = con.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
+    return stamp[0] if stamp else ""
+
+
+def prune_detail_fetches(days: int = 400) -> int:
+    """Forget page reads older than any adapter still asks about (EURES looks a year back)."""
+    cutoff = (datetime.now(UTC) - timedelta(days=days)).isoformat()
+    with connect() as con:
+        return con.execute(
+            "DELETE FROM meta WHERE key >= 'detail_fetched:' AND key < 'detail_fetched;' AND value < ?", (cutoff,)
+        ).rowcount
+
+
+def fetched_within(url: str, max_age_seconds: int) -> bool:
+    """Whether this page was read within the given time, whatever came of it."""
+    stamp = _detail_fetched_at(url)
     try:
-        age = (datetime.now(UTC) - datetime.fromisoformat(stamp[0])).total_seconds() if stamp else -1
+        age = (datetime.now(UTC) - datetime.fromisoformat(stamp)).total_seconds() if stamp else -1
     except (ValueError, TypeError):
         return False
     return 0 <= age < max_age_seconds
 
 
 def touch_recent_detail(url: str, max_age_seconds: int = 3 * 86400) -> bool:
-    """Touch known rich jobs without extending their last real detail-fetch time."""
+    """Touch known rich jobs without extending their last real detail-fetch time.
+
+    Only a vacancy that its last read kept: a page that was read and then left out (closed,
+    moved abroad) has not been stored since, and marking it as seen would keep it alive forever.
+    """
     if not fetched_within(url, max_age_seconds):
         return False
     with connect() as con:
         cursor = con.execute(
-            "UPDATE jobs SET last_seen=? WHERE url=? AND description IS NOT NULL AND TRIM(description)<>''",
-            (now(), url),
+            "UPDATE jobs SET last_seen=? WHERE url=? AND description IS NOT NULL AND TRIM(description)<>''"
+            " AND last_seen >= ?",
+            (now(), url, _detail_fetched_at(url)),
         )
         return bool(cursor.rowcount)
 
 
+def read_and_left_out(url: str, max_age_seconds: int = 3 * 86400) -> bool:
+    """A stored vacancy whose page was read lately and not kept: no need to read it again yet."""
+    if not fetched_within(url, max_age_seconds):
+        return False
+    with connect() as con:
+        row = con.execute("SELECT last_seen FROM jobs WHERE url=?", (url,)).fetchone()
+    return bool(row) and (row["last_seen"] or "") < _detail_fetched_at(url)
+
+
 def source_urls_seen_longest_ago(source_id: str, limit: int) -> list[str]:
-    """A source's vacancies that have gone longest without being seen, oldest first."""
+    """A source's vacancies that have gone longest without being seen, oldest first.
+
+    Not the ones already past their expiry: they are hidden, and would fill every round."""
     with connect() as con:
         rows = con.execute(
-            "SELECT url FROM jobs WHERE source_id=? ORDER BY last_seen ASC LIMIT ?", (source_id, limit)
+            "SELECT url FROM jobs WHERE source_id=? AND last_seen >= ? ORDER BY last_seen ASC LIMIT ?",
+            (source_id, stale_cutoff(), limit),
         ).fetchall()
     return [row["url"] for row in rows]
 
@@ -64,10 +96,38 @@ def known_job_urls(urls: list[str]) -> set[str]:
     return {row["url"] for row in rows}
 
 
+STUB_LENGTH = 400
+
+
+STUB_GUARD_SECONDS = 30 * 86400
+
+
+def _only_a_stub(key: str, value, existing, read_lately: bool) -> bool:
+    """A feed header or cut-off summary, offered where the full text of the page is stored.
+
+    Adapters fall back to the short feed text when a page cannot be read this round; that must
+    not replace the text matching and documents were built on. Only while the page itself was
+    read in the last month: a text that really became this short gets through after that, and
+    so does anything that never came from a page read (a pasted vacancy, a local import)."""
+    if key != "description" or not isinstance(value, str) or not read_lately:
+        return False
+    stored = existing["description"] or ""
+    return len(value) < STUB_LENGTH and len(stored) >= 2 * len(value) and len(stored) >= STUB_LENGTH
+
+
+def bump_catalogue(con: sqlite3.Connection) -> None:
+    """Tell stored travel times that a vacancy is new, or changed where or what it is."""
+    con.execute(
+        "INSERT INTO meta(key,value) VALUES ('catalogue_version','1') "
+        "ON CONFLICT(key) DO UPDATE SET value=CAST(value AS INTEGER)+1"
+    )
+
+
 def upsert_job(job: dict) -> tuple[int, bool]:
     stamp = now()
     job = {**job, "posted_at": normalize_posted_at(job.get("posted_at"))}
     search_text = _search_text(job.get("title"), job.get("company"), job.get("description"))
+    read_lately = fetched_within(job["url"], STUB_GUARD_SECONDS)
     with connect() as con:
         existing = con.execute("SELECT * FROM jobs WHERE url=?", (job["url"],)).fetchone()
         if existing:
@@ -84,7 +144,7 @@ def upsert_job(job: dict) -> tuple[int, bool]:
                 "lon",
             ):
                 value = job.get(key)
-                if value is None or (isinstance(value, str) and not value.strip()):
+                if value is None or (isinstance(value, str) and not value.strip()) or _only_a_stub(key, value, existing, read_lately):
                     if key in ("title", "description") and existing[key]:
                         merged_content = True
                     job[key] = existing[key]
@@ -93,6 +153,8 @@ def upsert_job(job: dict) -> tuple[int, bool]:
                     f"{job['title']}:{job['description']}".encode()
                 ).hexdigest()
             search_text = _search_text(job.get("title"), job.get("company"), job.get("description"))
+            if any(existing[key] != job.get(key) for key in ("content_hash", "location", "lat", "lon")):
+                bump_catalogue(con)
             con.execute(
                 "UPDATE jobs SET source_id=?, title=?, company=?, location=?, hours=?, "
                 "description=?, posted_at=?, last_seen=?, content_hash=?, lat=?, lon=?, "
@@ -114,6 +176,7 @@ def upsert_job(job: dict) -> tuple[int, bool]:
                 ),
             )
             return existing["id"], False
+        bump_catalogue(con)
         cursor = con.execute(
             "INSERT INTO jobs(source_id, url, title, company, location, hours, description, "
             "posted_at, first_seen, last_seen, content_hash, lat, lon, search_text) "

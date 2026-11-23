@@ -243,7 +243,8 @@ def record_answer(question: str, answer: str) -> dict:
             if hits:
                 topic["mentions"] = int(topic.get("mentions") or 0) + hits
                 topic["last_touched"] = now_iso()
-                if int(topic["mentions"]) >= COVERED_THRESHOLD:
+                # Not a topic someone reopened by hand: the next answer would close it again.
+                if int(topic["mentions"]) >= COVERED_THRESHOLD and not topic.get("manual"):
                     topic["status"] = "covered"
         state["question_count"] = int(state.get("question_count") or 0) + 1
         _save(state)

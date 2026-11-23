@@ -562,6 +562,7 @@ textarea.prose-edit:focus-visible, textarea.doc-edit:focus-visible { outline: 0;
 .banner.warn { background: var(--clay-soft); color: var(--ink); border-color: color-mix(in srgb, var(--clay) 26%, transparent); }
 .banner.warn > .icon { color: var(--clay); }
 .banner a { color: inherit; font-weight: 640; }
+.banner form { margin: 0; }
 .banner details { flex-basis: 100%; }
 .banner summary { cursor: pointer; font-weight: 600; }
 .banner .banner-action { margin-left: auto; flex: none; }
@@ -774,6 +775,8 @@ a.vacancy-score:hover { transform: scale(1.06); }
 .vacancy-row.is-dimmed .vacancy-score { opacity: .6; }
 .vacancy-row > .vacancy-score { margin-top: 1px; }
 .vacancy-main { min-width: 0; }
+.row-alert { margin: 8px 0 0; color: var(--clay); font-size: var(--fs-sm); font-weight: 600; }
+.row-alert a { color: inherit; }
 /* The title keeps clear of the actions at the top right; everything under it uses the full width. */
 .vacancy-main h3 { font-size: var(--fs-md); line-height: 1.3; margin: 0 0 3px; padding-right: 176px; letter-spacing: -0.012em; }
 .vacancy-main h3 a { color: var(--ink); text-decoration: none; }
@@ -1202,7 +1205,9 @@ details.stage > summary:hover h2 { color: var(--moss); }
 .swipe-card h2 { margin: 0 0 4px; font-size: var(--fs-xl); letter-spacing: -0.02em; }
 .swipe-card h2 a { color: var(--ink); text-decoration: none; }
 .swipe-card h2 a:hover { color: var(--moss); text-decoration: underline; }
-.swipe-card .vacancy-company { margin-bottom: 12px; }
+.swipe-card .vacancy-company { margin-bottom: 6px; }
+.swipe-card .meta { margin-bottom: 10px; }
+.swipe-card .chips { margin: 0 0 12px; }
 .swipe-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 .swipe-actions .button { min-height: 48px; flex: 1 1 130px; justify-content: center; }
 .swipe-actions .link-button { flex-basis: 100%; min-height: var(--ctl); border: 0; background: none; color: var(--ink-2); text-decoration: none; }

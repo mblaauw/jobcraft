@@ -19,6 +19,7 @@ from . import job_index, store
 
 NEIGHBOURS = 7
 MIN_LABELS = 3
+ROWS_AT_ONCE = 2048
 WISH_KEY = "taste_wish"
 POSITIVE_STATUSES = ("saved", "applied", "interview", "offer")
 
@@ -95,12 +96,21 @@ def scores(jobs, preferences: dict, is_fresh) -> dict[int, float]:
         positions = np.asarray([position for position, _ in labelled])
         values = np.asarray([found[0] for _, found in labelled], dtype=np.float32)
         weights = np.asarray([found[1] for _, found in labelled], dtype=np.float32)
-        similarity = vectors @ vectors[positions].T
-        similarity[positions, np.arange(len(positions))] = -np.inf  # nobody is their own neighbour
         k = min(NEIGHBOURS, len(positions) - 1)
-        nearest = np.argpartition(-similarity, k - 1, axis=1)[:, :k]
-        closeness = np.clip(np.take_along_axis(similarity, nearest, axis=1), 0.01, None) * weights[nearest]
-        parts.append((0.6, (closeness * values[nearest]).sum(axis=1) / closeness.sum(axis=1)))
+        judged = vectors[positions]
+        neighbours = np.empty(len(present), dtype=np.float32)
+        # In pieces: every vacancy against every judgement at once is a table of catalogue x
+        # judgements, 580 MB and four seconds at 1,500 judgements, inside the web process
+        # that handles the vote. The answer is the same.
+        for start in range(0, len(present), ROWS_AT_ONCE):
+            stop = min(start + ROWS_AT_ONCE, len(present))
+            similarity = vectors[start:stop] @ judged.T
+            own = np.nonzero((positions >= start) & (positions < stop))[0]
+            similarity[positions[own] - start, own] = -np.inf  # nobody is their own neighbour
+            nearest = np.argpartition(-similarity, k - 1, axis=1)[:, :k]
+            closeness = np.clip(np.take_along_axis(similarity, nearest, axis=1), 0.01, None) * weights[nearest]
+            neighbours[start:stop] = (closeness * values[nearest]).sum(axis=1) / closeness.sum(axis=1)
+        parts.append((0.6, neighbours))
 
     if not parts:
         return {}

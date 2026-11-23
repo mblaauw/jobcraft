@@ -9,21 +9,20 @@ from __future__ import annotations
 
 import contextlib
 import contextvars
-import csv
 import json
-import math
 import re
 from functools import lru_cache
 from pathlib import Path
 
 from .commute import bike_minutes, bus_minutes, car_minutes, haversine_km, transit_minutes
+from .gazetteer import _core_places, load_gazetteer, valid_coordinates
 
 BIKE_MINUTES = 30
 TRANSIT_MINUTES = 35
 BIKE_WORDS = {"fiets": "fiets", "ebike": "e-bike"}
 IN_CITY_KM = 4.0
 # Stored estimates hold minutes per way of travelling, never a verdict on your budgets.
-TRAVEL_VERSION = "travel-times-v5"
+TRAVEL_VERSION = "travel-times-v6"  # v6: several offices listed, the nearest counts
 GAZETTEER_FILE = Path(__file__).with_name("data") / "places_nl.csv"
 # Names vacancies use for a place the catalogue lists under another name.
 ALIASES = {
@@ -38,60 +37,11 @@ ALIASES = {
 }
 
 
-def load_gazetteer(path: Path) -> tuple[dict, set, dict, dict]:
-    """Load completely before publishing; missing data leaves manual coordinates usable."""
-    places, rail, districts, labels = {}, set(), {}, {}
-    try:
-        handle = path.open(newline="", encoding="utf-8")
-    except FileNotFoundError:
-        return places, rail, districts, labels
-    with handle:
-        for row in csv.DictReader(handle):
-            name = (row.get("name") or "").strip().lower()
-            if not name:
-                continue
-            city = (row.get("city") or "").strip().lower()
-            if city:
-                districts.setdefault(city, set()).add(name)
-                continue
-            lat, lon = float(row["lat"]), float(row["lon"])
-            if not valid_coordinates(lat, lon) or name in places:
-                raise ValueError(f"Invalid or duplicate gazetteer place: {name}")
-            places[name] = (lat, lon)
-            labels[name] = (row.get("label") or "").strip() or name.title()
-            if row.get("rail") == "1":
-                rail.add(name)
-    if not set(districts) <= set(places):
-        raise ValueError("Gazetteer district refers to an unknown city")
-    return places, rail, districts, labels
-
-
-def valid_coordinates(lat: float, lon: float) -> bool:
-    return math.isfinite(lat) and math.isfinite(lon) and -90 <= lat <= 90 and -180 <= lon <= 180
-
-
 PLACES, RAIL_PLACES, DISTRICTS, PLACE_LABELS = load_gazetteer(GAZETTEER_FILE)
 for _alias, _place in ALIASES.items():
     if _place in PLACES and _alias not in PLACES:
         PLACES[_alias] = PLACES[_place]
         PLACE_LABELS[_alias] = PLACE_LABELS[_place]
-
-
-
-
-def _core_places(path: Path) -> set[str]:
-    """Hand-kept towns. Worldwide text needs these: the full list also holds villages
-    named Zurich and America, which must not make a foreign vacancy look Dutch."""
-    try:
-        with path.open(newline="", encoding="utf-8") as handle:
-            return {
-                row["name"].strip().lower()
-                for row in csv.DictReader(handle)
-                if not (row.get("origin") or "").strip() and not (row.get("city") or "").strip()
-            }
-    except FileNotFoundError:
-        return set()
-
 
 CORE_PLACES = _core_places(GAZETTEER_FILE)
 # Two-letter villages ("Ee") would match stray words in free-form location text.
@@ -250,6 +200,27 @@ def _find_place(text: str) -> str | None:
     return max((match.group(0) for match in PLACE_PATTERN.finditer(text)), key=len, default=None)
 
 
+def _listed_places(text: str) -> list[str]:
+    """Each town of a location that is a plain list of towns ("Utrecht, Amsterdam en Zwolle")."""
+    text = re.sub(r",\s*(nh|nb|l|zh|gld)\b", r" (\1)", _norm(text))
+    found = []
+    for piece in re.split(r"\s*[,;/|·]\s*", text):
+        # "Beek en Donk" is one town; only a piece that is no town itself is split on "en".
+        parts = [piece] if piece in PLACES else re.split(r"\s+(?:en|of|or|and)\s+", piece)
+        for part in parts:
+            if part and part in PLACES and len(part) > 2 and part not in found:
+                found.append(part)
+    return found
+
+
+def _nearest_place(text: str, start: tuple[float, float]) -> str | None:
+    """With several offices to choose from, a person travels to the nearest one."""
+    places = _listed_places(text)
+    if len(places) < 2:
+        return None
+    return min(places, key=lambda place: haversine_km(*start, *PLACES[place]))
+
+
 _PLACE_LABEL = re.compile(  # the place follows at once: "locatie. Je werkt met een collega" names none
     r"(?<!\w)(?:(?:standplaats|werklocatie|locatie)\s*[:\-]?|(?:werkplek|plaats|vestiging)\s*[:\-])"
     r"\s*((?:'s|[^\W\d_])[^\n|;]{1,59})"
@@ -315,7 +286,7 @@ def times(
     if not result["home"]:
         return result
     start = (settings["lat"], settings["lon"])
-    place = _find_place(location or "")
+    place = _nearest_place(location or "", start) or _find_place(location or "")
     work, source = None, "unknown"
     if lat is not None and lon is not None:
         try:

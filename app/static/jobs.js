@@ -47,8 +47,29 @@
   const progress = document.getElementById("jobs-progress");
   if (!progress || progress.dataset.matchRunning !== "true") return;
 
+  // While a round runs, ask only whether it still does: slower as it lasts, and not at all
+  // from a tab nobody looks at. The list itself is loaded once, when the round is over.
+  let wait = 4000;
+
+  function later() {
+    if (document.hidden) {
+      document.addEventListener("visibilitychange", later, { once: true });
+      return;
+    }
+    window.setTimeout(checkProgress, wait);
+    wait = Math.min(wait * 1.5, 30000);
+  }
+
   async function checkProgress() {
     try {
+      const sheet = document.querySelector('link[href*="static/app.css"]');
+      const appRoot = sheet ? new URL(sheet.href).pathname.split("static/")[0] : "/";
+      const state = await fetch(appRoot + "api/beoordeling", { cache: "no-store", headers: { Accept: "application/json" } });
+      if (!state.ok) throw new Error("status unavailable");
+      if ((await state.json()).running) {
+        later();
+        return;
+      }
       // Same URL retains all filters and also works behind a path-prefix proxy.
       const response = await fetch(listURL, { cache: "no-store" });
       if (!response.ok) throw new Error("status unavailable");
@@ -56,7 +77,7 @@
       const nextProgress = next.getElementById("jobs-progress");
       if (!nextProgress) throw new Error("status unavailable");
       if (nextProgress.dataset.matchRunning === "true") {
-        window.setTimeout(checkProgress, 4000);
+        later();
         return;
       }
       progress.dataset.matchRunning = "false";
@@ -82,7 +103,7 @@
       progress.append(note);
     }
   }
-  window.setTimeout(checkProgress, 4000);
+  later();
 })();
 
 // Keys for going through many vacancies without the mouse: j and k move, Enter opens,

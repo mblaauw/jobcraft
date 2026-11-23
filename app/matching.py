@@ -2,22 +2,23 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 
 from . import feedback, geo, llm, profile, ranking, standards, store, systemone
+from .llm_client import LLMSchemaError
+from .scoring import digests
 
 # Bump when the matcher prompt or its instructions change: cached verdicts must
 # not survive a prompt change even when preferences and vacancy text are equal.
 from .scoring.digests import VERDICT_PROMPT_VERSION as VERDICT_PROMPT_VERSION
-from .scoring.digests import job_match_digest, profile_hash, public_profile_digest
+from .scoring.digests import job_match_digest
 from .scoring.rules import (
     _row_get,
     rule_score,
 )
 from .scoring.rules import hard_filter_keywords as hard_filter_keywords
-from .util import parse_json_object
+from .util import now_local, parse_json_object
 
 PROFILE_PROMPT_LIMIT = 4000
 
@@ -67,14 +68,25 @@ def verdict_prompt(job, preferences: dict, profile_md: str) -> str:
 
 
 def current_digest(preferences: dict | None = None, profile_excerpt: str | None = None) -> str:
-    """Verdict cache key: preferences, public profile and prompt version.
+    """Verdict cache key: what the prompt reads from the preferences, the public profile and
+    the prompt version.
 
     Feedback is deliberately absent: votes rerank deterministically and never
     invalidate an expensive verdict.
     """
-    prefs = preferences if preferences is not None else profile.read_preferences()
-    raw = f"{profile_hash(prefs)}:{public_profile_digest(profile_excerpt)}:{VERDICT_PROMPT_VERSION}"
-    return hashlib.sha256(raw.encode()).hexdigest()[:20]
+    return digests.current_digest(preferences, profile_excerpt, prompt_version=VERDICT_PROMPT_VERSION)
+
+
+FAILED_KEY = "verdict_failed"
+
+
+def _failed_today() -> set[int]:
+    """Vacancies whose full assessment failed today; they get another try tomorrow."""
+    try:
+        stored = json.loads(store.meta_get(FAILED_KEY) or "{}")
+    except ValueError:
+        return set()
+    return set(stored.get("ids") or []) if stored.get("day") == now_local().date().isoformat() else set()
 
 
 def _ask_system_one(job, state: str, questions: dict) -> dict:
@@ -111,7 +123,7 @@ def _system_one_round(preferences, feedback_data, digest_base, summary) -> str:
     fit_top = int(os.environ.get("SYSTEMONE_FIT_TOP", "200"))
     top_waiting = False
 
-    ranking.rerank_all(preferences, feedback_data, digest_base)
+    ranking.rerank_all(preferences, feedback_data, digest_base, route=False)
     jobs = sorted(
         store.list_jobs_for_matching(),
         key=lambda job: job["rank_score"] if job["rank_score"] is not None else -1,
@@ -286,24 +298,37 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
     if systemone.enabled():
         for _ in range(max(1, int(os.environ.get("SYSTEMONE_ROUNDS", "20")))):
             before = summary["signals"]
-            outcome = _system_one_round(preferences, feedback_data, digest_base, summary)
+            with geo.remembered_home():  # read once per batch; it was read again for every vacancy
+                outcome = _system_one_round(preferences, feedback_data, digest_base, summary)
             if outcome != "spent" or summary["signals"] == before or _systemone_calls_left() <= 0:
                 break  # covered, failed, a batch that answered nothing, or the day's calls are spent
 
     # Stage 2 — free deterministic rerank: votes and fresh signals apply instantly.
-    ranking.rerank_all(preferences, feedback_data, digest_base)
+    # Stage 3 and the closing pass route on these ranks themselves, so this one does not.
+    ranking.rerank_all(preferences, feedback_data, digest_base, route=False)
 
     # Stage 3 — LLM only where the route says so: promising and uncertain jobs, plus a
     # small sample of sure fits inside the same batch, so the calibration stays honest.
     # Without a configured model the verdicts simply wait; nothing has failed.
     available = mgr is not None and getattr(mgr, "client", True) is not None
     candidates, sample = [], []
+    failed_today = _failed_today()
     if available:
         decided = ranking.routed(digest_base, preferences, feedback_data)
-        sample = ranking.calibration_sample(digest_base, preferences, feedback_data, decided)[:limit]
-        candidates = ranking.escalation_candidates(
-            digest_base, limit, preferences, feedback_data, decided
-        )[: max(0, limit - len(sample))]
+        sample = [
+            job
+            for job in ranking.calibration_sample(digest_base, preferences, feedback_data, decided)
+            if job["id"] not in failed_today
+        ][:limit]
+        # Not the ones that already failed today: the best-ranked vacancy whose answer cannot
+        # be read would otherwise be bought again at the top of every round.
+        candidates = [
+            job
+            for job in ranking.escalation_candidates(
+                digest_base, limit + len(failed_today), preferences, feedback_data, decided
+            )
+            if job["id"] not in failed_today
+        ][: max(0, limit - len(sample))]
     summary["escalated"] = len(candidates)
     summary["sampled"] = len(sample)
     for job in [*candidates, *sample]:
@@ -313,6 +338,11 @@ def match_jobs(mgr: llm.ServerManager, limit: int | None = None) -> dict:
         except Exception as exc:
             summary["failed"] += 1
             summary["errors"].append(f"job {job['id']}: {type(exc).__name__}")
+            if isinstance(exc, ValueError | KeyError | TypeError | LLMSchemaError):
+                # An answer that cannot be read is this vacancy's problem. An expired key, a
+                # rate limit or a timeout is not: those vacancies must be tried again at once.
+                failed_today.add(job["id"])
+                store.meta_set(FAILED_KEY, json.dumps({"day": now_local().date().isoformat(), "ids": sorted(failed_today)[-200:]}))
 
     # Blend the new LLM verdicts into the deterministic rank, then report where things stand.
     ranking.rerank_all(preferences, feedback_data, digest_base)

@@ -30,10 +30,18 @@ from .documents import (  # noqa: F401
     add_document,
     count_documents,
     delete_document,
+    document_kinds,
     get_document,
     list_documents,
 )
-from .ingestion import fetched_within, known_job_urls, source_urls_seen_longest_ago, upsert_job  # noqa: F401
+from .ingestion import (  # noqa: F401
+    fetched_within,
+    known_job_urls,
+    prune_detail_fetches,
+    read_and_left_out,
+    source_urls_seen_longest_ago,
+    upsert_job,
+)
 from .ingestion import (
     record_detail_fetch as record_detail_fetch,
 )
@@ -48,6 +56,7 @@ from .job_state import (  # noqa: F401
     get_job_travel,
     light_job_states,
     list_votes,
+    restamp_verdicts,
     set_job_travel,
     set_job_travels,
     set_job_vote,
@@ -63,6 +72,7 @@ from .jobs import (  # noqa: F401
     TRAVEL_FIELDS,
     _disabled_user_sources,
     _job_select,
+    catalogue_stamp,
     count_catalogue,
     count_jobs,
     count_jobs_by_source,

@@ -130,6 +130,7 @@ USER = {
     ("POST", "/profile/onderdelen-terug"),
     ("POST", "/profile/restore/{version_id}"),
     ("GET", "/api/tasks"),
+    ("GET", "/api/beoordeling"),
     ("POST", "/jobs/{job_id}/documents/{document_id}/verwijderen"),
     ("GET", "/api/tasks/{task_id}"),
 }

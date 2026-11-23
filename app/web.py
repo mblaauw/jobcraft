@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 from fastapi.templating import Jinja2Templates
 
-from . import config, profile_view
+from . import config, profile, profile_view
 from .util import LOCAL_TZ
 
 templates = Jinja2Templates(directory=str(config.TEMPLATES_DIR))
@@ -76,3 +76,4 @@ templates.env.globals["open_coach_count"] = _open_coach_count
 templates.env.filters["amsterdam"] = _amsterdam
 templates.env.filters["prose"] = profile_view.render
 templates.env.filters["teaser"] = profile_view.teaser
+templates.env.filters["hidden_heading"] = profile.is_hidden_heading

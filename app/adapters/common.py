@@ -42,15 +42,30 @@ def safe_detail_get(client, url: str, entry: dict):
         if entry["failure_streak"] >= DETAIL_FAILURE_LIMIT:
             raise
         return None
+    if response.status_code == 429 or response.status_code >= 500:
+        # The site is rate-limiting or down. Each such answer already cost the client's own
+        # retries and pauses; going on would hold the one scan slot for hours and bring nothing.
+        entry["details_skipped"] = entry.get("details_skipped", 0) + 1
+        entry["failure_streak"] = entry.get("failure_streak", 0) + 1
+        if entry["failure_streak"] >= DETAIL_FAILURE_LIMIT:
+            raise httpx.HTTPStatusError(
+                f"{DETAIL_FAILURE_LIMIT} pagina's achter elkaar gaven HTTP {response.status_code}",
+                request=getattr(response, "request", None),
+                response=response,
+            )
+        return response
     entry["failure_streak"] = 0
     return response
 
 
 def _skip_recent_detail(url: str, entry: dict, summary: dict) -> bool:
-    if not url or not store.touch_recent_detail(url):
+    if not url:
         return False
-    _tally(entry, summary, False)
-    return True
+    if store.touch_recent_detail(url):
+        _tally(entry, summary, False)
+        return True
+    # Read lately and left out (closed since): not read again yet, and not marked as seen.
+    return store.read_and_left_out(url)
 
 
 USER_AGENT = (

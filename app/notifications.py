@@ -26,12 +26,13 @@ def _minimum(name: str, default: str) -> float:
 def _strong_new_jobs() -> list[dict]:
     since = store.meta_get("matches_seen_at") or ""
     minimum = _minimum("NOTIFY_MIN_RANK", "65")
-    rows = store.list_jobs_page(100, 0, "new", sort="rank", within_travel=True, only_unvoted=True)
-    return [
-        row
-        for row in rows
-        if (row["first_seen"] or "") > since and (row["rank_score"] or 0) >= minimum
-    ]
+    # New ones only, before the cut: with a hundred older strong vacancies still unanswered,
+    # the best hundred of everything holds no fresh one and nothing was ever reported.
+    rows = store.list_jobs_page(
+        100, 0, "new", sort="rank", within_travel=True, only_unvoted=True,
+        list_filters={"seen_after": since} if since else None,
+    )
+    return [row for row in rows if (row["rank_score"] or 0) >= minimum]
 
 
 def refresh() -> int:
@@ -60,23 +61,45 @@ def _alert_if_due(jobs: list[dict]) -> None:
     last = store.meta_get("match_alert_at")
     if last and datetime.now(UTC) - datetime.fromisoformat(last) < timedelta(hours=ALERT_HOURS):
         return
-    digest.deliver(digest.compose(fresh[:3], settings["email"]))
+    sent = fresh[:3]
+    digest.deliver(digest.compose(sent, settings["email"]))
     store.meta_set("match_alert_at", now_iso())
+    # Only what the mail named: a fourth strong vacancy gets its own mail later, not none.
     # Keep the list short: only recent ids can still show up as new.
-    store.meta_set("match_alerted", json.dumps(sorted(alerted | {j["id"] for j in fresh})[-500:]))
+    store.meta_set("match_alerted", json.dumps(sorted(alerted | {j["id"] for j in sent})[-500:]))
     store.count_event("match_alerts_sent")
 
 
-def pending() -> list[dict]:
+SHOWN_KEY = "new_matches_shown"
+SHOWN_FOR = timedelta(minutes=30)
+
+
+def _ids(key: str) -> list:
     try:
-        ids = json.loads(store.meta_get("new_matches") or "[]")
+        found = json.loads(store.meta_get(key) or "[]")
     except ValueError:
         return []
+    return found if isinstance(found, list) else []
+
+
+def pending() -> list[dict]:
+    """The new matches; for half an hour after they were shown, the same ones again, so a
+    reload or Back from one of them does not find the page empty."""
+    ids = _ids("new_matches")
+    try:
+        shown = json.loads(store.meta_get(SHOWN_KEY) or "{}")
+        if datetime.now(UTC) - datetime.fromisoformat(shown["at"]) < SHOWN_FOR:
+            ids = [*ids, *(item for item in shown["ids"] if item not in ids)]
+    except (ValueError, KeyError, TypeError):
+        pass
     jobs = [store.get_job(job_id) for job_id in ids]
     return [dict(job) for job in jobs if job and job["status"] == "new" and not job["vote"]]
 
 
 def mark_seen() -> None:
+    ids = _ids("new_matches")
+    if ids:
+        store.meta_set(SHOWN_KEY, json.dumps({"at": now_iso(), "ids": ids}))
     store.meta_set("matches_seen_at", now_iso())
     store.meta_set("new_matches", "[]")
 

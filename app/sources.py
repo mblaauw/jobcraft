@@ -244,7 +244,7 @@ RANK_DURING_SCAN_SECONDS = 180.0
 def _rank_new_vacancies() -> None:
     """Rank what came in so far, so nobody waits for the last source to see new vacancies."""
     for owner in store.active_owners_with_profile():
-        tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}")
+        tasks.enqueue("rerank", owner=owner, dedupe_key=f"rerank:{owner}", follow=True)
 
 
 def scan(limit_per_source: int | None = None) -> dict:

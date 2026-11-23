@@ -37,8 +37,8 @@ def _current(status: dict) -> str:
     """running or done when it belongs in the overview, otherwise empty."""
     state = status.get("state")
     if state == "running":
-        age = _age(status.get("updated_at"))
-        return "" if age is not None and age > STALE_SECONDS else "running"
+        age = _age(status.get("updated_at") or status.get("started_at"))
+        return "" if age is None or age > STALE_SECONDS else "running"  # no moment: never started
     if state == "done":
         age = _age(status.get("finished_at"))
         return "" if status.get("seen") or age is None or age > RECENT_SECONDS else "done"

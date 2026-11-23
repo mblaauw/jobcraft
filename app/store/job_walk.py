@@ -22,7 +22,8 @@ def list_jobs_for_matching(limit: int | None = None) -> list:
     disabled = _disabled_user_sources()
     params: list = [tenancy.user_id(), stale_cutoff(), import_source(), *disabled]
     source_sql = (
-        " AND (source_id IS NULL OR source_id NOT IN (" + ",".join("?" for _ in disabled) + "))"
+        " AND (source_id IS NULL OR source_id NOT IN (" + ",".join("?" for _ in disabled)
+        + ") OR status IN ('saved','applied','interview','offer','rejected'))"
         if disabled
         else ""
     )

@@ -40,7 +40,7 @@ from ..scoring import reasons
 from ..scoring.route import LABELS as ROUTE_LABELS
 from ..util import LOCAL_TZ
 from ..web import templates
-from ..web_helpers import _jobs_return_target, _with_done
+from ..web_helpers import _jobs_return_target, _with_done, refresh_travel_for_page
 from ..workflows import _doc_status, _document_lock
 from . import job_list
 
@@ -94,7 +94,7 @@ def jobs_page(
         summary["route_line"] = ", ".join(
             f"{count} {ROUTE_LABELS[key]}" for key, count in summary["routes"].items() if count and key in ROUTE_LABELS
         )
-    ranking.refresh_travel()
+    refresh_travel_for_page()
     source_rows = store.list_sources()
     source_names = {row["id"]: row["name"] for row in source_rows}
     within_active = within != "0"  # reisbereik-filter staat standaard aan
@@ -268,7 +268,6 @@ def job_detail(request: Request, job_id: int, return_to: str = ""):
             "job": item,
             **job_verdict.context(item),
             "signals": signals,
-            "counts": store.count_jobs(),
             "documents": store.list_documents(job_id),
             "doc_error": request.query_params.get("doc_error", ""),
             "doc_status": doc_status,
@@ -305,7 +304,8 @@ def job_document(job_id: int, kind: str = Form(...), url: str = Form("", alias="
         store.meta_set(
             f"doc_status:{job_id}",
             json.dumps(
-                {"state": "running", "kind": kind, "started_at": datetime.now(UTC).isoformat()}
+                {"state": "running", "kind": kind, "started_at": datetime.now(UTC).isoformat(),
+                 "updated_at": datetime.now(UTC).isoformat()}
             ),
         )
     store.count_event("documents_requested")
@@ -360,9 +360,15 @@ def job_vote(job_id: int, vote: str = Form(...), url: str = Form("/jobs", alias=
 def job_status(job_id: int, status: str = Form(...), url: str = Form("/jobs", alias="next")):
     if status not in ("new", "ignored", *applications.STATUSES):
         raise HTTPException(status_code=400, detail="unknown status")
-    if store.get_job(job_id) is None:
+    job = store.get_job(job_id)
+    if job is None:
         raise HTTPException(status_code=404, detail="unknown job")
+    target = _with_done(_jobs_return_target(url), job_id, status)
+    if job["status"] in applications.SENT and status in ("new", "saved", "ignored"):
+        # A sent application moves on Sollicitaties only: a stray key or click on a list row
+        # must not take an interview off the board and reset its dates.
+        return RedirectResponse(url=_jobs_return_target(url), status_code=303)
     store.update_job_status(job_id, status)
     applications.record_status(job_id, status)  # the board counts days from here
     ranking.after_vote(job_id)  # saved and ignored teach the ranking as much as a vote
-    return RedirectResponse(url=_with_done(_jobs_return_target(url), job_id, status), status_code=303)
+    return RedirectResponse(url=target, status_code=303)

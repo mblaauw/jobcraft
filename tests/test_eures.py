@@ -114,13 +114,15 @@ def test_a_vacancy_read_long_ago_stays_listed_without_a_new_read(client):  # noq
     key = "detail_fetched:" + hashlib.sha256(url.encode()).hexdigest()
     with store.connect() as con:  # read 40 days ago, and the vacancy is 60 days old by now
         con.execute("UPDATE meta SET value=? WHERE key=?", ((datetime.now(UTC) - timedelta(days=40)).isoformat(), key))
-        con.execute("UPDATE jobs SET last_seen='2020-01-01T00:00:00+00:00' WHERE url=?", (url,))
+        # last seen a day after that read: a vacancy the read kept is never older than its read
+        before = (datetime.now(UTC) - timedelta(days=39)).isoformat()
+        con.execute("UPDATE jobs SET last_seen=? WHERE url=?", (before, url))
     fake.items, fake.asked = [{"id": "open", "creationDate": (time.time() - 60 * 86400) * 1000}], []
     entry = {"items": 0, "new": 0, "updated": 0}
     eures._scan_eures(fake, {"id": "eures"}, entry, {"new": 0, "updated": 0})
     with store.connect() as con:
         seen = con.execute("SELECT last_seen FROM jobs WHERE url=?", (url,)).fetchone()[0]
-    assert fake.asked == [] and entry["updated"] == 1 and "too_old" not in entry and seen > "2026"
+    assert fake.asked == [] and entry["updated"] == 1 and "too_old" not in entry and seen > before
 
 def test_a_round_never_asks_past_the_searchs_first_ten_thousand(client):  # noqa: F811
     # The search answers 400 past result 10,000, so a larger `pages` stops at page 200.

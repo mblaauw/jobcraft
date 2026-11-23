@@ -40,6 +40,9 @@ def test_badge_banner_and_page_then_cleared_by_seeing(client):  # noqa: F811
     assert "Sterk" in soup(client.get("/jobs/nieuw")).get_text()
     html = soup(client.get("/jobs"))
     assert not html.select(".nav-badge")
+    # A reload or Back within the half hour still shows them; after that the page is done.
+    assert "Sterk" in soup(client.get("/jobs/nieuw")).get_text()
+    store.meta_set(notifications.SHOWN_KEY, json.dumps({"at": "2020-01-01T00:00:00+00:00", "ids": []}))
     assert "Je bent bij" in soup(client.get("/jobs/nieuw")).get_text()
     assert notifications.refresh() == 0
 
@@ -132,7 +135,7 @@ def test_no_configured_model_is_not_reported_as_a_failure(client, monkeypatch): 
     from app import matching, ranking
 
     monkeypatch.setattr(matching, "current_digest", lambda *a: "test")
-    monkeypatch.setattr(ranking, "rerank_all", lambda *a: 0)
+    monkeypatch.setattr(ranking, "rerank_all", lambda *a, **kw: 0)
     monkeypatch.setattr(ranking, "queue_depth", lambda *a: 0)
     monkeypatch.setattr(
         ranking, "escalation_candidates", lambda *a: pytest.fail("no model to ask")

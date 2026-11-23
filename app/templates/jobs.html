@@ -164,9 +164,9 @@
         {% include '_csrf.html' %}
         <input type="hidden" name="next" value="{{ row_next }}">
         {% set saved = job['status'] == 'saved' %}
-        <button class="icon-button" type="submit" name="status" value="{{ 'new' if saved else 'saved' }}" aria-pressed="{{ 'true' if saved else 'false' }}" aria-label="{{ 'Haal uit je bewaarde vacatures:' if saved else 'Bewaar:' }} {{ job['title'] }}" title="{{ 'Bewaard' if saved else 'Bewaren' }}" {% if job['status'] == 'applied' %}disabled{% endif %}>{{ ui.icon('bookmark-check' if saved else 'bookmark') }}</button>
+        <button class="icon-button" type="submit" name="status" value="{{ 'new' if saved else 'saved' }}" aria-pressed="{{ 'true' if saved else 'false' }}" aria-label="{{ 'Haal uit je bewaarde vacatures:' if saved else 'Bewaar:' }} {{ job['title'] }}" title="{{ 'Bewaard' if saved else 'Bewaren' }}" {% if job['status'] in ('applied', 'interview', 'offer', 'rejected') %}disabled{% endif %}>{{ ui.icon('bookmark-check' if saved else 'bookmark') }}</button>
         {% set hidden = job['status'] == 'ignored' %}
-        <button class="icon-button is-down" type="submit" name="status" value="{{ 'new' if hidden else 'ignored' }}" aria-pressed="{{ 'true' if hidden else 'false' }}" aria-label="{{ 'Zet terug:' if hidden else 'Negeer:' }} {{ job['title'] }}" title="{{ 'Terugzetten' if hidden else 'Negeren' }}" {% if job['status'] == 'applied' %}disabled{% endif %}>{{ ui.icon('eye-off') }}</button>
+        <button class="icon-button is-down" type="submit" name="status" value="{{ 'new' if hidden else 'ignored' }}" aria-pressed="{{ 'true' if hidden else 'false' }}" aria-label="{{ 'Zet terug:' if hidden else 'Negeer:' }} {{ job['title'] }}" title="{{ 'Terugzetten' if hidden else 'Negeren' }}" {% if job['status'] in ('applied', 'interview', 'offer', 'rejected') %}disabled{% endif %}>{{ ui.icon('eye-off') }}</button>
       </form>
     </div>
   </article>

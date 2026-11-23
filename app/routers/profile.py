@@ -51,7 +51,7 @@ def _assess_soon(kind: str = "match") -> None:
     """Votes and travel only rerank for free; a changed profile also earns new assessments."""
     if profile.profile_exists():
         owner = tenancy.user_id()
-        tasks.enqueue(kind, owner=owner, dedupe_key=f"{kind}:{owner}")
+        tasks.enqueue(kind, owner=owner, dedupe_key=f"{kind}:{owner}", follow=True)
 
 
 @router.get("/profile", response_class=HTMLResponse)
@@ -71,7 +71,7 @@ def profile_page(request: Request):
             "kept_sections": [
                 item
                 for item in profile.split_sections(current)
-                if item["text"] and (item["heading"] in profile.HIDDEN_HEADINGS or item["heading"].startswith(profile.PRIVATE_HEADING))
+                if item["text"] and profile.is_hidden_heading(item["heading"])
             ],
         }
     if tab == "zoek":
